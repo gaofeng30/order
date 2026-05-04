@@ -1,0 +1,34 @@
+.admin-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.order-card {
+  padding: 28rpx;
+}
+
+.order-id {
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.pickup-line {
+  margin-top: 24rpx;
+}
+
+.pickup {
+  font-size: 54rpx;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.verify {
+  min-width: 122rpx;
+  height: 64rpx;
+  border-radius: 999rpx;
+  background: #1d4ed8;
+  color: #f8fafc;
+  font-size: 25rpx;
+  font-weight: 600;
+}

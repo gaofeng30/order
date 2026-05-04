@@ -1,0 +1,46 @@
+<view class="page order-detail">
+  <view class="ticket hero-dark">
+    <view class="row-between">
+      <view class="eyebrow">PICKUP CODE</view>
+      <status-pill text="{{order.statusText}}" type="{{order.status === 'completed' ? 'success' : 'accent'}}" />
+    </view>
+    <view class="pickup-no">{{order.pickupNo}}</view>
+    <view class="ticket-meta">{{order.pickupPlace}}</view>
+    <view class="ticket-meta">{{order.pickupTime}}</view>
+  </view>
+
+  <view class="qr-card soft-card">
+    <view class="qr">
+      <view wx:for="{{qrCells}}" wx:key="id" class="qr-cell {{item.active ? 'qr-cell-active' : ''}}"></view>
+    </view>
+    <view class="caption">到窗口出示二维码或取餐号即可取餐</view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">订单明细</view>
+    <view wx:for="{{order.items}}" wx:key="productId" class="item-row">
+      <text>{{item.name}} x {{item.quantity}}</text>
+      <text>¥{{item.price}}</text>
+    </view>
+    <view class="divider"></view>
+    <view class="row-between total">
+      <text>合计</text>
+      <text>¥{{order.amount}}</text>
+    </view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">取餐信息</view>
+    <view class="caption">订单号</view>
+    <view class="value">{{order.id}}</view>
+    <view class="caption">联系人</view>
+    <view class="value">{{order.contact}} · {{order.phone}}</view>
+    <view class="caption">口味偏好</view>
+    <view class="value taste-value">{{order.tasteText}}</view>
+    <view class="caption">备注</view>
+    <view class="value">{{order.remark}}</view>
+  </view>
+
+  <button class="btn btn-primary" bindtap="copyCode">复制取餐号</button>
+  <button class="btn btn-ghost" bindtap="goOrders">返回我的订单</button>
+</view>

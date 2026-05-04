@@ -1,0 +1,17 @@
+<view class="page categories-page">
+  <view class="title-lg">分类管理</view>
+  <view class="caption">管理分类新增、排序、启用与停用。</view>
+
+  <view class="card list-card">
+    <view wx:for="{{categories}}" wx:key="id" class="category-row">
+      <view>
+        <view class="name">{{item.sort}}. {{item.name}}</view>
+        <view class="caption">当前按排序值展示</view>
+      </view>
+      <view class="row action-area">
+        <status-pill text="{{item.enabled ? '启用' : '停用'}}" type="{{item.enabled ? 'success' : 'default'}}" />
+        <button class="switch" data-id="{{item.id}}" bindtap="toggle">{{item.enabled ? '停用' : '启用'}}</button>
+      </view>
+    </view>
+  </view>
+</view>

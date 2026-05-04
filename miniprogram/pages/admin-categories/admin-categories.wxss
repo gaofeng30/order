@@ -1,0 +1,42 @@
+.categories-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.list-card {
+  overflow: hidden;
+}
+
+.category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  min-height: 132rpx;
+  padding: 0 30rpx;
+  border-bottom: 1rpx solid rgba(15, 23, 42, 0.1);
+}
+
+.category-row:last-child {
+  border-bottom: 0;
+}
+
+.name {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.action-area {
+  gap: 12rpx;
+}
+
+.switch {
+  width: 92rpx;
+  height: 52rpx;
+  border-radius: 999rpx;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-size: 23rpx;
+  font-weight: 600;
+}

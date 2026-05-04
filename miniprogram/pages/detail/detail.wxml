@@ -1,0 +1,41 @@
+<view class="page detail">
+  <image class="hero-img" src="{{product.image}}" mode="aspectFill" />
+
+  <view class="soft-card detail-card">
+    <view class="row-between">
+      <view class="title-lg">{{product.name}}</view>
+      <status-pill wx:if="{{product.status === 'available'}}" text="可购买" type="success" />
+      <status-pill wx:elif="{{product.status === 'soldout'}}" text="售罄" type="warning" />
+      <status-pill wx:else text="已下架" type="danger" />
+    </view>
+    <view class="price">¥{{product.price}}</view>
+    <view class="body">{{product.desc}}</view>
+
+    <view class="info-grid">
+      <view class="info-item">
+        <text class="caption">规格</text>
+        <text>{{product.specsText}}</text>
+      </view>
+      <view class="info-item">
+        <text class="caption">过敏原提示</text>
+        <text>{{product.allergens}}</text>
+      </view>
+    </view>
+
+    <view class="row-between quantity-row">
+      <view>
+        <view class="title-md">选择数量</view>
+        <view class="caption">购物车已有 {{inCart}} 份</view>
+      </view>
+      <view class="stepper">
+        <button class="step" bindtap="minus">-</button>
+        <text class="qty">{{quantity}}</text>
+        <button class="step step-add" bindtap="add">+</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="safe-bottom-bar">
+    <button class="btn {{product.status === 'available' ? 'btn-primary' : 'btn-disabled'}}" bindtap="addCart">加入购物车</button>
+  </view>
+</view>

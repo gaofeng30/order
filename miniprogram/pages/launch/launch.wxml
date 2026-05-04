@@ -1,0 +1,17 @@
+<view class="page launch">
+  <view class="hero-dark">
+    <view class="eyebrow">WELCOME</view>
+    <view class="title-xl">XX食堂在线点单</view>
+    <view class="intro">请选择用户端或商户端，进入后将保持各自独立的使用路径。</view>
+    <view class="plate">
+      <view class="plate-inner"></view>
+    </view>
+  </view>
+
+  <view class="entry soft-card">
+    <view class="title-md">请选择使用端</view>
+    <view class="body">用户端用于点单和取餐，商户端用于经营管理和窗口核销。</view>
+    <button class="btn btn-primary" bindtap="startUser">进入用户端点单</button>
+    <button class="btn btn-ghost" bindtap="startAdmin">进入商户端管理</button>
+  </view>
+</view>

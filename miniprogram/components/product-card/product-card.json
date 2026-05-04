@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "status-pill": "/components/status-pill/status-pill"
+  }
+}

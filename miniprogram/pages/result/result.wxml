@@ -1,0 +1,20 @@
+<view class="page result">
+  <view class="success-card">
+    <view class="check">✓</view>
+    <view class="title-lg">支付成功</view>
+    <view class="body">已生成订单号、取餐号和二维码凭证。请按预计时间到窗口取餐。</view>
+  </view>
+
+  <view class="pickup-card soft-card">
+    <view class="caption">取餐号</view>
+    <view class="pickup-no">{{order.pickupNo}}</view>
+    <view class="divider"></view>
+    <view class="row-between">
+      <text class="caption">{{order.id}}</text>
+      <text class="caption">{{order.pickupTime}}</text>
+    </view>
+  </view>
+
+  <button class="btn btn-primary" bindtap="viewOrder">查看取餐码</button>
+  <button class="btn btn-ghost" bindtap="goHome">返回首页</button>
+</view>

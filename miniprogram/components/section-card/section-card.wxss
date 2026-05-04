@@ -1,0 +1,29 @@
+.section-card {
+  padding: 30rpx;
+  border: 1rpx solid rgba(15, 23, 42, 0.1);
+  border-radius: 34rpx;
+  background: #fafafa;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 22rpx;
+}
+
+.title {
+  color: #0f172a;
+  font-size: 32rpx;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.desc {
+  margin-top: 6rpx;
+  color: #475569;
+  font-size: 24rpx;
+  line-height: 1.45;
+}

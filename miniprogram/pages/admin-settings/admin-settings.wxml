@@ -1,0 +1,36 @@
+<view class="page settings-page">
+  <view class="row-between">
+    <view>
+      <view class="title-lg">营业设置</view>
+      <view class="caption">营业状态、时间、截单、取餐地点和公告配置。</view>
+    </view>
+    <status-pill text="{{settings.status}}" type="success" />
+  </view>
+
+  <view class="status-grid">
+    <button class="status {{settings.status === '营业中' ? 'status-active' : ''}}" data-status="营业中" bindtap="setStatus">营业中</button>
+    <button class="status {{settings.status === '休息中' ? 'status-active' : ''}}" data-status="休息中" bindtap="setStatus">休息中</button>
+    <button class="status {{settings.status === '已截单' ? 'status-active' : ''}}" data-status="已截单" bindtap="setStatus">已截单</button>
+  </view>
+
+  <view class="card form">
+    <view>
+      <view class="label">营业时间</view>
+      <input class="field" value="{{settings.businessTime}}" data-field="businessTime" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">截单时间</view>
+      <input class="field" value="{{settings.cutoffTime}}" data-field="cutoffTime" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">取餐地点</view>
+      <input class="field" value="{{settings.pickupPlace}}" data-field="pickupPlace" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">公告</view>
+      <textarea class="textarea" value="{{settings.notice}}" data-field="notice" bindinput="updateField" />
+    </view>
+  </view>
+
+  <button class="btn btn-primary" bindtap="save">保存设置</button>
+</view>

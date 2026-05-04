@@ -1,0 +1,25 @@
+<view class="page edit-product">
+  <view class="title-lg">编辑商品</view>
+  <image class="hero" src="{{product.image}}" mode="aspectFill" />
+
+  <view class="card form">
+    <view>
+      <view class="label">商品名称</view>
+      <input class="field" value="{{product.name}}" data-field="name" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">价格</view>
+      <input class="field" type="digit" value="{{product.price}}" data-field="price" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">库存</view>
+      <input class="field" type="number" value="{{product.stock}}" data-field="stock" bindinput="updateField" />
+    </view>
+    <view>
+      <view class="label">描述</view>
+      <textarea class="textarea" value="{{product.desc}}" data-field="desc" bindinput="updateField" />
+    </view>
+  </view>
+
+  <button class="btn btn-primary" bindtap="save">保存商品</button>
+</view>

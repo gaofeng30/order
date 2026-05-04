@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "数据看板",
+  "usingComponents": {
+    "status-pill": "/components/status-pill/status-pill"
+  }
+}

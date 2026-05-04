@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# WeChat DevTools local settings
+project.private.config.json
+
+# Dependency and build output
+node_modules/
+dist/
+build/
+coverage/

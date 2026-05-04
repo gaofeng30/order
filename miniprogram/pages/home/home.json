@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "XX食堂",
+  "usingComponents": {
+    "product-card": "/components/product-card/product-card",
+    "status-pill": "/components/status-pill/status-pill",
+    "section-card": "/components/section-card/section-card"
+  }
+}
