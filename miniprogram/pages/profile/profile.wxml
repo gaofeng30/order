@@ -1,0 +1,32 @@
+<view class="page page--tab profile">
+  <view class="profile-card hero-dark">
+    <view class="avatar">{{avatarText}}</view>
+    <view class="title-lg">{{user.name}}</view>
+    <view class="body light">{{user.role}} · {{user.company}}</view>
+    <status-pill text="已授权" type="success" />
+  </view>
+
+  <view class="card menu-list">
+    <button class="menu-item" bindtap="goOrders">
+      <view>
+        <view class="item-title">我的订单</view>
+        <view class="caption">待支付、待取餐、已完成、已取消</view>
+      </view>
+      <text>›</text>
+    </button>
+    <button class="menu-item" bindtap="disabled">
+      <view>
+        <view class="item-title">外卖配送</view>
+        <view class="caption">暂未开放</view>
+      </view>
+      <text>›</text>
+    </button>
+    <button class="menu-item">
+      <view>
+        <view class="item-title">联系客服</view>
+        <view class="caption">窗口电话：400-800-2026</view>
+      </view>
+      <text>›</text>
+    </button>
+  </view>
+</view>

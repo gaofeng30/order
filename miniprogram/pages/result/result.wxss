@@ -1,0 +1,47 @@
+.result {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.success-card {
+  display: flex;
+  min-height: 420rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 42rpx;
+  border-radius: 44rpx;
+  background: #fafafa;
+  text-align: center;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104rpx;
+  height: 104rpx;
+  margin-bottom: 24rpx;
+  border-radius: 50%;
+  background: #047857;
+  color: #f8fafc;
+  font-size: 58rpx;
+  font-weight: 600;
+}
+
+.pickup-card {
+  padding: 34rpx;
+}
+
+.pickup-no {
+  margin: 10rpx 0 24rpx;
+  font-size: 92rpx;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.divider {
+  margin-bottom: 22rpx;
+}

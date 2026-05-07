@@ -1,0 +1,26 @@
+.edit-product {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.hero {
+  width: 100%;
+  height: 300rpx;
+  border-radius: 40rpx;
+  background: #fafafa;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+  padding: 30rpx;
+}
+
+.label {
+  margin-bottom: 10rpx;
+  color: #475569;
+  font-size: 24rpx;
+  font-weight: 600;
+}

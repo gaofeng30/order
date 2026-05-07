@@ -1,0 +1,81 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.home-hero {
+  min-height: 460rpx;
+}
+
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-top: 24rpx;
+  color: rgba(248, 250, 252, 0.72);
+  font-size: 25rpx;
+  line-height: 1.5;
+}
+
+.hero-cta {
+  width: 250rpx;
+  margin-top: 38rpx;
+}
+
+.notice {
+  padding: 28rpx;
+}
+
+.notice-title {
+  margin-bottom: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+}
+
+.quick-card {
+  display: flex;
+  min-height: 150rpx;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28rpx;
+  border-radius: 32rpx;
+  background: #fafafa;
+  text-align: left;
+}
+
+.quick-title {
+  font-size: 31rpx;
+  font-weight: 600;
+}
+
+.quick-desc {
+  margin-top: 8rpx;
+  color: #475569;
+  font-size: 24rpx;
+}
+
+.disabled-card {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.admin-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30rpx;
+}
+
+.arrow {
+  color: #64748b;
+  font-size: 56rpx;
+  line-height: 1;
+}

@@ -1,0 +1,84 @@
+.order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.ticket {
+  padding-bottom: 42rpx;
+}
+
+.pickup-no {
+  margin-top: 38rpx;
+  font-size: 112rpx;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+
+.ticket-meta {
+  margin-top: 14rpx;
+  color: rgba(248, 250, 252, 0.72);
+  font-size: 26rpx;
+}
+
+.qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18rpx;
+  padding: 34rpx;
+}
+
+.qr {
+  display: grid;
+  width: 300rpx;
+  height: 300rpx;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+  padding: 20rpx;
+  border-radius: 28rpx;
+  background: #f1f5f9;
+}
+
+.qr-cell {
+  border-radius: 6rpx;
+  background: transparent;
+}
+
+.qr-cell-active {
+  background: #24364a;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding: 30rpx;
+}
+
+.block-title {
+  font-size: 31rpx;
+  font-weight: 600;
+}
+
+.item-row,
+.total {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.value {
+  margin-bottom: 8rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.taste-value {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(29, 78, 216, 0.1);
+  color: #1d4ed8;
+}

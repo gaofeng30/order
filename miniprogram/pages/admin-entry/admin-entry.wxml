@@ -1,0 +1,14 @@
+<view class="page admin-entry">
+  <view class="hero-dark">
+    <view class="eyebrow">MERCHANT</view>
+    <view class="title-xl">商户端管理</view>
+    <view class="intro">管理每日经营、商品上下架、订单处理和窗口核销。</view>
+  </view>
+
+  <view class="card role-card">
+    <view class="title-md">选择角色进入</view>
+    <button class="btn btn-primary" bindtap="goDashboard">商户管理员</button>
+    <button class="btn btn-ghost" bindtap="goOrders">订单处理员</button>
+    <button class="btn btn-dark" bindtap="goVerify">窗口核销员</button>
+  </view>
+</view>

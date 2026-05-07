@@ -1,0 +1,55 @@
+.orders {
+  display: flex;
+  flex-direction: column;
+  gap: 22rpx;
+}
+
+.tabs {
+  white-space: nowrap;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 142rpx;
+  height: 64rpx;
+  margin-right: 12rpx;
+  border-radius: 999rpx;
+  background: #fafafa;
+  color: #475569;
+  font-size: 25rpx;
+  font-weight: 600;
+}
+
+.tab-active {
+  background: #24364a;
+  color: #f8fafc;
+}
+
+.order-card {
+  padding: 28rpx;
+}
+
+.order-id {
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.pickup {
+  margin: 22rpx 0 8rpx;
+  font-size: 60rpx;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.order-bottom {
+  margin-top: 22rpx;
+  color: #0f172a;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.empty-btn {
+  margin-top: 24rpx;
+}

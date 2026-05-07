@@ -1,0 +1,58 @@
+<view class="page confirm">
+  <view class="title-lg">确认订单</view>
+
+  <view class="card block">
+    <view class="row-between">
+      <view>
+        <view class="block-title">线下自提</view>
+        <view class="caption">{{settings.pickupPlace}}</view>
+      </view>
+      <view class="pickup-time">{{settings.cutoffTime}}</view>
+    </view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">商品明细</view>
+    <view class="items">
+      <view wx:for="{{cart.items}}" wx:key="productId" class="item-row">
+        <view>
+          <view class="item-name">{{item.product.name}}</view>
+          <view class="caption">¥{{item.product.price}} x {{item.quantity}}</view>
+        </view>
+        <view class="item-price">¥{{item.subtotal}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card block form-block">
+    <view class="block-title">联系人信息</view>
+    <input class="field" value="{{form.contact}}" data-field="contact" bindinput="updateField" placeholder="联系人" />
+    <input class="field" value="{{form.phone}}" data-field="phone" bindinput="updateField" placeholder="手机号" />
+    <textarea class="textarea" value="{{form.remark}}" data-field="remark" bindinput="updateField" placeholder="备注，例如少盐、稍晚取餐" />
+  </view>
+
+  <view class="card block taste-block">
+    <view class="block-title">口味偏好</view>
+    <view class="caption">可多选，商户会在订单中看到这些要求。</view>
+    <view class="taste-list">
+      <button
+        wx:for="{{tasteOptions}}"
+        wx:key="label"
+        class="taste-chip {{item.selected ? 'taste-chip-active' : ''}}"
+        data-value="{{item.label}}"
+        bindtap="toggleTaste"
+      >
+        {{item.label}}
+      </button>
+    </view>
+  </view>
+
+  <view class="pay-card">
+    <text>应付金额</text>
+    <text class="amount">¥{{cart.totalAmountText}}</text>
+  </view>
+
+  <view class="safe-bottom-bar">
+    <button class="btn btn-primary" bindtap="submitOrder">确认支付</button>
+  </view>
+</view>

@@ -1,0 +1,23 @@
+<view class="page admin-orders">
+  <view class="title-lg">订单管理</view>
+  <view class="caption">窗口高频查看：订单号、用户、金额、状态、下单时间和取餐号。</view>
+
+  <view class="list">
+    <view wx:for="{{orders}}" wx:key="id" class="order-card card">
+      <view class="row-between" data-id="{{item.id}}" bindtap="openOrder">
+        <view>
+          <view class="order-id">{{item.id}}</view>
+          <view class="caption">{{item.createdAt}} · {{item.contact}}</view>
+        </view>
+        <status-pill text="{{item.statusText}}" type="{{item.status === 'completed' ? 'success' : 'accent'}}" />
+      </view>
+      <view class="row-between pickup-line">
+        <view>
+          <view class="pickup">{{item.pickupNo}}</view>
+          <view class="caption">{{item.items.length}} 件商品 · ¥{{item.amount}}</view>
+        </view>
+        <button class="verify" data-id="{{item.id}}" bindtap="goVerify">核销</button>
+      </view>
+    </view>
+  </view>
+</view>

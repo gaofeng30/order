@@ -1,0 +1,54 @@
+<view class="page admin-dashboard">
+  <view class="row-between head">
+    <view>
+      <view class="title-lg">今日经营</view>
+      <view class="caption">{{settings.status}} · {{settings.cutoffTime}}</view>
+    </view>
+    <status-pill text="今日实时" type="accent" />
+  </view>
+
+  <view class="metric-grid">
+    <view class="metric-card">
+      <view class="caption">今日营收</view>
+      <view class="metric-value">¥{{dashboard.revenueText}}</view>
+    </view>
+    <view class="metric-card">
+      <view class="caption">订单数</view>
+      <view class="metric-value">{{dashboard.orders}}</view>
+    </view>
+    <view class="metric-card">
+      <view class="caption">访问量</view>
+      <view class="metric-value">{{dashboard.visits}}</view>
+    </view>
+    <view class="metric-card">
+      <view class="caption">点击量</view>
+      <view class="metric-value">{{dashboard.clicks}}</view>
+    </view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">单品销量排行</view>
+    <view wx:for="{{dashboard.rank}}" wx:key="name" class="rank-row">
+      <text>{{index + 1}}. {{item.name}}</text>
+      <text>{{item.count}} 份</text>
+    </view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">最新订单</view>
+    <view wx:for="{{dashboard.latestOrders}}" wx:key="id" class="order-row" bindtap="goOrders">
+      <view>
+        <view class="order-id">{{item.id}}</view>
+        <view class="caption">{{item.pickupNo}} · {{item.statusText}}</view>
+      </view>
+      <text>¥{{item.amount}}</text>
+    </view>
+  </view>
+
+  <view class="admin-nav">
+    <button class="nav-card" bindtap="goProducts">商品</button>
+    <button class="nav-card" bindtap="goOrders">订单</button>
+    <button class="nav-card" bindtap="goVerify">核销</button>
+    <button class="nav-card" bindtap="goSettings">营业</button>
+  </view>
+</view>

@@ -1,0 +1,30 @@
+<view class="page admin-products">
+  <view class="row-between">
+    <view>
+      <view class="title-lg">商品管理</view>
+      <view class="caption">搜索、分类、上下架和售罄状态管理</view>
+    </view>
+    <button class="mini-btn" bindtap="goCategories">分类</button>
+  </view>
+
+  <view class="search card">搜索商品 / 分类筛选</view>
+
+  <view class="list">
+    <view wx:for="{{products}}" wx:key="id" class="product-row card">
+      <image class="thumb" src="{{item.image}}" mode="aspectFill" />
+      <view class="product-main">
+        <view class="row-between">
+          <view class="product-name">{{item.name}}</view>
+          <status-pill wx:if="{{item.status === 'available'}}" text="上架" type="success" />
+          <status-pill wx:elif="{{item.status === 'soldout'}}" text="售罄" type="warning" />
+          <status-pill wx:else text="下架" type="danger" />
+        </view>
+        <view class="caption">¥{{item.price}} · 库存 {{item.stock}} · 月售 {{item.sales}}</view>
+        <view class="actions">
+          <button class="action" data-id="{{item.id}}" bindtap="editProduct">编辑</button>
+          <button class="action" data-id="{{item.id}}" bindtap="toggleStatus">{{item.status === 'available' ? '下架' : '上架'}}</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

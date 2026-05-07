@@ -1,0 +1,29 @@
+<view class="product-card">
+  <image class="thumb" src="{{product.image}}" mode="aspectFill" bindtap="openDetail" />
+  <view class="content">
+    <view bindtap="openDetail">
+      <view class="topline">
+        <text class="name">{{product.name}}</text>
+        <status-pill wx:if="{{product.status === 'soldout'}}" text="售罄" type="warning" />
+        <status-pill wx:elif="{{product.status === 'offline'}}" text="已下架" type="danger" />
+      </view>
+      <view class="intro">{{product.intro}}</view>
+      <view class="tags">
+        <text wx:for="{{product.tags}}" wx:key="*this" class="tag">{{item}}</text>
+      </view>
+    </view>
+    <view class="bottom">
+      <view>
+        <text class="price">¥{{product.price}}</text>
+        <text class="sales">月售 {{product.sales}}</text>
+      </view>
+      <view wx:if="{{product.status === 'available'}}" class="stepper">
+        <button wx:if="{{quantity > 0}}" class="step" bindtap="minus">-</button>
+        <text wx:if="{{quantity > 0}}" class="qty">{{quantity}}</text>
+        <button wx:if="{{quantity > 0}}" class="step step-add" bindtap="add">+</button>
+        <button wx:else class="order-btn" bindtap="add">点单</button>
+      </view>
+      <button wx:else class="disabled">不可购</button>
+    </view>
+  </view>
+</view>

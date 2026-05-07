@@ -1,0 +1,65 @@
+<view class="page page--tab menu">
+  <view class="menu-head">
+    <view>
+      <view class="title-lg">今日可点</view>
+      <view class="caption">售罄、已下架和不可购状态会在列表中明确展示</view>
+    </view>
+  </view>
+
+  <view class="menu-layout">
+    <scroll-view class="category-list" scroll-x enable-flex>
+      <button
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="category {{activeCategory === item.id ? 'category-active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="switchCategory"
+      >
+        {{item.name}}
+      </button>
+    </scroll-view>
+
+    <scroll-view class="product-list" scroll-y>
+      <product-card
+        wx:for="{{products}}"
+        wx:key="id"
+        product="{{item}}"
+        quantity="{{item.quantity}}"
+        bind:detail="openDetail"
+        bind:add="addProduct"
+        bind:minus="minusProduct"
+      />
+    </scroll-view>
+  </view>
+
+  <view wx:if="{{cartOpen}}" class="cart-mask" bindtap="toggleCart"></view>
+  <view wx:if="{{cartOpen}}" class="cart-sheet">
+    <view class="row-between cart-title">
+      <text>已选菜品</text>
+      <button bindtap="clearCart">清空</button>
+    </view>
+    <view class="cart-list">
+      <view wx:for="{{cart.items}}" wx:key="productId" class="cart-item">
+        <view>
+          <view class="cart-name">{{item.product.name}}</view>
+          <view class="caption">¥{{item.product.price}} x {{item.quantity}}</view>
+        </view>
+        <view class="row step-actions">
+          <button class="step" data-id="{{item.productId}}" bindtap="minusProduct">-</button>
+          <text>{{item.quantity}}</text>
+          <button class="step step-add" data-id="{{item.productId}}" bindtap="addProduct">+</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="safe-bottom-bar">
+    <view class="cart-bar">
+      <view bindtap="toggleCart">
+        <view class="caption">购物车 {{cart.totalQuantity || 0}} 件</view>
+        <view class="bar-total">¥{{cart.totalAmountText || '0.00'}}</view>
+      </view>
+      <button class="btn {{cart.totalQuantity ? 'btn-primary' : 'btn-disabled'}}" bindtap="goConfirm">去结算</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,37 @@
+<view class="page admin-order-detail">
+  <view class="hero-dark">
+    <view class="row-between">
+      <view class="eyebrow">ORDER</view>
+      <status-pill text="{{order.statusText}}" type="{{order.status === 'completed' ? 'success' : 'accent'}}" />
+    </view>
+    <view class="pickup">{{order.pickupNo}}</view>
+    <view class="meta">{{order.id}}</view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">菜品明细</view>
+    <view wx:for="{{order.items}}" wx:key="productId" class="line">
+      <text>{{item.name}} x {{item.quantity}}</text>
+      <text>¥{{item.price}}</text>
+    </view>
+    <view class="divider"></view>
+    <view class="line total">
+      <text>实付</text>
+      <text>¥{{order.amount}}</text>
+    </view>
+  </view>
+
+  <view class="card block">
+    <view class="block-title">用户与履约</view>
+    <view class="caption">联系人</view>
+    <view class="value">{{order.contact}} · {{order.phone}}</view>
+    <view class="caption">口味偏好</view>
+    <view class="value highlight">{{order.tasteText}}</view>
+    <view class="caption">备注</view>
+    <view class="value">{{order.remark}}</view>
+    <view class="caption">取餐地点</view>
+    <view class="value">{{order.pickupPlace}}</view>
+  </view>
+
+  <button class="btn btn-primary" bindtap="goVerify">去核销</button>
+</view>
