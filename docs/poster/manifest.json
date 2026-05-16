@@ -1,0 +1,225 @@
+{
+  "image_model": "gpt-image-2",
+  "size": "1536x1024",
+  "quality": "high",
+  "format": "png",
+  "updated_at": "2026-05-15T12:24:21.261Z",
+  "images": [
+    {
+      "index": 1,
+      "slug": "电视一-烤肠卤味档",
+      "status": "ok",
+      "prompt_file": "01-电视一-烤肠卤味档.txt",
+      "image_file": "01-电视一-烤肠卤味档.png",
+      "elapsed_seconds": 172.2,
+      "metadata": {
+        "created": 1778847677,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 864,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 864
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6352
+        }
+      }
+    },
+    {
+      "index": 2,
+      "slug": "电视二-镇特产",
+      "status": "ok",
+      "prompt_file": "02-电视二-镇特产.txt",
+      "image_file": "02-电视二-镇特产.png",
+      "elapsed_seconds": 161.7,
+      "metadata": {
+        "created": 1778847674,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 793,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 793
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6281
+        }
+      }
+    },
+    {
+      "index": 3,
+      "slug": "电视三-东北盖饭",
+      "status": "ok",
+      "prompt_file": "03-电视三-东北盖饭.txt",
+      "image_file": "03-电视三-东北盖饭.png",
+      "elapsed_seconds": 165.3,
+      "metadata": {
+        "created": 1778847676,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 686,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 686
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6174
+        }
+      }
+    },
+    {
+      "index": 4,
+      "slug": "电视四-荤素套餐",
+      "status": "ok",
+      "prompt_file": "04-电视四-荤素套餐.txt",
+      "image_file": "04-电视四-荤素套餐.png",
+      "elapsed_seconds": 166.9,
+      "metadata": {
+        "created": 1778847681,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 686,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 686
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6174
+        }
+      }
+    },
+    {
+      "index": 5,
+      "slug": "电视五-茶咖",
+      "status": "ok",
+      "prompt_file": "05-电视五-茶咖.txt",
+      "image_file": "05-电视五-茶咖.png",
+      "elapsed_seconds": 175,
+      "metadata": {
+        "created": 1778847846,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 739,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 739
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6227
+        }
+      }
+    },
+    {
+      "index": 6,
+      "slug": "电视六-零售饮料水",
+      "status": "ok",
+      "prompt_file": "06-电视六-零售饮料水.txt",
+      "image_file": "06-电视六-零售饮料水.png",
+      "elapsed_seconds": 165.2,
+      "metadata": {
+        "created": 1778847842,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 1059,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 1059
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6547
+        }
+      }
+    },
+    {
+      "index": 7,
+      "slug": "电视七-组合套餐",
+      "status": "ok",
+      "prompt_file": "07-电视七-组合套餐.txt",
+      "image_file": "07-电视七-组合套餐.png",
+      "elapsed_seconds": 166.7,
+      "metadata": {
+        "created": 1778847845,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 698,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 698
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6186
+        }
+      }
+    },
+    {
+      "index": 8,
+      "slug": "电视八-甜品水果",
+      "status": "ok",
+      "prompt_file": "08-电视八-甜品水果.txt",
+      "image_file": "08-电视八-甜品水果.png",
+      "elapsed_seconds": 169.6,
+      "metadata": {
+        "created": 1778847855,
+        "size": "1536x1024",
+        "quality": "high",
+        "output_format": "png",
+        "usage": {
+          "input_tokens": 707,
+          "input_tokens_details": {
+            "image_tokens": 0,
+            "text_tokens": 707
+          },
+          "output_tokens": 5488,
+          "output_tokens_details": {
+            "image_tokens": 5488,
+            "text_tokens": 0
+          },
+          "total_tokens": 6195
+        }
+      }
+    }
+  ]
+}

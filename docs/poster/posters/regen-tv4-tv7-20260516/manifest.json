@@ -1,0 +1,33 @@
+{
+  "image_model": "gpt-image-2",
+  "size": "1536x1024",
+  "quality": "medium",
+  "format": "png",
+  "updated_at": "2026-05-16T05:28:32Z",
+  "images": [
+    {
+      "index": 4,
+      "slug": "电视四-荤素套餐",
+      "status": "ok",
+      "prompt_file": "prompts/04-电视四-荤素套餐.txt",
+      "image_file": "04-电视四-荤素套餐.png",
+      "metadata": {
+        "size": "1536x1024",
+        "quality": "medium",
+        "output_format": "png"
+      }
+    },
+    {
+      "index": 7,
+      "slug": "电视七-组合套餐",
+      "status": "ok",
+      "prompt_file": "prompts/07-电视七-组合套餐.txt",
+      "image_file": "07-电视七-组合套餐.png",
+      "metadata": {
+        "size": "1536x1024",
+        "quality": "medium",
+        "output_format": "png"
+      }
+    }
+  ]
+}
