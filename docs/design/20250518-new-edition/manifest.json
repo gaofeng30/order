@@ -1,0 +1,24 @@
+{
+  "model": "gpt-image-2",
+  "task": "TV5 herbal tea poster safe-background correction",
+  "generated_at": "2026-05-17T15:55:42Z",
+  "input_image": "/Users/marcusz/Projects/Test Tool/order/docs/design/20250518-new-edition/tv5-new-edition.png",
+  "input_size": "1536x1024",
+  "output_file": "tv5-new-edition.png",
+  "candidate_file": "candidates/tv5-new-edition-candidate-02-safe-background.png",
+  "output_size": "1536x1024",
+  "prompt_file": "prompts/correction-v2-safe-background.txt",
+  "requested_size": "1536x1024",
+  "quality": "high",
+  "output_format": "png",
+  "elapsed_seconds": 377.8,
+  "manual_review_checklist": [
+    "Top 16-20% contains natural background only, no text",
+    "Bottom 12-16% contains natural background only, no text",
+    "Main title reads exactly: 绥芬河市药食同源实验室",
+    "All title characters use the same font size and baseline",
+    "Upper main card reads: 养生茶  15元/杯",
+    "Lower main card reads: 清脂茶  15元/杯",
+    "The two gourds contain visibly different brewed-tea ingredients"
+  ]
+}

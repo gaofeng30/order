@@ -1,41 +1,60 @@
-<view class="page detail">
-  <image class="hero-img" src="{{product.image}}" mode="aspectFill" />
+<view class="page">
+  <navbar tone="dark" overlay back />
 
-  <view class="soft-card detail-card">
-    <view class="row-between">
-      <view class="title-lg">{{product.name}}</view>
-      <status-pill wx:if="{{product.status === 'available'}}" text="可购买" type="success" />
-      <status-pill wx:elif="{{product.status === 'soldout'}}" text="售罄" type="warning" />
-      <status-pill wx:else text="已下架" type="danger" />
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 大图 -->
+    <imageph item="{{m}}" h="720" radius="0" fontsize="240" tag="{{false}}" />
+
+    <view class="detail-body">
+      <!-- 信息卡 -->
+      <view class="card info-card">
+        <view class="info-top">
+          <view class="info-name serif">{{m.name}}</view>
+          <pill wx:if="{{off}}" s="{{m.status === 'soldout' ? '售罄' : '已下架'}}" />
+          <pill wx:else s="可购" dot />
+        </view>
+        <view class="info-price">
+          <money v="{{m.price}}" size="60" />
+          <text class="info-sold">月售 {{m.sold}} · 到店自提</text>
+        </view>
+        <view class="info-tags">
+          <view wx:for="{{m.tags}}" wx:key="*this" class="pill pill--ok">{{item}}</view>
+        </view>
+        <view class="info-desc">{{m.desc}}</view>
+      </view>
+
+      <!-- 规格 -->
+      <view class="card spec-card">
+        <view class="sec-h" style="padding-bottom:12rpx"><text class="t" style="font-size:30rpx">规格信息</text></view>
+        <view wx:for="{{m.specs}}" wx:key="index" class="spec-row {{index === m.specs.length - 1 ? 'last' : ''}}">
+          <text class="spec-k">{{item[0]}}</text>
+          <text class="spec-v">{{item[1]}}</text>
+        </view>
+      </view>
+
+      <!-- 过敏原 -->
+      <view class="card aller-card">
+        <view class="aller-head">
+          <icon name="warn" size="16" color="#a4873f" />
+          <text class="serif aller-title">过敏原提示</text>
+        </view>
+        <view class="aller-list">
+          <view wx:for="{{m.allergens}}" wx:key="*this" class="pill pill--warn">含 {{item}}</view>
+        </view>
+      </view>
     </view>
-    <view class="price">¥{{product.price}}</view>
-    <view class="body">{{product.desc}}</view>
+    <view style="height:40rpx"></view>
+  </scroll-view>
 
-    <view class="info-grid">
-      <view class="info-item">
-        <text class="caption">规格</text>
-        <text>{{product.specsText}}</text>
-      </view>
-      <view class="info-item">
-        <text class="caption">过敏原提示</text>
-        <text>{{product.allergens}}</text>
-      </view>
-    </view>
-
-    <view class="row-between quantity-row">
-      <view>
-        <view class="title-md">选择数量</view>
-        <view class="caption">购物车已有 {{inCart}} 份</view>
-      </view>
-      <view class="stepper">
-        <button class="step" bindtap="minus">-</button>
-        <text class="qty">{{quantity}}</text>
-        <button class="step step-add" bindtap="add">+</button>
-      </view>
+  <!-- 底部固定栏 -->
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <stepper wx:if="{{qty > 0 && !off}}" value="{{qty}}" bind:sub="sub" bind:add="add" />
+    <view wx:else class="have-qty"><text>购物车已有</text><text class="have-num">{{qty}}</text><text>份</text></view>
+    <view class="btn btn--block {{off ? 'btn--mute' : 'btn--primary'}} addcart-btn" bindtap="addToCart">
+      <block wx:if="{{off}}">{{m.status === 'soldout' ? '已售罄' : '已下架'}}</block>
+      <block wx:else>加入购物车 · <money v="{{m.price}}" color="#ffffff" size="30" /></block>
     </view>
   </view>
 
-  <view class="safe-bottom-bar">
-    <button class="btn {{product.status === 'available' ? 'btn-primary' : 'btn-disabled'}}" bindtap="addCart">加入购物车</button>
-  </view>
+  <toast id="toast" />
 </view>

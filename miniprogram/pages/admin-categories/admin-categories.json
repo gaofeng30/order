@@ -1,6 +1,5 @@
 {
-  "navigationBarTitleText": "分类管理",
-  "usingComponents": {
-    "status-pill": "/components/status-pill/status-pill"
-  }
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {}
 }

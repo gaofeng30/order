@@ -1,65 +1,21 @@
-.profile {
-  display: flex;
-  flex-direction: column;
-  gap: 24rpx;
-}
-
-.profile-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16rpx;
-}
-
+.id-card { border-radius: 0 0 52rpx 52rpx; padding-left: 40rpx; padding-right: 40rpx; padding-bottom: 52rpx; color: #fff; }
+.id-inner { display: flex; align-items: center; gap: 28rpx; position: relative; z-index: 2; }
 .avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 108rpx;
-  height: 108rpx;
-  border-radius: 50%;
-  background: #fafafa;
-  color: #0f172a;
-  font-size: 42rpx;
-  font-weight: 600;
+  width: 120rpx; height: 120rpx; border-radius: 36rpx; background: linear-gradient(135deg, #5b8f3f, #3d6b2f);
+  display: flex; align-items: center; justify-content: center; font-size: 52rpx; font-weight: 700; color: #fff;
 }
+.id-body { flex: 1; }
+.id-head { display: flex; align-items: center; gap: 16rpx; }
+.id-name { font-size: 40rpx; font-weight: 700; }
+.id-sub { font-size: 24rpx; color: var(--ink-on-dark-2); margin-top: 10rpx; }
 
-.light {
-  color: rgba(248, 250, 252, 0.72);
-}
+.body { margin-top: 28rpx; }
+.group { padding: 4rpx 36rpx; margin-bottom: 24rpx; }
+.prow { display: flex; align-items: center; gap: 24rpx; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.prow.last { border-bottom: none; }
+.prow-ico { width: 76rpx; height: 76rpx; border-radius: 22rpx; flex: 0 0 76rpx; display: flex; align-items: center; justify-content: center; }
+.prow-main { flex: 1; min-width: 0; }
+.prow-label { font-size: 29rpx; color: var(--ink); font-weight: 500; }
+.prow-sub { font-size: 24rpx; color: var(--ink-3); margin-top: 6rpx; }
 
-.menu-list {
-  overflow: hidden;
-}
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 132rpx;
-  padding: 0 30rpx;
-  border-bottom: 1rpx solid rgba(15, 23, 42, 0.1);
-  text-align: left;
-}
-
-.menu-item:last-child {
-  border-bottom: 0;
-}
-
-.item-title {
-  font-size: 30rpx;
-  font-weight: 600;
-}
-
-.menu-item > text {
-  color: #64748b;
-  font-size: 46rpx;
-}
-
-.admin-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 30rpx;
-}
+.switch-id { text-align: center; font-size: 25rpx; color: var(--ink-3); padding: 44rpx 0 8rpx; }

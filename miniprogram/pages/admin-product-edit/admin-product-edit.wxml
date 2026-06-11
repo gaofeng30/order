@@ -1,25 +1,47 @@
-<view class="page edit-product">
-  <view class="title-lg">编辑商品</view>
-  <image class="hero" src="{{product.image}}" mode="aspectFill" />
+<view class="page">
+  <navbar tone="light" title="{{isEdit ? '编辑菜品' : '上架新菜'}}" back />
 
-  <view class="card form">
-    <view>
-      <view class="label">商品名称</view>
-      <input class="field" value="{{product.name}}" data-field="name" bindinput="updateField" />
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 图片 -->
+    <view class="img-area">
+      <imageph wx:if="{{isEdit}}" item="{{m}}" h="168" w="168" radius="28" tag="{{false}}" />
+      <view wx:else class="img-up"><icon name="plus" size="20" color="#8f9384" /><text class="img-up-t">上传图片</text></view>
+      <view class="img-tip">建议正方形 800×800，展示当日现做实拍更佳。</view>
     </view>
-    <view>
-      <view class="label">价格</view>
-      <input class="field" type="digit" value="{{product.price}}" data-field="price" bindinput="updateField" />
+
+    <view class="card form">
+      <view class="erow">
+        <text class="erow-lbl">菜品名称</text>
+        <input class="erow-in" placeholder="如 商务双拼饭" placeholder-class="ph" value="{{f.name}}" bindinput="onName" />
+      </view>
+      <view class="erow">
+        <text class="erow-lbl">价格 (¥)</text>
+        <input class="erow-in" type="digit" placeholder="0.00" placeholder-class="ph" value="{{f.price}}" bindinput="onPrice" />
+        <text class="erow-tag">价格键盘</text>
+      </view>
+      <view class="erow">
+        <text class="erow-lbl">库存</text>
+        <input class="erow-in" type="number" placeholder="数量" placeholder-class="ph" value="{{f.stock}}" bindinput="onStock" />
+        <text class="erow-tag">数字键盘</text>
+      </view>
+      <view class="erow cat-row">
+        <text class="erow-lbl">分类</text>
+        <view class="cat-chips">
+          <view wx:for="{{cats}}" wx:key="*this" class="chip {{f.cat === item ? 'on blue' : ''}}" data-c="{{item}}" bindtap="pickCat">{{item}}</view>
+        </view>
+      </view>
+      <view class="desc-row">
+        <text class="erow-lbl">菜品描述</text>
+        <textarea class="desc-in" placeholder="介绍食材、做法与特色…" placeholder-class="ph" value="{{f.desc}}" bindinput="onDesc" maxlength="-1" />
+      </view>
     </view>
-    <view>
-      <view class="label">库存</view>
-      <input class="field" type="number" value="{{product.stock}}" data-field="stock" bindinput="updateField" />
-    </view>
-    <view>
-      <view class="label">描述</view>
-      <textarea class="textarea" value="{{product.desc}}" data-field="desc" bindinput="updateField" />
-    </view>
+    <view style="height:24rpx"></view>
+  </scroll-view>
+
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view class="btn btn--ghost-blue edit-cancel" bindtap="cancel">取消</view>
+    <view class="btn btn--blue edit-save" bindtap="save">保存</view>
   </view>
 
-  <button class="btn btn-primary" bindtap="save">保存商品</button>
+  <toast id="toast" />
 </view>

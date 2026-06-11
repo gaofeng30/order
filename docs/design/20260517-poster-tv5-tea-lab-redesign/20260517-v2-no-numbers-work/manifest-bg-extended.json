@@ -1,0 +1,17 @@
+{
+  "model": "gpt-image-2",
+  "task": "Extend top and bottom background for birch snow herbal poster",
+  "generated_at": "2026-05-17T15:45:46Z",
+  "source_file": "02-birch-snow-herbal.png",
+  "canvas_file": "outpaint-work/02-birch-snow-herbal-centered-canvas.png",
+  "mask_file": "outpaint-work/02-birch-snow-herbal-outpaint-mask.png",
+  "model_background_file": "outpaint-work/02-birch-snow-herbal-model-background.png",
+  "raw_file": "raw-3-2/02-birch-snow-herbal-bg-extended.png",
+  "cropped_11_6_file": "02-birch-snow-herbal-bg-extended.png",
+  "safe_crop_raw_file": "raw-3-2/02-birch-snow-herbal-bg-expanded-safe-crop.png",
+  "safe_crop_11_6_file": "02-birch-snow-herbal-bg-expanded-safe-crop.png",
+  "prompt_file": "prompts/02-birch-snow-herbal-bg-extended.txt",
+  "generated_size": "1536x1024",
+  "quality": "medium",
+  "elapsed_seconds": 68.8
+}

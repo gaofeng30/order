@@ -1,31 +1,33 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
 
 Page({
+  behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    product: {}
+    cats: data.CATS,
+    isEdit: false,
+    m: null,
+    f: { name: '', price: '', stock: '', cat: data.CATS[0], desc: '' },
   },
-
-  onLoad(query) {
-    this.setData({ product: store.getProduct(query.id) });
-  },
-
-  updateField(event) {
-    const field = event.currentTarget.dataset.field;
-    this.setData({ [`product.${field}`]: event.detail.value });
-  },
-
-  save() {
-    const products = getApp().globalData.products;
-    const index = products.findIndex((item) => item.id === this.data.product.id);
-    if (index >= 0) {
-      products[index] = {
-        ...products[index],
-        ...this.data.product,
-        price: Number(this.data.product.price),
-        stock: Number(this.data.product.stock)
-      };
+  onLoad(opts) {
+    if (opts.id) {
+      const m = data.itemById(opts.id);
+      if (m) {
+        this.setData({
+          isEdit: true,
+          m,
+          f: { name: m.name, price: String(m.price), stock: String(m.stock), cat: m.cat, desc: m.desc },
+        });
+      }
     }
-    wx.showToast({ title: "已保存商品", icon: "success" });
-    setTimeout(() => wx.navigateBack(), 500);
-  }
+  },
+  onName(e) { this.setData({ 'f.name': e.detail.value }); },
+  onPrice(e) { this.setData({ 'f.price': (e.detail.value || '').replace(/[^0-9.]/g, '') }); },
+  onStock(e) { this.setData({ 'f.stock': (e.detail.value || '').replace(/[^0-9]/g, '') }); },
+  onDesc(e) { this.setData({ 'f.desc': e.detail.value }); },
+  pickCat(e) { this.setData({ 'f.cat': e.currentTarget.dataset.c }); },
+  cancel() { wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/admin-products/admin-products' }) }); },
+  save() {
+    this.selectComponent('#toast').show('已保存', { icon: 'check' });
+    setTimeout(() => this.cancel(), 600);
+  },
 });

@@ -1,0 +1,10 @@
+<view
+  class="imgph"
+  style="height:{{h}}rpx;border-radius:{{radius}}rpx;{{w ? 'width:' + w + 'rpx;flex:0 0 ' + w + 'rpx;' : 'width:100%;'}}{{hasImg ? 'background:var(--bg2);' : 'background:' + bg + ';'}}"
+>
+  <image wx:if="{{hasImg}}" class="ph-img" src="{{item.img}}" mode="aspectFill" />
+  <block wx:else>
+    <text class="ph-char" style="font-size:{{fs}}rpx">{{ch}}</text>
+    <text wx:if="{{tag}}" class="ph-tag">示意图</text>
+  </block>
+</view>

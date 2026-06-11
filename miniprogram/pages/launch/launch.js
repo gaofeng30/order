@@ -1,8 +1,10 @@
+const { nav } = require('../../utils/util.js');
+
 Page({
-  startUser() {
-    wx.switchTab({ url: "/pages/home/home" });
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: {},
+  go(e) {
+    const to = e.currentTarget.dataset.to;
+    nav.go(to);
   },
-  startAdmin() {
-    wx.navigateTo({ url: "/pages/admin-entry/admin-entry" });
-  }
 });

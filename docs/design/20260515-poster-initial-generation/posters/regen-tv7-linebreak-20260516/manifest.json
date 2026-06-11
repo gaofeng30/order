@@ -1,0 +1,22 @@
+{
+  "image_model": "gpt-image-2",
+  "size": "1536x1024",
+  "quality": "medium",
+  "format": "png",
+  "updated_at": "2026-05-16T05:33:51Z",
+  "images": [
+    {
+      "index": 7,
+      "slug": "电视七-组合套餐",
+      "status": "ok",
+      "prompt_file": "prompts/07-电视七-组合套餐.txt",
+      "image_file": "07-电视七-组合套餐.png",
+      "elapsed_seconds": 55.1,
+      "metadata": {
+        "size": "1536x1024",
+        "quality": "medium",
+        "output_format": "png"
+      }
+    }
+  ]
+}

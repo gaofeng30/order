@@ -1,30 +1,61 @@
-<view class="page admin-products">
-  <view class="row-between">
-    <view>
-      <view class="title-lg">商品管理</view>
-      <view class="caption">搜索、分类、上下架和售罄状态管理</view>
+<view class="page">
+  <navbar tone="light" title="菜品管理" />
+
+  <view class="pad top-area">
+    <view class="search-box">
+      <icon name="search" size="16" color="#8f9384" /><text class="search-ph">搜索菜品名称</text>
     </view>
-    <button class="mini-btn" bindtap="goCategories">分类</button>
+    <!-- 上架新菜 -->
+    <view class="new-banner" bindtap="newProduct">
+      <view class="nb-ring"></view>
+      <view class="nb-ico"><icon name="plus" size="20" color="#ffffff" /></view>
+      <view class="nb-body">
+        <view class="serif nb-title">上架新菜</view>
+        <view class="nb-sub">添加菜品图片、价格与规格</view>
+      </view>
+      <icon name="arrowRight" size="18" color="rgba(255,255,255,0.85)" />
+    </view>
   </view>
 
-  <view class="search card">搜索商品 / 分类筛选</view>
+  <view class="cat-nav">
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segs">
+        <view wx:for="{{cats}}" wx:key="*this" class="seg {{cat === item ? 'on' : ''}}" data-c="{{item}}" bindtap="switchCat">{{item}}</view>
+      </view>
+    </scroll-view>
+  </view>
 
-  <view class="list">
-    <view wx:for="{{products}}" wx:key="id" class="product-row card">
-      <image class="thumb" src="{{item.image}}" mode="aspectFill" />
-      <view class="product-main">
-        <view class="row-between">
-          <view class="product-name">{{item.name}}</view>
-          <status-pill wx:if="{{item.status === 'available'}}" text="上架" type="success" />
-          <status-pill wx:elif="{{item.status === 'soldout'}}" text="售罄" type="warning" />
-          <status-pill wx:else text="下架" type="danger" />
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:for="{{list}}" wx:key="id" class="card prod {{item.s === 'off' ? 'off' : ''}}">
+      <view class="prod-pic" data-id="{{item.id}}" bindtap="edit">
+        <imageph item="{{item}}" h="136" w="136" radius="24" tag="{{false}}" />
+        <view wx:if="{{item.s === 'soldout'}}" class="prod-mask">售罄</view>
+      </view>
+      <view class="prod-info">
+        <view class="prod-head">
+          <text class="prod-name">{{item.name}}</text>
+          <pill s="{{item.pillLabel}}" tone="{{item.pillTone}}" />
         </view>
-        <view class="caption">¥{{item.price}} · 库存 {{item.stock}} · 月售 {{item.sales}}</view>
-        <view class="actions">
-          <button class="action" data-id="{{item.id}}" bindtap="editProduct">编辑</button>
-          <button class="action" data-id="{{item.id}}" bindtap="toggleStatus">{{item.status === 'available' ? '下架' : '上架'}}</button>
+        <view class="prod-meta">
+          <money v="{{item.price}}" blue size="30" />
+          <text class="prod-stock {{item.low ? 'low' : ''}}">库存 {{item.stock}}{{item.low ? ' ·告急' : ''}}</text>
+          <text class="prod-sold">月售 {{item.sold}}</text>
+        </view>
+        <view class="prod-actions">
+          <text class="pa-soldout {{item.s === 'soldout' ? 'green' : ''}}" data-id="{{item.id}}" catchtap="toggleSoldout">{{item.soldoutLabel}}</text>
+          <text class="pa-edit" data-id="{{item.id}}" catchtap="edit">编辑</text>
+          <view class="pa-shelf">
+            <text class="pa-shelf-lbl">上架</text>
+            <view class="toggle {{item.on ? 'on' : ''}}" data-id="{{item.id}}" catchtap="toggleShelf">
+              <view class="toggle-knob"></view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
-  </view>
+    <view style="height:{{safeBottom + 30}}px"></view>
+  </scroll-view>
+
+  <tabbar variant="admin" active="admin-products" />
+  <toast id="toast" />
 </view>

@@ -1,52 +1,33 @@
-.admin-order-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 22rpx;
-}
+.detail-hero { border-radius: 0 0 48rpx 48rpx; padding-left: 40rpx; padding-right: 40rpx; padding-bottom: 44rpx; color: #fff; }
+.dh-row { display: flex; align-items: flex-end; gap: 28rpx; position: relative; z-index: 2; }
+.dh-lbl { font-size: 21rpx; letter-spacing: 8rpx; color: var(--gold); }
+.dh-code { font-size: 104rpx; font-weight: 900; line-height: 1; letter-spacing: 6rpx; }
+.dh-pill { margin-bottom: 12rpx; }
+.dh-no { font-size: 24rpx; color: var(--ink-on-dark-2); margin-top: 20rpx; position: relative; z-index: 2; }
 
-.pickup {
-  margin-top: 38rpx;
-  font-size: 104rpx;
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 1;
+.flavor-card {
+  background: var(--gold-bg); border-radius: var(--r-card); padding: 28rpx 32rpx; margin-top: 28rpx;
+  display: flex; align-items: center; gap: 20rpx;
 }
+.flavor-lbl { font-size: 22rpx; color: var(--gold-2); }
+.flavor-val { font-size: 34rpx; font-weight: 700; color: #8a6d2a; margin-top: 4rpx; }
 
-.meta {
-  margin-top: 12rpx;
-  color: rgba(248, 250, 252, 0.72);
-}
+.sec-card { padding: 4rpx 36rpx; margin-top: 24rpx; }
+.order-item { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.order-item-info { flex: 1; }
+.order-item-name { font-size: 28rpx; color: var(--ink); font-weight: 500; }
+.order-item-unit { font-size: 23rpx; color: var(--ink-3); margin-top: 4rpx; }
+.pay-row { display: flex; justify-content: flex-end; align-items: center; gap: 16rpx; padding: 24rpx 0; border-top: 1rpx solid var(--line); }
+.pay-lbl { font-size: 24rpx; color: var(--ink-3); }
 
-.block {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-  padding: 30rpx;
-}
+.info-row { display: flex; align-items: center; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.info-row.last { border-bottom: none; }
+.ir-label { font-size: 27rpx; color: var(--ink-2); }
+.ir-val { margin-left: auto; font-size: 27rpx; color: var(--ink); }
 
-.block-title {
-  font-size: 31rpx;
-  font-weight: 600;
+.bottom-bar {
+  flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);
+  border-top: 1rpx solid var(--line); display: flex; gap: 24rpx; align-items: center;
 }
-
-.line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18rpx;
-}
-
-.total,
-.value {
-  font-size: 28rpx;
-  font-weight: 600;
-}
-
-.highlight {
-  display: inline-flex;
-  align-self: flex-start;
-  padding: 10rpx 18rpx;
-  border-radius: 999rpx;
-  background: rgba(29, 78, 216, 0.1);
-  color: #1d4ed8;
-}
+.foot-icon { height: 96rpx; padding: 0 32rpx; }
+.foot-main { flex: 1; }

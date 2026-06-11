@@ -1,34 +1,51 @@
-<view class="page page--tab orders">
-  <view class="title-lg">我的订单</view>
-  <scroll-view class="tabs" scroll-x>
-    <button
-      wx:for="{{tabs}}"
-      wx:key="id"
-      class="tab {{active === item.id ? 'tab-active' : ''}}"
-      data-id="{{item.id}}"
-      bindtap="switchTab"
-    >
-      {{item.name}}
-    </button>
-  </scroll-view>
+<view class="page">
+  <navbar tone="light" title="我的订单" />
 
-  <view wx:if="{{orders.length}}" class="list">
-    <view wx:for="{{orders}}" wx:key="id" class="order-card card" data-id="{{item.id}}" bindtap="openOrder">
-      <view class="row-between">
-        <view class="order-id">{{item.id}}</view>
-        <status-pill text="{{item.statusText}}" type="{{item.status === 'completed' ? 'success' : 'accent'}}" />
+  <view class="filter">
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segs">
+        <view
+          wx:for="{{tabs}}"
+          wx:key="*this"
+          class="seg {{tab === item ? 'on' : ''}}"
+          data-t="{{item}}"
+          bindtap="switchTab"
+        >{{item}}<text wx:if="{{counts[item] > 0}}" class="cnt">{{counts[item]}}</text></view>
       </view>
-      <view class="pickup">{{item.pickupNo}}</view>
-      <view class="caption">{{item.createdAt}} · {{item.pickupPlace}}</view>
-      <view class="row-between order-bottom">
-        <text>{{item.items.length}} 件商品</text>
-        <text>¥{{item.amount}}</text>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{list.length === 0}}" class="empty">
+      <icon name="receipt" size="50" color="#d8d8cd" stroke="1.5" />
+      <view class="empty-txt">暂无{{tab === '全部' ? '' : tab}}订单</view>
+      <view class="btn btn--primary btn--sm" bindtap="goMenu">去点单</view>
+    </view>
+
+    <view wx:for="{{list}}" wx:key="id" class="card order-card" data-id="{{item.id}}" bindtap="goDetail">
+      <view class="oc-top">
+        <text class="oc-no">订单号 {{item.no}}</text>
+        <pill s="{{item.status}}" dot />
+      </view>
+      <view class="oc-mid">
+        <view class="oc-code">
+          <text class="oc-code-lbl">号</text>
+          <text class="oc-code-val serif">{{item.code}}</text>
+        </view>
+        <view class="oc-body">
+          <view class="oc-summary ellipsis-1">{{item.summary}}</view>
+          <view class="oc-time"><icon name="clock" size="12" color="#8f9384" /><text>{{item.time}} · 自提</text></view>
+        </view>
+      </view>
+      <view class="oc-foot">
+        <text class="oc-count">共 {{item.itemCount}} 件</text>
+        <text class="oc-total-lbl">合计</text>
+        <money v="{{item.total}}" size="34" />
+        <view wx:if="{{item.status === '待支付'}}" class="btn btn--primary btn--sm oc-pay" catchtap="goPay">去支付</view>
       </view>
     </view>
-  </view>
+    <view style="height:{{safeBottom + 30}}px"></view>
+  </scroll-view>
 
-  <view wx:else class="empty">
-    当前状态下暂无订单
-    <button class="btn btn-primary empty-btn" bindtap="goMenu">去点单</button>
-  </view>
+  <tabbar variant="user" active="orders" />
 </view>

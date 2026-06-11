@@ -1,0 +1,4 @@
+<!-- 展示用：普通 image，可随页面滚动、遵守层级 -->
+<image wx:if="{{src}}" class="qrc-img" style="width:{{size}}rpx;height:{{size}}rpx" src="{{src}}" mode="aspectFit" />
+<!-- 绘制用：离屏 canvas，仅用于生成图片，不直接展示 -->
+<canvas type="2d" id="qrc" class="qrc-canvas" style="width:{{size}}rpx;height:{{size}}rpx"></canvas>

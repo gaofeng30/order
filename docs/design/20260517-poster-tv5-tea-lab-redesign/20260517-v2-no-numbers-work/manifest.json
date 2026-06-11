@@ -1,0 +1,20 @@
+{
+  "model": "gpt-image-2",
+  "task": "TV5 tea lab redesign, targeted birch snow herbal image",
+  "generated_at": "2026-05-17T15:28:32Z",
+  "final_aspect": "11:6",
+  "items": [
+    {
+      "id": "02-birch-snow-herbal",
+      "title": "白桦林寒地草本风",
+      "status": "ok",
+      "image_file": "02-birch-snow-herbal.png",
+      "raw_file": "raw-3-2/02-birch-snow-herbal.png",
+      "prompt_file": "prompts/02-birch-snow-herbal.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 72.8
+    }
+  ]
+}

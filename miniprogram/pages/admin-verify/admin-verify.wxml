@@ -1,32 +1,70 @@
 <view class="page verify-page">
-  <view class="hero-dark verify-hero">
-    <view class="eyebrow">VERIFY</view>
-    <view class="title-xl">窗口核销</view>
-    <view class="intro">支持扫码和手动输入取餐号，减少窗口排队等待。</view>
-  </view>
+  <navbar tone="dark" title="扫码核销" />
 
-  <view class="scan-card soft-card">
-    <view class="scan-frame">
-      <view class="scan-line"></view>
+  <view class="verify-body">
+    <view class="verify-center">
+      <view class="verify-tip">将取餐二维码对准框内，自动识别核销</view>
+      <!-- 取景框 -->
+      <view class="finder">
+        <view class="finder-bg"><view class="scan-line"></view></view>
+        <view class="corner tl"></view>
+        <view class="corner tr"></view>
+        <view class="corner bl"></view>
+        <view class="corner br"></view>
+      </view>
+      <!-- 模拟扫码 -->
+      <view class="sim">
+        <view class="sim-tip">演示：点击模拟扫到</view>
+        <view class="sim-codes">
+          <view wx:for="{{sims}}" wx:key="*this" class="sim-code" data-c="{{item}}" bindtap="simTap">{{item}}</view>
+        </view>
+      </view>
     </view>
-    <view class="caption">扫码核销</view>
-  </view>
 
-  <view class="card form">
-    <view class="row-between">
-      <view class="title-md">手动核销</view>
-      <status-pill text="{{order.statusText}}" type="{{order.status === 'completed' ? 'success' : 'accent'}}" />
+    <!-- 手动兜底 -->
+    <view class="manual" style="padding-bottom:{{safeBottom + 24}}px">
+      <view class="manual-tip">无法扫码？手动输入取餐号</view>
+      <view class="manual-row">
+        <input class="manual-in" placeholder="如 A126" placeholder-class="manual-ph" value="{{code}}" bindinput="onCode" confirm-type="done" bindconfirm="manual" />
+        <view class="btn btn--primary manual-btn" bindtap="manual">核销</view>
+      </view>
     </view>
-    <input class="field code-input" value="{{code}}" bindinput="updateCode" placeholder="输入取餐号，如 A126" />
-    <view class="caption">{{order.id}} · {{order.contact}} · ¥{{order.amount}}</view>
-    <button class="btn {{order.status === 'completed' ? 'btn-disabled' : 'btn-primary'}}" bindtap="verify">
-      {{order.status === 'completed' ? '已核销' : '确认核销'}}
-    </button>
   </view>
 
-  <view wx:if="{{verified}}" class="success card">
-    <view class="title-md">核销完成</view>
-    <view class="caption">订单状态已同步为已完成，数据看板会更新订单与营收状态。</view>
-    <button class="btn btn-dark" bindtap="goDashboard">返回数据看板</button>
+  <!-- 核销结果 -->
+  <view wx:if="{{match}}" class="sheet-mask" bindtap="closeSheet"></view>
+  <view wx:if="{{match}}" class="sheet verify-sheet" style="padding-bottom:{{safeBottom + 28}}px">
+    <block wx:if="{{match.err}}">
+      <view class="vr-err-ico"><icon name="warn" size="32" color="#a4873f" /></view>
+      <view class="serif vr-err-title">{{match.err}}</view>
+      <view class="vr-err-sub">取餐号 {{match.o.code}} · {{match.o.contact}}</view>
+      <view class="btn btn--ghost btn--block vr-back" bindtap="closeSheet">返回继续扫码</view>
+    </block>
+    <block wx:else>
+      <view class="vr-ok-head">
+        <view class="pill pill--ok">✓ 订单匹配 · 待取餐</view>
+        <view class="serif vr-ok-code">{{match.o.code}}</view>
+      </view>
+      <view class="card vr-items">
+        <view wx:for="{{match.rows}}" wx:key="name" class="vr-item">
+          <view class="vr-item-info">
+            <view class="vr-item-name">{{item.name}}</view>
+            <view class="vr-item-unit">¥{{item.p}} × {{item.q}}</view>
+          </view>
+          <money v="{{item.sub}}" blue size="28" />
+        </view>
+      </view>
+      <view class="vr-summary">
+        <text class="vr-contact">{{match.o.contact}} · {{match.o.count}} 件</text>
+        <money v="{{match.o.total}}" blue size="36" />
+      </view>
+      <view class="vr-actions">
+        <view class="btn btn--ghost-blue vr-cancel" bindtap="closeSheet">取消</view>
+        <view class="btn btn--primary vr-confirm" bindtap="confirm"><icon name="check" size="18" color="#ffffff" />确认核销</view>
+      </view>
+    </block>
   </view>
+
+  <tabbar variant="admin" active="admin-verify" />
+  <toast id="toast" />
 </view>

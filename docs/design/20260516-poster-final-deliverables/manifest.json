@@ -1,0 +1,55 @@
+{
+  "folder": "20260516-final-posters",
+  "updated_at": "2026-05-16T08:38:13Z",
+  "note": "Final selection: TV4 uses reordered menu version; TV7 uses latest line-break combo version; other TVs use original generated images.",
+  "items": [
+    {
+      "index": 1,
+      "image_file": "01-电视一-烤肠卤味档.png",
+      "prompt_file": "prompts/01-电视一-烤肠卤味档.txt",
+      "source_version": "original"
+    },
+    {
+      "index": 2,
+      "image_file": "02-电视二-镇特产.png",
+      "prompt_file": "prompts/02-电视二-镇特产.txt",
+      "source_version": "original"
+    },
+    {
+      "index": 3,
+      "image_file": "03-电视三-东北盖饭.png",
+      "prompt_file": "prompts/03-电视三-东北盖饭.txt",
+      "source_version": "original"
+    },
+    {
+      "index": 4,
+      "image_file": "04-电视四-荤素套餐.png",
+      "prompt_file": "prompts/04-电视四-荤素套餐.txt",
+      "source_version": "regen-tv4-tv7-20260516"
+    },
+    {
+      "index": 5,
+      "image_file": "05-电视五-茶咖.png",
+      "prompt_file": "prompts/05-电视五-茶咖.txt",
+      "source_version": "original"
+    },
+    {
+      "index": 6,
+      "image_file": "06-电视六-零售饮料水.png",
+      "prompt_file": "prompts/06-电视六-零售饮料水.txt",
+      "source_version": "original"
+    },
+    {
+      "index": 7,
+      "image_file": "07-电视七-组合套餐.png",
+      "prompt_file": "prompts/07-电视七-组合套餐.txt",
+      "source_version": "regen-tv7-linebreak-20260516"
+    },
+    {
+      "index": 8,
+      "image_file": "08-电视八-甜品水果.png",
+      "prompt_file": "prompts/08-电视八-甜品水果.txt",
+      "source_version": "original"
+    }
+  ]
+}

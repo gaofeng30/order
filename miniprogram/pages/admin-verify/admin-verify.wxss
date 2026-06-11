@@ -1,53 +1,57 @@
-.verify-page {
-  display: flex;
-  flex-direction: column;
-  gap: 22rpx;
-}
+.verify-page { background: #0a0f1a; }
+.verify-body { flex: 1; display: flex; flex-direction: column; color: #fff; padding: 0 48rpx; min-height: 0; }
+.verify-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.verify-tip { font-size: 26rpx; color: rgba(255, 255, 255, .55); margin-bottom: 48rpx; }
 
-.intro {
-  margin-top: 22rpx;
-  color: rgba(248, 250, 252, 0.72);
-  font-size: 28rpx;
-  line-height: 1.55;
-}
-
-.scan-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18rpx;
-  padding: 34rpx;
-}
-
-.scan-frame {
-  position: relative;
-  width: 280rpx;
-  height: 280rpx;
-  border: 2rpx solid #24364a;
-  border-radius: 32rpx;
-  background: #f1f5f9;
-}
-
+.finder { width: 460rpx; height: 460rpx; position: relative; }
+.finder-bg { position: absolute; inset: 0; border-radius: 40rpx; background: rgba(255, 255, 255, .03); overflow: hidden; }
 .scan-line {
-  position: absolute;
-  top: 48%;
-  left: 28rpx;
-  right: 28rpx;
-  height: 4rpx;
-  border-radius: 999rpx;
-  background: #1d4ed8;
+  position: absolute; left: 0; right: 0; height: 4rpx;
+  background: linear-gradient(90deg, transparent, #5b8f3f, transparent);
+  box-shadow: 0 0 28rpx 4rpx rgba(91, 143, 63, .6); animation: scanline 2.4s ease-in-out infinite;
+}
+.corner { position: absolute; width: 68rpx; height: 68rpx; }
+.corner.tl { top: -4rpx; left: -4rpx; border-top: 6rpx solid #5b8f3f; border-left: 6rpx solid #5b8f3f; border-radius: 28rpx 0 0 0; }
+.corner.tr { top: -4rpx; right: -4rpx; border-top: 6rpx solid #5b8f3f; border-right: 6rpx solid #5b8f3f; border-radius: 0 28rpx 0 0; }
+.corner.bl { bottom: -4rpx; left: -4rpx; border-bottom: 6rpx solid #5b8f3f; border-left: 6rpx solid #5b8f3f; border-radius: 0 0 0 28rpx; }
+.corner.br { bottom: -4rpx; right: -4rpx; border-bottom: 6rpx solid #5b8f3f; border-right: 6rpx solid #5b8f3f; border-radius: 0 0 28rpx 0; }
+
+.sim { margin-top: 56rpx; text-align: center; }
+.sim-tip { font-size: 23rpx; color: rgba(255, 255, 255, .4); margin-bottom: 20rpx; }
+.sim-codes { display: flex; gap: 18rpx; justify-content: center; }
+.sim-code {
+  padding: 14rpx 28rpx; border-radius: 999rpx; background: rgba(255, 255, 255, .08);
+  border: 1rpx solid rgba(255, 255, 255, .16); font-size: 26rpx; color: #fff;
 }
 
-.form,
-.success {
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
-  padding: 30rpx;
+.manual { padding-top: 8rpx; }
+.manual-tip { font-size: 24rpx; color: rgba(255, 255, 255, .5); margin-bottom: 18rpx; }
+.manual-row { display: flex; gap: 20rpx; }
+.manual-in {
+  flex: 1; height: 96rpx; border-radius: 28rpx; border: 1rpx solid rgba(255, 255, 255, .18);
+  background: rgba(255, 255, 255, .06); color: #fff; padding: 0 32rpx; font-size: 30rpx; text-transform: uppercase;
 }
+.manual-ph { color: rgba(255, 255, 255, .4); }
+.manual-btn { min-width: 192rpx; }
 
-.code-input {
-  font-size: 44rpx;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-}
+/* 结果弹层 */
+.verify-sheet { padding: 44rpx 40rpx 56rpx; }
+.vr-err-ico { width: 120rpx; height: 120rpx; border-radius: 50%; background: var(--gold-bg); margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.vr-err-title { font-size: 38rpx; font-weight: 700; margin-top: 28rpx; color: var(--ink); text-align: center; }
+.vr-err-sub { font-size: 26rpx; color: var(--ink-2); margin-top: 12rpx; text-align: center; }
+.vr-back { margin-top: 40rpx; }
+
+.vr-ok-head { text-align: center; }
+.vr-ok-head .pill { font-size: 24rpx; }
+.vr-ok-code { font-size: 92rpx; font-weight: 900; color: var(--blue); margin: 20rpx 0 4rpx; }
+.vr-items { padding: 4rpx 32rpx; margin-top: 20rpx; background: var(--bg); box-shadow: none; }
+.vr-item { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.vr-item:last-child { border-bottom: none; }
+.vr-item-info { flex: 1; }
+.vr-item-name { font-size: 27rpx; color: var(--ink); }
+.vr-item-unit { font-size: 22rpx; color: var(--ink-3); margin-top: 4rpx; }
+.vr-summary { display: flex; justify-content: space-between; align-items: center; padding: 24rpx 8rpx 0; }
+.vr-contact { font-size: 26rpx; color: var(--ink-2); }
+.vr-actions { display: flex; gap: 24rpx; margin-top: 36rpx; }
+.vr-cancel { flex: 1; }
+.vr-confirm { flex: 1.6; }

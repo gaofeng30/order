@@ -1,23 +1,82 @@
-<view class="page admin-orders">
-  <view class="title-lg">订单管理</view>
-  <view class="caption">窗口高频查看：订单号、用户、金额、状态、下单时间和取餐号。</view>
+<view class="page">
+  <navbar tone="light" title="订单管理">
+    <view slot="right" wx:if="{{lane === '待接单' && list.length > 0}}" class="batch-toggle" bindtap="toggleBatch">{{batch ? '取消' : '批量'}}</view>
+  </navbar>
 
-  <view class="list">
-    <view wx:for="{{orders}}" wx:key="id" class="order-card card">
-      <view class="row-between" data-id="{{item.id}}" bindtap="openOrder">
-        <view>
-          <view class="order-id">{{item.id}}</view>
-          <view class="caption">{{item.createdAt}} · {{item.contact}}</view>
-        </view>
-        <status-pill text="{{item.statusText}}" type="{{item.status === 'completed' ? 'success' : 'accent'}}" />
-      </view>
-      <view class="row-between pickup-line">
-        <view>
-          <view class="pickup">{{item.pickupNo}}</view>
-          <view class="caption">{{item.items.length}} 件商品 · ¥{{item.amount}}</view>
-        </view>
-        <button class="verify" data-id="{{item.id}}" bindtap="goVerify">核销</button>
-      </view>
+  <!-- 搜索 -->
+  <view class="pad search-wrap">
+    <view class="search-box">
+      <icon name="search" size="16" color="#8f9384" />
+      <text class="search-ph">搜索 取餐号 / 订单号 / 手机号</text>
+      <icon name="filter" size="16" color="#8f9384" />
     </view>
   </view>
+
+  <!-- 泳道 -->
+  <view class="lane-nav">
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segs">
+        <view
+          wx:for="{{lanes}}"
+          wx:key="*this"
+          class="seg {{lane === item ? 'on' : ''}}"
+          data-l="{{item}}"
+          bindtap="switchLane"
+        >{{item}}<text wx:if="{{counts[item] > 0}}" class="cnt">{{counts[item]}}</text></view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{list.length === 0}}" class="empty">
+      <icon name="layers" size="46" color="#d8d8cd" stroke="1.5" />
+      <view class="empty-txt">「{{lane}}」暂无订单</view>
+    </view>
+
+    <view wx:for="{{list}}" wx:key="id" class="card aorder" data-id="{{item.id}}" bindtap="cardTap">
+      <view wx:if="{{batch && lane === '待接单'}}" class="check {{selMap[item.id] ? 'on' : ''}}">
+        <icon wx:if="{{selMap[item.id]}}" name="check" size="13" color="#ffffff" />
+      </view>
+      <view class="aorder-body">
+        <view class="aorder-head">
+          <text class="serif aorder-code">{{item.code}}</text>
+          <pill s="{{item.status}}" dot />
+          <money v="{{item.total}}" blue size="34" />
+        </view>
+        <view class="aorder-meta">
+          <text>{{item.contact}}</text><text>·</text><text>{{item.count}} 件</text><text>·</text><text>{{item.time}} 下单</text>
+        </view>
+        <view wx:if="{{item.showBand}}" class="aorder-band">
+          <icon name="flame" size="13" color="#a4873f" /><text>{{item.band}}</text>
+        </view>
+        <view class="aorder-summary ellipsis-1">{{item.summary}}</view>
+        <view wx:if="{{!batch}}" class="aorder-foot">
+          <view
+            wx:if="{{item.meta.isView}}"
+            class="btn btn--ghost-blue btn--sm adv-btn"
+            data-id="{{item.id}}"
+            catchtap="viewOrder"
+          >{{item.meta.label}}</view>
+          <view
+            wx:else
+            class="btn {{item.meta.cls}} btn--sm adv-btn"
+            data-id="{{item.id}}"
+            catchtap="advance"
+          ><icon wx:if="{{item.meta.scan}}" name="scan" size="15" color="#ffffff" />{{item.meta.label}}</view>
+        </view>
+      </view>
+    </view>
+    <view style="height:{{safeBottom + (batch ? 180 : 60)}}px"></view>
+  </scroll-view>
+
+  <!-- 批量接单浮栏 -->
+  <view wx:if="{{batch && lane === '待接单'}}" class="floatbar" style="bottom:{{safeBottom + 116}}px">
+    <view class="batch-bar">
+      <text class="batch-info">已选 <text class="batch-n">{{selCount}}</text> 单</text>
+      <view class="btn {{selCount ? 'btn--primary' : 'btn--mute'}} batch-go" bindtap="doBatch">批量接单</view>
+    </view>
+  </view>
+
+  <tabbar variant="admin" active="admin-orders" />
+  <toast id="toast" />
 </view>

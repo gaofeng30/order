@@ -1,32 +1,66 @@
-<view class="page page--tab profile">
-  <view class="profile-card hero-dark">
-    <view class="avatar">{{avatarText}}</view>
-    <view class="title-lg">{{user.name}}</view>
-    <view class="body light">{{user.role}} · {{user.company}}</view>
-    <status-pill text="已授权" type="success" />
-  </view>
+<view class="page">
+  <navbar tone="dark" overlay title="个人中心" />
 
-  <view class="card menu-list">
-    <button class="menu-item" bindtap="goOrders">
-      <view>
-        <view class="item-title">我的订单</view>
-        <view class="caption">待支付、待取餐、已完成、已取消</view>
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 身份卡 -->
+    <view class="hero-dark id-card" style="padding-top:{{navTotal}}px">
+      <view class="ring r1"></view>
+      <view class="ring r2"></view>
+      <view class="id-inner">
+        <view class="avatar serif">林</view>
+        <view class="id-body">
+          <view class="id-head">
+            <text class="serif id-name">林先生</text>
+            <pill s="已授权" tone="ok" />
+          </view>
+          <view class="id-sub">普通会员 · 138****6620</view>
+        </view>
       </view>
-      <text>›</text>
-    </button>
-    <button class="menu-item" bindtap="disabled">
-      <view>
-        <view class="item-title">外卖配送</view>
-        <view class="caption">暂未开放</view>
+    </view>
+
+    <view class="pad body">
+      <view class="card group">
+        <view class="prow" bindtap="toOrders">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="receipt" size="19" color="#467a32" /></view>
+          <view class="prow-main">
+            <view class="prow-label">我的订单</view>
+            <view class="prow-sub">{{pend > 0 ? pend + ' 单待取餐' : '查看全部订单'}}</view>
+          </view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+        <view class="prow">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="truck" size="19" color="#9a9e8c" /></view>
+          <view class="prow-main"><view class="prow-label">外卖配送</view></view>
+          <view class="pill pill--mute">暂未开放</view>
+        </view>
+        <view class="prow last" bindtap="service">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="headset" size="19" color="#2a5fa6" /></view>
+          <view class="prow-main">
+            <view class="prow-label">联系客服</view>
+            <view class="prow-sub">0596-388 1688</view>
+          </view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
       </view>
-      <text>›</text>
-    </button>
-    <button class="menu-item">
-      <view>
-        <view class="item-title">联系客服</view>
-        <view class="caption">窗口电话：400-800-2026</view>
+
+      <view class="card group">
+        <view class="prow">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="gift" size="19" color="#a4873f" /></view>
+          <view class="prow-main"><view class="prow-label">会员权益</view></view>
+          <view class="pill pill--warn">建设中</view>
+        </view>
+        <view class="prow last" bindtap="settings">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="settings" size="19" color="#5e6354" /></view>
+          <view class="prow-main"><view class="prow-label">设置</view></view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
       </view>
-      <text>›</text>
-    </button>
-  </view>
+
+      <view class="switch-id" bindtap="reset">切换身份入口 ›</view>
+      <view style="height:{{safeBottom + 30}}px"></view>
+    </view>
+  </scroll-view>
+
+  <tabbar variant="user" active="profile" />
+  <toast id="toast" />
 </view>

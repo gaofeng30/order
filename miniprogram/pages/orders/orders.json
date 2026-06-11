@@ -1,6 +1,5 @@
 {
-  "navigationBarTitleText": "我的订单",
-  "usingComponents": {
-    "status-pill": "/components/status-pill/status-pill"
-  }
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {}
 }

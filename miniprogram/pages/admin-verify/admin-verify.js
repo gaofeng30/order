@@ -1,37 +1,32 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
 
 Page({
+  behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    order: {},
-    code: "",
-    verified: false
+    sims: ['A118', 'A126', 'A090'],
+    code: '',
+    match: null,     // { o, err, rows }
   },
-
-  onLoad(query) {
-    const order = query.id ? store.getOrder(query.id) : store.getOrders("ready")[0];
-    this.setData({
-      order,
-      code: order ? order.pickupNo : ""
-    });
+  onCode(e) { this.setData({ code: (e.detail.value || '').toUpperCase() }); },
+  findOrder(c) {
+    return getApp().globalData.aOrders.find(o => o.code.toUpperCase() === c.toUpperCase());
   },
-
-  updateCode(event) {
-    this.setData({ code: event.detail.value.toUpperCase() });
+  simTap(e) { this.tryVerify(e.currentTarget.dataset.c); },
+  manual() { if (this.data.code) this.tryVerify(this.data.code); },
+  tryVerify(c) {
+    const o = this.findOrder(c);
+    if (!o) { this.selectComponent('#toast').show('无效取餐号「' + c + '」', { icon: 'warn' }); return; }
+    let err = '';
+    if (o.status === '已完成') err = '该订单已核销';
+    else if (o.status !== '待取餐') err = (o.status === '待接单' || o.status === '制作中') ? '订单尚未备好' : '订单状态异常';
+    const rows = o.items.map(([id, q, p]) => { const m = data.itemById(id); return { name: m.name, q, p, sub: p * q }; });
+    this.setData({ match: { o, err, rows } });
   },
-
-  verify() {
-    const orders = store.getOrders("all");
-    const order = orders.find((item) => item.pickupNo === this.data.code || item.id === this.data.order.id);
-    if (!order) {
-      wx.showToast({ title: "未找到取餐号", icon: "none" });
-      return;
-    }
-    const verified = store.verifyOrder(order.id);
-    this.setData({ order: verified, verified: true });
-    wx.showToast({ title: "核销成功", icon: "success" });
+  closeSheet() { this.setData({ match: null }); },
+  confirm() {
+    const o = this.data.match.o;
+    o.status = '已完成';
+    this.setData({ match: null, code: '' });
+    this.selectComponent('#toast').show('核销成功 · 看板营收/订单已更新', { icon: 'check' });
   },
-
-  goDashboard() {
-    wx.navigateTo({ url: "/pages/admin-dashboard/admin-dashboard" });
-  }
 });

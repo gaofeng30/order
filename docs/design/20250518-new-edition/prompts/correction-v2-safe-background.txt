@@ -1,0 +1,46 @@
+Edit the input 3:2 poster into a cleaner final 3:2 layout with more natural background at the top and bottom.
+
+Most important correction:
+- The top band and bottom band must contain only natural scenery background, no typography and no product cards.
+- Add more empty natural background above and below the main poster content.
+- Keep all important content inside the central visual safe area.
+
+Top natural background:
+- The top 16-20% of the canvas should be pale blue sky, cold mist, distant snowy mountains, soft birch branches, and open winter atmosphere only.
+- Do not place any Chinese characters, price, product name, logo, card, face, or gourd in this top background band.
+
+Bottom natural background:
+- The bottom 12-16% of the canvas should be icy water reflection, light blue ripples, snow reflection, and soft mist only.
+- Do not place any Chinese characters, price, product name, logo, card, face, or gourd in this bottom background band.
+
+Main title:
+- Keep the title text exactly: "绥芬河市药食同源实验室".
+- Move the title down into the central safe area, below the top natural background band.
+- Every Chinese character in "绥芬河市药食同源实验室" must use the same font size, same baseline, same weight, and same style.
+- Do not make "绥芬河市" larger or smaller than "药食同源实验室".
+- The title should still be prominent, clean, readable, and elegant, but it must not touch the top edge.
+
+Keep exact product text:
+- Upper main card: "养生茶  15元/杯".
+- Lower main card: "清脂茶  15元/杯".
+- Keep "15元/杯" large and warm gold.
+- Keep small right-side drink cards as "蜂蜜柠檬茶  5元/杯" and "鲜果茶  8元/杯".
+
+Keep gourd ingredient difference:
+- Upper "养生茶" gourd: amber-gold brewed tea with ginseng slices, astragalus slices, red dates, goji berries, chrysanthemum, and a little dried tangerine peel.
+- Lower "清脂茶" gourd: light brown-orange brewed tea with green lotus leaf fragments, hawthorn slices, dark cassia seed grains, dried tangerine peel, coix seed or poria cubes.
+- The two gourds must remain visibly different.
+
+Preserve:
+- Preserve the blue-white snowy birch forest, icy lake, Li Bai figure on the right, transparent herbal gourds on the left, business-blue cards, and premium herbal laboratory mood.
+- Preserve the overall 3:2 landscape format.
+
+Forbidden:
+- No text in the top natural background band.
+- No text in the bottom natural background band.
+- No title touching the top edge.
+- No inconsistent title character size.
+- No "药食同源养生茶".
+- No "药食同源消脂茶".
+- No "消脂茶".
+- No English text, QR code, logo, watermark, serial number, red festive style, lanterns, Spring Festival look, coffee, garbled Chinese, duplicated text, mirrored text, cropped text, frame, border, white edge, gray edge, or pasted-photo look.

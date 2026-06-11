@@ -1,27 +1,21 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
 
 Page({
-  data: {
-    order: {},
-    qrCells: []
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: { o: null, store: data.STORE, rows: [], flavorsStr: '' },
+  onLoad(opts) {
+    const orders = getApp().globalData.orders;
+    const o = orders.find(x => x.id === opts.id) || orders[0] || data.USER_ORDERS[0];
+    const rows = o.items.map(([id, q, p]) => {
+      const m = data.itemById(id);
+      return { name: m.name, q, p, sub: p * q };
+    });
+    this.setData({ o, rows, flavorsStr: (o.flavors || []).join(' / ') });
   },
-
-  onLoad(query) {
-    const order = store.getOrder(query.id);
-    this.setData({
-      order,
-      qrCells: Array.from({ length: 49 }).map((_, index) => ({
-        id: index,
-        active: [0, 1, 2, 6, 7, 8, 12, 14, 18, 20, 23, 24, 28, 30, 34, 36, 40, 41, 42, 46, 47, 48].includes(index)
-      }))
+  copy() {
+    wx.setClipboardData({
+      data: this.data.o.code,
+      success: () => this.selectComponent('#toast').show('取餐号 ' + this.data.o.code + ' 已复制', { icon: 'copy' }),
     });
   },
-
-  goOrders() {
-    wx.switchTab({ url: "/pages/orders/orders" });
-  },
-
-  copyCode() {
-    wx.setClipboardData({ data: this.data.order.pickupNo });
-  }
 });

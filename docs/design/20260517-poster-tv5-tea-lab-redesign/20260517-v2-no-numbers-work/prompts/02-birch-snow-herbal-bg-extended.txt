@@ -1,0 +1,24 @@
+对输入图片做上下背景扩充（outpainting），只补全透明的上边和下边区域，保持中间已有海报内容完全不变。
+
+目标：
+- 输出 1536x1024 横版 3:2 原图，用于后续居中裁切成 11:6。
+- 中间已有 11:6 海报区域必须保持原样：不要移动、不要缩放、不要重绘标题、商品名、价格、葫芦、人物、饮品卡片、白桦树。
+- 顶部安全区内的中文标题「绥芬河市药食同源实验室」必须完整保留，不要遮挡、裁切、改字或移除。
+- 只在上方和下方透明留白区域自然延展背景，让它看起来像原本就是完整画面，而不是相框、白边、灰边、模糊边框或贴图边框。
+
+上方扩充：
+- 延续浅蓝天空、冷雾、远山、白桦林枝叶的氛围。
+- 可以增加柔和蓝白渐变、薄雾、远处树梢和天空留白。
+- 不要新增文字，不要新增标题，不要把原标题改掉，也不要用雾气、树枝或渐变遮挡原标题。
+
+下方扩充：
+- 延续冰雪水面、浅蓝反射、雪地、轻微雾气和柔和光影。
+- 可以自然扩展水面波纹、雪地反光和冷色阴影。
+- 不要新增商品、不要新增饮品卡片、不要新增文字。
+
+风格：
+高级商务蓝、雾白、银蓝、寒地白桦林、药食同源实验室氛围，整体干净、清爽、和谐。
+
+严格负面要求：
+do not change the central poster, no frame, no border, no white border, no gray border, no shrink effect, no duplicate text, no new text, no cropped title, no altered Chinese characters, no extra products, no logo, no QR code, no watermark, no red festive style, no lanterns.
+

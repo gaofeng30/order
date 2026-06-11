@@ -1,37 +1,58 @@
-<view class="page admin-order-detail">
-  <view class="hero-dark">
-    <view class="row-between">
-      <view class="eyebrow">ORDER</view>
-      <status-pill text="{{order.statusText}}" type="{{order.status === 'completed' ? 'success' : 'accent'}}" />
+<view class="page">
+  <navbar tone="dark" overlay back title="订单详情" />
+
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="hero-dark detail-hero" style="padding-top:{{navTotal}}px">
+      <view class="ring r1"></view>
+      <view class="dh-row">
+        <view>
+          <view class="dh-lbl">取餐号</view>
+          <view class="serif dh-code">{{o.code}}</view>
+        </view>
+        <view class="dh-pill"><pill s="{{o.status}}" ondark /></view>
+      </view>
+      <view class="dh-no">订单号 {{o.no}} · {{o.time}} 下单</view>
     </view>
-    <view class="pickup">{{order.pickupNo}}</view>
-    <view class="meta">{{order.id}}</view>
+
+    <view class="pad">
+      <!-- 口味高亮 -->
+      <view wx:if="{{flavorShow}}" class="flavor-card">
+        <icon name="flame" size="20" color="#a4873f" />
+        <view>
+          <view class="flavor-lbl">口味要求 · 制作请注意</view>
+          <view class="serif flavor-val">{{o.flavor}}</view>
+        </view>
+      </view>
+
+      <view class="card sec-card">
+        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">菜品明细</text></view>
+        <view wx:for="{{rows}}" wx:key="name" class="order-item">
+          <view class="order-item-info">
+            <view class="order-item-name">{{item.name}}</view>
+            <view class="order-item-unit">¥{{item.p}} × {{item.q}}</view>
+          </view>
+          <money v="{{item.sub}}" size="30" />
+        </view>
+        <view class="pay-row"><text class="pay-lbl">实付</text><money v="{{o.total}}" blue size="42" /></view>
+      </view>
+
+      <view class="card sec-card">
+        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">用户与履约</text></view>
+        <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contact}}</text></view>
+        <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.phone}}</text></view>
+        <view wx:if="{{o.note}}" class="info-row"><text class="ir-label">备注</text><text class="ir-val">{{o.note}}</text></view>
+        <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{store.branch}}</text></view>
+      </view>
+      <view style="height:24rpx"></view>
+    </view>
+  </scroll-view>
+
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="print"><icon name="printer" size="17" color="#0b2f63" />打印</view>
+    <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="call"><icon name="phone" size="16" color="#0b2f63" /></view>
+    <view wx:if="{{meta.isView}}" class="btn btn--mute foot-main">{{o.status}}</view>
+    <view wx:else class="btn {{meta.cls}} foot-main" bindtap="advance"><icon wx:if="{{meta.scan}}" name="scan" size="18" color="#ffffff" />{{meta.label}}</view>
   </view>
 
-  <view class="card block">
-    <view class="block-title">菜品明细</view>
-    <view wx:for="{{order.items}}" wx:key="productId" class="line">
-      <text>{{item.name}} x {{item.quantity}}</text>
-      <text>¥{{item.price}}</text>
-    </view>
-    <view class="divider"></view>
-    <view class="line total">
-      <text>实付</text>
-      <text>¥{{order.amount}}</text>
-    </view>
-  </view>
-
-  <view class="card block">
-    <view class="block-title">用户与履约</view>
-    <view class="caption">联系人</view>
-    <view class="value">{{order.contact}} · {{order.phone}}</view>
-    <view class="caption">口味偏好</view>
-    <view class="value highlight">{{order.tasteText}}</view>
-    <view class="caption">备注</view>
-    <view class="value">{{order.remark}}</view>
-    <view class="caption">取餐地点</view>
-    <view class="value">{{order.pickupPlace}}</view>
-  </view>
-
-  <button class="btn btn-primary" bindtap="goVerify">去核销</button>
+  <toast id="toast" />
 </view>

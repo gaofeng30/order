@@ -1,0 +1,15 @@
+<view class="tabbar" style="padding-bottom:{{safeBottom + 8}}px">
+  <view
+    wx:for="{{items}}"
+    wx:key="id"
+    class="tab"
+    data-id="{{item.id}}"
+    bindtap="onTap"
+  >
+    <view class="tab-ico">
+      <icon name="{{item.icon}}" size="23" color="{{active === item.id ? activeColor : inactiveColor}}" stroke="{{active === item.id ? 2.2 : 1.9}}" />
+      <view wx:if="{{item.badge > 0}}" class="badge">{{item.badge > 99 ? '99+' : item.badge}}</view>
+    </view>
+    <text class="tab-label" style="color:{{active === item.id ? activeColor : inactiveColor}}">{{item.label}}</text>
+  </view>
+</view>
