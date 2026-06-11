@@ -1,3 +1,5 @@
 {
-  "navigationBarTitleText": "选择入口"
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {}
 }

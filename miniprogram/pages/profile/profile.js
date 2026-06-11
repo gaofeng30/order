@@ -1,23 +1,14 @@
+const { nav } = require('../../utils/util.js');
+
 Page({
-  data: {
-    user: {},
-    settings: {}
-  },
-
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: { pend: 0 },
   onShow() {
-    const app = getApp();
-    this.setData({
-      user: app.globalData.user,
-      avatarText: app.globalData.user.name.slice(0, 1),
-      settings: app.globalData.settings
-    });
+    this.setData({ pend: getApp().globalData.orders.filter(o => o.status === '待取餐').length });
   },
-
-  goOrders() {
-    wx.switchTab({ url: "/pages/orders/orders" });
-  },
-
-  disabled() {
-    wx.showToast({ title: "外卖暂未开放", icon: "none" });
-  }
+  toOrders() { nav.tabTo('orders'); },
+  toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
+  service() { this.toast('正在拨打 0596-388 1688', 'phone'); },
+  settings() { this.toast('设置建设中', 'settings'); },
+  reset() { nav.reset(); },
 });

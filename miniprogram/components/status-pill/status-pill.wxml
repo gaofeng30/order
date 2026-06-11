@@ -1,1 +1,0 @@
-<view class="pill pill-{{type}}">{{text}}</view>

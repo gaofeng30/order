@@ -1,40 +1,25 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
+const { cart } = require('../../utils/util.js');
 
 Page({
-  data: {
-    product: {},
-    quantity: 1,
-    inCart: 0
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: { m: null, qty: 0, off: false },
+  onLoad(opts) {
+    const m = data.itemById(opts.id) || data.MENU[0];
+    this.setData({ m, off: m.status !== 'on' });
+    this.refresh();
   },
-
-  onLoad(query) {
-    const product = store.getProduct(query.id);
-    const summary = store.getCartSummary();
-    const cartItem = summary.items.find((item) => item.productId === query.id);
-    this.setData({
-      product: {
-        ...product,
-        specsText: product.specs.join(" / ")
-      },
-      inCart: cartItem ? cartItem.quantity : 0
-    });
+  onShow() { this.refresh(); },
+  refresh() {
+    if (!this.data.m) return;
+    this.setData({ qty: getApp().globalData.cart[this.data.m.id] || 0 });
   },
-
-  minus() {
-    this.setData({ quantity: Math.max(1, this.data.quantity - 1) });
+  add() { cart.add(this.data.m.id); this.refresh(); },
+  sub() { cart.sub(this.data.m.id); this.refresh(); },
+  addToCart() {
+    if (this.data.off) return;
+    cart.add(this.data.m.id);
+    this.refresh();
+    this.selectComponent('#toast').show('已加入购物车', { icon: 'cart' });
   },
-
-  add() {
-    this.setData({ quantity: this.data.quantity + 1 });
-  },
-
-  addCart() {
-    if (this.data.product.status !== "available") {
-      wx.showToast({ title: "当前不可购买", icon: "none" });
-      return;
-    }
-    store.addToCart(this.data.product.id, this.data.quantity);
-    wx.showToast({ title: "已加入购物车", icon: "success" });
-    setTimeout(() => wx.navigateBack(), 450);
-  }
 });

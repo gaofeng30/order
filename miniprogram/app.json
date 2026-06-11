@@ -9,47 +9,36 @@
     "pages/order-detail/order-detail",
     "pages/orders/orders",
     "pages/profile/profile",
-    "pages/admin-entry/admin-entry",
     "pages/admin-dashboard/admin-dashboard",
-    "pages/admin-products/admin-products",
-    "pages/admin-product-edit/admin-product-edit",
-    "pages/admin-categories/admin-categories",
     "pages/admin-orders/admin-orders",
     "pages/admin-order-detail/admin-order-detail",
     "pages/admin-verify/admin-verify",
+    "pages/admin-products/admin-products",
+    "pages/admin-product-edit/admin-product-edit",
+    "pages/admin-categories/admin-categories",
+    "pages/admin-profile/admin-profile",
     "pages/admin-settings/admin-settings"
   ],
   "window": {
-    "navigationBarTitleText": "XX食堂",
-    "navigationBarBackgroundColor": "#f5f5f7",
+    "navigationStyle": "custom",
+    "backgroundColor": "#f4f3ec",
+    "backgroundTextStyle": "dark",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f5f5f7",
-    "backgroundTextStyle": "light"
+    "navigationBarTitleText": "绥安食品",
+    "enablePullDownRefresh": false
   },
-  "tabBar": {
-    "color": "#6e6e73",
-    "selectedColor": "#0071e3",
-    "backgroundColor": "#ffffff",
-    "borderStyle": "white",
-    "list": [
-      {
-        "pagePath": "pages/home/home",
-        "text": "首页"
-      },
-      {
-        "pagePath": "pages/menu/menu",
-        "text": "点单"
-      },
-      {
-        "pagePath": "pages/orders/orders",
-        "text": "订单"
-      },
-      {
-        "pagePath": "pages/profile/profile",
-        "text": "我的"
-      }
-    ]
+  "usingComponents": {
+    "icon": "/components/icon/icon",
+    "navbar": "/components/navbar/navbar",
+    "tabbar": "/components/tabbar/tabbar",
+    "pill": "/components/pill/pill",
+    "money": "/components/money/money",
+    "stepper": "/components/stepper/stepper",
+    "imageph": "/components/imageph/imageph",
+    "toast": "/components/toast/toast",
+    "qrcode": "/components/qrcode/qrcode"
   },
   "style": "v2",
+  "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"
 }

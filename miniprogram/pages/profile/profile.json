@@ -1,6 +1,5 @@
 {
-  "navigationBarTitleText": "我的",
-  "usingComponents": {
-    "status-pill": "/components/status-pill/status-pill"
-  }
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "white",
+  "usingComponents": {}
 }

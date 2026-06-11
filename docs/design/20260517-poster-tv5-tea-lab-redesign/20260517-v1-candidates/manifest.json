@@ -1,0 +1,44 @@
+{
+  "model": "gpt-image-2",
+  "task": "TV5 tea lab redesign, three candidate images",
+  "generated_at": "2026-05-17T07:54:50Z",
+  "final_aspect": "11:6",
+  "items": [
+    {
+      "id": "01-suifenhe-port-lab",
+      "title": "绥芬河口岸实验室风",
+      "status": "ok",
+      "image_file": "01-suifenhe-port-lab.png",
+      "raw_file": "raw-3-2/01-suifenhe-port-lab.png",
+      "prompt_file": "prompts/01-suifenhe-port-lab.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 70.4
+    },
+    {
+      "id": "02-birch-snow-herbal",
+      "title": "白桦林寒地草本风",
+      "status": "ok",
+      "image_file": "02-birch-snow-herbal.png",
+      "raw_file": "raw-3-2/02-birch-snow-herbal.png",
+      "prompt_file": "prompts/02-birch-snow-herbal.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 61.6
+    },
+    {
+      "id": "03-oriental-pharmacy",
+      "title": "东方药房陈列风",
+      "status": "ok",
+      "image_file": "03-oriental-pharmacy.png",
+      "raw_file": "raw-3-2/03-oriental-pharmacy.png",
+      "prompt_file": "prompts/03-oriental-pharmacy.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 65.1
+    }
+  ]
+}

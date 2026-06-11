@@ -1,0 +1,5 @@
+<view class="stepper {{blue ? 'blue' : ''}}">
+  <view class="minus" catchtap="onSub">−</view>
+  <text class="qty tnum">{{value}}</text>
+  <view class="plus" catchtap="onAdd">＋</view>
+</view>

@@ -1,15 +1,26 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
+const { advanceOrder, advanceMeta } = require('../../utils/util.js');
 
 Page({
-  data: {
-    order: {}
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: { o: null, store: data.STORE, rows: [], meta: {}, flavorShow: false },
+  onLoad(opts) {
+    this._id = opts.id;
+    this.build();
   },
-
-  onLoad(query) {
-    this.setData({ order: store.getOrder(query.id) });
+  onShow() { this.build(); },
+  build() {
+    const orders = getApp().globalData.aOrders;
+    const o = orders.find(x => x.id === this._id) || getApp().globalData._aSel || orders[0];
+    const rows = o.items.map(([id, q, p]) => {
+      const m = data.itemById(id);
+      return { name: m.name, q, p, sub: p * q };
+    });
+    this.setData({ o, rows, meta: advanceMeta(o.status), flavorShow: o.flavor && o.flavor !== '—' });
   },
-
-  goVerify() {
-    wx.navigateTo({ url: `/pages/admin-verify/admin-verify?id=${this.data.order.id}` });
-  }
+  advance() {
+    advanceOrder(this.data.o.id, this.selectComponent('#toast'), () => this.build());
+  },
+  print() { this.selectComponent('#toast').show('小票已发送至打印机', { icon: 'printer' }); },
+  call() { this.selectComponent('#toast').show('正在拨打 ' + this.data.o.phone, { icon: 'phone' }); },
 });

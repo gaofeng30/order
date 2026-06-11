@@ -1,42 +1,121 @@
-<view class="page page--tab home">
-  <view class="hero-dark home-hero">
-    <view class="row-between">
-      <view class="eyebrow">SELF PICKUP</view>
-      <status-pill text="{{settings.status}}" type="success" />
-    </view>
-    <view class="title-xl">{{settings.brand}}</view>
-    <view class="hero-meta">
-      <text>{{settings.pickupPlace}}</text>
-      <text>{{settings.businessTime}}</text>
-    </view>
-    <button class="btn btn-primary hero-cta" bindtap="goMenu">立即点单</button>
-  </view>
+<view class="page">
+  <navbar tone="dark" overlay leftLabel="绥安食品">
+    <view slot="right"><icon name="bell" size="20" color="#ffffff" /></view>
+  </navbar>
 
-  <view class="notice card">
-    <view class="notice-title">今日公告</view>
-    <view class="body">{{settings.notice}}</view>
-  </view>
-
-  <view class="quick-grid">
-    <button class="quick-card" bindtap="goMenu">
-      <text class="quick-title">堂食自提</text>
-      <text class="quick-desc">3 步完成点单</text>
-    </button>
-    <button class="quick-card disabled-card">
-      <text class="quick-title">外卖配送</text>
-      <text class="quick-desc">暂未开放</text>
-    </button>
-  </view>
-
-  <section-card title="今日推荐" desc="优先展示今日可购买菜品">
-    <view class="list">
-      <product-card
-        wx:for="{{products}}"
-        wx:key="id"
-        product="{{item}}"
-        bind:detail="openDetail"
-        bind:add="addProduct"
-      />
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 英雄头 -->
+    <view class="hero-dark home-hero" style="padding-top:{{navTotal}}px">
+      <view class="ring r1"></view>
+      <view class="ring r2"></view>
+      <view class="hero-inner">
+        <view class="greet">你好，欢迎光临</view>
+        <view class="store-name serif">绥安食品 · 县前直营店</view>
+        <view class="store-meta">
+          <icon name="pin" size="13" color="#b79a55" />
+          <text class="addr">{{store.addr}}</text>
+          <text class="cut">　·　{{store.cutoff}}</text>
+        </view>
+        <view class="search" bindtap="toMenu">
+          <icon name="search" size="17" color="rgba(255,255,255,0.8)" />
+          <text class="search-ph">搜索　商务双拼饭 / 鸡腿排 / 能量碗…</text>
+        </view>
+      </view>
     </view>
-  </section-card>
+
+    <view class="body">
+      <!-- 营销 Banner -->
+      <view class="banner fade-up">
+        <swiper class="banner-sw" autoplay circular interval="4200" duration="400" bindchange="onBanner">
+          <swiper-item wx:for="{{campaigns}}" wx:key="title">
+            <view class="camp" data-i="{{index}}" bindtap="openBanner">
+              <view class="camp-text">
+                <view class="pill pill--{{item.tone}} camp-pill">{{item.pill}}</view>
+                <view class="camp-title serif">{{item.title}}</view>
+                <view class="camp-sub">
+                  <view wx:for="{{item.sub}}" wx:for-item="line" wx:key="*this">{{line}}</view>
+                </view>
+                <view class="btn btn--primary btn--sm camp-cta">{{item.cta}}</view>
+              </view>
+              <view class="camp-media" style="background:{{item.bg}}">
+                <image wx:if="{{item.img}}" src="{{item.img}}" mode="aspectFill" class="camp-img" />
+                <view wx:else class="camp-emblem-wrap">
+                  <view class="camp-dash"></view>
+                  <image src="/assets/emblem.png" class="camp-emblem" mode="aspectFit" />
+                </view>
+              </view>
+            </view>
+          </swiper-item>
+        </swiper>
+        <view class="dots">
+          <view
+            wx:for="{{campaigns}}"
+            wx:key="index"
+            class="dot {{bannerIdx === index ? 'on' : ''}}"
+            data-i="{{index}}"
+            bindtap="dotTap"
+          ></view>
+        </view>
+      </view>
+
+      <!-- 会员面板 -->
+      <view class="card member">
+        <view class="member-l">
+          <view class="member-head">
+            <text class="member-title serif">入群享新人礼</text>
+            <view class="pill pill--ok">+8 元券</view>
+          </view>
+          <view class="member-desc">扫码进群，第一时间获取当日现做与活动。</view>
+          <view class="btn btn--ghost btn--sm member-btn" bindtap="login">立即登录 / 注册</view>
+        </view>
+        <view class="member-r">
+          <view class="qr-box"><qrcode size="140" dark="#0b2f63" /></view>
+          <view class="qr-cap">入群二维码</view>
+        </view>
+      </view>
+
+      <!-- 服务宫格 -->
+      <view class="sec-h"><text class="t">服务功能</text></view>
+      <view class="card grid">
+        <view
+          wx:for="{{grid}}"
+          wx:key="k"
+          class="grid-item {{item.off ? 'off' : ''}}"
+          data-k="{{item.k}}"
+          bindtap="{{item.off ? '' : 'gridTap'}}"
+        >
+          <view class="grid-ico {{item.off ? 'off' : ''}}">
+            <icon name="{{item.icon}}" size="24" color="{{item.off ? '#9a9e8c' : '#467a32'}}" />
+            <view wx:if="{{item.off}}" class="grid-tag">未开放</view>
+          </view>
+          <text class="grid-cn">{{item.cn}}</text>
+        </view>
+      </view>
+
+      <!-- 今日招牌 -->
+      <view class="sec-h"><text class="t">今日招牌</text><text class="more" bindtap="toMenu">全部 ›</text></view>
+      <scroll-view class="signature" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="sig-track">
+          <view
+            wx:for="{{signature}}"
+            wx:key="id"
+            class="card sig-card"
+            data-id="{{item.id}}"
+            bindtap="toDetail"
+          >
+            <imageph item="{{item}}" h="184" radius="24" />
+            <view class="sig-name">{{item.name}}</view>
+            <view class="sig-foot">
+              <money v="{{item.price}}" />
+              <text class="sig-sold">月售{{item.sold}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view style="height:{{safeBottom + 24}}px"></view>
+    </view>
+  </scroll-view>
+
+  <tabbar variant="user" active="home" />
+  <toast id="toast" />
 </view>

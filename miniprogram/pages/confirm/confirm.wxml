@@ -1,58 +1,77 @@
-<view class="page confirm">
-  <view class="title-lg">确认订单</view>
+<view class="page">
+  <navbar tone="light" title="确认订单" back />
 
-  <view class="card block">
-    <view class="row-between">
-      <view>
-        <view class="block-title">线下自提</view>
-        <view class="caption">{{settings.pickupPlace}}</view>
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 自提信息 -->
+    <view class="hero-dark pickup-card">
+      <view class="ring r2"></view>
+      <view class="pickup-top">
+        <view class="pill pill--ondark"><icon name="store" size="12" color="#ffffff" /><text>　到店自提</text></view>
+        <text class="pickup-cut">{{store.cutoff}}</text>
       </view>
-      <view class="pickup-time">{{settings.cutoffTime}}</view>
+      <view class="pickup-name serif">{{store.name}} · {{store.branch}}</view>
+      <view class="pickup-line"><icon name="pin" size="13" color="#b79a55" /><text>{{store.addr}}</text></view>
+      <view class="pickup-line blue"><icon name="clock" size="13" color="#9fd3ff" /><text>{{store.pickup}}</text></view>
     </view>
-  </view>
 
-  <view class="card block">
-    <view class="block-title">商品明细</view>
-    <view class="items">
-      <view wx:for="{{cart.items}}" wx:key="productId" class="item-row">
-        <view>
-          <view class="item-name">{{item.product.name}}</view>
-          <view class="caption">¥{{item.product.price}} x {{item.quantity}}</view>
+    <!-- 商品明细 -->
+    <view class="card sec-card">
+      <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">商品明细</text><text class="faint" style="font-size:24rpx">共 {{count}} 件</text></view>
+      <view wx:for="{{items}}" wx:key="item.id" class="order-item">
+        <imageph item="{{item.item}}" h="92" w="92" radius="22" tag="{{false}}" />
+        <view class="order-item-info">
+          <view class="order-item-name">{{item.item.name}}</view>
+          <view class="order-item-unit">¥{{item.item.price}} × {{item.q}}</view>
         </view>
-        <view class="item-price">¥{{item.subtotal}}</view>
+        <money v="{{item.item.price * item.q}}" size="30" />
       </view>
     </view>
-  </view>
 
-  <view class="card block form-block">
-    <view class="block-title">联系人信息</view>
-    <input class="field" value="{{form.contact}}" data-field="contact" bindinput="updateField" placeholder="联系人" />
-    <input class="field" value="{{form.phone}}" data-field="phone" bindinput="updateField" placeholder="手机号" />
-    <textarea class="textarea" value="{{form.remark}}" data-field="remark" bindinput="updateField" placeholder="备注，例如少盐、稍晚取餐" />
-  </view>
-
-  <view class="card block taste-block">
-    <view class="block-title">口味偏好</view>
-    <view class="caption">可多选，商户会在订单中看到这些要求。</view>
-    <view class="taste-list">
-      <button
-        wx:for="{{tasteOptions}}"
-        wx:key="label"
-        class="taste-chip {{item.selected ? 'taste-chip-active' : ''}}"
-        data-value="{{item.label}}"
-        bindtap="toggleTaste"
-      >
-        {{item.label}}
-      </button>
+    <!-- 联系信息 -->
+    <view class="card sec-card">
+      <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">联系信息</text></view>
+      <view class="field">
+        <text class="field-lbl">联系人</text>
+        <input class="field-in" placeholder="请填写取餐人姓名" placeholder-class="ph" data-k="contact" value="{{form.contact}}" bindinput="onInput" />
+      </view>
+      <view class="field">
+        <text class="field-lbl">手机号</text>
+        <input class="field-in" type="number" placeholder="便于到店核对" placeholder-class="ph" data-k="phone" value="{{form.phone}}" bindinput="onInput" />
+      </view>
+      <view class="field last">
+        <text class="field-lbl">备注</text>
+        <input class="field-in" placeholder="例：双拼饭加饭、能量碗酱汁分装" placeholder-class="ph" data-k="note" value="{{form.note}}" bindinput="onInput" />
+      </view>
     </view>
-  </view>
 
-  <view class="pay-card">
-    <text>应付金额</text>
-    <text class="amount">¥{{cart.totalAmountText}}</text>
-  </view>
+    <!-- 口味偏好 -->
+    <view class="card flavor-card">
+      <view class="flavor-head">
+        <text class="serif flavor-title">口味偏好</text>
+        <view class="pill pill--info">可多选 · 商户会看到</view>
+      </view>
+      <view class="flavor-chips">
+        <view
+          wx:for="{{flavorsAll}}"
+          wx:key="*this"
+          class="chip {{flavorMap[item] ? 'on' : ''}}"
+          data-f="{{item}}"
+          bindtap="toggleFlavor"
+        >
+          <icon wx:if="{{flavorMap[item]}}" name="check" size="13" color="#467a32" />
+          <text>{{item}}</text>
+        </view>
+      </view>
+    </view>
+    <view style="height:24rpx"></view>
+  </scroll-view>
 
-  <view class="safe-bottom-bar">
-    <button class="btn btn-primary" bindtap="submitOrder">确认支付</button>
+  <!-- 应付 + 支付 -->
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view class="pay-amount">
+      <text class="pay-lbl">应付金额</text>
+      <money v="{{total}}" size="48" />
+    </view>
+    <view class="btn btn--primary pay-btn" bindtap="pay">确认支付</view>
   </view>
 </view>

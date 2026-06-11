@@ -1,19 +1,12 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
+const { nav } = require('../../utils/util.js');
 
 Page({
-  data: {
-    order: {}
+  behaviors: [require('../../utils/navBehavior.js')],
+  data: { o: null, store: data.STORE },
+  onLoad() {
+    this.setData({ o: getApp().globalData.lastOrder || data.USER_ORDERS[0] });
   },
-
-  onLoad(query) {
-    this.setData({ order: store.getOrder(query.id) });
-  },
-
-  viewOrder() {
-    wx.redirectTo({ url: `/pages/order-detail/order-detail?id=${this.data.order.id}` });
-  },
-
-  goHome() {
-    wx.switchTab({ url: "/pages/home/home" });
-  }
+  goHome() { nav.tabTo('home'); },
+  viewCode() { nav.replace('order-detail', { id: this.data.o.id }); },
 });

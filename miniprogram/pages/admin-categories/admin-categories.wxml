@@ -1,17 +1,24 @@
-<view class="page categories-page">
-  <view class="title-lg">分类管理</view>
-  <view class="caption">管理分类新增、排序、启用与停用。</view>
+<view class="page">
+  <navbar tone="light" title="分类管理" back>
+    <view slot="right" class="add-cat" bindtap="newCat"><icon name="plus" size="16" color="#2a5fa6" /><text>新增</text></view>
+  </navbar>
 
-  <view class="card list-card">
-    <view wx:for="{{categories}}" wx:key="id" class="category-row">
-      <view>
-        <view class="name">{{item.sort}}. {{item.name}}</view>
-        <view class="caption">当前按排序值展示</view>
-      </view>
-      <view class="row action-area">
-        <status-pill text="{{item.enabled ? '启用' : '停用'}}" type="{{item.enabled ? 'success' : 'default'}}" />
-        <button class="switch" data-id="{{item.id}}" bindtap="toggle">{{item.enabled ? '停用' : '启用'}}</button>
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="cat-note">拖动调整顺序 · 停用后该分类菜品在用户端隐藏</view>
+    <view class="card cat-list">
+      <view wx:for="{{cats}}" wx:key="id" class="cat-row {{index === cats.length - 1 ? 'last' : ''}}">
+        <icon name="sort" size="16" color="#c8ccba" />
+        <view class="cat-sort serif">{{item.sort}}</view>
+        <view class="cat-main">
+          <view class="cat-name">{{item.name}}</view>
+          <view class="cat-count">{{item.count}} 个菜品</view>
+        </view>
+        <pill s="{{item.on ? '营业中' : '已下架'}}" tone="{{item.on ? 'ok' : 'mute'}}" label="{{item.on ? '启用' : '停用'}}" />
+        <view class="toggle {{item.on ? 'on' : ''}}" data-id="{{item.id}}" catchtap="toggle"><view class="toggle-knob"></view></view>
       </view>
     </view>
-  </view>
+    <view style="height:{{safeBottom + 30}}px"></view>
+  </scroll-view>
+
+  <toast id="toast" />
 </view>

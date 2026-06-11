@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from openai import OpenAI
-from PIL import Image
+from PIL import Image, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parent
@@ -61,12 +61,13 @@ def prompt() -> str:
 目标：
 - 输出 1536x1024 横版 3:2 原图，用于后续居中裁切成 11:6。
 - 中间已有 11:6 海报区域必须保持原样：不要移动、不要缩放、不要重绘标题、商品名、价格、葫芦、人物、饮品卡片、白桦树。
+- 顶部安全区内的中文标题「绥芬河市药食同源实验室」必须完整保留，不要遮挡、裁切、改字或移除。
 - 只在上方和下方透明留白区域自然延展背景，让它看起来像原本就是完整画面，而不是相框、白边、灰边、模糊边框或贴图边框。
 
 上方扩充：
 - 延续浅蓝天空、冷雾、远山、白桦林枝叶的氛围。
 - 可以增加柔和蓝白渐变、薄雾、远处树梢和天空留白。
-- 不要新增文字，不要新增标题，不要把原标题改掉。
+- 不要新增文字，不要新增标题，不要把原标题改掉，也不要用雾气、树枝或渐变遮挡原标题。
 
 下方扩充：
 - 延续冰雪水面、浅蓝反射、雪地、轻微雾气和柔和光影。
@@ -118,7 +119,7 @@ def composite_original_center(background_path: Path, out_path: Path) -> None:
 
 
 def composite_safe_crop(background_path: Path, out_path: Path) -> None:
-    background = Image.open(background_path).convert("RGBA")
+    background = Image.open(background_path).convert("RGBA").filter(ImageFilter.GaussianBlur(radius=18))
     source = Image.open(SOURCE_RAW).convert("RGBA")
     scale = 0.84
     target_size = (round(source.width * scale), round(source.height * scale))
@@ -143,15 +144,16 @@ def composite_safe_crop(background_path: Path, out_path: Path) -> None:
 
 def main() -> None:
     load_env()
+    reuse_existing = os.environ.get("REUSE_EXISTING_OUTPAINT") == "1"
     build_canvas_and_mask()
     prompt_text = prompt()
     PROMPT_FILE.write_text(prompt_text + "\n")
 
     print(f"Outpainting {SOURCE_11_6.name} with {MODEL} ...", flush=True)
     start = time.time()
-    if MODEL_BACKGROUND.exists():
+    if reuse_existing and MODEL_BACKGROUND.exists():
         print(f"Reusing {MODEL_BACKGROUND.relative_to(ROOT)} ...", flush=True)
-    elif OUTPAINT_RAW.exists():
+    elif reuse_existing and OUTPAINT_RAW.exists():
         OUTPAINT_RAW.replace(MODEL_BACKGROUND)
     else:
         MODEL_BACKGROUND.write_bytes(call_image_api(prompt_text))

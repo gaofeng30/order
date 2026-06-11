@@ -1,0 +1,30 @@
+{
+  "model": "gpt-image-2",
+  "task": "TV7 summer mountain wave redesign, two candidates",
+  "generated_at": "2026-05-17T09:28:26Z",
+  "final_aspect": "11:6",
+  "items": [
+    {
+      "id": "01-summer-mountain-wave-menu",
+      "status": "ok",
+      "image_file": "01-summer-mountain-wave-menu.png",
+      "raw_file": "raw-3-2/01-summer-mountain-wave-menu.png",
+      "prompt_file": "prompts/01-summer-mountain-wave-menu.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 56.4
+    },
+    {
+      "id": "02-blue-coast-clean-board",
+      "status": "ok",
+      "image_file": "02-blue-coast-clean-board.png",
+      "raw_file": "raw-3-2/02-blue-coast-clean-board.png",
+      "prompt_file": "prompts/02-blue-coast-clean-board.txt",
+      "final_aspect": "11:6",
+      "generated_size": "1536x1024",
+      "quality": "medium",
+      "elapsed_seconds": 54.6
+    }
+  ]
+}

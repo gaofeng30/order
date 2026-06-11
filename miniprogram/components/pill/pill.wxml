@@ -1,0 +1,4 @@
+<view class="pill pill--{{cls}}">
+  <view wx:if="{{dot}}" class="pd"></view>
+  <text>{{text}}</text>
+</view>

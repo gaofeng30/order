@@ -1,0 +1,25 @@
+{
+  "model": "gpt-image-2",
+  "task": "Iced Americano hero visual with retail menu board",
+  "generated_at": "2026-05-17T09:35:56Z",
+  "generated_size": "1536x1024",
+  "final_size": "1980x1080",
+  "final_aspect": "11:6",
+  "quality": "medium",
+  "items": [
+    {
+      "id": "01-iced-americano-retail-menu",
+      "status": "ok",
+      "image_file": "01-冰爽冰美式-便利零售-11x6-1080p.png",
+      "raw_file": "raw-3-2/01-iced-americano-retail-menu.png",
+      "prompt_file": "prompts/01-iced-americano-retail-menu.txt",
+      "reference_files": [
+        "references/reference-1.png",
+        "references/reference-2.png"
+      ],
+      "reused_raw": true,
+      "api_elapsed_seconds": null,
+      "render_elapsed_seconds": 0.2
+    }
+  ]
+}

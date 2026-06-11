@@ -1,0 +1,46 @@
+Edit the input image into a polished 3:2 horizontal TV food-and-drink poster.
+
+Primary goal:
+Make the poster more readable and commercially usable while preserving the existing blue-white snowy birch forest style, transparent herbal gourds, Li Bai figure, small drink cards, and premium "药食同源实验室" atmosphere.
+
+Canvas and layout:
+- Output must be a 3:2 landscape image.
+- Keep the top and bottom of the image as natural background only: pale blue sky, cold mist, distant snowy mountains, birch branches, icy water reflection, pale blue ripples, and soft snow.
+- Do not put new text, prices, faces, product cards, or main product objects in the very top or very bottom background margins.
+- Avoid any frame, border, white edge, gray edge, blurred border, pasted-photo look, or visible crop mark.
+
+Exact text requirements:
+- The main title must read exactly: "绥芬河市药食同源实验室".
+- Make "绥芬河市药食同源实验室" significantly larger and more prominent than in the input image. It should be a top-left headline inside the safe visual area, with strong contrast, clean Chinese typography, and clear long-distance readability.
+- Replace the upper main product name with exactly: "养生茶".
+- Replace the lower main product name with exactly: "清脂茶".
+- Each main product card must show product name and price on the same line:
+  "养生茶  15元/杯"
+  "清脂茶  15元/杯"
+- Keep "15元/杯" large and warm gold.
+- Keep the small right-side drink cards as "蜂蜜柠檬茶  5元/杯" and "鲜果茶  8元/杯".
+
+Forbidden text:
+- Do not show "药食同源养生茶".
+- Do not show "药食同源消脂茶".
+- Do not show "消脂茶".
+- Do not add English text, logos, QR codes, watermarks, serial numbers, "01", "02", or extra product names.
+
+Gourd ingredient requirements:
+- Keep two transparent natural gourd-shaped glass vessels on the left. Each gourd must contain mostly clear brewed tea liquid, not only dry herbs.
+- The two gourd fillings must be visibly different at first glance in color, shapes, ingredient sizes, and floating materials.
+- Upper gourd for "养生茶": amber-gold tea liquid with clearly visible ginseng slices, astragalus slices, red dates, goji berries, chrysanthemum, and a little dried tangerine peel. The feeling is warm, nourishing, and qi-tonifying.
+- Lower gourd for "清脂茶": light brown-orange tea liquid with clearly visible green lotus leaf fragments, red hawthorn slices, dark cassia seed grains, dried tangerine peel, coix seed or poria cubes. The feeling is fresh, light, and cleansing.
+- Do not make both gourds look like the same red-date-and-goji mixture. Do not make them identical, empty, or filled with chaotic dry roots only.
+
+Preserve:
+- Preserve the premium business-blue, misty white, silver-blue, and light-gold color direction.
+- Preserve the snowy birch forest, icy water, and calm Heilongjiang winter atmosphere.
+- Preserve the elegant Li Bai figure on the right as a supporting background character; he must not overpower the products or text.
+- Preserve the right-lower small drink display area and overall visual balance.
+
+Quality constraints:
+- Clean, legible Chinese typography.
+- No distorted, mirrored, missing, duplicated, or garbled Chinese characters.
+- No red festive style, no lanterns, no Spring Festival look, no coffee, no messy typography, no tiny unreadable menu.
+- Change only the requested text hierarchy and herbal drink details; keep the original poster concept and commercial style recognizable.

@@ -1,46 +1,45 @@
-<view class="page order-detail">
-  <view class="ticket hero-dark">
-    <view class="row-between">
-      <view class="eyebrow">PICKUP CODE</view>
-      <status-pill text="{{order.statusText}}" type="{{order.status === 'completed' ? 'success' : 'accent'}}" />
-    </view>
-    <view class="pickup-no">{{order.pickupNo}}</view>
-    <view class="ticket-meta">{{order.pickupPlace}}</view>
-    <view class="ticket-meta">{{order.pickupTime}}</view>
-  </view>
+<view class="page">
+  <navbar tone="dark" overlay back title="取餐码" />
 
-  <view class="qr-card soft-card">
-    <view class="qr">
-      <view wx:for="{{qrCells}}" wx:key="id" class="qr-cell {{item.active ? 'qr-cell-active' : ''}}"></view>
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 深色大票 -->
+    <view class="hero-dark ticket" style="padding-top:{{navTotal}}px">
+      <view class="ring r1"></view>
+      <view class="ring r3"></view>
+      <view class="ticket-inner">
+        <view class="ticket-lbl">取餐号</view>
+        <view class="ticket-code serif">{{o.code}}</view>
+        <view class="qr-white"><qrcode size="300" dark="#0b2f63" /></view>
+        <view class="ticket-pill"><pill s="{{o.status}}" ondark /></view>
+        <view class="ticket-hint">出示二维码或报取餐号，到窗口即可取餐</view>
+        <view class="ticket-copy" bindtap="copy"><icon name="copy" size="16" color="#ffffff" /><text>复制取餐号</text></view>
+      </view>
     </view>
-    <view class="caption">到窗口出示二维码或取餐号即可取餐</view>
-  </view>
 
-  <view class="card block">
-    <view class="block-title">订单明细</view>
-    <view wx:for="{{order.items}}" wx:key="productId" class="item-row">
-      <text>{{item.name}} x {{item.quantity}}</text>
-      <text>¥{{item.price}}</text>
+    <view class="pad">
+      <view class="card sec-card">
+        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">商品明细</text><text class="faint" style="font-size:24rpx">订单号 {{o.no}}</text></view>
+        <view wx:for="{{rows}}" wx:key="name" class="order-item">
+          <view class="order-item-info">
+            <view class="order-item-name">{{item.name}}</view>
+            <view class="order-item-unit">¥{{item.p}} × {{item.q}}</view>
+          </view>
+          <money v="{{item.sub}}" size="30" />
+        </view>
+        <view class="pay-row"><text class="pay-lbl">实付</text><money v="{{o.total}}" size="40" /></view>
+      </view>
+
+      <view class="card sec-card">
+        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">取餐信息</text></view>
+        <view class="info-row"><view class="ir-l"><view class="ir-label">取餐地点</view><view class="ir-sub">{{store.addr}}</view></view><text class="ir-val">{{store.branch}}</text></view>
+        <view class="info-row"><view class="ir-label">预计取餐</view><text class="ir-val">{{store.pickup}}</text></view>
+        <view class="info-row"><view class="ir-label">联系人</view><text class="ir-val">{{o.contact}} · {{o.phone}}</text></view>
+        <view wx:if="{{flavorsStr}}" class="info-row"><view class="ir-label">口味偏好</view><text class="ir-val">{{flavorsStr}}</text></view>
+        <view wx:if="{{o.note}}" class="info-row last"><view class="ir-label">备注</view><text class="ir-val">{{o.note}}</text></view>
+      </view>
+      <view style="height:{{safeBottom + 30}}px"></view>
     </view>
-    <view class="divider"></view>
-    <view class="row-between total">
-      <text>合计</text>
-      <text>¥{{order.amount}}</text>
-    </view>
-  </view>
+  </scroll-view>
 
-  <view class="card block">
-    <view class="block-title">取餐信息</view>
-    <view class="caption">订单号</view>
-    <view class="value">{{order.id}}</view>
-    <view class="caption">联系人</view>
-    <view class="value">{{order.contact}} · {{order.phone}}</view>
-    <view class="caption">口味偏好</view>
-    <view class="value taste-value">{{order.tasteText}}</view>
-    <view class="caption">备注</view>
-    <view class="value">{{order.remark}}</view>
-  </view>
-
-  <button class="btn btn-primary" bindtap="copyCode">复制取餐号</button>
-  <button class="btn btn-ghost" bindtap="goOrders">返回我的订单</button>
+  <toast id="toast" />
 </view>

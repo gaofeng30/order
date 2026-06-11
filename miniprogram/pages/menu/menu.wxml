@@ -1,65 +1,125 @@
-<view class="page page--tab menu">
-  <view class="menu-head">
-    <view>
-      <view class="title-lg">今日可点</view>
-      <view class="caption">售罄、已下架和不可购状态会在列表中明确展示</view>
-    </view>
+<view class="page">
+  <navbar tone="light" title="绥安食品 · 菜单" />
+
+  <!-- 门店行 -->
+  <view class="store-row">
+    <icon name="pin" size="13" color="#467a32" />
+    <text>{{store.branch}} · 到店自提</text>
+    <view class="pill pill--info store-cut">{{store.cutoff}}</view>
   </view>
 
-  <view class="menu-layout">
-    <scroll-view class="category-list" scroll-x enable-flex>
-      <button
-        wx:for="{{categories}}"
+  <!-- 分类锚点 -->
+  <view class="cat-nav">
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segs">
+        <view
+          wx:for="{{cats}}"
+          wx:key="*this"
+          class="seg {{active === item ? 'on' : ''}}"
+          data-cat="{{item}}"
+          data-idx="{{index}}"
+          bindtap="jump"
+        >{{item}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 菜品列表 -->
+  <scroll-view
+    id="menuScroll"
+    class="scroll pad menu-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{intoView}}"
+    scroll-with-animation
+    bindscroll="onScroll"
+  >
+    <view wx:for="{{groups}}" wx:for-item="g" wx:key="cat">
+      <view id="sec-{{index}}" class="sec-anchor" data-cat="{{g.cat}}"></view>
+      <view class="sec-h"><text class="t" style="font-size:30rpx">{{g.cat}}</text></view>
+      <view
+        wx:for="{{g.items}}"
+        wx:for-item="m"
         wx:key="id"
-        class="category {{activeCategory === item.id ? 'category-active' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="switchCategory"
+        class="dish-row {{m.status !== 'on' ? 'off' : ''}}"
       >
-        {{item.name}}
-      </button>
-    </scroll-view>
-
-    <scroll-view class="product-list" scroll-y>
-      <product-card
-        wx:for="{{products}}"
-        wx:key="id"
-        product="{{item}}"
-        quantity="{{item.quantity}}"
-        bind:detail="openDetail"
-        bind:add="addProduct"
-        bind:minus="minusProduct"
-      />
-    </scroll-view>
-  </view>
-
-  <view wx:if="{{cartOpen}}" class="cart-mask" bindtap="toggleCart"></view>
-  <view wx:if="{{cartOpen}}" class="cart-sheet">
-    <view class="row-between cart-title">
-      <text>已选菜品</text>
-      <button bindtap="clearCart">清空</button>
-    </view>
-    <view class="cart-list">
-      <view wx:for="{{cart.items}}" wx:key="productId" class="cart-item">
-        <view>
-          <view class="cart-name">{{item.product.name}}</view>
-          <view class="caption">¥{{item.product.price}} x {{item.quantity}}</view>
+        <view class="dish-pic" data-id="{{m.id}}" bindtap="goDetail">
+          <imageph item="{{m}}" h="188" w="188" radius="28" />
+          <view wx:if="{{m.status !== 'on'}}" class="dish-mask">{{m.status === 'soldout' ? '售罄' : '已下架'}}</view>
         </view>
-        <view class="row step-actions">
-          <button class="step" data-id="{{item.productId}}" bindtap="minusProduct">-</button>
-          <text>{{item.quantity}}</text>
-          <button class="step step-add" data-id="{{item.productId}}" bindtap="addProduct">+</button>
+        <view class="dish-info">
+          <view data-id="{{m.id}}" bindtap="goDetail">
+            <view class="dish-name">{{m.name}}</view>
+            <view class="dish-desc ellipsis-2">{{m.desc}}</view>
+            <view class="dish-tags">
+              <text wx:for="{{m.tags}}" wx:for-item="t" wx:key="*this" wx:if="{{index < 2}}" class="dish-tag">{{t}}</text>
+            </view>
+          </view>
+          <view class="dish-foot">
+            <view class="dish-price">
+              <money v="{{m.price}}" size="36" />
+              <text class="dish-sold">月售 {{m.sold}}</text>
+            </view>
+            <view class="dish-action">
+              <view wx:if="{{m.status !== 'on'}}" class="btn btn--mute btn--sm act-btn">{{m.status === 'soldout' ? '售罄' : '已下架'}}</view>
+              <stepper
+                wx:elif="{{cartMap[m.id] > 0}}"
+                value="{{cartMap[m.id]}}"
+                data-id="{{m.id}}"
+                bind:sub="sub"
+                bind:add="add"
+              />
+              <view wx:else class="btn btn--primary btn--sm act-btn" data-id="{{m.id}}" catchtap="add">点单</view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
-  </view>
+    <view class="menu-end">—— 当日现做 · 售完即止 ——</view>
+    <view style="height:{{safeBottom + 200}}px"></view>
+  </scroll-view>
 
-  <view class="safe-bottom-bar">
-    <view class="cart-bar">
-      <view bindtap="toggleCart">
-        <view class="caption">购物车 {{cart.totalQuantity || 0}} 件</view>
-        <view class="bar-total">¥{{cart.totalAmountText || '0.00'}}</view>
+  <!-- 购物车悬浮栏 -->
+  <view class="floatbar" style="bottom:{{safeBottom + 116}}px">
+    <view class="cartbar">
+      <view class="cart-ico-wrap" bindtap="openSheet">
+        <view class="cart-ico {{count ? 'on' : ''}}">
+          <icon name="cart" size="23" color="{{count ? '#ffffff' : '#aaaaaa'}}" />
+        </view>
+        <view wx:if="{{count > 0}}" class="cart-badge">{{count}}</view>
       </view>
-      <button class="btn {{cart.totalQuantity ? 'btn-primary' : 'btn-disabled'}}" bindtap="goConfirm">去结算</button>
+      <view class="cart-mid">
+        <money wx:if="{{count > 0}}" v="{{total}}" size="42" />
+        <text wx:else class="cart-empty">购物车是空的</text>
+        <view class="cart-hint">{{count > 0 ? '另需到店自提 · 免配送费' : '选好菜品，到店自提'}}</view>
+      </view>
+      <view class="btn {{count ? 'btn--primary' : 'btn--mute'}} cart-go" bindtap="goConfirm">去结算</view>
     </view>
   </view>
+
+  <!-- 购物车弹层 -->
+  <view wx:if="{{sheet}}" class="sheet-mask" bindtap="closeSheet"></view>
+  <view wx:if="{{sheet}}" class="sheet">
+    <view class="sheet-head">
+      <text class="serif sheet-title">已选 {{count}} 件</text>
+      <view class="sheet-clear" bindtap="clear"><icon name="close" size="13" color="#8f9384" /><text>清空</text></view>
+    </view>
+    <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
+      <view wx:for="{{cartItems}}" wx:key="item.id" class="list-row">
+        <imageph item="{{item.item}}" h="100" w="100" radius="22" tag="{{false}}" />
+        <view class="sheet-item-info">
+          <view class="sheet-item-name">{{item.item.name}}</view>
+          <money v="{{item.item.price}}" size="28" />
+        </view>
+        <stepper value="{{item.q}}" data-id="{{item.item.id}}" bind:sub="sub" bind:add="add" />
+      </view>
+    </scroll-view>
+    <view class="sheet-foot" style="padding-bottom:{{safeBottom + 20}}px">
+      <view class="sheet-total"><text class="sheet-total-lbl">合计 </text><money v="{{total}}" size="44" /></view>
+      <view class="btn btn--primary" bindtap="goConfirm">去结算</view>
+    </view>
+  </view>
+
+  <tabbar variant="user" active="menu" />
 </view>

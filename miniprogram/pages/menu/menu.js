@@ -1,81 +1,70 @@
-const store = require("../../utils/store");
+const data = require('../../utils/data.js');
+const { nav, cart } = require('../../utils/util.js');
 
 Page({
+  behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    categories: [],
-    activeCategory: "",
-    products: [],
-    cart: {},
-    cartOpen: false
+    store: data.STORE,
+    cats: data.CATS,
+    groups: [],
+    cartMap: {},
+    count: 0,
+    total: 0,
+    active: data.CATS[0],
+    intoView: '',
+    sheet: false,
+    cartItems: [],
+    _offsets: [],
   },
-
-  onShow() {
-    const app = getApp();
-    const activeCategory = this.data.activeCategory || "all";
+  onLoad() {
+    const groups = data.CATS.map(c => ({ cat: c, items: data.MENU.filter(m => m.cat === c) }));
+    this.setData({ groups });
+    this.refresh();
+  },
+  onShow() { this.refresh(); },
+  onReady() { this.measure(); },
+  measure() {
+    const q = this.createSelectorQuery();
+    q.select('#menuScroll').boundingClientRect();
+    q.selectAll('.sec-anchor').boundingClientRect();
+    q.exec((res) => {
+      if (!res || !res[0] || !res[1]) return;
+      const base = res[0].top;
+      const offsets = res[1].map(r => ({ cat: r.dataset.cat, top: r.top - base }));
+      this.setData({ _offsets: offsets });
+    });
+  },
+  refresh() {
     this.setData({
-      categories: [{ id: "all", name: "全部菜品" }, ...app.globalData.categories],
-      activeCategory
+      cartMap: Object.assign({}, getApp().globalData.cart),
+      count: cart.count(),
+      total: cart.total(),
+      cartItems: cart.list(),
     });
-    this.refreshProducts();
   },
-
-  refreshProducts() {
-    const summary = store.getCartSummary();
-    const quantityMap = {};
-    summary.items.forEach((item) => {
-      quantityMap[item.productId] = item.quantity;
-    });
-    const source = this.data.activeCategory === "all"
-      ? getApp().globalData.products
-      : store.getProductsByCategory(this.data.activeCategory);
-    const products = source.map((item) => ({
-      ...item,
-      quantity: quantityMap[item.id] || 0
-    }));
-
-    this.setData({ products, cart: summary });
+  add(e) { cart.add(e.currentTarget.dataset.id); this.refresh(); },
+  sub(e) { cart.sub(e.currentTarget.dataset.id); this.refresh(); },
+  clear() { cart.clear(); this.refresh(); this.setData({ sheet: false }); },
+  jump(e) {
+    const c = e.currentTarget.dataset.cat;
+    const idx = e.currentTarget.dataset.idx;
+    this.setData({ active: c, intoView: 'sec-' + idx });
   },
-
-  switchCategory(event) {
-    this.setData({ activeCategory: event.currentTarget.dataset.id });
-    this.refreshProducts();
+  onScroll(e) {
+    const top = e.detail.scrollTop + 70;
+    const offs = this.data._offsets;
+    if (!offs.length) return;
+    let cur = offs[0].cat;
+    for (const o of offs) { if (o.top <= top) cur = o.cat; }
+    if (cur !== this.data.active) this.setData({ active: cur });
   },
-
-  openDetail(event) {
-    wx.navigateTo({ url: `/pages/detail/detail?id=${event.detail.id}` });
-  },
-
-  addProduct(event) {
-    const id = event.detail.id || event.currentTarget.dataset.id;
-    store.addToCart(id, 1);
-    this.refreshProducts();
-  },
-
-  minusProduct(event) {
-    const id = event.detail.id || event.currentTarget.dataset.id;
-    store.addToCart(id, -1);
-    this.refreshProducts();
-  },
-
-  toggleCart() {
-    if (!this.data.cart.totalQuantity) {
-      wx.showToast({ title: "购物车为空", icon: "none" });
-      return;
-    }
-    this.setData({ cartOpen: !this.data.cartOpen });
-  },
-
-  clearCart() {
-    store.clearCart();
-    this.setData({ cartOpen: false });
-    this.refreshProducts();
-  },
-
+  goDetail(e) { nav.go('detail', { id: e.currentTarget.dataset.id }); },
+  openSheet() { if (this.data.count) this.setData({ sheet: true }); },
+  closeSheet() { this.setData({ sheet: false }); },
   goConfirm() {
-    if (!this.data.cart.totalQuantity) {
-      wx.showToast({ title: "请先选择菜品", icon: "none" });
-      return;
-    }
-    wx.navigateTo({ url: "/pages/confirm/confirm" });
-  }
+    if (!this.data.count) return;
+    this.setData({ sheet: false });
+    nav.go('confirm');
+  },
+  noop() {},
 });

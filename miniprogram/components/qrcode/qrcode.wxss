@@ -1,0 +1,3 @@
+.qrc-img { display: block; }
+/* canvas 是原生组件，挪到屏幕外离屏绘制，避免"钉住不滚动 / 穿透层级" */
+.qrc-canvas { position: fixed; left: -9999rpx; top: 0; opacity: 0; pointer-events: none; }

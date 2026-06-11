@@ -1,17 +1,44 @@
-<view class="page launch">
-  <view class="hero-dark">
-    <view class="eyebrow">WELCOME</view>
-    <view class="title-xl">XX食堂在线点单</view>
-    <view class="intro">请选择用户端或商户端，进入后将保持各自独立的使用路径。</view>
-    <view class="plate">
-      <view class="plate-inner"></view>
+<view class="page launch" style="padding-top:{{statusBarH}}px;padding-bottom:{{safeBottom + 30}}px">
+  <view class="ring r1"></view>
+  <view class="ring r2"></view>
+  <view class="ring r3"></view>
+
+  <!-- 左上角 商户 logo -->
+  <view class="brand">
+    <view class="brand-logo"><image src="/assets/emblem.png" class="brand-emblem" mode="aspectFit" /></view>
+    <view>
+      <view class="brand-name serif">绥安食品</view>
+      <view class="brand-sub">在地手作 · 到店自提</view>
     </view>
   </view>
 
-  <view class="entry soft-card">
-    <view class="title-md">请选择使用端</view>
-    <view class="body">用户端用于点单和取餐，商户端用于经营管理和窗口核销。</view>
-    <button class="btn btn-primary" bindtap="startUser">进入用户端点单</button>
-    <button class="btn btn-ghost" bindtap="startAdmin">进入商户端管理</button>
+  <!-- 主视觉 -->
+  <view class="hero-mid">
+    <view class="welcome">欢迎光临</view>
+    <view class="big-title serif"><view>在地手作</view><view>到店自提</view></view>
+    <view class="lead"><view>古法慢工的绥安味道</view><view>每一口都是家乡的烟火气</view></view>
+  </view>
+
+  <!-- 身份卡 -->
+  <view class="cards">
+    <view class="id-card primary fade-up" data-to="home" bindtap="go">
+      <view class="id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
+      <view class="id-body">
+        <view class="id-name serif">用户端</view>
+        <view class="id-desc">浏览菜单 · 在线点单 · 到店扫码取餐</view>
+      </view>
+      <view class="id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
+    </view>
+
+    <view class="id-card fade-up" data-to="admin-dashboard" bindtap="go">
+      <view class="id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
+      <view class="id-body">
+        <view class="id-name serif">商户端</view>
+        <view class="id-desc">接单 · 制作 · 核销 · 菜品与经营管理</view>
+      </view>
+      <view class="id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
+    </view>
+
+    <view class="ver">绥安食品 · 县前直营店　小程序 v1.0</view>
   </view>
 </view>

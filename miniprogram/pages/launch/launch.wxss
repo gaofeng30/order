@@ -1,39 +1,44 @@
 .launch {
-  display: flex;
-  min-height: 100vh;
-  flex-direction: column;
-  gap: 28rpx;
+  background: linear-gradient(160deg, #103a78 0%, #0b2f63 45%, #082651 100%);
+  color: #fff;
+  padding-left: 44rpx;
+  padding-right: 44rpx;
 }
 
-.intro {
-  max-width: 560rpx;
-  margin-top: 22rpx;
-  color: rgba(248, 250, 252, 0.72);
-  font-size: 29rpx;
-  line-height: 1.55;
+.brand { display: flex; align-items: center; gap: 22rpx; margin-top: 12rpx; position: relative; z-index: 2; }
+.brand-logo {
+  width: 92rpx; height: 92rpx; border-radius: 28rpx; background: #fff;
+  display: flex; align-items: center; justify-content: center; box-shadow: 0 12rpx 36rpx rgba(0, 0, 0, .3);
 }
+.brand-emblem { width: 72rpx; height: 72rpx; }
+.brand-name { font-size: 36rpx; font-weight: 700; letter-spacing: 4rpx; }
+.brand-sub { font-size: 19rpx; letter-spacing: 8rpx; color: rgba(255, 255, 255, .5); margin-top: 6rpx; }
 
-.plate {
-  width: 320rpx;
-  height: 320rpx;
-  margin: 46rpx auto 0;
-  padding: 42rpx;
-  border-radius: 50%;
-  background: rgba(248, 250, 252, 0.09);
-}
+.hero-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; position: relative; z-index: 2; }
+.welcome { font-size: 24rpx; letter-spacing: 12rpx; color: var(--gold); font-weight: 600; }
+.big-title { font-size: 84rpx; font-weight: 700; line-height: 1.18; margin-top: 28rpx; letter-spacing: 2rpx; }
+.lead { font-size: 28rpx; color: rgba(255, 255, 255, .7); margin-top: 32rpx; line-height: 1.7; max-width: 520rpx; }
 
-.plate-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #f8fafc;
-  border: 36rpx solid #1d4ed8;
-  box-shadow: inset 0 0 0 28rpx #047857, inset 0 0 0 58rpx #e2e8f0;
+.cards { display: flex; flex-direction: column; gap: 28rpx; position: relative; z-index: 2; }
+.id-card {
+  border-radius: 44rpx; padding: 40rpx; display: flex; align-items: center; gap: 32rpx;
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 3rpx rgba(255, 255, 255, .22);
 }
-
-.entry {
-  display: flex;
-  flex-direction: column;
-  gap: 22rpx;
-  padding: 34rpx;
+.id-card.primary {
+  background: linear-gradient(135deg, #5b8f3f, #3d6b2f);
+  box-shadow: 0 28rpx 68rpx rgba(61, 107, 47, .40);
 }
+.id-ico {
+  width: 108rpx; height: 108rpx; border-radius: 32rpx; flex: 0 0 108rpx;
+  display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .18);
+}
+.id-ico.ghost { background: rgba(255, 255, 255, .08); }
+.id-body { flex: 1; min-width: 0; }
+.id-name { font-size: 42rpx; font-weight: 700; color: #fff; letter-spacing: 2rpx; }
+.id-desc { font-size: 25rpx; color: rgba(255, 255, 255, .72); margin-top: 10rpx; line-height: 1.5; }
+.id-go {
+  width: 68rpx; height: 68rpx; border-radius: 50%; flex: 0 0 68rpx;
+  display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .12);
+}
+.id-go.primary { background: #fff; }
+.ver { text-align: center; font-size: 22rpx; color: rgba(255, 255, 255, .4); margin-top: 8rpx; }
