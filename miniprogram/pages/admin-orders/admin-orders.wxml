@@ -1,7 +1,5 @@
 <view class="page">
-  <navbar tone="light" title="订单管理">
-    <view slot="right" wx:if="{{lane === '待接单' && list.length > 0}}" class="batch-toggle" bindtap="toggleBatch">{{batch ? '取消' : '批量'}}</view>
-  </navbar>
+  <navbar tone="light" title="订单管理" />
 
   <!-- 搜索 -->
   <view class="pad search-wrap">
@@ -34,9 +32,6 @@
     </view>
 
     <view wx:for="{{list}}" wx:key="id" class="card aorder" data-id="{{item.id}}" bindtap="cardTap">
-      <view wx:if="{{batch && lane === '待接单'}}" class="check {{selMap[item.id] ? 'on' : ''}}">
-        <icon wx:if="{{selMap[item.id]}}" name="check" size="13" color="#ffffff" />
-      </view>
       <view class="aorder-body">
         <view class="aorder-head">
           <text class="serif aorder-code">{{item.code}}</text>
@@ -50,7 +45,7 @@
           <icon name="flame" size="13" color="#a4873f" /><text>{{item.band}}</text>
         </view>
         <view class="aorder-summary ellipsis-1">{{item.summary}}</view>
-        <view wx:if="{{!batch}}" class="aorder-foot">
+        <view class="aorder-foot">
           <view
             wx:if="{{item.meta.isView}}"
             class="btn btn--ghost-blue btn--sm adv-btn"
@@ -66,16 +61,8 @@
         </view>
       </view>
     </view>
-    <view style="height:{{safeBottom + (batch ? 180 : 60)}}px"></view>
+    <view style="height:{{safeBottom + 60}}px"></view>
   </scroll-view>
-
-  <!-- 批量接单浮栏 -->
-  <view wx:if="{{batch && lane === '待接单'}}" class="floatbar" style="bottom:{{safeBottom + 116}}px">
-    <view class="batch-bar">
-      <text class="batch-info">已选 <text class="batch-n">{{selCount}}</text> 单</text>
-      <view class="btn {{selCount ? 'btn--primary' : 'btn--mute'}} batch-go" bindtap="doBatch">批量接单</view>
-    </view>
-  </view>
 
   <tabbar variant="admin" active="admin-orders" />
   <toast id="toast" />

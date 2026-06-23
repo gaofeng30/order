@@ -13,8 +13,8 @@
 .todo-n { font-size: 52rpx; font-weight: 800; color: var(--ink); line-height: 1; }
 .todo-lbl { font-size: 22rpx; color: var(--ink-2); margin-top: 12rpx; }
 
-.kpis { display: flex; flex-wrap: wrap; gap: 20rpx; }
-.kpi { width: calc(50% - 10rpx); padding: 28rpx 30rpx; }
+.kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 20rpx; }
+.kpi { padding: 28rpx 30rpx; }
 .kpi-top { display: flex; align-items: center; justify-content: space-between; }
 .kpi-k { font-size: 24rpx; color: var(--ink-3); }
 .kpi-v { font-size: 48rpx; font-weight: 800; color: var(--ink); margin-top: 12rpx; }

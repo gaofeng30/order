@@ -34,7 +34,7 @@
         </view>
         <view class="oc-body">
           <view class="oc-summary ellipsis-1">{{item.summary}}</view>
-          <view class="oc-time"><icon name="clock" size="12" color="#8f9384" /><text>{{item.time}} · 自提</text></view>
+          <view class="oc-time"><icon name="{{item.typeIcon}}" size="12" color="#8f9384" /><text>{{item.timeText}}</text></view>
         </view>
       </view>
       <view class="oc-foot">
@@ -42,6 +42,7 @@
         <text class="oc-total-lbl">合计</text>
         <money v="{{item.total}}" size="34" />
         <view wx:if="{{item.status === '待支付'}}" class="btn btn--primary btn--sm oc-pay" catchtap="goPay">去支付</view>
+        <view wx:elif="{{item.canCancel}}" class="btn btn--sm oc-cancel" data-id="{{item.id}}" catchtap="goDetail">取消预约</view>
       </view>
     </view>
     <view style="height:{{safeBottom + 30}}px"></view>

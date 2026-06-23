@@ -64,13 +64,13 @@
             <view class="dish-action">
               <view wx:if="{{m.status !== 'on'}}" class="btn btn--mute btn--sm act-btn">{{m.status === 'soldout' ? '售罄' : '已下架'}}</view>
               <stepper
-                wx:elif="{{cartMap[m.id] > 0}}"
-                value="{{cartMap[m.id]}}"
+                wx:elif="{{qtyMap[m.id] > 0}}"
+                value="{{qtyMap[m.id]}}"
                 data-id="{{m.id}}"
                 bind:sub="sub"
                 bind:add="add"
               />
-              <view wx:else class="btn btn--primary btn--sm act-btn" data-id="{{m.id}}" catchtap="add">点单</view>
+              <view wx:else class="btn btn--primary btn--sm act-btn" data-id="{{m.id}}" catchtap="openCustomize">选规格</view>
             </view>
           </view>
         </view>
@@ -106,13 +106,21 @@
       <view class="sheet-clear" bindtap="clear"><icon name="close" size="13" color="#8f9384" /><text>清空</text></view>
     </view>
     <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
-      <view wx:for="{{cartItems}}" wx:key="item.id" class="list-row">
-        <imageph item="{{item.item}}" h="100" w="100" radius="22" tag="{{false}}" />
+      <view wx:for="{{cartItems}}" wx:for-item="ci" wx:key="item.id" class="list-row sheet-row">
+        <imageph item="{{ci.item}}" h="100" w="100" radius="22" tag="{{false}}" />
         <view class="sheet-item-info">
-          <view class="sheet-item-name">{{item.item.name}}</view>
-          <money v="{{item.item.price}}" size="28" />
+          <view class="sheet-item-name">{{ci.item.name}}</view>
+          <money v="{{ci.item.price}}" size="28" />
+          <view wx:if="{{ci.flavors.length || ci.note}}" class="sheet-item-prefs" data-id="{{ci.item.id}}" catchtap="editItem">
+            <text wx:for="{{ci.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
+            <text wx:if="{{ci.note}}" class="pref-note">“{{ci.note}}”</text>
+            <icon name="edit" size="11" color="#8f9384" />
+          </view>
+          <view wx:else class="sheet-item-add" data-id="{{ci.item.id}}" catchtap="editItem">
+            <icon name="edit" size="11" color="#2a5fa6" />加口味/备注
+          </view>
         </view>
-        <stepper value="{{item.q}}" data-id="{{item.item.id}}" bind:sub="sub" bind:add="add" />
+        <stepper value="{{ci.q}}" data-id="{{ci.item.id}}" bind:sub="sub" bind:add="add" />
       </view>
     </scroll-view>
     <view class="sheet-foot" style="padding-bottom:{{safeBottom + 20}}px">
@@ -122,4 +130,14 @@
   </view>
 
   <tabbar variant="user" active="menu" />
+
+  <!-- 口味/备注 弹层 -->
+  <customize
+    visible="{{czVisible}}"
+    item="{{czItem}}"
+    init="{{czInit}}"
+    confirm-label="{{czLabel}}"
+    bind:close="onCzClose"
+    bind:confirm="onCzConfirm"
+  />
 </view>

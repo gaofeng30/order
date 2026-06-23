@@ -1,0 +1,39 @@
+<view class="page brand" style="padding-top:{{statusBarH}}px;padding-bottom:{{safeBottom + 34}}px">
+  <view class="ring r1"></view>
+  <view class="ring r3"></view>
+
+  <!-- logo：水平居中，竖直居中于顶部与首个板块之间 -->
+  <view class="logo-mid">
+    <view class="logo-card"><image src="/assets/emblem.png" class="logo-emblem" mode="aspectFit" /></view>
+  </view>
+
+  <!-- 三个品牌入口 -->
+  <view class="opts">
+    <view
+      wx:for="{{opts}}"
+      wx:key="key"
+      class="opt {{item.ready ? 'ready fade-up' : 'off'}}"
+      style="animation-delay:{{index * 0.05}}s"
+      data-key="{{item.key}}"
+      data-name="{{item.name}}"
+      data-ready="{{item.ready}}"
+      bindtap="tap">
+      <view class="opt-ico">
+        <icon name="{{item.icon}}" size="27" color="{{item.ready ? '#ffffff' : 'rgba(255,255,255,.5)'}}" />
+      </view>
+      <view class="opt-body">
+        <view class="opt-head">
+          <view class="opt-name serif">{{item.name}}</view>
+          <view wx:if="{{!item.ready}}" class="opt-tag">未上线</view>
+        </view>
+        <view class="opt-desc">{{item.desc}}</view>
+      </view>
+      <view wx:if="{{item.ready}}" class="opt-go"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
+      <icon wx:else name="clock" size="20" color="rgba(255,255,255,.32)" />
+    </view>
+
+    <view class="ver">绥安集团 · 本地生活服务　v1.0</view>
+  </view>
+
+  <toast id="toast" />
+</view>

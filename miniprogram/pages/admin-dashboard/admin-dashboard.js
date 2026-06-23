@@ -3,10 +3,10 @@ const { nav, itemsSummary, advanceOrder, advanceMeta } = require('../../utils/ut
 
 const BIZ = ['营业中', '休息中', '已截单'];
 const KPI = [
-  { k: '营收', v: '¥1,286', ic: 'wallet', c: '#467a32' },
-  { k: '订单', v: '38', ic: 'receipt', c: '#2a5fa6' },
-  { k: '访问', v: '412', ic: 'eye', c: '#a4873f' },
-  { k: '点击', v: '1,024', ic: 'chart', c: '#5e6354' },
+  { k: '当日营收', v: '¥1,286', ic: 'wallet', c: '#467a32' },
+  { k: '当日订单', v: '38', ic: 'receipt', c: '#2a5fa6' },
+  { k: '当月营收', v: '¥32,840', ic: 'chart', c: '#a4873f' },
+  { k: '当月订单', v: '906', ic: 'calendar', c: '#5e6354' },
 ];
 
 Page({
@@ -24,15 +24,15 @@ Page({
   build() {
     const g = getApp().globalData;
     const orders = g.aOrders;
-    const pend = orders.filter(o => o.status === '待接单').length;
+    const pend = orders.filter(o => o.status === '待制作').length;
     const overtime = orders.filter(o => o.status === '待取餐' && o.mins >= 22).length;
     const lowStock = 2;
     const todos = [];
-    if (pend) todos.push({ n: pend, label: '单待接单', tone: 'warn', to: '待接单' });
+    if (pend) todos.push({ n: pend, label: '单待制作', tone: 'warn', to: '待制作' });
     if (overtime) todos.push({ n: overtime, label: '单待取超时', tone: 'info', to: '待取餐' });
     if (lowStock) todos.push({ n: lowStock, label: '个库存告急', tone: 'mute', to: '' });
 
-    const live = orders.filter(o => ['待接单', '制作中', '待取餐'].includes(o.status)).slice(0, 3)
+    const live = orders.filter(o => ['待制作', '待取餐'].includes(o.status)).slice(0, 3)
       .map(o => ({ ...o, summary: itemsSummary(o.items), meta: advanceMeta(o.status) }));
 
     const max = data.RANK[0].sold;

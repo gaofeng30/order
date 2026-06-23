@@ -3,9 +3,9 @@ const data = require('./data.js');
 
 // ---- 状态 → 胶囊语义 (颜色统一来源) ----
 const STATUS_MAP = {
-  待取餐: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info',
+  待取餐: 'info', 待制作: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info', 已预约: 'info',
   已完成: 'ok', 成功: 'ok', 已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
-  待支付: 'warn', 待接单: 'warn', 待取超时: 'warn', 库存告急: 'warn',
+  待支付: 'warn', 待取超时: 'warn', 库存告急: 'warn',
   已取消: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute', 未开放: 'mute',
 };
 const statusTone = s => STATUS_MAP[s] || 'mute';
@@ -25,32 +25,77 @@ function buildUrl(id, params) {
 const nav = {
   go: (id, params) => wx.navigateTo({ url: buildUrl(id, params) }),       // 入栈
   replace: (id, params) => wx.redirectTo({ url: buildUrl(id, params) }),  // 替换栈顶
-  tabTo: (id, params) => wx.reLaunch({ url: buildUrl(id, params) }),      // 重置为单页 (Tab 切换)
+  /* Tab 切换：栈感知路由，避免 reLaunch 整栈销毁重建导致的切换卡顿。
+     - 目标页已在栈中 → navigateBack 弹回（最快，且顺带清掉上层流程页）
+     - 不在栈中 → redirectTo 只替换栈顶（栈深不增长，不会溢出）
+     - 带参数或栈过深（≥8，接近微信 10 层上限）→ 退回 reLaunch 兜底 */
+  tabTo(id, params) {
+    const url = buildUrl(id, params);
+    const pages = getCurrentPages();
+    if ((params && Object.keys(params).length) || pages.length >= 8) {
+      return wx.reLaunch({ url });
+    }
+    const route = `pages/${id}/${id}`;
+    const idx = pages.findIndex(p => p.route === route);
+    if (idx === pages.length - 1) return;  // 已在目标页
+    if (idx > -1) return wx.navigateBack({ delta: pages.length - 1 - idx, fail: () => wx.reLaunch({ url }) });
+    return wx.redirectTo({ url, fail: () => wx.reLaunch({ url }) });
+  },
   reset: () => wx.reLaunch({ url: '/pages/launch/launch' }),             // 回启动选择
+  toBrand: () => wx.reLaunch({ url: '/pages/brand/brand' }),            // 回品牌选择
   back: () => wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) }),
 };
 
+// ---- 下单模式 (尽快 now / 预约 reserve, 跨页共享) ----
+const orderMode = {
+  get: () => getApp().globalData.orderMode || 'now',
+  set: (m) => { getApp().globalData.orderMode = m; },
+};
+
 // ---- 购物车 (操作 globalData.cart) ----
-function getApp_() { return getApp(); }
+// cart: { [id]: { qty, flavors:[], note:'' } }  口味/备注绑定到菜品
+function cartRaw() { return getApp().globalData.cart; }
 const cart = {
-  get: () => getApp_().globalData.cart,
-  add(id) { const c = getApp_().globalData.cart; c[id] = (c[id] || 0) + 1; },
-  sub(id) { const c = getApp_().globalData.cart; if ((c[id] || 0) <= 1) delete c[id]; else c[id]--; },
-  clear() { getApp_().globalData.cart = {}; },
-  count() { return Object.values(getApp_().globalData.cart).reduce((a, b) => a + b, 0); },
+  get: () => cartRaw(),
+  qty(id) { const e = cartRaw()[id]; return e ? e.qty : 0; },
+  entry(id) { return cartRaw()[id] || null; },
+  add(id) {
+    const c = cartRaw();
+    const e = c[id] || { qty: 0, flavors: [], note: '' };
+    c[id] = Object.assign({}, e, { qty: e.qty + 1 });
+  },
+  sub(id) {
+    const c = cartRaw();
+    const e = c[id];
+    if (!e) return;
+    if (e.qty <= 1) delete c[id];
+    else c[id] = Object.assign({}, e, { qty: e.qty - 1 });
+  },
+  // 加购并写入口味/备注 (来自口味弹层)
+  setPrefs(id, prefs) {
+    const c = cartRaw();
+    const e = c[id] || { qty: 1, flavors: [], note: '' };
+    c[id] = Object.assign({}, e, prefs);
+  },
+  remove(id) { delete cartRaw()[id]; },
+  clear() { getApp().globalData.cart = {}; },
+  count() { return Object.values(cartRaw()).reduce((a, e) => a + e.qty, 0); },
   total() {
-    const c = getApp_().globalData.cart;
-    return Object.keys(c).reduce((a, id) => a + (data.itemById(id).price * c[id]), 0);
+    const c = cartRaw();
+    return Object.keys(c).reduce((a, id) => a + (data.itemById(id).price * c[id].qty), 0);
   },
   list() {
-    const c = getApp_().globalData.cart;
-    return Object.keys(c).map(id => ({ item: data.itemById(id), q: c[id] }));
+    const c = cartRaw();
+    return Object.keys(c).map(id => ({
+      item: data.itemById(id), q: c[id].qty, flavors: c[id].flavors || [], note: c[id].note || '',
+    }));
   },
 };
 
-// ---- 订单状态机 (商户端推进) ----
-const NEXT = { 待接单: '制作中', 制作中: '待取餐', 待取餐: '已完成' };
-const ACT = { 待接单: '接单', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 已取消: '查看' };
+// ---- 订单状态机 (商户端履约推进, 单向) ----
+// 待制作 ──备好──▶ 待取餐 ──核销──▶ 已完成
+const NEXT = { 待制作: '待取餐', 待取餐: '已完成' };
+const ACT = { 待制作: '备好', 待取餐: '核销', 已完成: '查看', 已取消: '查看' };
 
 // 菜品摘要串
 function itemsSummary(items) {
@@ -88,5 +133,5 @@ function advanceMeta(status) {
 }
 
 module.exports = {
-  STATUS_MAP, statusTone, nav, buildUrl, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
+  STATUS_MAP, statusTone, nav, buildUrl, orderMode, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
 };

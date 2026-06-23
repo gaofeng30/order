@@ -2,6 +2,7 @@
   "navigationStyle": "custom",
   "navigationBarTextStyle": "white",
   "usingComponents": {
-    "customize": "/components/customize/customize"
+    "icon": "/components/icon/icon",
+    "toast": "/components/toast/toast"
   }
 }

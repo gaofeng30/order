@@ -1,0 +1,24 @@
+.cz-sheet { padding-bottom: 0; }
+
+.cz-head {
+  display: flex; gap: 24rpx; padding: 36rpx 36rpx 28rpx; border-bottom: 1rpx solid var(--line);
+}
+.cz-head-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12rpx; }
+.cz-name { font-size: 34rpx; font-weight: 700; color: var(--ink); }
+.cz-close { flex: 0 0 auto; padding: 4rpx; }
+
+.cz-body { padding: 0 36rpx; max-height: 600rpx; }
+.cz-label-row { display: flex; align-items: center; gap: 16rpx; margin: 32rpx 0 20rpx; }
+.cz-label { font-size: 30rpx; font-weight: 700; color: var(--ink); }
+.cz-chips { display: flex; flex-wrap: wrap; gap: 18rpx; }
+
+.cz-note-label { margin: 36rpx 0 20rpx; }
+.cz-note {
+  width: 100%; min-height: 120rpx; border-radius: 24rpx; border: 1rpx solid var(--line);
+  background: var(--bg); padding: 24rpx 28rpx; font-size: 27rpx; color: var(--ink);
+  line-height: 1.5; box-sizing: border-box;
+}
+.cz-note-ph { color: var(--ink-3); }
+
+.cz-foot { display: flex; align-items: center; gap: 28rpx; padding: 28rpx 36rpx 0; }
+.cz-confirm { flex: 1; }

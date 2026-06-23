@@ -3,7 +3,7 @@
   style="padding-top:{{statusBarH}}px"
 >
   <view class="nb-row" style="height:{{navH}}px">
-    <view wx:if="{{back}}" class="nb-back" catchtap="onBack">
+    <view wx:if="{{back || exit}}" class="nb-back" catchtap="onBack">
       <icon name="back" size="22" color="{{tone === 'dark' ? '#ffffff' : '#22271d'}}" />
     </view>
     <view wx:if="{{leftLabel}}" class="nb-left {{tone}}">{{leftLabel}}</view>

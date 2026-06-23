@@ -1,11 +1,12 @@
-/* 绥安食品 — 菜品 / 订单 / 分类 数据 (真实物料 p001–p007) */
+/* 绥安食品 — 菜品 / 订单 / 分类 / 预约 数据 (真实物料 p001–p007) */
 
 const STORE = {
   name: '绥安食品',
   branch: '县前直营店',
-  addr: '漳浦县绥安镇府前路 18 号',
+  addr: '绥芬河市青云镇通商路',
   cutoff: '今日 16:30 截单',
   pickup: '预计 17:10 可取',
+  pickupWindow: '县前大厦 1F · 2 号取餐窗口',
   status: '营业中',
 };
 
@@ -50,32 +51,41 @@ const MENU = [
 
 const itemById = id => MENU.find(m => m.id === id);
 
+// 用户端 我的订单
+// items: [id, qty, price, flavors?, note?]
 const USER_ORDERS = [
-  { id: 'o1', no: 'SA2406100126', code: 'A126', status: '待取餐', time: '06-10 16:42', total: 70,
+  { id: 'o1', no: 'SA2406100126', code: 'A126', status: '待取餐', time: '06-10 16:42', total: 70, type: 'now', pickupLabel: '尽快 · 约 17:10', pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '双拼饭加饭', flavors: ['加饭', '加辣'],
-    items: [['p001', 2, 32], ['p006', 1, 12]] },
-  { id: 'o2', no: 'SA2406100098', code: 'A098', status: '待支付', time: '06-10 16:20', total: 54,
+    items: [['p001', 2, 32, ['加饭', '加辣'], '双拼饭加饭'], ['p006', 1, 12]] },
+  { id: 'r1', no: 'SA2406100140', code: 'B208', status: '已预约', time: '06-10 16:30', total: 60, type: 'reserve', pickupLabel: '今天 18:30', pickupPoint: '县前直营店', minsToPickup: 102,
+    contact: '林先生', phone: '138****6620', note: '会议餐，准点取', flavors: ['少盐'],
+    items: [['p001', 1, 32], ['p002', 1, 28, ['少盐'], '会议餐，准点取']] },
+  { id: 'r2', no: 'SA2406100138', code: 'B176', status: '已预约', time: '06-10 16:28', total: 42, type: 'reserve', pickupLabel: '今天 17:06', pickupPoint: '县前直营店', minsToPickup: 18,
+    contact: '林先生', phone: '138****6620', note: '', flavors: ['酱汁分装'],
+    items: [['p005', 1, 30, ['酱汁分装']], ['p006', 1, 12]] },
+  { id: 'o2', no: 'SA2406100098', code: 'A098', status: '待支付', time: '06-10 16:20', total: 54, type: 'now', pickupLabel: '尽快 · 约 17:10', pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '', flavors: [],
     items: [['p002', 1, 28], ['p005', 1, 30]] },
-  { id: 'o3', no: 'SA2406090311', code: 'A311', status: '已完成', time: '06-09 12:08', total: 62,
+  { id: 'o3', no: 'SA2406090311', code: 'A311', status: '已完成', time: '06-09 12:08', total: 62, type: 'now', pickupLabel: '尽快 · 约 12:30', pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '鸡腿排双拼', flavors: ['双拼', '酱汁分装'],
-    items: [['p004', 1, 26], ['p005', 1, 30], ['p006', 1, 12]] },
-  { id: 'o4', no: 'SA2406080077', code: 'A077', status: '已取消', time: '06-08 18:30', total: 58,
+    items: [['p004', 1, 26, ['双拼']], ['p005', 1, 30, ['酱汁分装']], ['p006', 1, 12]] },
+  { id: 'o4', no: 'SA2406080077', code: 'A077', status: '已取消', time: '06-08 18:30', total: 58, type: 'now', pickupLabel: '尽快', pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '', flavors: [],
     items: [['p001', 1, 32], ['p004', 1, 26]] },
 ];
 
+// 商户端 订单 (履约模型: 待制作 → 待取餐 → 已完成 / 已取消)
 const ADMIN_ORDERS = [
-  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '待接单', time: '16:51', mins: 1, total: 60, count: 2,
+  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '待制作', time: '16:51', mins: 1, total: 60, count: 2,
     contact: '陈女士', phone: '159****2031', flavor: '双拼饭加辣 ×1', note: '打包分开装',
     items: [['p001', 1, 32], ['p002', 1, 28]] },
-  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '待接单', time: '16:49', mins: 3, total: 26, count: 1,
+  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '待制作', time: '16:49', mins: 3, total: 26, count: 1,
     contact: '吴先生', phone: '137****7788', flavor: '—', note: '',
     items: [['p004', 1, 26]] },
-  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
+  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '待制作', time: '16:42', mins: 10, total: 76, count: 3,
     contact: '林先生', phone: '138****6620', flavor: '加饭 · 加辣', note: '双拼饭加饭',
     items: [['p001', 2, 32], ['p006', 1, 12]] },
-  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
+  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '待制作', time: '16:35', mins: 17, total: 58, count: 2,
     contact: '黄小姐', phone: '135****9012', flavor: '酱汁分装', note: '能量碗酱汁分装',
     items: [['p005', 1, 30], ['p004', 1, 26], ['p006', 1, 12]] },
   { id: 'a5', no: 'SA2406100118', code: 'A118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
@@ -92,10 +102,12 @@ const ADMIN_ORDERS = [
     items: [['p004', 1, 26]] },
 ];
 
+// 单品销量排行
 const RANK = [
   { id: 'p003', sold: 320 }, { id: 'p001', sold: 286 }, { id: 'p004', sold: 254 }, { id: 'p002', sold: 198 }, { id: 'p005', sold: 142 },
 ];
 
+// 分类管理
 const ADMIN_CATS = [
   { id: 'c1', name: '今日套餐', sort: 1, on: true, count: 2 },
   { id: 'c2', name: '热销菜品', sort: 2, on: true, count: 2 },
@@ -104,8 +116,24 @@ const ADMIN_CATS = [
   { id: 'c5', name: '节庆礼盒', sort: 5, on: false, count: 0 },
 ];
 
+// 口味选项 (菜品级, 可多选)
 const FLAVORS = ['少饭', '加饭', '少盐', '加辣', '酱汁分装', '免葱蒜', '打包分装', '多双餐具'];
+
+// 预约点餐: 取餐点 / 日期 / 时段 (NOW_MINS = 当前模拟时刻 16:48)
+const NOW_MINS = 16 * 60 + 48;
+const PICKUP_POINTS = [
+  { id: 'pp1', name: '县前直营店', addr: '绥芬河市青云镇通商路', tag: '直营', hours: '09:00–19:00' },
+  { id: 'pp2', name: '绥芬河北站取餐点', addr: '绥芬河市站前广场东侧', tag: '取餐点', hours: '07:00–20:00' },
+  { id: 'pp3', name: '青云镇综合市场点', addr: '绥芬河市青云镇市场街', tag: '合作点', hours: '08:00–18:30' },
+];
+const RESERVE_DATES = [{ k: '今天', off: 0 }, { k: '明天', off: 1 }, { k: '后天', off: 2 }];
+const RESERVE_SLOTS = ['11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00'];
+// 取餐前可取消的最短分钟数
+const CANCEL_LIMIT_MIN = 30;
+function slotMins(off, t) { const [h, m] = t.split(':').map(Number); return off * 1440 + h * 60 + m - NOW_MINS; }
+function canCancelReserve(o) { return !!(o && o.type === 'reserve' && o.status === '已预约' && (o.minsToPickup > CANCEL_LIMIT_MIN)); }
 
 module.exports = {
   STORE, HUES, CATS, MENU, itemById, USER_ORDERS, ADMIN_ORDERS, RANK, ADMIN_CATS, FLAVORS,
+  NOW_MINS, PICKUP_POINTS, RESERVE_DATES, RESERVE_SLOTS, CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
 };

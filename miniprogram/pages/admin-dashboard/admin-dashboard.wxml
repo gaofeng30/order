@@ -35,7 +35,7 @@
       </view>
 
       <!-- 今日概览 -->
-      <view class="sec-h"><text class="t">今日概览</text><text class="faint" style="font-size:22rpx">截至 16:48</text></view>
+      <view class="sec-h"><text class="t">经营概览</text><text class="faint" style="font-size:22rpx">截至 16:48</text></view>
       <view class="kpis">
         <view wx:for="{{kpi}}" wx:key="k" class="card kpi" data-k="{{item.k}}" bindtap="kpiTap">
           <view class="kpi-top"><text class="kpi-k">{{item.k}}</text><icon name="{{item.ic}}" size="16" color="{{item.c}}" /></view>

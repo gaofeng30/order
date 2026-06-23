@@ -3,6 +3,9 @@
   <view class="ring r2"></view>
   <view class="ring r3"></view>
 
+  <!-- 顶部：返回品牌选择（仅图标） -->
+  <view class="back-btn" bindtap="toBrand"><icon name="back" size="22" color="rgba(255,255,255,0.85)" /></view>
+
   <!-- 左上角 商户 logo -->
   <view class="brand">
     <view class="brand-logo"><image src="/assets/emblem.png" class="brand-emblem" mode="aspectFit" /></view>
@@ -16,12 +19,12 @@
   <view class="hero-mid">
     <view class="welcome">欢迎光临</view>
     <view class="big-title serif"><view>在地手作</view><view>到店自提</view></view>
-    <view class="lead"><view>古法慢工的绥安味道</view><view>每一口都是家乡的烟火气</view></view>
+    <view class="lead"><view>古法慢工的绥安味道，</view><view>循味而来，各得其门。</view></view>
   </view>
 
   <!-- 身份卡 -->
   <view class="cards">
-    <view class="id-card primary fade-up" data-to="home" bindtap="go">
+    <view class="id-card primary fade-up" bindtap="openAuth">
       <view class="id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
       <view class="id-body">
         <view class="id-name serif">用户端</view>
@@ -40,5 +43,23 @@
     </view>
 
     <view class="ver">绥安食品 · 县前直营店　小程序 v1.0</view>
+  </view>
+
+  <!-- 微信登录授权弹窗 -->
+  <view wx:if="{{auth}}" class="auth-mask" bindtap="closeAuth"></view>
+  <view wx:if="{{auth}}" class="auth-card" catchtap="noop">
+    <view class="auth-top">
+      <view class="auth-wx">
+        <image class="auth-wx-ico" src="{{wxIcon}}" mode="aspectFit" />
+        <text>微信授权登录</text>
+      </view>
+      <view class="auth-emblem"><image src="/assets/emblem.png" class="auth-emblem-img" mode="aspectFit" /></view>
+      <view class="auth-name">绥安食品</view>
+      <view class="auth-desc"><view>申请获取并使用你的</view><view>昵称、头像与手机号</view></view>
+    </view>
+    <view class="auth-actions">
+      <view class="auth-btn" bindtap="closeAuth">拒绝</view>
+      <view class="auth-btn allow" bindtap="allowAuth">允许</view>
+    </view>
   </view>
 </view>
