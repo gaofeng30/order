@@ -7,7 +7,7 @@
 1. [需求文档](./product/online-ordering-system-requirements.md)：先了解产品目标、功能范围和 P0 原型要求。
 2. [Demo 说明](./product/online-ordering-system-demo-guide.md)：用于向商户介绍当前 Demo 已具备的功能。
 3. [客户沟通与待讨论事项](./product/online-ordering-system-customer-discussion.md)：用于客户会议前确认业务规则。
-4. [微信点单小程序客户资料准备清单](./product/微信点单小程序客户资料准备清单.md)：用于客户准备注册、认证、支付和上线审核资料。
+4. [微信点单小程序客户资料与业务规则确认清单](./product/微信点单小程序客户资料与业务规则确认清单.md)：用于客户准备注册、认证、支付、权限配置、上线审核资料，并确认取餐、预约、退款等业务规则。
 5. [技术文档](./product/online-ordering-system-technical.md)：用于开发前确认系统形态、模块边界和数据结构。
 6. [PRD 草稿](./product/online-ordering-system-prd.md)：保留更完整的产品上下文和历史信息。
 7. [视觉颜色规则](./design/color-proportion.md)：用于 UI 调整和后续视觉一致性检查。
