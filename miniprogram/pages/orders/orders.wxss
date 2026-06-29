@@ -22,3 +22,4 @@
 .oc-count { font-size: 24rpx; color: var(--ink-3); }
 .oc-total-lbl { margin-left: auto; font-size: 24rpx; color: var(--ink-3); margin-right: 12rpx; }
 .oc-pay { margin-left: 24rpx; height: 60rpx; }
+.oc-cancel { margin-left: 24rpx; height: 60rpx; background: #fff; color: #c0392b; box-shadow: inset 0 0 0 3rpx #d8a89f; }

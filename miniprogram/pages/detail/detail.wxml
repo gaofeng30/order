@@ -50,11 +50,20 @@
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
     <stepper wx:if="{{qty > 0 && !off}}" value="{{qty}}" bind:sub="sub" bind:add="add" />
     <view wx:else class="have-qty"><text>购物车已有</text><text class="have-num">{{qty}}</text><text>份</text></view>
-    <view class="btn btn--block {{off ? 'btn--mute' : 'btn--primary'}} addcart-btn" bindtap="addToCart">
+    <view class="btn btn--block {{off ? 'btn--mute' : 'btn--primary'}} addcart-btn" bindtap="openCustomize">
       <block wx:if="{{off}}">{{m.status === 'soldout' ? '已售罄' : '已下架'}}</block>
-      <block wx:else>加入购物车 · <money v="{{m.price}}" color="#ffffff" size="30" /></block>
+      <block wx:else>选规格加购 · <money v="{{m.price}}" color="#ffffff" size="30" /></block>
     </view>
   </view>
+
+  <!-- 口味/备注 弹层 -->
+  <customize
+    visible="{{czVisible}}"
+    item="{{m}}"
+    init="{{czInit}}"
+    bind:close="onCzClose"
+    bind:confirm="onCzConfirm"
+  />
 
   <toast id="toast" />
 </view>

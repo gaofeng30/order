@@ -24,7 +24,7 @@
           <view class="prow-ico" style="background:var(--bg2)"><icon name="receipt" size="19" color="#467a32" /></view>
           <view class="prow-main">
             <view class="prow-label">我的订单</view>
-            <view class="prow-sub">{{pend > 0 ? pend + ' 单待取餐' : '查看全部订单'}}</view>
+            <view class="prow-sub">{{pend > 0 ? pend + ' 单待取/预约' : '查看全部订单'}}</view>
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
         </view>

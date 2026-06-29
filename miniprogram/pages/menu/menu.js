@@ -7,7 +7,7 @@ Page({
     store: data.STORE,
     cats: data.CATS,
     groups: [],
-    cartMap: {},
+    qtyMap: {},       // { [id]: qty }
     count: 0,
     total: 0,
     active: data.CATS[0],
@@ -15,9 +15,15 @@ Page({
     sheet: false,
     cartItems: [],
     _offsets: [],
+    // 口味/备注弹层
+    czVisible: false,
+    czItem: null,
+    czInit: null,
+    czLabel: '加入购物车',
   },
   onLoad() {
-    const groups = data.CATS.map(c => ({ cat: c, items: data.MENU.filter(m => m.cat === c) }));
+    // 用户端隐藏已下架 (off) 菜品
+    const groups = data.CATS.map(c => ({ cat: c, items: data.MENU.filter(m => m.cat === c && m.status !== 'off') }));
     this.setData({ groups });
     this.refresh();
   },
@@ -35,8 +41,11 @@ Page({
     });
   },
   refresh() {
+    const raw = getApp().globalData.cart;
+    const qtyMap = {};
+    Object.keys(raw).forEach(id => { qtyMap[id] = raw[id].qty; });
     this.setData({
-      cartMap: Object.assign({}, getApp().globalData.cart),
+      qtyMap,
       count: cart.count(),
       total: cart.total(),
       cartItems: cart.list(),
@@ -45,6 +54,28 @@ Page({
   add(e) { cart.add(e.currentTarget.dataset.id); this.refresh(); },
   sub(e) { cart.sub(e.currentTarget.dataset.id); this.refresh(); },
   clear() { cart.clear(); this.refresh(); this.setData({ sheet: false }); },
+  // 选规格 / 加口味备注 弹层
+  openCustomize(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ czVisible: true, czItem: data.itemById(id), czInit: null, czLabel: '加入购物车' });
+  },
+  editItem(e) {
+    const id = e.currentTarget.dataset.id;
+    const entry = cart.entry(id);
+    this.setData({
+      sheet: false,
+      czVisible: true,
+      czItem: data.itemById(id),
+      czInit: entry ? { qty: entry.qty, flavors: entry.flavors, note: entry.note } : null,
+      czLabel: '保存',
+    });
+  },
+  onCzClose() { this.setData({ czVisible: false }); },
+  onCzConfirm(e) {
+    cart.setPrefs(this.data.czItem.id, e.detail);
+    this.setData({ czVisible: false });
+    this.refresh();
+  },
   jump(e) {
     const c = e.currentTarget.dataset.cat;
     const idx = e.currentTarget.dataset.idx;

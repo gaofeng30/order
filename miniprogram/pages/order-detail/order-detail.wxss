@@ -10,13 +10,42 @@
   background: rgba(255, 255, 255, .16); color: #fff; border-radius: 999rpx; font-size: 27rpx;
 }
 
+.ticket-rsv { display: flex; align-items: center; justify-content: center; gap: 12rpx; font-size: 28rpx; color: #9fd3ff; font-weight: 600; margin: -4rpx 0 12rpx; }
+
 .sec-card { padding: 4rpx 36rpx; margin-top: 24rpx; }
-.order-item { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.order-item-info { flex: 1; }
-.order-item-name { font-size: 28rpx; color: var(--ink); font-weight: 500; }
-.order-item-unit { font-size: 23rpx; color: var(--ink-3); margin-top: 4rpx; }
+.od-item { display: flex; align-items: flex-start; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.od-item-info { flex: 1; min-width: 0; }
+.od-item-name { font-size: 28rpx; color: var(--ink); font-weight: 500; }
+.od-item-unit { font-size: 23rpx; color: var(--ink-3); margin-top: 4rpx; }
+.od-prefs { margin-top: 12rpx; display: flex; flex-wrap: wrap; align-items: center; gap: 12rpx; }
+.pref-chip { font-size: 21rpx; color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 16rpx; border-radius: 12rpx; }
+.pref-note { font-size: 22rpx; color: var(--ink-2); }
 .pay-row { display: flex; justify-content: flex-end; align-items: center; gap: 16rpx; padding: 24rpx 0; border-top: 1rpx solid var(--line); }
 .pay-lbl { font-size: 24rpx; color: var(--ink-3); }
+
+/* 取消预约 */
+.cancel-card { padding: 32rpx 36rpx; margin-top: 24rpx; }
+.cancel-top { display: flex; align-items: flex-start; gap: 20rpx; }
+.cancel-text { flex: 1; }
+.cancel-title { font-size: 27rpx; font-weight: 600; color: var(--ink); }
+.cancel-desc { font-size: 24rpx; color: var(--ink-3); margin-top: 8rpx; line-height: 1.6; }
+.cancel-desc.warn { color: var(--gold-2); }
+.cancel-btn {
+  margin-top: 28rpx; height: 88rpx; border-radius: 999rpx; display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; font-weight: 600;
+}
+.cancel-btn.on { background: #fff; color: #c0392b; box-shadow: inset 0 0 0 3rpx #d8a89f; }
+.cancel-btn.off { background: #f1efe6; color: #b3b6a6; }
+
+/* 取消确认弹层 */
+.cancel-sheet { padding: 44rpx 40rpx 0; }
+.cs-center { text-align: center; }
+.cs-ring { width: 116rpx; height: 116rpx; border-radius: 50%; background: var(--gold-bg); margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+.cs-title { font-size: 36rpx; font-weight: 700; color: var(--ink); margin-top: 28rpx; }
+.cs-sub { font-size: 26rpx; color: var(--ink-2); margin-top: 12rpx; line-height: 1.6; }
+.cs-actions { display: flex; gap: 24rpx; margin-top: 40rpx; }
+.cs-btn { flex: 1; }
+.cs-confirm { flex: 1.3; background: #c0392b; color: #fff; }
 
 .info-row { display: flex; align-items: center; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
 .info-row.last { border-bottom: none; }

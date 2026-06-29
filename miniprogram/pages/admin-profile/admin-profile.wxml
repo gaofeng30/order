@@ -9,7 +9,7 @@
         <image src="/assets/emblem.png" class="id-emblem" mode="aspectFit" />
         <view class="id-body">
           <view class="serif id-name">绥安食品</view>
-          <view class="id-sub">县前直营店 · 店长 高比特</view>
+          <view class="id-sub">县前直营店 · 店长 高特</view>
         </view>
         <pill s="{{storeStatus}}" ondark />
       </view>

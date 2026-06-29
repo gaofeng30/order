@@ -5,7 +5,13 @@
   padding-right: 44rpx;
 }
 
-.brand { display: flex; align-items: center; gap: 22rpx; margin-top: 12rpx; position: relative; z-index: 2; }
+.back-btn {
+  position: relative; z-index: 3; align-self: flex-start;
+  width: 68rpx; height: 68rpx; margin-left: -12rpx; margin-bottom: 12rpx;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brand { display: flex; align-items: center; gap: 22rpx; margin-top: 4rpx; position: relative; z-index: 2; }
 .brand-logo {
   width: 92rpx; height: 92rpx; border-radius: 28rpx; background: #fff;
   display: flex; align-items: center; justify-content: center; box-shadow: 0 12rpx 36rpx rgba(0, 0, 0, .3);
@@ -42,3 +48,26 @@
 }
 .id-go.primary { background: #fff; }
 .ver { text-align: center; font-size: 22rpx; color: rgba(255, 255, 255, .4); margin-top: 8rpx; }
+
+/* 微信授权弹窗 */
+.auth-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); z-index: 160; animation: fadeIn .2s ease; }
+.auth-card {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 80%; z-index: 170;
+  background: #fff; border-radius: 28rpx; overflow: hidden; box-shadow: 0 48rpx 120rpx rgba(0, 0, 0, .3);
+}
+.auth-top { padding: 48rpx 44rpx 36rpx; text-align: center; }
+.auth-wx { display: flex; align-items: center; justify-content: center; gap: 12rpx; font-size: 25rpx; color: #9aa0a6; }
+.auth-wx-ico { width: 32rpx; height: 32rpx; }
+.auth-emblem {
+  display: inline-flex; width: 108rpx; height: 108rpx; border-radius: 26rpx; margin-top: 36rpx;
+  align-items: center; justify-content: center; box-shadow: inset 0 0 0 2rpx #eee;
+}
+.auth-emblem-img { width: 88rpx; height: 88rpx; }
+.auth-name { font-size: 33rpx; font-weight: 600; margin-top: 24rpx; color: #1a1a1a; }
+.auth-desc { font-size: 26rpx; color: #8a8f99; margin-top: 12rpx; line-height: 1.6; }
+.auth-actions { display: flex; border-top: 1rpx solid #ececec; }
+.auth-btn {
+  flex: 1; height: 96rpx; display: flex; align-items: center; justify-content: center;
+  font-size: 30rpx; color: #576b95; border-right: 1rpx solid #ececec;
+}
+.auth-btn.allow { color: #07c160; font-weight: 600; border-right: none; }

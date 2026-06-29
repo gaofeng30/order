@@ -1,0 +1,50 @@
+<view wx:if="{{visible}}">
+  <view class="sheet-mask" catchtap="close"></view>
+  <view class="sheet cz-sheet">
+    <!-- 菜品抬头 -->
+    <view class="cz-head">
+      <imageph item="{{item}}" h="120" w="120" radius="24" tag="{{false}}" />
+      <view class="cz-head-info">
+        <view class="cz-name serif">{{item.name}}</view>
+        <money v="{{item.price}}" size="38" />
+      </view>
+      <view class="cz-close" catchtap="close"><icon name="close" size="20" color="#8f9384" /></view>
+    </view>
+
+    <scroll-view class="cz-body" scroll-y enhanced show-scrollbar="{{false}}">
+      <!-- 口味偏好 -->
+      <view class="cz-label-row">
+        <text class="cz-label serif">口味偏好</text>
+        <view class="pill pill--info">可多选 · 商户可见</view>
+      </view>
+      <view class="cz-chips">
+        <view
+          wx:for="{{chips}}"
+          wx:for-item="ch"
+          wx:key="name"
+          class="chip {{ch.on ? 'on' : ''}}"
+          data-f="{{ch.name}}"
+          catchtap="toggleFlavor"
+        >
+          <icon wx:if="{{ch.on}}" name="check" size="13" color="#467a32" />{{ch.name}}
+        </view>
+      </view>
+      <!-- 备注 -->
+      <view class="cz-label serif cz-note-label">备注</view>
+      <textarea
+        class="cz-note"
+        value="{{note}}"
+        bindinput="onNote"
+        maxlength="50"
+        placeholder="如：双拼饭加饭、酱汁分装、少冰…"
+        placeholder-class="cz-note-ph"
+      />
+    </scroll-view>
+
+    <!-- 数量 + 确认 -->
+    <view class="cz-foot" style="padding-bottom:{{safeBottom + 24}}px">
+      <stepper value="{{qty}}" bind:sub="sub" bind:add="add" />
+      <view class="btn btn--primary cz-confirm" catchtap="confirm">{{confirmLabel}} · ¥{{total}}</view>
+    </view>
+  </view>
+</view>

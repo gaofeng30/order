@@ -1,5 +1,5 @@
 <view class="page">
-  <navbar tone="dark" overlay leftLabel="绥安食品">
+  <navbar tone="dark" overlay exit>
     <view slot="right"><icon name="bell" size="20" color="#ffffff" /></view>
   </navbar>
 
@@ -66,7 +66,6 @@
             <view class="pill pill--ok">+8 元券</view>
           </view>
           <view class="member-desc">扫码进群，第一时间获取当日现做与活动。</view>
-          <view class="btn btn--ghost btn--sm member-btn" bindtap="login">立即登录 / 注册</view>
         </view>
         <view class="member-r">
           <view class="qr-box"><qrcode size="140" dark="#0b2f63" /></view>

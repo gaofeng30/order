@@ -1,23 +1,23 @@
 <view class="page">
-  <navbar tone="light" title="支付结果" />
+  <navbar tone="light" title="{{navTitle}}" />
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
     <view class="success fade-up">
-      <view class="success-ring"><icon name="check" size="44" color="#ffffff" stroke="2.6" /></view>
-      <view class="success-title serif">支付成功</view>
-      <view class="success-sub">已通知商户备餐，请凭取餐号到店领取</view>
+      <view class="success-ring"><icon name="{{ringIcon}}" size="{{ringSize}}" color="#ffffff" stroke="2.6" /></view>
+      <view class="success-title serif">{{mainTitle}}</view>
+      <view class="success-sub">{{sub}}</view>
     </view>
 
     <view class="hero-dark code-card">
       <view class="ring r1"></view>
       <view class="ring r2"></view>
       <view class="code-inner">
-        <view class="code-lbl">取餐号</view>
+        <view class="code-lbl">{{codeLbl}}</view>
         <view class="code-big serif">{{o.code}}</view>
         <view class="code-no">订单号 {{o.no}}</view>
         <view class="code-foot">
-          <icon name="clock" size="14" color="#9fd3ff" />
-          <text>{{store.pickup}} · {{store.branch}}</text>
+          <icon name="{{footIcon}}" size="14" color="#9fd3ff" />
+          <text>{{footText}}</text>
         </view>
       </view>
     </view>
@@ -25,6 +25,6 @@
 
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
     <view class="btn btn--ghost result-btn" bindtap="goHome">返回首页</view>
-    <view class="btn btn--primary result-btn primary" bindtap="viewCode">查看取餐码</view>
+    <view class="btn btn--primary result-btn primary" bindtap="viewCode">{{viewBtn}}</view>
   </view>
 </view>

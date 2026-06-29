@@ -1,0 +1,87 @@
+.brand {
+  background: linear-gradient(160deg, #103a78 0%, #0b2f63 45%, #082651 100%);
+  color: #fff;
+  padding-left: 52rpx;
+  padding-right: 52rpx;
+}
+
+/* logo 区：占据上方剩余空间并居中 */
+.logo-mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+.logo-card {
+  width: 320rpx;
+  height: 320rpx;
+  border-radius: 88rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 36rpx 92rpx rgba(0, 0, 0, .34);
+}
+.logo-emblem { width: 250rpx; height: 250rpx; }
+
+/* 入口板块 */
+.opts { flex: 0 0 auto; display: flex; flex-direction: column; gap: 28rpx; position: relative; z-index: 2; }
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+  padding: 36rpx;
+  border-radius: 40rpx;
+}
+.opt.ready {
+  background: linear-gradient(135deg, #5b8f3f, #3d6b2f);
+  box-shadow: 0 28rpx 64rpx rgba(61, 107, 47, .34);
+}
+.opt.off {
+  background: rgba(255, 255, 255, .045);
+  box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, .10);
+  opacity: .66;
+}
+
+.opt-ico {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 30rpx;
+  flex: 0 0 100rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .18);
+}
+.opt.off .opt-ico { background: rgba(255, 255, 255, .06); }
+
+.opt-body { flex: 1; min-width: 0; }
+.opt-head { display: flex; align-items: center; gap: 16rpx; }
+.opt-name { font-size: 40rpx; font-weight: 700; letter-spacing: 2rpx; color: #fff; }
+.opt.off .opt-name { color: rgba(255, 255, 255, .6); }
+.opt-tag {
+  font-size: 20rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, .10);
+  color: rgba(255, 255, 255, .55);
+  letter-spacing: 1rpx;
+}
+.opt-desc { font-size: 24rpx; color: rgba(255, 255, 255, .72); margin-top: 10rpx; }
+.opt.off .opt-desc { color: rgba(255, 255, 255, .4); }
+
+.opt-go {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  flex: 0 0 68rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.ver { text-align: center; font-size: 22rpx; color: rgba(255, 255, 255, .4); margin-top: 16rpx; }

@@ -1,5 +1,5 @@
 const data = require('../../utils/data.js');
-const { nav } = require('../../utils/util.js');
+const { nav, orderMode } = require('../../utils/util.js');
 
 const CAMPAIGNS = [
   { pill: '新店首发', tone: 'warn', title: '首单立减 ¥8', sub: ['新人入群即领，到店自提，', '下单自动抵扣。'], cta: '立即点单',
@@ -18,11 +18,11 @@ Page({
     bannerIdx: 0,
     signature: [],
     grid: [
-      { k: 'menu', icon: 'list', cn: '到店点单' },
+      { k: 'now', icon: 'list', cn: '到店点单' },
+      { k: 'reserve', icon: 'calendarClock', cn: '预约点餐' },
       { k: 'orders', icon: 'receipt', cn: '我的订单' },
       { k: 'pickup', icon: 'ticket', cn: '取餐码' },
       { k: 'member', icon: 'gift', cn: '会员中心' },
-      { k: 'delivery', icon: 'truck', cn: '外卖配送', off: true },
       { k: 'service', icon: 'headset', cn: '联系客服' },
     ],
   },
@@ -40,16 +40,16 @@ Page({
     if (c.id) nav.go('detail', { id: c.id }); else nav.tabTo(c.go);
   },
   toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
-  login() { this.toast('已发送登录邀请', 'check'); },
   gridTap(e) {
     const k = e.currentTarget.dataset.k;
     switch (k) {
-      case 'menu': nav.tabTo('menu'); break;
+      case 'now': orderMode.set('now'); nav.tabTo('menu'); break;
+      case 'reserve': orderMode.set('reserve'); nav.tabTo('menu'); break;
       case 'orders': nav.tabTo('orders'); break;
       case 'pickup': {
-        const t = getApp().globalData.orders.find(o => o.status === '待取餐');
+        const t = getApp().globalData.orders.find(o => o.status === '待取餐' || o.status === '已预约');
         if (t) nav.go('order-detail', { id: t.id });
-        else this.toast('暂无待取餐订单', 'warn');
+        else this.toast('暂无可取餐订单', 'warn');
         break;
       }
       case 'member': this.toast('会员中心建设中', 'warn'); break;

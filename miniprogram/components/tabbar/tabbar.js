@@ -14,12 +14,17 @@ Component({
   lifetimes: {
     attached() { this.build(); },
   },
+  // 页面实例被复用（navigateBack 回到 Tab 页）时不会重新 attached，
+  // 通过宿主页 show 重算角标，避免「待支付/待制作」数字陈旧
+  pageLifetimes: {
+    show() { this.build(); },
+  },
   methods: {
     build() {
       const g = getApp().globalData;
       let items, activeColor;
       if (this.data.variant === 'admin') {
-        const pend = g.aOrders.filter(o => o.status === '待接单').length;
+        const pend = g.aOrders.filter(o => o.status === '待制作').length;
         items = [
           { id: 'admin-dashboard', icon: 'dash', label: '工作台' },
           { id: 'admin-orders', icon: 'layers', label: '订单', badge: pend },

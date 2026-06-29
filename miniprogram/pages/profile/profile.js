@@ -4,7 +4,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: { pend: 0 },
   onShow() {
-    this.setData({ pend: getApp().globalData.orders.filter(o => o.status === '待取餐').length });
+    this.setData({ pend: getApp().globalData.orders.filter(o => o.status === '待取餐' || o.status === '已预约').length });
   },
   toOrders() { nav.tabTo('orders'); },
   toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },

@@ -55,7 +55,12 @@
 .sheet-clear { margin-left: auto; font-size: 25rpx; color: var(--ink-3); display: flex; align-items: center; gap: 8rpx; }
 .sheet-body { padding: 8rpx 36rpx; max-height: 600rpx; }
 .sheet-item-info { flex: 1; }
+.sheet-row { align-items: flex-start; }
 .sheet-item-name { font-size: 28rpx; font-weight: 600; color: var(--ink); margin-bottom: 6rpx; }
+.sheet-item-prefs { margin-top: 10rpx; display: flex; flex-wrap: wrap; align-items: center; gap: 10rpx; }
+.pref-chip { font-size: 20rpx; color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 14rpx; border-radius: 12rpx; }
+.pref-note { font-size: 21rpx; color: var(--ink-2); }
+.sheet-item-add { margin-top: 10rpx; font-size: 22rpx; color: var(--blue-500); display: flex; align-items: center; gap: 6rpx; }
 .sheet-foot { padding: 24rpx 36rpx; border-top: 1rpx solid var(--line); display: flex; align-items: center; gap: 24rpx; }
 .sheet-total { flex: 1; }
 .sheet-total-lbl { font-size: 24rpx; color: var(--ink-3); }

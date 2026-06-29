@@ -1,0 +1,10 @@
+{
+  "component": true,
+  "styleIsolation": "apply-shared",
+  "usingComponents": {
+    "icon": "/components/icon/icon",
+    "money": "/components/money/money",
+    "stepper": "/components/stepper/stepper",
+    "imageph": "/components/imageph/imageph"
+  }
+}

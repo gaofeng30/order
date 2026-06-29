@@ -13,7 +13,8 @@ App({
 
     // ---- 业务状态（跨页共享，模拟后端）----
     store: { status: '营业中' },
-    cart: {},               // { [id]: qty }
+    cart: {},               // { [id]: { qty, flavors:[], note:'' } } 口味/备注绑定到菜品
+    orderMode: 'now',       // 下单模式 'now'尽快 | 'reserve'预约
     orders: [],             // 用户端订单
     lastOrder: null,        // 最近一笔下单
     aOrders: [],            // 商户端订单
