@@ -4,6 +4,9 @@
 # Logs
 *.log
 
+# Local Lark CLI auth and credentials
+.lark/
+
 # WeChat DevTools local settings
 project.private.config.json
 
