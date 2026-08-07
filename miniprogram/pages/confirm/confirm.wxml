@@ -69,6 +69,32 @@
       </view>
     </view>
 
+    <!-- 优惠明细：等级折扣 + 优惠券（算价链 原价 → 等级折扣 → 减券 → 应付） -->
+    <view class="card sec-card promo-card">
+      <view class="sec-h" style="padding-bottom:8rpx">
+        <text class="t" style="font-size:30rpx">优惠</text>
+        <view wx:if="{{isMember}}" class="pill pill--warn">{{calc.levelName}}</view>
+        <view wx:else class="pill pill--mute">非会员 · 原价</view>
+      </view>
+      <view class="pm-row">
+        <text class="pm-k">商品小计</text>
+        <text class="pm-v tnum">¥{{calc.subtotal}}</text>
+      </view>
+      <view wx:if="{{calc.hasLevel}}" class="pm-row">
+        <text class="pm-k">等级折扣 · {{calc.levelLabel}}</text>
+        <text class="pm-v cut tnum">−¥{{calc.levelCut}}</text>
+      </view>
+      <view wx:if="{{isMember}}" class="pm-row cp-row" bindtap="openCoupon">
+        <text class="pm-k">优惠券</text>
+        <text wx:if="{{calc.coupon}}" class="pm-cp">{{calc.couponName}}</text>
+        <text wx:elif="{{calc.usable.length}}" class="pm-cp none">{{calc.usable.length}} 张可用</text>
+        <text wx:else class="pm-cp none">暂无可用</text>
+        <text wx:if="{{calc.couponCutC}}" class="pm-v cut tnum">−¥{{calc.couponCut}}</text>
+        <icon name="chevron" size="15" color="#8f9384" />
+      </view>
+      <view wx:else class="pm-note">会员由商户在名单中登记，登记后按微信绑定手机号自动识别，可享等级折扣与专属券。</view>
+    </view>
+
     <!-- 联系信息 -->
     <view class="card sec-card">
       <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">联系信息</text></view>
@@ -88,9 +114,59 @@
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
     <view class="pay-amount">
       <text class="pay-lbl">{{payLabel}}</text>
-      <money v="{{total}}" size="48" />
+      <money v="{{calc.payable}}" size="48" />
+      <text wx:if="{{calc.totalCutC}}" class="pay-cut tnum">已优惠 ¥{{calc.totalCut}}</text>
     </view>
     <view class="btn btn--primary pay-btn" bindtap="pay">{{payBtn}}</view>
+  </view>
+
+  <!-- 选券弹层 -->
+  <view wx:if="{{cpVisible}}">
+    <view class="sheet-mask" catchtap="closeCoupon"></view>
+    <view class="sheet cp-sheet">
+      <view class="cp-head">
+        <text class="serif cp-title">选择优惠券</text>
+        <text class="cp-rule">一单只能使用一张</text>
+        <view class="cp-close" catchtap="closeCoupon"><icon name="close" size="19" color="#8f9384" /></view>
+      </view>
+      <scroll-view class="cp-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <block wx:if="{{calc.usable.length}}">
+          <view class="cp-sec">可用 {{calc.usable.length}} 张</view>
+          <view wx:for="{{calc.usable}}" wx:key="id" class="cp-item">
+            <coupon-card
+              face="{{item.face}}" cond="{{item.cond}}" name="{{item.coupon.name}}"
+              scope="{{item.scope}}" period="本单可减 ¥{{item.cutText}}"
+              picked="{{pickId === item.id}}" show-pick="{{true}}" notch="#ffffff"
+              data-id="{{item.id}}" bind:tap="pickCoupon"
+            />
+          </view>
+        </block>
+
+        <view class="cp-none {{pickId === 'none' ? 'on' : ''}}" bindtap="pickNone">
+          <view class="cn-main">
+            <text class="cn-t">不使用优惠券</text>
+            <text class="cn-s">本单仅享等级折扣</text>
+          </view>
+          <view class="cn-box {{pickId === 'none' ? 'on' : ''}}">
+            <icon wx:if="{{pickId === 'none'}}" name="check" size="14" color="#ffffff" />
+          </view>
+        </view>
+
+        <block wx:if="{{calc.unusable.length}}">
+          <view class="cp-sec mt">不可用 {{calc.unusable.length}} 张</view>
+          <view wx:for="{{calc.unusable}}" wx:key="id" class="cp-item">
+            <coupon-card
+              face="{{item.face}}" cond="{{item.cond}}" name="{{item.coupon.name}}"
+              scope="{{item.scope}}" period="{{item.reason}}"
+              dim="{{true}}" notch="#ffffff"
+            />
+          </view>
+        </block>
+      </scroll-view>
+      <view class="cp-foot" style="padding-bottom:{{safeBottom + 24}}px">
+        <view class="btn btn--primary btn--block" catchtap="confirmCoupon">确定</view>
+      </view>
+    </view>
   </view>
 
   <!-- 口味/备注 编辑弹层 -->

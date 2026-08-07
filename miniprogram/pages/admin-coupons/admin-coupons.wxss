@@ -1,0 +1,41 @@
+.top-area { padding-top: 12rpx; padding-bottom: 16rpx; }
+.new-banner {
+  height: 104rpx; border-radius: 28rpx; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #c9ab63, #a4873f); display: flex; align-items: center; gap: 24rpx; padding: 0 32rpx;
+  box-shadow: 0 16rpx 40rpx rgba(164, 135, 63, .26);
+}
+.nb-ring { position: absolute; right: -36rpx; top: -36rpx; width: 160rpx; height: 160rpx; border-radius: 50%; border: 3rpx solid rgba(255, 255, 255, .16); }
+.nb-ico { width: 68rpx; height: 68rpx; border-radius: 20rpx; background: rgba(255, 255, 255, .18); display: flex; align-items: center; justify-content: center; flex: 0 0 68rpx; }
+.nb-body { flex: 1; position: relative; z-index: 2; }
+.nb-title { font-size: 30rpx; font-weight: 600; color: #fff; letter-spacing: 1rpx; }
+.nb-sub { font-size: 22rpx; color: rgba(255, 255, 255, .78); margin-top: 4rpx; }
+
+.rule-bar {
+  display: flex; align-items: flex-start; gap: 10rpx; margin-top: 20rpx;
+  font-size: 22rpx; color: var(--gold-2); line-height: 1.55;
+}
+
+.cat-nav { padding: 0 24rpx 16rpx; border-bottom: 1rpx solid var(--line); }
+
+/* ---------- 券 + 操作条 ---------- */
+.cp-wrap { margin-top: 24rpx; }
+.cp-acts {
+  display: flex; align-items: center; gap: 26rpx;
+  background: var(--card); border-radius: 0 0 var(--r-card) var(--r-card);
+  box-shadow: var(--sh-card); padding: 20rpx 30rpx 22rpx;
+  border-top: 1rpx solid var(--line-2);
+}
+.ca-limit { flex: 1; font-size: 22rpx; color: var(--ink-3); }
+.ca-edit { font-size: 25rpx; color: var(--blue-500); font-weight: 600; }
+.ca-del { font-size: 25rpx; color: #b4483c; font-weight: 600; }
+.ca-sw { display: flex; align-items: center; gap: 12rpx; }
+.ca-sw-lbl { font-size: 22rpx; color: var(--ink-3); }
+
+.toggle { width: 80rpx; height: 48rpx; border-radius: 999rpx; background: #d8d8cd; position: relative; transition: .18s; }
+.toggle.on { background: var(--gold); }
+.toggle-knob { position: absolute; top: 6rpx; left: 6rpx; width: 36rpx; height: 36rpx; border-radius: 50%; background: #fff; transition: .18s; box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, .25); }
+.toggle.on .toggle-knob { left: 38rpx; }
+
+.empty { padding: 120rpx 0 40rpx; display: flex; flex-direction: column; align-items: center; gap: 14rpx; }
+.empty-t { font-size: 28rpx; color: var(--ink-2); }
+.empty-s { font-size: 23rpx; color: var(--ink-3); }

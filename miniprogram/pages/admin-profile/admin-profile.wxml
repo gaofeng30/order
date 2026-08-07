@@ -22,19 +22,41 @@
           <view class="prow-main"><view class="prow-label">营业设置</view><view class="prow-sub">状态 / 时间 / 截单 / 取餐点 / 公告</view></view>
           <icon name="chevron" size="17" color="#8f9384" />
         </view>
-        <view class="prow last" bindtap="toCategories">
+        <view class="prow" bindtap="toCategories">
           <view class="prow-ico"><icon name="tag" size="19" color="#467a32" /></view>
           <view class="prow-main"><view class="prow-label">分类管理</view><view class="prow-sub">目录结构与上架范围</view></view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+        <view class="prow last" bindtap="toLayer">
+          <view class="prow-ico"><icon name="layers" size="19" color="#a4873f" /></view>
+          <view class="prow-main"><view class="prow-label">开屏图层</view><view class="prow-sub">业务选择页 / 身份选择页装饰图片</view></view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+      </view>
+
+      <view class="grp-head">
+        <text class="serif grp-t">会员与营销</text>
+        <view class="pill pill--warn">二期能力 · 不在一期合同范围</view>
+      </view>
+      <view class="card group">
+        <view class="prow" bindtap="toLevels">
+          <view class="prow-ico"><icon name="layers" size="19" color="#2a5fa6" /></view>
+          <view class="prow-main"><view class="prow-label">会员等级</view><view class="prow-sub">档位、常驻折扣与排序</view></view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+        <view class="prow" bindtap="toMembers">
+          <view class="prow-ico"><icon name="user" size="19" color="#467a32" /></view>
+          <view class="prow-main"><view class="prow-label">会员名单</view><view class="prow-sub">手动添加或 CSV 批量导入</view></view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+        <view class="prow last" bindtap="toCoupons">
+          <view class="prow-ico"><icon name="ticket" size="19" color="#a4873f" /></view>
+          <view class="prow-main"><view class="prow-label">优惠券</view><view class="prow-sub">按等级自动生效，无需用户领取</view></view>
           <icon name="chevron" size="17" color="#8f9384" />
         </view>
       </view>
 
       <view class="card group">
-        <view class="prow" bindtap="marketing">
-          <view class="prow-ico"><icon name="gift" size="19" color="#a4873f" /></view>
-          <view class="prow-main"><view class="prow-label">营销活动</view><view class="prow-sub">Banner / 新人礼 / 优惠</view></view>
-          <view class="pill pill--warn">规划中</view>
-        </view>
         <view class="prow last" bindtap="shift">
           <view class="prow-ico"><icon name="refresh" size="19" color="#2a5fa6" /></view>
           <view class="prow-main"><view class="prow-label">交班对账</view><view class="prow-sub">按班次汇总营收 / 订单 / 核销</view></view>

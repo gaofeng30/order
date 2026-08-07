@@ -30,6 +30,7 @@
 .prod-name { font-size: 29rpx; font-weight: 600; color: var(--ink); }
 .prod-meta { display: flex; align-items: center; gap: 24rpx; margin-top: 14rpx; font-size: 24rpx; color: var(--ink-3); }
 .prod-stock.low { color: #d2483a; font-weight: 600; }
+.prod-imgs { font-size: 21rpx; color: var(--blue-500); background: var(--blue-bg); padding: 2rpx 12rpx; border-radius: 10rpx; }
 .prod-actions { display: flex; align-items: center; gap: 28rpx; margin-top: 20rpx; }
 .pa-soldout { font-size: 25rpx; color: var(--gold-2); font-weight: 600; }
 .pa-soldout.green { color: var(--green-600); }

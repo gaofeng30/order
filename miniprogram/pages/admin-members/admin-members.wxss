@@ -1,0 +1,60 @@
+.top-area { padding-top: 4rpx; padding-bottom: 16rpx; }
+.search-box {
+  height: 76rpx; border-radius: 999rpx; background: #fff; box-shadow: inset 0 0 0 2rpx var(--line);
+  display: flex; align-items: center; gap: 16rpx; padding: 0 28rpx;
+}
+.search-in { flex: 1; font-size: 26rpx; color: var(--ink); }
+.ph { color: var(--ink-3); }
+.search-clr { width: 44rpx; height: 44rpx; display: flex; align-items: center; justify-content: center; }
+
+.new-banner {
+  margin-top: 20rpx; height: 104rpx; border-radius: 28rpx; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #123f7e, #0b2f63); display: flex; align-items: center; gap: 24rpx; padding: 0 32rpx;
+  box-shadow: 0 16rpx 40rpx rgba(11, 47, 99, .22);
+}
+.nb-ring { position: absolute; right: -36rpx; top: -36rpx; width: 160rpx; height: 160rpx; border-radius: 50%; border: 3rpx solid rgba(255, 255, 255, .12); }
+.nb-ico { width: 68rpx; height: 68rpx; border-radius: 20rpx; background: rgba(255, 255, 255, .16); display: flex; align-items: center; justify-content: center; flex: 0 0 68rpx; }
+.nb-body { flex: 1; position: relative; z-index: 2; }
+.nb-title { font-size: 30rpx; font-weight: 600; color: #fff; letter-spacing: 1rpx; }
+.nb-sub { font-size: 22rpx; color: rgba(255, 255, 255, .7); margin-top: 4rpx; }
+
+/* ---------- 统计条 ---------- */
+.stat-row {
+  margin-top: 20rpx; background: var(--card); border-radius: var(--r-sm); box-shadow: var(--sh-soft);
+  display: flex; align-items: center; padding: 22rpx 8rpx;
+}
+.stat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6rpx; }
+.st-v { font-size: 34rpx; font-weight: 800; color: var(--blue); letter-spacing: -1rpx; }
+.st-k { font-size: 21rpx; color: var(--ink-3); }
+.stat-line { width: 1rpx; height: 44rpx; background: var(--line); }
+.stat-add {
+  flex: 0 0 76rpx; width: 76rpx; height: 76rpx; margin-right: 12rpx; border-radius: 24rpx;
+  background: var(--blue-bg); display: flex; align-items: center; justify-content: center;
+}
+
+.cat-nav { padding: 0 24rpx 16rpx; border-bottom: 1rpx solid var(--line); }
+
+/* ---------- 会员卡 ---------- */
+.mb { display: flex; align-items: center; gap: 22rpx; padding: 26rpx 28rpx; margin-top: 22rpx; }
+.mb.off { opacity: .6; }
+.mb-av {
+  flex: 0 0 78rpx; width: 78rpx; height: 78rpx; border-radius: 50%;
+  background: linear-gradient(150deg, #2a5fa6, #0b2f63); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 32rpx; font-weight: 600;
+}
+.mb-main { flex: 1; min-width: 0; }
+.mb-head { display: flex; align-items: center; gap: 12rpx; }
+.mb-name { font-size: 29rpx; font-weight: 600; color: var(--ink); }
+.mb-phone { font-size: 24rpx; color: var(--ink-2); margin-top: 10rpx; }
+.mb-org {
+  font-size: 22rpx; color: var(--ink-3); margin-top: 6rpx;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.mb-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 6rpx; }
+.mb-orders { font-size: 21rpx; color: var(--ink-3); }
+.mb-bind { margin-top: 6rpx; height: 38rpx; font-size: 20rpx; padding: 0 14rpx; }
+
+/* ---------- 空态 ---------- */
+.empty { padding: 120rpx 0 40rpx; display: flex; flex-direction: column; align-items: center; gap: 14rpx; }
+.empty-t { font-size: 28rpx; color: var(--ink-2); }
+.empty-s { font-size: 23rpx; color: var(--ink-3); }

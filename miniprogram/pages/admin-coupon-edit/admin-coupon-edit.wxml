@@ -1,0 +1,184 @@
+<view class="page">
+  <navbar tone="light" title="{{isEdit ? '编辑优惠券' : '新建优惠券'}}" back />
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 实时预览 -->
+    <view class="pv">
+      <view class="pv-lbl">用户端卡包中的样子</view>
+      <coupon-card
+        face="{{pv.face}}" cond="{{pv.cond}}" name="{{pv.name}}"
+        scope="{{pv.scope}}" period="{{pv.period}}" tags="{{pv.tags}}"
+        badge="{{f.enabled ? '进行中' : '已停用'}}" badge-tone="{{f.enabled ? 'ok' : 'mute'}}"
+        dim="{{!f.enabled}}"
+      />
+    </view>
+
+    <view class="card form">
+      <view class="erow">
+        <text class="erow-lbl">券名称</text>
+        <input class="erow-in" placeholder="如 高级会员专享" placeholder-class="ph" value="{{f.name}}" data-k="name" bindinput="onInput" />
+      </view>
+
+      <view class="erow cat-row">
+        <text class="erow-lbl">券类型</text>
+        <view class="cat-chips">
+          <view class="chip {{f.type === 'cut' ? 'on blue' : ''}}" data-t="cut" bindtap="pickType">满减券</view>
+          <view class="chip {{f.type === 'discount' ? 'on blue' : ''}}" data-t="discount" bindtap="pickType">折扣券</view>
+        </view>
+      </view>
+
+      <block wx:if="{{f.type === 'cut'}}">
+        <view class="erow">
+          <text class="erow-lbl">减免金额</text>
+          <input class="erow-in" type="digit" placeholder="0" placeholder-class="ph" value="{{f.amount}}" data-k="amount" bindinput="onInput" />
+          <text class="erow-tag">元</text>
+        </view>
+      </block>
+      <block wx:else>
+        <view class="erow">
+          <text class="erow-lbl">折扣</text>
+          <input class="erow-in" type="digit" placeholder="如 8.5" placeholder-class="ph" value="{{f.zhe}}" data-k="zhe" bindinput="onInput" />
+          <text class="erow-tag">{{zheHint}}</text>
+        </view>
+        <view class="erow">
+          <text class="erow-lbl">最高优惠</text>
+          <input class="erow-in" type="digit" placeholder="必填，防止大额订单亏损" placeholder-class="ph" value="{{f.cap}}" data-k="cap" bindinput="onInput" />
+          <text class="erow-tag req">必填</text>
+        </view>
+      </block>
+
+      <view class="erow last">
+        <text class="erow-lbl">使用门槛</text>
+        <input class="erow-in" type="digit" placeholder="0 = 无门槛" placeholder-class="ph" value="{{f.threshold}}" data-k="threshold" bindinput="onInput" />
+        <text class="erow-tag">元可用</text>
+      </view>
+    </view>
+
+    <!-- 适用等级 -->
+    <view class="card form">
+      <view class="sec-h" style="padding:26rpx 0 6rpx">
+        <text class="t" style="font-size:30rpx">适用等级</text>
+        <text class="faint" style="font-size:22rpx">可多选 · 至少 1 档</text>
+      </view>
+      <view class="chips-wrap">
+        <view wx:for="{{levels}}" wx:key="id" class="chip {{item.on ? 'on blue' : ''}}" data-id="{{item.id}}" bindtap="toggleLevel">
+          <icon wx:if="{{item.on}}" name="check" size="13" color="#2a5fa6" />{{item.name}}<text class="chip-sub">{{item.count}}人</text>
+        </view>
+      </view>
+      <view class="tip-line">勾选后，该等级下的会员在卡包中直接看到这张券，无需领取。</view>
+    </view>
+
+    <!-- 适用商品范围 -->
+    <view class="card form">
+      <view class="sec-h" style="padding:26rpx 0 6rpx">
+        <text class="t" style="font-size:30rpx">适用商品范围</text>
+      </view>
+      <view class="chips-wrap">
+        <view class="chip {{f.scope === 'all' ? 'on blue' : ''}}" data-s="all" bindtap="pickScope">全场通用</view>
+        <view class="chip {{f.scope === 'cat' ? 'on blue' : ''}}" data-s="cat" bindtap="pickScope">指定分类</view>
+        <view class="chip {{f.scope === 'item' ? 'on blue' : ''}}" data-s="item" bindtap="pickScope">指定菜品</view>
+      </view>
+
+      <view wx:if="{{f.scope === 'cat'}}" class="sub-block">
+        <view class="chips-wrap">
+          <view wx:for="{{cats}}" wx:key="name" class="chip {{item.on ? 'on' : ''}}" data-c="{{item.name}}" bindtap="toggleCat">
+            <icon wx:if="{{item.on}}" name="check" size="13" color="#467a32" />{{item.name}}
+          </view>
+        </view>
+        <view class="tip-line">选中分类为动态包含：以后新增到该分类的菜品自动纳入适用范围。</view>
+      </view>
+
+      <view wx:if="{{f.scope === 'item'}}" class="sub-block">
+        <view class="pick-row" bindtap="openPicker">
+          <view class="pk-main">
+            <view class="pk-lbl">已选 {{f.itemIds.length}} 个菜品</view>
+            <view class="pk-names">{{pickedNames || '尚未选择'}}</view>
+          </view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </view>
+      </view>
+
+      <view wx:if="{{f.scope !== 'all'}}" class="warn-line">
+        <icon name="warn" size="13" color="#a4873f" />
+        <text>门槛判定与减免金额均只按「适用商品小计」计算，不含范围外商品。</text>
+      </view>
+    </view>
+
+    <!-- 有效期与限制 -->
+    <view class="card form">
+      <picker mode="date" value="{{f.start}}" bindchange="onStart">
+        <view class="erow">
+          <text class="erow-lbl">开始日期</text>
+          <text class="erow-in tnum">{{f.start}}</text>
+          <icon name="calendar" size="16" color="#8f9384" />
+        </view>
+      </picker>
+      <picker mode="date" value="{{f.end}}" bindchange="onEnd">
+        <view class="erow">
+          <text class="erow-lbl">结束日期</text>
+          <text class="erow-in tnum">{{f.end}}</text>
+          <icon name="calendar" size="16" color="#8f9384" />
+        </view>
+      </picker>
+      <view class="erow">
+        <text class="erow-lbl">每人可用</text>
+        <input class="erow-in" type="number" placeholder="1" placeholder-class="ph" value="{{f.perLimit}}" data-k="perLimit" bindinput="onInput" />
+        <text class="erow-tag">次 / 有效期内</text>
+      </view>
+      <view class="erow last">
+        <text class="erow-lbl">启用</text>
+        <text class="sw-sub">{{f.enabled ? '已启用，符合等级的会员立即可见' : '停用后立即从用户卡包中移除'}}</text>
+        <view class="toggle {{f.enabled ? 'on' : ''}}" bindtap="toggleEnabled">
+          <view class="toggle-knob"></view>
+        </view>
+      </view>
+    </view>
+
+    <view class="note-card">
+      不做发放总量：券按等级自动生效，不为每个用户生成券实例，因此没有可扣减的库存。控制成本请用有效期与每人可用次数。
+    </view>
+
+    <view style="height:24rpx"></view>
+  </scroll-view>
+
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view class="btn btn--ghost-blue edit-cancel" bindtap="cancel">取消</view>
+    <view class="btn btn--gold edit-save" bindtap="save">保存</view>
+  </view>
+
+  <!-- 菜品多选弹层 -->
+  <view wx:if="{{pickerVisible}}">
+    <view class="sheet-mask" catchtap="closePicker"></view>
+    <view class="sheet pk-sheet">
+      <view class="pk-head">
+        <text class="serif pk-title">选择适用菜品</text>
+        <text class="pk-cnt">已选 {{tmpIds.length}}</text>
+        <view class="pk-close" catchtap="closePicker"><icon name="close" size="19" color="#8f9384" /></view>
+      </view>
+      <scroll-view class="pk-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view wx:for="{{groups}}" wx:key="cat" class="pk-grp">
+          <view class="pk-grp-head">
+            <text class="serif pk-grp-name">{{item.cat}}</text>
+            <text class="pk-grp-all" data-c="{{item.cat}}" catchtap="toggleGroup">{{item.allOn ? '取消全选' : '全选'}}</text>
+          </view>
+          <view wx:for="{{item.items}}" wx:for-item="it" wx:key="id" class="pk-item" data-id="{{it.id}}" catchtap="toggleItem">
+            <imageph item="{{it}}" h="80" w="80" radius="20" tag="{{false}}" />
+            <view class="pk-it-main">
+              <text class="pk-it-name">{{it.name}}</text>
+              <money v="{{it.price}}" blue size="26" />
+            </view>
+            <view class="pk-box {{it.on ? 'on' : ''}}">
+              <icon wx:if="{{it.on}}" name="check" size="13" color="#ffffff" />
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+      <view class="pk-foot" style="padding-bottom:{{safeBottom + 24}}px">
+        <view class="btn btn--ghost-blue pk-cancel" catchtap="closePicker">取消</view>
+        <view class="btn btn--blue pk-ok" catchtap="confirmPicker">确定</view>
+      </view>
+    </view>
+  </view>
+
+  <toast id="toast" />
+</view>

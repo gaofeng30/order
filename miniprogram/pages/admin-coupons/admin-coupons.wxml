@@ -1,0 +1,63 @@
+<view class="page">
+  <navbar tone="light" title="优惠券" back />
+
+  <view class="pad top-area">
+    <view class="new-banner" bindtap="toNew">
+      <view class="nb-ring"></view>
+      <view class="nb-ico"><icon name="ticket" size="20" color="#ffffff" /></view>
+      <view class="nb-body">
+        <view class="serif nb-title">新建优惠券</view>
+        <view class="nb-sub">选择适用等级与商品范围，配好即对该等级生效</view>
+      </view>
+      <icon name="arrowRight" size="18" color="rgba(255,255,255,0.85)" />
+    </view>
+
+    <view class="rule-bar">
+      <icon name="warn" size="14" color="#a4873f" />
+      <text>券无需用户领取，按等级自动生效；一单只用一张，可与等级折扣叠加。</text>
+    </view>
+  </view>
+
+  <view class="cat-nav">
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segs">
+        <view wx:for="{{tabs}}" wx:key="id" class="seg {{tab === item.id ? 'on' : ''}}" data-id="{{item.id}}" bindtap="switchTab">
+          {{item.name}}<text class="cnt">{{item.count}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view wx:for="{{list}}" wx:key="id" class="cp-wrap">
+      <coupon-card
+        face="{{item.face}}" cond="{{item.cond}}" name="{{item.name}}"
+        scope="{{item.scope}}" period="{{item.period}}" tags="{{item.tags}}"
+        badge="{{item.badge}}" badge-tone="{{item.badgeTone}}" dim="{{item.dim}}"
+        attached="{{true}}"
+        data-id="{{item.id}}" bind:tap="edit"
+      />
+      <view class="cp-acts">
+        <text class="ca-limit">每人限用 {{item.perLimit}} 次</text>
+        <text class="ca-edit" data-id="{{item.id}}" catchtap="edit">编辑</text>
+        <text class="ca-del" data-id="{{item.id}}" catchtap="askDelete">删除</text>
+        <view class="ca-sw">
+          <text class="ca-sw-lbl">启用</text>
+          <view class="toggle {{item.enabled ? 'on' : ''}}" data-id="{{item.id}}" catchtap="toggle">
+            <view class="toggle-knob"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{!list.length}}" class="empty">
+      <icon name="ticket" size="30" color="#c9cbbe" />
+      <view class="empty-t">该分组下暂无优惠券</view>
+      <view class="empty-s">点上方「新建优惠券」开始配置</view>
+    </view>
+
+    <view style="height:{{safeBottom + 40}}px"></view>
+  </scroll-view>
+
+  <toast id="toast" />
+</view>

@@ -10,10 +10,11 @@
         <view class="avatar serif">林</view>
         <view class="id-body">
           <view class="id-head">
-            <text class="serif id-name">林先生</text>
+            <text class="serif id-name">{{nick}}</text>
             <pill s="已授权" tone="ok" />
+            <view wx:if="{{isMember}}" class="pill pill--ondark">{{levelName}} · {{levelLabel}}</view>
           </view>
-          <view class="id-sub">普通会员 · 138****6620</view>
+          <view class="id-sub">{{isMember ? '会员权益生效中' : '访客 · 按原价结算'}} · {{phoneMask}}</view>
         </view>
       </view>
     </view>
@@ -44,10 +45,13 @@
       </view>
 
       <view class="card group">
-        <view class="prow">
-          <view class="prow-ico" style="background:var(--bg2)"><icon name="gift" size="19" color="#a4873f" /></view>
-          <view class="prow-main"><view class="prow-label">会员权益</view></view>
-          <view class="pill pill--warn">建设中</view>
+        <view class="prow" bindtap="toCoupons">
+          <view class="prow-ico" style="background:var(--bg2)"><icon name="ticket" size="19" color="#a4873f" /></view>
+          <view class="prow-main">
+            <view class="prow-label">我的优惠券</view>
+            <view class="prow-sub">{{isMember ? (couponCount > 0 ? couponCount + ' 张可用 · 下单自动抵扣' : '暂无可用优惠券') : '加入会员名单后可享专属券'}}</view>
+          </view>
+          <icon name="chevron" size="17" color="#8f9384" />
         </view>
         <view class="prow last" bindtap="settings">
           <view class="prow-ico" style="background:var(--bg2)"><icon name="settings" size="19" color="#5e6354" /></view>

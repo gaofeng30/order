@@ -1,0 +1,128 @@
+<view class="page">
+  <navbar tone="light" title="批量导入名单" back />
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 操作说明 -->
+    <view wx:if="{{step === 'idle'}}" class="hero-dark gd">
+      <view class="ring r2"></view>
+      <view class="gd-head">
+        <icon name="box" size="17" color="#e0c67f" />
+        <text class="serif gd-title">导入三步</text>
+      </view>
+      <view class="gd-step">
+        <text class="gs-no">1</text>
+        <text class="gs-txt">Excel 里按模板列顺序整理名单，<text class="gs-hl">另存为 CSV UTF-8</text> 格式。</text>
+      </view>
+      <view class="gd-step">
+        <text class="gs-no">2</text>
+        <text class="gs-txt">把该文件发送到微信「文件传输助手」或任意聊天。</text>
+      </view>
+      <view class="gd-step">
+        <text class="gs-no">3</text>
+        <text class="gs-txt">点下方按钮，从聊天记录中选择这个文件。</text>
+      </view>
+      <view class="gd-warn">
+        <icon name="warn" size="13" color="#e0c67f" />
+        <text>Excel 默认另存的 CSV 为 GBK 编码，中文会乱码，务必选 UTF-8。</text>
+      </view>
+    </view>
+
+    <!-- 模板 -->
+    <view wx:if="{{step === 'idle'}}" class="card tpl">
+      <view class="sec-h" style="padding:26rpx 4rpx 14rpx">
+        <text class="t" style="font-size:30rpx">模板列</text>
+        <text class="tpl-copy" bindtap="copyTpl">复制表头</text>
+      </view>
+      <view class="tpl-cols">
+        <view wx:for="{{tplCols}}" wx:key="k" class="tc">
+          <text class="tc-k">{{item.k}}</text>
+          <text class="tc-r {{item.req ? 'req' : ''}}">{{item.req ? '必填' : '选填'}}</text>
+        </view>
+      </view>
+      <view class="tpl-eg">示例：13800006620,林建国,中级会员,县前管理处,综合科,XQ0107</view>
+      <view class="tpl-lv">
+        <text class="tl-lbl">当前可用等级名</text>
+        <view class="tl-chips">
+          <text wx:for="{{levelNames}}" wx:key="*this" class="tl-chip">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 预览结果 -->
+    <block wx:if="{{step === 'preview'}}">
+      <view class="card sum">
+        <view class="sum-file">
+          <icon name="receipt" size="16" color="#5e6354" />
+          <text class="sf-name">{{fileName}}</text>
+          <text class="sf-re" bindtap="pick">重选</text>
+        </view>
+        <view class="sum-row">
+          <view class="sc">
+            <text class="sc-v tnum ok">{{res.adds.length}}</text>
+            <text class="sc-k">新增</text>
+          </view>
+          <view class="sc-line"></view>
+          <view class="sc">
+            <text class="sc-v tnum info">{{res.updates.length}}</text>
+            <text class="sc-k">更新</text>
+          </view>
+          <view class="sc-line"></view>
+          <view class="sc">
+            <text class="sc-v tnum {{res.errors.length ? 'bad' : ''}}">{{res.errors.length}}</text>
+            <text class="sc-k">异常</text>
+          </view>
+        </view>
+        <view class="sum-note">「更新」按手机号匹配已有会员，覆盖姓名与等级，保留加入时间、累计消费与微信绑定关系。</view>
+      </view>
+
+      <!-- 异常明细 -->
+      <view wx:if="{{res.errors.length}}" class="card err">
+        <view class="err-head" bindtap="toggleErr">
+          <icon name="warn" size="16" color="#b4483c" />
+          <text class="err-title">{{res.errors.length}} 行无法导入</text>
+          <text class="err-more">{{errOpen ? '收起' : '展开'}}</text>
+        </view>
+        <block wx:if="{{errOpen}}">
+          <view wx:for="{{res.errors}}" wx:key="line" class="err-row">
+            <text class="er-line tnum">第 {{item.line}} 行</text>
+            <view class="er-body">
+              <text class="er-raw">{{item.raw}}</text>
+              <text class="er-why">{{item.reason}}</text>
+            </view>
+          </view>
+          <view class="err-note">这些行会被跳过，其余行仍可正常导入。修正表格后可重新选择文件。</view>
+        </block>
+      </view>
+
+      <!-- 待导入明细 -->
+      <view wx:if="{{rows.length}}" class="sec-h">
+        <text class="t" style="font-size:30rpx">待导入明细</text>
+        <text class="faint" style="font-size:23rpx">共 {{rows.length}} 条</text>
+      </view>
+      <view wx:for="{{rows}}" wx:key="line" class="card row">
+        <view class="pill {{item.isNew ? 'pill--ok' : 'pill--info'}} row-tag">{{item.isNew ? '新增' : '更新'}}</view>
+        <view class="row-main">
+          <view class="row-head">
+            <text class="row-name">{{item.name}}</text>
+            <text class="row-phone tnum">{{item.phoneMask}}</text>
+          </view>
+          <view class="row-sub">{{item.levelName}}{{item.orgLine}}</view>
+        </view>
+      </view>
+    </block>
+
+    <view style="height:24rpx"></view>
+  </scroll-view>
+
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <block wx:if="{{step === 'idle'}}">
+      <view class="btn btn--blue btn--block" bindtap="pick">从微信聊天选择 CSV 文件</view>
+    </block>
+    <block wx:else>
+      <view class="btn btn--ghost-blue im-cancel" bindtap="reset">取消</view>
+      <view class="btn {{rows.length ? 'btn--blue' : 'btn--mute'}} im-ok" bindtap="commit">导入 {{rows.length}} 条</view>
+    </block>
+  </view>
+
+  <toast id="toast" />
+</view>

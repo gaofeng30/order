@@ -10,6 +10,7 @@
     "pages/order-detail/order-detail",
     "pages/orders/orders",
     "pages/profile/profile",
+    "pages/my-coupons/my-coupons",
     "pages/admin-dashboard/admin-dashboard",
     "pages/admin-orders/admin-orders",
     "pages/admin-order-detail/admin-order-detail",
@@ -19,7 +20,13 @@
     "pages/admin-categories/admin-categories",
     "pages/admin-profile/admin-profile",
     "pages/admin-settings/admin-settings",
-    "pages/admin-layer/admin-layer"
+    "pages/admin-layer/admin-layer",
+    "pages/admin-levels/admin-levels",
+    "pages/admin-members/admin-members",
+    "pages/admin-member-edit/admin-member-edit",
+    "pages/admin-member-import/admin-member-import",
+    "pages/admin-coupons/admin-coupons",
+    "pages/admin-coupon-edit/admin-coupon-edit"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -39,7 +46,8 @@
     "imageph": "/components/imageph/imageph",
     "toast": "/components/toast/toast",
     "qrcode": "/components/qrcode/qrcode",
-    "layer-overlay": "/components/layer-overlay/layer-overlay"
+    "layer-overlay": "/components/layer-overlay/layer-overlay",
+    "coupon-card": "/components/coupon-card/coupon-card"
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",

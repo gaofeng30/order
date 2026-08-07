@@ -49,7 +49,17 @@ const MENU = [
     specs: [['规格', '标准杯'], ['温度', '冰镇']] },
 ];
 
-const itemById = id => MENU.find(m => m.id === id);
+/* 运行时菜品表：商户端可编辑，改动写入 globalData.menu；
+   未初始化（如单元测试直接 require）时回落到上面的种子常量。
+   页面一律走 menuList()/itemById()，不再直接引用 MENU 常量。 */
+function menuList() {
+  try {
+    const g = getApp().globalData;
+    if (g && g.menu && g.menu.length) return g.menu;
+  } catch (e) { /* App 尚未实例化 */ }
+  return MENU;
+}
+const itemById = id => menuList().find(m => m.id === id);
 
 // 用户端 我的订单
 // items: [id, qty, price, flavors?, note?]
@@ -133,7 +143,65 @@ const CANCEL_LIMIT_MIN = 30;
 function slotMins(off, t) { const [h, m] = t.split(':').map(Number); return off * 1440 + h * 60 + m - NOW_MINS; }
 function canCancelReserve(o) { return !!(o && o.type === 'reserve' && o.status === '已预约' && (o.minsToPickup > CANCEL_LIMIT_MIN)); }
 
+/* ============================================================
+   以下为「会员等级 / 会员名单 / 优惠券」种子数据
+   —— 二期能力，不在一期合同范围。数据经 utils/api.js 读写，
+      页面不得直接引用这三个常量。
+   ============================================================ */
+
+// 会员等级档位（有序，一人一档；商户可增删改名、调折扣率）
+// discount: 折扣百分比，100 = 无折扣，85 = 打 8.5 折
+const LEVELS = [
+  { id: 'lv1', name: '初级会员', sort: 1, discount: 95, desc: '入册员工与常客' },
+  { id: 'lv2', name: '中级会员', sort: 2, discount: 90, desc: '在职满一年员工' },
+  { id: 'lv3', name: '高级会员', sort: 3, discount: 85, desc: '管理层与长期合作单位' },
+];
+
+// 会员名单（手机号为唯一识别键，与微信授权手机号比对）
+// bound: 该手机号是否已有用户在小程序完成授权；spend/orders 为累计消费与单量，只读
+const MEMBERS = [
+  { id: 'm1', phone: '13800006620', name: '林建国', levelId: 'lv2', org: '县前管理处', dept: '综合科', jobNo: 'XQ0107', remark: '', enabled: true, joinAt: '2026-03-12', bound: true, spend: 1286, orders: 42 },
+  { id: 'm2', phone: '13500009012', name: '黄映雪', levelId: 'lv3', org: '县前管理处', dept: '办公室', jobNo: 'XQ0031', remark: '会议餐常客', enabled: true, joinAt: '2026-01-08', bound: true, spend: 3140, orders: 96 },
+  { id: 'm3', phone: '15900002031', name: '陈少芬', levelId: 'lv1', org: '青云镇站所', dept: '窗口', jobNo: 'QY0212', remark: '', enabled: true, joinAt: '2026-04-02', bound: true, spend: 468, orders: 19 },
+  { id: 'm4', phone: '13700007788', name: '吴国强', levelId: 'lv1', org: '青云镇站所', dept: '后勤', jobNo: 'QY0330', remark: '', enabled: true, joinAt: '2026-04-02', bound: false, spend: 0, orders: 0 },
+  { id: 'm5', phone: '13300004456', name: '郑文彬', levelId: 'lv2', org: '县前管理处', dept: '财务科', jobNo: 'XQ0088', remark: '', enabled: true, joinAt: '2026-02-20', bound: true, spend: 902, orders: 31 },
+  { id: 'm6', phone: '18800000021', name: '王秀莲', levelId: 'lv3', org: '合作单位', dept: '绥芬河北站', jobNo: '', remark: '长期团餐对接人', enabled: true, joinAt: '2025-11-15', bound: true, spend: 5620, orders: 138 },
+  { id: 'm7', phone: '13000005567', name: '刘志海', levelId: 'lv1', org: '县前管理处', dept: '综合科', jobNo: 'XQ0142', remark: '', enabled: true, joinAt: '2026-05-06', bound: false, spend: 0, orders: 0 },
+  { id: 'm8', phone: '15000003322', name: '孙丽萍', levelId: 'lv1', org: '青云镇站所', dept: '窗口', jobNo: 'QY0401', remark: '已调离，暂停权益', enabled: false, joinAt: '2026-01-22', bound: true, spend: 214, orders: 9 },
+];
+
+// 优惠券（按等级自动生效，无领取动作；一单只用一张，与等级折扣叠加）
+// type: 'cut' 满减(amount) | 'discount' 折扣(rate + cap 封顶必填)
+// scope: 'all' 全场 | 'cat' 指定分类(catNames) | 'item' 指定菜品(itemIds)
+const COUPONS = [
+  { id: 'cp1', name: '入册好礼', type: 'cut', amount: 5, rate: 0, cap: 0, threshold: 30,
+    levelIds: ['lv1', 'lv2', 'lv3'], scope: 'all', catNames: [], itemIds: [],
+    start: '2026-08-01', end: '2026-08-31', perLimit: 3, enabled: true },
+  { id: 'cp2', name: '中高级专享满减', type: 'cut', amount: 10, rate: 0, cap: 0, threshold: 50,
+    levelIds: ['lv2', 'lv3'], scope: 'all', catNames: [], itemIds: [],
+    start: '2026-08-01', end: '2026-08-31', perLimit: 2, enabled: true },
+  { id: 'cp3', name: '高级会员八折券', type: 'discount', amount: 0, rate: 80, cap: 15, threshold: 0,
+    levelIds: ['lv3'], scope: 'all', catNames: [], itemIds: [],
+    start: '2026-08-01', end: '2026-08-15', perLimit: 1, enabled: true },
+  { id: 'cp4', name: '今日套餐立减', type: 'cut', amount: 8, rate: 0, cap: 0, threshold: 55,
+    levelIds: ['lv2', 'lv3'], scope: 'cat', catNames: ['今日套餐'], itemIds: [],
+    start: '2026-08-01', end: '2026-08-31', perLimit: 5, enabled: true },
+  { id: 'cp5', name: '开业尝鲜券', type: 'cut', amount: 6, rate: 0, cap: 0, threshold: 20,
+    levelIds: ['lv1', 'lv2', 'lv3'], scope: 'all', catNames: [], itemIds: [],
+    start: '2026-06-01', end: '2026-06-30', perLimit: 1, enabled: true },
+];
+
+// 当前登录用户（微信授权手机号；真实实现由服务端用 code 换取，前端拿不到明文）
+const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
+
+// 当前用户各券的已用次数（真实实现由服务端按 openid + couponId 统计）
+const MY_COUPON_USED = { cp1: 1, cp2: 0, cp3: 0, cp4: 0, cp5: 1 };
+
+// 演示时钟：与 NOW_MINS 同源，用于券有效期判定
+const TODAY = '2026-08-07';
+
 module.exports = {
-  STORE, HUES, CATS, MENU, itemById, USER_ORDERS, ADMIN_ORDERS, RANK, ADMIN_CATS, FLAVORS,
+  STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, RANK, ADMIN_CATS, FLAVORS,
   NOW_MINS, PICKUP_POINTS, RESERVE_DATES, RESERVE_SLOTS, CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
+  LEVELS, MEMBERS, COUPONS, ME, MY_COUPON_USED, TODAY,
 };

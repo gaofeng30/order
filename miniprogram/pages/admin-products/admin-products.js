@@ -1,4 +1,5 @@
 const data = require('../../utils/data.js');
+const api = require('../../utils/api.js');
 const { nav } = require('../../utils/util.js');
 
 Page({
@@ -10,12 +11,12 @@ Page({
   },
   onShow() { this.build(); },
   build() {
-    const products = getApp().globalData.products;
-    const list = data.MENU.filter(m => this.data.cat === '全部' || m.cat === this.data.cat).map(m => {
-      const s = products[m.id];
+    const list = data.menuList().filter(m => this.data.cat === '全部' || m.cat === this.data.cat).map(m => {
+      const s = m.status;
       const low = m.stock <= 8;
       return {
         id: m.id, name: m.name, price: m.price, stock: m.stock, sold: m.sold, cat: m.cat, img: m.img,
+        imgCount: (m.imgs || []).length,
         s, low,
         pillLabel: s === 'on' ? '可购' : (s === 'soldout' ? '售罄' : '已下架'),
         pillTone: s === 'on' ? 'ok' : 'mute',
@@ -28,19 +29,21 @@ Page({
   switchCat(e) { this.setData({ cat: e.currentTarget.dataset.c }, () => this.build()); },
   toggleSoldout(e) {
     const id = e.currentTarget.dataset.id;
-    const g = getApp().globalData;
-    const nx = g.products[id] === 'soldout' ? 'on' : 'soldout';
-    g.products[id] = nx;
-    this.build();
-    this.selectComponent('#toast').show(nx === 'soldout' ? '已置售罄' : '已恢复售卖', { icon: 'tag' });
+    const cur = data.itemById(id);
+    const nx = cur.status === 'soldout' ? 'on' : 'soldout';
+    api.setProductStatus(id, nx).then(() => {
+      this.build();
+      this.selectComponent('#toast').show(nx === 'soldout' ? '已置售罄' : '已恢复售卖', { icon: 'tag' });
+    });
   },
   toggleShelf(e) {
     const id = e.currentTarget.dataset.id;
-    const g = getApp().globalData;
-    const nx = g.products[id] === 'off' ? 'on' : 'off';
-    g.products[id] = nx;
-    this.build();
-    this.selectComponent('#toast').show(nx === 'on' ? '已上架' : '已下架', { icon: nx === 'on' ? 'check' : 'box' });
+    const cur = data.itemById(id);
+    const nx = cur.status === 'off' ? 'on' : 'off';
+    api.setProductStatus(id, nx).then(() => {
+      this.build();
+      this.selectComponent('#toast').show(nx === 'on' ? '已上架' : '已下架', { icon: nx === 'on' ? 'check' : 'box' });
+    });
   },
   edit(e) { nav.go('admin-product-edit', { id: e.currentTarget.dataset.id }); },
   newProduct() { nav.go('admin-product-edit'); },

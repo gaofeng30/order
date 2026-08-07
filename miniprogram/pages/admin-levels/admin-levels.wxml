@@ -1,0 +1,133 @@
+<view class="page">
+  <navbar tone="light" title="会员等级" back />
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 规则说明 -->
+    <view class="hero-dark tip-card">
+      <view class="ring r2"></view>
+      <view class="tip-head">
+        <icon name="layers" size="17" color="#e0c67f" />
+        <text class="serif tip-title">等级规则</text>
+      </view>
+      <view class="tip-line">等级由低到高排列，<text class="tip-hl">一位会员只属于一个等级</text>。</view>
+      <view class="tip-line">等级折扣为<text class="tip-hl">常驻权益</text>，下单时先按折扣算，再叠加一张优惠券。</view>
+      <view class="tip-line">不在会员名单中的用户按原价结算，无券可用。</view>
+    </view>
+
+    <view class="sec-h">
+      <text class="t" style="font-size:32rpx">等级档位</text>
+      <text class="faint" style="font-size:23rpx">共 {{levels.length}} 档 · 由低到高</text>
+    </view>
+
+    <view wx:for="{{levels}}" wx:key="id" class="card lv">
+      <view class="lv-no serif">{{index + 1}}</view>
+      <view class="lv-main">
+        <view class="lv-head">
+          <text class="serif lv-name">{{item.name}}</text>
+          <view class="pill {{item.discount < 100 ? 'pill--warn' : 'pill--mute'}}">{{item.label}}</view>
+        </view>
+        <view class="lv-desc">{{item.desc || '未填写说明'}}</view>
+        <view class="lv-meta">
+          <text class="lv-cnt">{{item.count}} 位会员</text>
+          <text class="lv-dot">·</text>
+          <text class="lv-cnt">{{item.couponCount}} 张券适用</text>
+        </view>
+      </view>
+      <view class="lv-side">
+        <view class="lv-sort">
+          <view class="sbtn {{index === 0 ? 'dis' : ''}}" data-idx="{{index}}" data-d="-1" bindtap="move">
+            <icon name="chevronDown" size="15" color="{{index === 0 ? '#c9cbbe' : '#5e6354'}}" />
+          </view>
+          <view class="sbtn down {{index === levels.length - 1 ? 'dis' : ''}}" data-idx="{{index}}" data-d="1" bindtap="move">
+            <icon name="chevronDown" size="15" color="{{index === levels.length - 1 ? '#c9cbbe' : '#5e6354'}}" />
+          </view>
+        </view>
+        <view class="lv-acts">
+          <text class="la-edit" data-id="{{item.id}}" bindtap="openEdit">编辑</text>
+          <text class="la-del" data-id="{{item.id}}" bindtap="askDelete">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="add-lv" bindtap="openAdd">
+      <icon name="plus" size="17" color="#2a5fa6" /><text>新增等级</text>
+    </view>
+
+    <view style="height:{{safeBottom + 40}}px"></view>
+  </scroll-view>
+
+  <!-- 新增 / 编辑 弹层 -->
+  <view wx:if="{{editVisible}}">
+    <view class="sheet-mask" catchtap="closeEdit"></view>
+    <view class="sheet ed-sheet">
+      <view class="ed-head">
+        <text class="serif ed-title">{{f.id ? '编辑等级' : '新增等级'}}</text>
+        <view class="ed-close" catchtap="closeEdit"><icon name="close" size="19" color="#8f9384" /></view>
+      </view>
+      <scroll-view class="ed-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="erow">
+          <text class="erow-lbl">等级名称</text>
+          <input class="erow-in" placeholder="如 金卡会员" placeholder-class="ph" value="{{f.name}}" data-k="name" bindinput="onInput" />
+        </view>
+        <view class="erow">
+          <text class="erow-lbl">折扣</text>
+          <input class="erow-in" type="digit" placeholder="如 8.5" placeholder-class="ph" value="{{f.zhe}}" data-k="zhe" bindinput="onInput" />
+          <text class="erow-tag">{{zheHint}}</text>
+        </view>
+        <view class="erow last">
+          <text class="erow-lbl">说明</text>
+          <input class="erow-in" placeholder="内部备注，用户不可见" placeholder-class="ph" value="{{f.desc}}" data-k="desc" bindinput="onInput" />
+        </view>
+        <view class="ed-tip">不打折填 10。折扣对该等级下全部会员的每一单常驻生效。</view>
+      </scroll-view>
+      <view class="ed-foot" style="padding-bottom:{{safeBottom + 24}}px">
+        <view class="btn btn--ghost-blue ed-cancel" catchtap="closeEdit">取消</view>
+        <view class="btn btn--blue ed-save" catchtap="saveEdit">保存</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 删除 → 迁移确认弹层 -->
+  <view wx:if="{{delVisible}}">
+    <view class="sheet-mask" catchtap="closeDelete"></view>
+    <view class="sheet ed-sheet">
+      <view class="ed-head">
+        <text class="serif ed-title">删除「{{delLv.name}}」</text>
+        <view class="ed-close" catchtap="closeDelete"><icon name="close" size="19" color="#8f9384" /></view>
+      </view>
+      <scroll-view class="ed-body" scroll-y enhanced show-scrollbar="{{false}}">
+        <view class="dl-impact">
+          <view class="di-row">
+            <icon name="user" size="16" color="#a4873f" />
+            <text class="di-txt">该等级下有 <text class="di-hl">{{impact.memberCount}}</text> 位会员</text>
+          </view>
+          <view class="di-row">
+            <icon name="ticket" size="16" color="#a4873f" />
+            <text class="di-txt"><text class="di-hl">{{impact.coupons.length}}</text> 张券把它列为适用等级</text>
+          </view>
+          <view wx:if="{{impact.coupons.length}}" class="di-cps">
+            <text wx:for="{{impact.coupons}}" wx:for-item="cp" wx:key="id" class="di-cp">{{cp.name}}</text>
+          </view>
+          <view class="di-note">删除后，这些券会自动摘掉该等级；若某张券因此没有任何适用等级，将被自动停用。</view>
+        </view>
+
+        <view class="dl-label serif">这些会员迁移至</view>
+        <view class="dl-opts">
+          <view wx:for="{{migrateOpts}}" wx:key="id" class="chip {{migrateTo === item.id ? 'on blue' : ''}}" data-id="{{item.id}}" bindtap="pickMigrate">
+            <icon wx:if="{{migrateTo === item.id}}" name="check" size="13" color="#2a5fa6" />{{item.name}}
+          </view>
+        </view>
+        <view wx:if="{{migrateTo === 'none'}}" class="dl-warn">
+          <icon name="warn" size="14" color="#a4873f" />
+          <text>降为非会员后，这 {{impact.memberCount}} 人将移出名单，按原价结算且无券可用。</text>
+        </view>
+      </scroll-view>
+      <view class="ed-foot" style="padding-bottom:{{safeBottom + 24}}px">
+        <view class="btn btn--ghost-blue ed-cancel" catchtap="closeDelete">取消</view>
+        <view class="btn btn--blue ed-save" catchtap="confirmDelete">确认删除</view>
+      </view>
+    </view>
+  </view>
+
+  <toast id="toast" />
+</view>

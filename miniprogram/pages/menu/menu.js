@@ -22,12 +22,17 @@ Page({
     czLabel: '加入购物车',
   },
   onLoad() {
-    // 用户端隐藏已下架 (off) 菜品
-    const groups = data.CATS.map(c => ({ cat: c, items: data.MENU.filter(m => m.cat === c && m.status !== 'off') }));
-    this.setData({ groups });
+    this.buildGroups();
     this.refresh();
   },
-  onShow() { this.refresh(); },
+  // 商户端可能刚上下架或改过菜品，每次进入都按最新菜品表重建
+  buildGroups() {
+    // 用户端隐藏已下架 (off) 菜品
+    const list = data.menuList();
+    const groups = data.CATS.map(c => ({ cat: c, items: list.filter(m => m.cat === c && m.status !== 'off') }));
+    this.setData({ groups });
+  },
+  onShow() { this.buildGroups(); this.refresh(); },
   onReady() { this.measure(); },
   measure() {
     const q = this.createSelectorQuery();

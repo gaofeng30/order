@@ -2,8 +2,24 @@
   <navbar tone="dark" overlay back />
 
   <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
-    <!-- 大图 -->
-    <imageph item="{{m}}" h="720" radius="0" fontsize="240" tag="{{false}}" />
+    <!-- 大图：多图手动滑动，不自动播放、不循环；点击进入全屏预览 -->
+    <view class="gal">
+      <swiper
+        wx:if="{{imgs.length > 1}}"
+        class="gal-sw"
+        autoplay="{{false}}"
+        circular="{{false}}"
+        current="{{gi}}"
+        bindchange="onGal"
+      >
+        <swiper-item wx:for="{{imgs}}" wx:key="*this">
+          <image src="{{item}}" class="gal-img" mode="aspectFill" data-i="{{index}}" bindtap="preview" />
+        </swiper-item>
+      </swiper>
+      <image wx:elif="{{imgs.length === 1}}" src="{{imgs[0]}}" class="gal-img" mode="aspectFill" data-i="0" bindtap="preview" />
+      <imageph wx:else item="{{m}}" h="720" radius="0" fontsize="240" tag="{{false}}" />
+      <view wx:if="{{imgs.length > 1}}" class="gal-idx tnum">{{gi + 1}} / {{imgs.length}}</view>
+    </view>
 
     <view class="detail-body">
       <!-- 信息卡 -->

@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "coupon-card": "/components/coupon-card/coupon-card"
+  }
+}

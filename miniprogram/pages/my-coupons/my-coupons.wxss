@@ -1,0 +1,30 @@
+/* ---------- 会员身份 ---------- */
+.mc-hero { border-radius: 0 0 var(--r-lg) var(--r-lg); padding: 0 36rpx 34rpx; }
+.mc-top { display: flex; align-items: center; gap: 22rpx; padding-top: 28rpx; position: relative; z-index: 2; }
+.mc-av {
+  flex: 0 0 92rpx; width: 92rpx; height: 92rpx; border-radius: 50%;
+  background: rgba(255, 255, 255, .16); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 38rpx; font-weight: 600;
+}
+.mc-body { flex: 1; min-width: 0; }
+.mc-head { display: flex; align-items: center; gap: 14rpx; }
+.mc-name { font-size: 36rpx; font-weight: 700; letter-spacing: 1rpx; }
+.mc-sub { font-size: 23rpx; color: var(--ink-on-dark-2); margin-top: 10rpx; }
+
+.mc-benefit {
+  display: flex; align-items: center; margin-top: 30rpx; padding: 24rpx 0;
+  background: rgba(255, 255, 255, .08); border-radius: var(--r-sm); position: relative; z-index: 2;
+}
+.mb-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.mb-v { font-size: 38rpx; font-weight: 700; color: #e0c67f; letter-spacing: -1rpx; }
+.mb-k { font-size: 21rpx; color: var(--ink-on-dark-2); }
+.mb-line { width: 1rpx; height: 46rpx; background: rgba(255, 255, 255, .16); }
+.mc-note { font-size: 21rpx; color: var(--ink-on-dark-2); line-height: 1.6; margin-top: 22rpx; position: relative; z-index: 2; }
+
+/* ---------- 分组 ---------- */
+.cat-nav { padding: 30rpx 0 22rpx; }
+.cp-wrap { margin-bottom: 24rpx; }
+
+.empty { padding: 110rpx 0 40rpx; display: flex; flex-direction: column; align-items: center; gap: 14rpx; }
+.empty-t { font-size: 28rpx; color: var(--ink-2); }
+.empty-s { font-size: 23rpx; color: var(--ink-3); }

@@ -18,7 +18,14 @@ App({
     orders: [],             // 用户端订单
     lastOrder: null,        // 最近一笔下单
     aOrders: [],            // 商户端订单
-    products: {},           // { [id]: 'on'|'soldout'|'off' }
+    menu: [],               // 菜品表（含 status/imgs，商户端可编辑）
+    coupon: null,           // 本次下单选中的优惠券 id，确认页与结算共享
+
+    // ---- 二期能力：会员等级 / 会员名单 / 优惠券（经 utils/api.js 读写）----
+    levels: [],
+    members: [],
+    coupons: [],
+    couponUsed: {},
   },
 
   onLaunch() {
@@ -27,8 +34,12 @@ App({
     // 深拷贝种子数据，避免污染原始 mock
     g.orders = JSON.parse(JSON.stringify(data.USER_ORDERS));
     g.aOrders = JSON.parse(JSON.stringify(data.ADMIN_ORDERS));
-    g.products = {};
-    data.MENU.forEach(m => { g.products[m.id] = m.status; });
+    // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面（列表/购物车/订单只用封面）
+    g.menu = JSON.parse(JSON.stringify(data.MENU)).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] }));
+    g.levels = JSON.parse(JSON.stringify(data.LEVELS));
+    g.members = JSON.parse(JSON.stringify(data.MEMBERS));
+    g.coupons = JSON.parse(JSON.stringify(data.COUPONS));
+    g.couponUsed = JSON.parse(JSON.stringify(data.MY_COUPON_USED));
   },
 
   initSystemInfo() {

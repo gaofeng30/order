@@ -4,24 +4,37 @@
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
     <!-- 图片 -->
     <view class="img-area">
-      <imageph wx:if="{{isEdit}}" item="{{m}}" h="168" w="168" radius="28" tag="{{false}}" />
-      <view wx:else class="img-up"><icon name="plus" size="20" color="#8f9384" /><text class="img-up-t">上传图片</text></view>
-      <view class="img-tip">建议正方形 800×800，展示当日现做实拍更佳。</view>
+      <view class="img-head">
+        <text class="serif ia-t">菜品图片</text>
+        <text class="ia-s">最多 {{maxImgs}} 张 · 第一张为封面</text>
+      </view>
+      <view class="img-list">
+        <view wx:for="{{f.imgs}}" wx:key="*this" class="img-cell">
+          <image src="{{item}}" class="img-thumb" mode="aspectFill" data-i="{{index}}" bindtap="previewImg" />
+          <view wx:if="{{index === 0}}" class="img-cover">封面</view>
+          <view class="img-del" data-i="{{index}}" catchtap="delImg"><icon name="close" size="12" color="#ffffff" /></view>
+          <view wx:if="{{index > 0}}" class="img-set" data-i="{{index}}" catchtap="setCover">设为封面</view>
+        </view>
+        <view wx:if="{{f.imgs.length < maxImgs}}" class="img-up" bindtap="addImg">
+          <icon name="plus" size="20" color="#8f9384" /><text class="img-up-t">上传图片</text>
+        </view>
+      </view>
+      <view class="img-tip">建议正方形 800×800。封面用于菜单列表、购物车与订单；详情页可左右滑动查看全部图片。</view>
     </view>
 
     <view class="card form">
       <view class="erow">
         <text class="erow-lbl">菜品名称</text>
-        <input class="erow-in" placeholder="如 商务双拼饭" placeholder-class="ph" value="{{f.name}}" bindinput="onName" />
+        <input class="erow-in" placeholder="如 商务双拼饭" placeholder-class="ph" value="{{f.name}}" data-k="name" bindinput="onInput" />
       </view>
       <view class="erow">
         <text class="erow-lbl">价格 (¥)</text>
-        <input class="erow-in" type="digit" placeholder="0.00" placeholder-class="ph" value="{{f.price}}" bindinput="onPrice" />
+        <input class="erow-in" type="digit" placeholder="0.00" placeholder-class="ph" value="{{f.price}}" data-k="price" bindinput="onInput" />
         <text class="erow-tag">价格键盘</text>
       </view>
       <view class="erow">
         <text class="erow-lbl">库存</text>
-        <input class="erow-in" type="number" placeholder="数量" placeholder-class="ph" value="{{f.stock}}" bindinput="onStock" />
+        <input class="erow-in" type="number" placeholder="数量" placeholder-class="ph" value="{{f.stock}}" data-k="stock" bindinput="onInput" />
         <text class="erow-tag">数字键盘</text>
       </view>
       <view class="erow cat-row">
@@ -32,9 +45,12 @@
       </view>
       <view class="desc-row">
         <text class="erow-lbl">菜品描述</text>
-        <textarea class="desc-in" placeholder="介绍食材、做法与特色…" placeholder-class="ph" value="{{f.desc}}" bindinput="onDesc" maxlength="-1" />
+        <textarea class="desc-in" placeholder="介绍食材、做法与特色…" placeholder-class="ph" value="{{f.desc}}" data-k="desc" bindinput="onInput" maxlength="-1" />
       </view>
     </view>
+
+    <view wx:if="{{isEdit}}" class="del-row" bindtap="askDelete">删除该菜品</view>
+
     <view style="height:24rpx"></view>
   </scroll-view>
 

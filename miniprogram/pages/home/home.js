@@ -26,9 +26,13 @@ Page({
       { k: 'service', icon: 'headset', cn: '联系客服' },
     ],
   },
-  onLoad() {
+  onLoad() { this.buildSignature(); },
+  onShow() { this.buildSignature(); },
+  buildSignature() {
     this.setData({
-      signature: data.MENU.filter(m => m.tags.includes('今日推荐') || m.tags.includes('热销')).slice(0, 4),
+      signature: data.menuList()
+        .filter(m => m.status !== 'off' && (m.tags.includes('今日推荐') || m.tags.includes('热销')))
+        .slice(0, 4),
     });
   },
   onBanner(e) { this.setData({ bannerIdx: e.detail.current }); },
