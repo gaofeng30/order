@@ -1,0 +1,8 @@
+<view wx:if="{{cfg.enabled && cfg.src}}" class="wrap">
+  <image
+    class="img"
+    src="{{cfg.src}}"
+    mode="widthFix"
+    style="left:{{cfg.cx * 100}}%;top:{{cfg.cy * 100}}%;width:{{cfg.size * 100}}%"
+  />
+</view>

@@ -1,0 +1,151 @@
+<view class="page">
+  <navbar tone="light" title="开屏图层" back />
+
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="sec-h">
+      <text class="t" style="font-size:30rpx">预览与定位</text>
+      <text class="more">拖动图案调整位置</text>
+    </view>
+
+    <!-- 预览背景切换 -->
+    <view class="segs">
+      <view class="seg {{mock === 'brand' ? 'on' : ''}}" data-m="brand" bindtap="switchMock">业务选择页</view>
+      <view class="seg {{mock === 'launch' ? 'on' : ''}}" data-m="launch" bindtap="switchMock">身份选择页</view>
+    </view>
+
+    <!-- 预览画布：mock 按真实屏幕尺寸搭建后整体 scale 缩小，rpx 样式与真机一致；
+         movable-area 为未缩放的同级图层盖在上方，拖拽坐标在真实预览 px 内 -->
+    <view class="preview-wrap">
+      <view class="preview-box" style="width:{{previewW}}px;height:{{previewH}}px">
+
+        <!-- 业务选择页 mock -->
+        <view
+          wx:if="{{mock === 'brand'}}"
+          class="mock mock-dark"
+          style="width:{{screenW}}px;height:{{screenH}}px;transform:scale({{scale}});padding:{{statusBarH}}px 52rpx {{safeBottom + 34}}px"
+        >
+          <view class="ring r1"></view>
+          <view class="ring r3"></view>
+          <view class="m-logo-mid">
+            <view class="m-logo-card"><image src="/assets/emblem.png" class="m-logo-emblem" mode="aspectFit" /></view>
+          </view>
+          <view class="m-opts">
+            <view class="m-opt ready">
+              <view class="m-opt-ico"><icon name="bowl" size="27" color="#ffffff" /></view>
+              <view class="m-opt-body"><view class="m-opt-name serif">绥安食品</view><view class="m-opt-desc">到店点单 · 预约取餐</view></view>
+              <view class="m-opt-go"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
+            </view>
+            <view class="m-opt off">
+              <view class="m-opt-ico"><icon name="washer" size="27" color="rgba(255,255,255,.5)" /></view>
+              <view class="m-opt-body"><view class="m-opt-name serif">绥安洗衣</view><view class="m-opt-desc">即将上线</view></view>
+            </view>
+            <view class="m-opt off">
+              <view class="m-opt-ico"><icon name="car" size="27" color="rgba(255,255,255,.5)" /></view>
+              <view class="m-opt-body"><view class="m-opt-name serif">绥安洗车</view><view class="m-opt-desc">即将上线</view></view>
+            </view>
+            <view class="m-ver">绥安集团 · 本地生活服务　v1.0</view>
+          </view>
+        </view>
+
+        <!-- 身份选择页 mock -->
+        <view
+          wx:else
+          class="mock mock-dark"
+          style="width:{{screenW}}px;height:{{screenH}}px;transform:scale({{scale}});padding:{{statusBarH}}px 44rpx {{safeBottom + 30}}px"
+        >
+          <view class="ring r1"></view>
+          <view class="ring r2"></view>
+          <view class="ring r3"></view>
+          <view class="m-brand">
+            <view class="m-brand-logo"><image src="/assets/emblem.png" class="m-brand-emblem" mode="aspectFit" /></view>
+            <view>
+              <view class="m-brand-name serif">绥安食品</view>
+              <view class="m-brand-sub">在地手作 · 到店自提</view>
+            </view>
+          </view>
+          <view class="m-hero">
+            <view class="m-welcome">欢迎光临</view>
+            <view class="m-big serif"><view>在地手作</view><view>到店自提</view></view>
+            <view class="m-lead"><view>古法慢工的绥安味道，</view><view>循味而来，各得其门。</view></view>
+          </view>
+          <view class="m-cards">
+            <view class="m-id primary">
+              <view class="m-id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
+              <view class="m-id-body"><view class="m-id-name serif">用户端</view><view class="m-id-desc">浏览菜单 · 在线点单 · 到店扫码取餐</view></view>
+              <view class="m-id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
+            </view>
+            <view class="m-id">
+              <view class="m-id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
+              <view class="m-id-body"><view class="m-id-name serif">商户端</view><view class="m-id-desc">接单 · 制作 · 核销 · 菜品与经营管理</view></view>
+              <view class="m-id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
+            </view>
+            <view class="m-ver">绥安食品 · 县前直营店　小程序 v1.0</view>
+          </view>
+        </view>
+
+        <!-- 拖拽层（catchtouchmove 挂在 movable-view 上：拖图不带动页面滚动，无图时预览区不吞滚动手势） -->
+        <movable-area class="area" style="width:{{previewW}}px;height:{{previewH}}px">
+          <movable-view
+            wx:if="{{src && enabled}}"
+            catchtouchmove="noop"
+            class="mv"
+            direction="all"
+            x="{{mx}}"
+            y="{{my}}"
+            damping="60"
+            inertia="{{false}}"
+            bindchange="onMove"
+            bindtouchend="onDragEnd"
+            style="width:{{imgW}}px;height:{{imgH}}px"
+          >
+            <image src="{{src}}" mode="aspectFit" class="mv-img" />
+          </movable-view>
+        </movable-area>
+
+        <!-- 未上传时的引导 -->
+        <view wx:if="{{!src}}" class="empty-hint" bindtap="choose">
+          <view class="empty-ico"><icon name="plus" size="22" color="#ffffff" /></view>
+          <text class="empty-t">上传 PNG 图层</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 控制面板 -->
+    <view class="card ctrl">
+      <view class="ctrl-row">
+        <text class="ctrl-lbl">图层大小</text>
+        <slider
+          class="ctrl-slider"
+          min="15"
+          max="60"
+          value="{{sizePct}}"
+          activeColor="#0b2f63"
+          backgroundColor="#e4e2d5"
+          block-size="20"
+          disabled="{{!src}}"
+          bindchanging="onSize"
+          bindchange="onSize"
+        />
+        <text class="ctrl-val tnum">{{sizePct}}%</text>
+      </view>
+      <view class="ctrl-row">
+        <text class="ctrl-lbl">启用图层</text>
+        <view class="ctrl-flex"></view>
+        <switch checked="{{enabled}}" color="#3d6b2f" bindchange="onEnable" />
+      </view>
+      <view class="ctrl-btns">
+        <view class="btn btn--ghost-blue btn--sm" bindtap="choose">{{src ? '更换图片' : '上传图片'}}</view>
+        <view wx:if="{{src}}" class="btn btn--mute btn--sm" bindtap="remove">移除图层</view>
+      </view>
+      <view class="ctrl-tip">仅支持透明背景 PNG，保存后同时展示在「业务选择页」与「身份选择页」。</view>
+    </view>
+    <view style="height:24rpx"></view>
+  </scroll-view>
+
+  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view class="btn btn--ghost-blue bar-cancel" bindtap="cancel">取消</view>
+    <view class="btn btn--blue bar-save" bindtap="save">保存</view>
+  </view>
+
+  <toast id="toast" />
+</view>

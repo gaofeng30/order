@@ -18,7 +18,8 @@
     "pages/admin-product-edit/admin-product-edit",
     "pages/admin-categories/admin-categories",
     "pages/admin-profile/admin-profile",
-    "pages/admin-settings/admin-settings"
+    "pages/admin-settings/admin-settings",
+    "pages/admin-layer/admin-layer"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -37,7 +38,8 @@
     "stepper": "/components/stepper/stepper",
     "imageph": "/components/imageph/imageph",
     "toast": "/components/toast/toast",
-    "qrcode": "/components/qrcode/qrcode"
+    "qrcode": "/components/qrcode/qrcode",
+    "layer-overlay": "/components/layer-overlay/layer-overlay"
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
