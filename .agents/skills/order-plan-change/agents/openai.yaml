@@ -1,0 +1,4 @@
+interface:
+  display_name: "Order Plan Change"
+  short_description: "拆分并创建可独立验收的 OpenSpec change"
+  default_prompt: "Use $order-plan-change to turn this requirement into one reviewable OpenSpec change."
