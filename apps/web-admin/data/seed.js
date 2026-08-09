@@ -1,6 +1,6 @@
 /* 绥安食品 — 菜品 / 订单 / 分类 / 预约 数据 (真实物料 p001–p007)
    ------------------------------------------------------------
-   本文件由 miniprogram/utils/data.js 拷贝而来，仅改动两处：
+   本文件由 apps/wechat-miniprogram/utils/data.js 拷贝而来，仅改动两处：
    1. 结尾 module.exports → window.Seed（浏览器无模块系统）
    2. menuList() 的数据源由 getApp().globalData 改为 window.__store
    种子内容与小程序端保持一致，改业务规则时两处需同步。
@@ -106,7 +106,7 @@ const ADMIN_CATS = [
   { id: 'c5', name: '节庆礼盒', sort: 5, on: false, count: 0 },
 ];
 
-// 取餐点（同 miniprogram/utils/data.js 的 PICKUP_POINTS）
+// 取餐点（同 apps/wechat-miniprogram/utils/data.js 的 PICKUP_POINTS）
 const PICKUP_POINTS = [
   { id: 'pp1', name: '县前直营店', addr: '绥芬河市青云镇通商路', tag: '直营', hours: '09:00–19:00' },
   { id: 'pp2', name: '绥芬河北站取餐点', addr: '绥芬河市站前广场东侧', tag: '取餐点', hours: '07:00–20:00' },

@@ -1,6 +1,6 @@
 /* ============================================================
    绥安食品 商户端 PC 网页版 — 设计基线
-   token 来源：miniprogram/app.wxss 的 page {}
+   token 来源：apps/wechat-miniprogram/app.wxss 的 page {}
    - 颜色 / 字体族 / 阴影色值 1:1 照抄
    - 尺寸类按 1rpx = 0.5px 换算（750rpx = 375pt 设计稿）
    - 正文 14px、表格行高 44px：后台观看距离比手机远，不照搬手机字号
@@ -677,7 +677,7 @@ img { display: block; max-width: 100%; }
 .lay-img { position: absolute; cursor: grab; user-select: none; -webkit-user-drag: none; }
 .lay-img.moving { cursor: grabbing; outline: 2px dashed rgba(255, 255, 255, .6); }
 
-/* ---- 开屏页仿真稿：逐条移植自 miniprogram/pages/admin-layer.wxss（rpx × 0.5）----
+/* ---- 开屏页仿真稿：逐条移植自 apps/wechat-miniprogram/pages/admin-layer.wxss（rpx × 0.5）----
    预览是真机 1:1，因此这里的 px 与小程序里的 rpx/2 完全对应。 */
 .mock { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; color: #fff; }
 .mock-dark { background: linear-gradient(160deg, #103a78 0%, #0b2f63 45%, #082651 100%); }

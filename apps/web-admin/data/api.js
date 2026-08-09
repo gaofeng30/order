@@ -1,6 +1,6 @@
 /* ============================================================
    接口契约层 —— 会员等级 / 会员名单 / 优惠券 / 菜品 / 订单
-   与 miniprogram/utils/api.js 同方法名、同入参、同返回形状。
+   与 apps/wechat-miniprogram/utils/api.js 同方法名、同入参、同返回形状。
 
    约定：
    1. 页面只调用本文件的方法，一律返回 Promise，不直接读写数据源。
@@ -550,7 +550,7 @@
   // 不复制文件；blob:/data:/http: 开头的（新上传）原样返回。
   function imgUrl(src) {
     if (!src) return '';
-    if (src.indexOf('/assets/') === 0) return '../miniprogram' + src;
+    if (src.indexOf('/assets/') === 0) return '../wechat-miniprogram' + src;
     return src;
   }
 

@@ -1,4 +1,4 @@
-/* 优惠券 —— 对应 miniprogram/pages/admin-coupons + admin-coupon-edit（二期能力）
+/* 优惠券 —— 对应 apps/wechat-miniprogram/pages/admin-coupons + admin-coupon-edit（二期能力）
 
    发放模型：券按等级自动生效，商户勾选适用等级后该等级会员在卡包中直接可见可用，
    没有领取动作。券是一条规则而非一张票，不为每个用户生成券实例，因此不设发放总量；

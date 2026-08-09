@@ -1,4 +1,4 @@
-/* 开屏图层 —— 对应 miniprogram/pages/admin-layer
+/* 开屏图层 —— 对应 apps/wechat-miniprogram/pages/admin-layer
    上传透明 PNG → 在等比缩放的手机预览上拖拽定位、滑杆调大小 →
    保存后展示在「业务选择页 brand」与「身份选择页 launch」（两页共用一套配置）。
    PC 端优势：装饰图原本就存在电脑里，可直接拖拽上传。 */
@@ -86,11 +86,11 @@
     bind(el);
   }
 
-  /* 仿真稿逐字移植自 miniprogram/pages/admin-layer 的 mock（样式取自 brand.wxss / launch.wxss），
+  /* 仿真稿逐字移植自 apps/wechat-miniprogram/pages/admin-layer 的 mock（样式取自 brand.wxss / launch.wxss），
      rpx 一律按 1rpx = 0.5px 换算。预览是 1:1，所以这里的 px 与真机 px 一一对应。
      必须用真实页面内容而不是占位块：这一页的用途就是判断装饰图会不会压住 Logo 与按钮。
      徽标 emblem.png 是抠好的透明 PNG，与手机端一致垫白色圆角卡，不裸贴在深蓝底上。 */
-  const EMBLEM = '../miniprogram/assets/emblem.png';
+  const EMBLEM = '../wechat-miniprogram/assets/emblem.png';
 
   function mockBg() {
     if (mock === 'launch') {

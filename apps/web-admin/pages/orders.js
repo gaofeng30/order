@@ -1,4 +1,4 @@
-/* 订单管理 —— 对应 miniprogram/pages/admin-orders + admin-order-detail
+/* 订单管理 —— 对应 apps/wechat-miniprogram/pages/admin-orders + admin-order-detail
    PC 形态：左侧订单表格 + 右侧常驻详情面板，选中即显示，不跳页。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;

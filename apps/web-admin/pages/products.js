@@ -1,4 +1,4 @@
-/* 菜品管理 —— 对应 miniprogram/pages/admin-products + admin-product-edit
+/* 菜品管理 —— 对应 apps/wechat-miniprogram/pages/admin-products + admin-product-edit
    PC 形态：表格 + 勾选批量操作 + 右侧编辑抽屉。
    批量改价 / 批量上下架是 PC 端相对手机端的主要效率增益。 */
 (function () {

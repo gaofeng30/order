@@ -4,7 +4,7 @@
 
 ## 运行方式
 
-1. 用**微信开发者工具**导入本仓库的 `wechat-miniprogram/` 目录（`project.config.json` 已将 `miniprogramRoot` 指向 `miniprogram/`）。
+1. 用**微信开发者工具**导入仓库根目录（`project.config.json` 已将 `miniprogramRoot` 指向 `apps/wechat-miniprogram/`）。
 2. AppID 选择「测试号 / 不使用 AppID」即可预览（配置中为 `touristappid`）。
 3. 基础库建议 `3.x`（已用到 canvas 2d、`getWindowInfo` 等接口，并有低版本回退）。
 
@@ -18,7 +18,7 @@
 ## 目录结构
 
 ```
-miniprogram/
+apps/wechat-miniprogram/
 ├─ app.js / app.json / app.wxss      全局：适配信息采集、跨页状态(globalData)、设计 tokens
 ├─ utils/
 │  ├─ data.js        菜品/订单/分类 mock 数据（对应 PRD 第 4 节）

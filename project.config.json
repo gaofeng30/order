@@ -39,5 +39,5 @@
   "condition": {},
   "simulatorPluginLibVersion": {},
   "editorSetting": {},
-  "miniprogramRoot": "miniprogram/"
+  "miniprogramRoot": "apps/wechat-miniprogram/"
 }

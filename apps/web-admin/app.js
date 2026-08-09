@@ -84,7 +84,7 @@
       `<div class="acct-card">
          <span class="ring r1"></span><span class="ring r2"></span>
          <div class="ac-in">
-           <span class="ac-logo"><img src="../miniprogram/assets/emblem.png" alt=""></span>
+           <span class="ac-logo"><img src="../wechat-miniprogram/assets/emblem.png" alt=""></span>
            <div>
              <div class="ac-nm">${Seed.STORE.name}</div>
              <div class="ac-sub">${Seed.STORE.branch} · ${mg.role} ${mg.name}</div>

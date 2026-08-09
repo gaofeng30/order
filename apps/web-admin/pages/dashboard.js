@@ -1,4 +1,4 @@
-/* 工作台 —— 对应 miniprogram/pages/admin-dashboard
+/* 工作台 —— 对应 apps/wechat-miniprogram/pages/admin-dashboard
    PC 形态：KPI 四张卡一行铺开 + 左「实时订单」右「待办 / 销量排行」，一屏不滚。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;

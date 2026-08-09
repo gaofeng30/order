@@ -1,4 +1,4 @@
-/* 批量导入名单 —— 对应 miniprogram/pages/admin-member-import（二期能力）
+/* 批量导入名单 —— 对应 apps/wechat-miniprogram/pages/admin-member-import（二期能力）
 
    这是 PC 端相对小程序端能力差最大的一页：
    PRD §6.12 写明「小程序读不到手机本地文件，唯一途径是 wx.chooseMessageFile，

@@ -1,4 +1,4 @@
-/* 营业设置 —— 对应 miniprogram/pages/admin-settings
+/* 营业设置 —— 对应 apps/wechat-miniprogram/pages/admin-settings
    小程序端的时间/截单/取餐点为「建设中」占位，PC 端收敛为可编辑表单。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;

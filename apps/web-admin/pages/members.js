@@ -1,4 +1,4 @@
-/* 会员名单 —— 对应 miniprogram/pages/admin-members + admin-member-edit（二期能力）
+/* 会员名单 —— 对应 apps/wechat-miniprogram/pages/admin-members + admin-member-edit（二期能力）
    PC 形态：表格 + 搜索 / 等级筛选 + 右侧编辑抽屉。
    手机号是唯一识别键，与用户在小程序授权的手机号比对后自动生效。 */
 (function () {

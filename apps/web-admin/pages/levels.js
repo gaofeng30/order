@@ -1,4 +1,4 @@
-/* 会员等级 —— 对应 miniprogram/pages/admin-levels（二期能力，不在一期合同范围）
+/* 会员等级 —— 对应 apps/wechat-miniprogram/pages/admin-levels（二期能力，不在一期合同范围）
    删除等级前必须预览影响面并选择迁移目标：该档会员整体迁移，
    券的适用等级中摘除该档，摘空则该券自动停用（见 data/api.js deleteLevel）。 */
 (function () {

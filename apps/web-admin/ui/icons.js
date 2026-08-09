@@ -1,5 +1,5 @@
 /* 绥安食品 — 线性图标路径集 (24x24 viewBox)
-   路径由 miniprogram/utils/icons.js 拷贝，保持两端图形完全一致。 */
+   路径由 apps/wechat-miniprogram/utils/icons.js 拷贝，保持两端图形完全一致。 */
 (function () {
   const P = {
     back: 'M15 5l-7 7 7 7',

@@ -1,4 +1,4 @@
-/* 分类管理 —— 对应 miniprogram/pages/admin-categories
+/* 分类管理 —— 对应 apps/wechat-miniprogram/pages/admin-categories
    PC 形态：拖拽排序（手机端只能上下移按钮）+ 启停开关 + 删除保护。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;

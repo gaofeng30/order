@@ -1,4 +1,4 @@
-/* 扫码核销 —— 对应 miniprogram/pages/admin-verify
+/* 扫码核销 —— 对应 apps/wechat-miniprogram/pages/admin-verify
    PC 形态：大号取餐号输入框自动聚焦，回车提交。
    USB 扫码枪在系统里就是键盘输入设备（扫完自动补一个回车），
    因此这个输入框天然兼容扫码枪，无需额外驱动。 */

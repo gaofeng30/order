@@ -4,7 +4,7 @@
 
 为小程序里的每个菜品生成「有食欲、商业宣传级」的真实照片，
 输出为 1:1 的 PNG，命名与菜品 id 一致（p001.png ...），
-存到 miniprogram/assets/dishes/，并自动把 mock/data.js 里对应的
+存到 apps/wechat-miniprogram/assets/dishes/，并自动把 mock/data.js 里对应的
 image 路径从 .svg 改成 .png。
 
 ────────────────────────────────────────────────────────────
@@ -34,8 +34,8 @@ from pathlib import Path
 # ── 路径定位 ──────────────────────────────────────────────────────────
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[1]                 # .../order
-DISHES_DIR = REPO_ROOT / "miniprogram" / "assets" / "dishes"
-DATA_JS = REPO_ROOT / "miniprogram" / "mock" / "data.js"
+DISHES_DIR = REPO_ROOT / "apps" / "wechat-miniprogram" / "assets" / "dishes"
+DATA_JS = REPO_ROOT / "apps" / "wechat-miniprogram" / "mock" / "data.js"
 
 # 凭证：优先环境变量，其次 gemini-reference（与 order 同级）
 CRED_CANDIDATES = [
