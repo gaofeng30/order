@@ -13,27 +13,31 @@
 
 ```text
 .
-├── miniprogram/              # 微信小程序源码根目录
-│   ├── app.js                # 小程序入口逻辑
-│   ├── app.json              # 页面、窗口、tabBar 配置
-│   ├── app.wxss              # 全局样式
-│   ├── sitemap.json          # 小程序索引配置
-│   ├── pages/                # 用户端与商户端页面
-│   ├── components/           # 复用组件
-│   ├── assets/               # 静态资源
-│   ├── mock/                 # 演示数据
-│   └── utils/                # 本地状态与工具函数
-├── web-admin/                # 商户端 PC 网页版（与小程序平行的第二个入口）
-│   ├── index.html            # 唯一入口，浏览器直接打开
-│   ├── app.css               # 设计 token（迁移自 app.wxss）+ 布局与控件
-│   ├── app.js                # hash 路由、左侧导航、顶栏账号下拉
-│   ├── data/                 # 演示数据与接口契约层（签名同 miniprogram/utils/api.js）
-│   ├── ui/                   # 表格 / 抽屉 / 弹层 / Toast / 图标
-│   └── pages/                # 11 条路由，覆盖商户端全部功能
+├── apps/
+│   ├── wechat-miniprogram/   # 原生微信小程序源码根目录
+│   │   ├── app.js            # 小程序入口逻辑
+│   │   ├── app.json          # 页面、窗口、tabBar 配置
+│   │   ├── app.wxss          # 全局样式
+│   │   ├── sitemap.json      # 小程序索引配置
+│   │   ├── pages/            # 用户端与商户端页面
+│   │   ├── components/       # 复用组件
+│   │   ├── assets/           # 静态资源
+│   │   ├── mock/             # 演示数据
+│   │   └── utils/            # 本地状态与工具函数
+│   └── web-admin/            # 商户端 PC 网页版
+│       ├── index.html        # 唯一入口，浏览器直接打开
+│       ├── app.css           # 设计 token + 布局与控件
+│       ├── app.js            # hash 路由、左侧导航、顶栏账号下拉
+│       ├── data/             # 演示数据与接口契约层
+│       ├── ui/               # 表格 / 抽屉 / 弹层 / Toast / 图标
+│       └── pages/            # 11 条路由，覆盖商户端全部功能
 ├── docs/
 │   ├── README.md             # 文档索引与建议阅读顺序
 │   ├── product/              # PRD、需求、技术方案、客户沟通材料
-│   └── design/               # 视觉与设计约束
+│   ├── 合同相关/             # 当前正式合同
+│   ├── 微信小程序开发和运维指南/ # 注册、支付、域名、备案与云资源指南
+│   ├── archive/contracts/    # 历史合同草稿
+│   └── 商品列表和展示（旧版已归档）/ # 旧版商品、价目与视觉资料
 ├── project.config.json       # 微信开发者工具项目配置
 ├── LICENSE
 └── README.md
@@ -47,17 +51,17 @@
 4. AppID 可使用 `project.config.json` 中的配置，或在开发者工具中选择测试号。
 5. 编译后从启动页选择“用户端点单”或“商户端管理”。
 
-`project.config.json` 已配置 `miniprogramRoot: "miniprogram/"`，因此导入根目录即可识别小程序源码。
+`project.config.json` 已配置 `miniprogramRoot: "apps/wechat-miniprogram/"`，因此导入根目录即可识别小程序源码。
 
 ### 商户端 PC 网页版
 
-双击 `web-admin/index.html` 用浏览器打开即可，无需构建、无需服务器、无需安装依赖。建议窗口宽度 ≥ 1280px。
+双击 `apps/web-admin/index.html` 用浏览器打开即可，无需构建、无需服务器、无需安装依赖。建议窗口宽度 ≥ 1280px。
 
 两个入口互相独立、可同时打开：想看手机形态开微信开发者工具，想看电脑形态开浏览器。
 
 > **当前阶段两端数据不互通。** PC 端自带一套独立演示数据，在小程序里下的单电脑上看不到，反之亦然。
 > 这是 P0 原型阶段的取舍：真实打通需要后端 API，属正式开发范围。
-> 两端的接口契约层（`web-admin/data/api.js` 与 `miniprogram/utils/api.js`）方法名、入参、返回结构完全一致，
+> 两端的接口契约层（`apps/web-admin/data/api.js` 与 `apps/wechat-miniprogram/utils/api.js`）方法名、入参、返回结构完全一致，
 > 后端就位后各自把内部实现换成 HTTP 请求即可，页面代码不动。
 
 ## 评审走查路径
@@ -80,7 +84,7 @@
 5. 返回订单详情或数据看板，确认订单状态更新。
 6. 继续查看商品管理、分类管理和营业设置的主要交互。
 
-商户端 PC 网页版主链路（浏览器打开 `web-admin/index.html`）：
+商户端 PC 网页版主链路（浏览器打开 `apps/web-admin/index.html`）：
 
 1. 工作台查看四项 KPI、今日待办、实时订单与销量排行；直接在实时订单上点“备好”推进状态。
 2. 订单管理切换泳道，选中订单在右侧面板看完整单据，就地推进到下一状态。
@@ -110,7 +114,8 @@
 - [技术文档](./docs/product/online-ordering-system-technical.md)
 - [客户沟通与待讨论事项](./docs/product/online-ordering-system-customer-discussion.md)
 - [PRD 草稿](./docs/product/online-ordering-system-prd.md)
-- [视觉颜色规则](./docs/design/color-proportion.md)
+- [微信小程序开发和运维指南](./docs/微信小程序开发和运维指南/)
+- [历史商品与视觉资料](./docs/商品列表和展示（旧版已归档）/)
 
 ## 版本说明
 
