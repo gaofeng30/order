@@ -40,9 +40,13 @@
   - Writer Gate：脚本构建临时二进制，以 `127.0.0.1:0` 启动，验证 live/ready JSON、未知路径 404、真实 `SIGTERM` 的状态 0，并验证无效配置非零退出；结果 `smoke: PASS`。
 - [x] 4.3 执行 `openspec validate bootstrap-api-service --strict`、`git diff --check`，并确认相对基线的所有路径仅属于 `go.mod`、`go.sum`、`services/api/**`、根 README 和本 change OpenSpec。
   - Writer Gate：strict validation 与 `git diff --check` PASS；基线 diff 加 untracked 文件共 18 个路径，全部位于 owned paths。`go list -m` 确认唯一直接第三方依赖为 `github.com/gin-gonic/gin v1.12.0`，源码不存在 `/api/v1`、entity 或 repository。
-- [ ] 4.4 检查 tasks 中每项 Red/Green/Refactor 证据后提交 implementation candidate，记录完整 SHA；writer 不得把自测声明为独立验证。
+- [x] 4.4 检查 tasks 中每项 Red/Green/Refactor 证据后提交 implementation candidate，记录完整 SHA；writer 不得把自测声明为独立验证。
+  - implementation candidate：`38cbfd7be6068ff5f89f5162fb88383e5565d705`；提交前 writer Gate 全部 PASS，提交后 worktree clean，未将 writer 自测标记为独立验证。
 
 ## 5. Exact-SHA Independent Verification
 
-- [ ] 5.1 verifier 在另一个干净 detached worktree 对 implementation candidate 完整 SHA 重跑 4.1–4.3 与 specs 全部场景，只读报告 PASS/FAIL；失败由 writer 修复并产生新 SHA。
-- [ ] 5.2 writer 只把 5.1 的候选 SHA、命令和结果写回本文件并勾选已完成任务，提交 final metadata candidate；另一 verifier 必须对这个最终完整 SHA 再跑全部验收，且不再修改任何 artifact，PASS 后 change 才进入 `INDEPENDENT_VERIFIED`。
+- [x] 5.1 verifier 在另一个干净 detached worktree 对 implementation candidate 完整 SHA 重跑 4.1–4.3 与 specs 全部场景，只读报告 PASS/FAIL；失败由 writer 修复并产生新 SHA。
+  - 独立验证：clean detached worktree 精确检出 `38cbfd7be6068ff5f89f5162fb88383e5565d705`；strict OpenSpec、gofmt、diff-check、test、race、vet、build、官方 smoke 和 focused scenarios 全部 PASS，结束时仍 clean 并已安全移除。
+  - 补充场景：所有非 GET 方法对健康路径均为 405，端口占用 exit 1，真实 SIGINT exit 0；18 个基线 diff 文件全部属于 owned paths，唯一直接第三方依赖为 Gin v1.12.0。
+- [x] 5.2 writer 只把 5.1 的候选 SHA、命令和结果写回本文件并勾选已完成任务，提交 final metadata candidate；另一 verifier 必须对这个最终完整 SHA 再跑全部验收，且不再修改任何 artifact，PASS 后 change 才进入 `INDEPENDENT_VERIFIED`。
+  - 本次仅回写 4.4/5.1/5.2 验收 metadata，不修改代码、spec、design 或 acceptance；提交后交由另一 verifier 对新的完整 SHA 全量重验。
