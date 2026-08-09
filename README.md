@@ -5,8 +5,8 @@
 ## 当前定位
 
 - **产品阶段**：P0 可预览交互原型。
-- **运行形态**：原生微信小程序工程。
-- **数据来源**：本地 mock 数据，暂不接入真实支付、真实数据库和正式后台服务。
+- **运行形态**：原生微信小程序、静态 Web 管理端，以及独立的 Go API 进程基线。
+- **数据来源**：两个前端仍使用本地 mock 数据；API 仅提供进程健康检查，暂不包含数据库、业务接口或支付接入。
 - **评审目标**：确认页面效果、业务流程、功能范围和后续正式开发边界。
 
 ## 目录结构
@@ -31,6 +31,11 @@
 │       ├── data/             # 演示数据与接口契约层
 │       ├── ui/               # 表格 / 抽屉 / 弹层 / Toast / 图标
 │       └── pages/            # 11 条路由，覆盖商户端全部功能
+├── services/
+│   └── api/                   # Go API 进程基线（配置、健康检查、日志与优雅退出）
+│       ├── cmd/order-api/     # 唯一可执行入口
+│       ├── internal/          # app、config 与 httpapi 内部模块
+│       └── scripts/smoke.sh   # 真实进程 smoke 验收
 ├── docs/
 │   ├── README.md             # 文档索引与建议阅读顺序
 │   ├── product/              # PRD、需求、技术方案、客户沟通材料
@@ -39,6 +44,7 @@
 │   ├── archive/contracts/    # 历史合同草稿
 │   └── 商品列表和展示（旧版已归档）/ # 旧版商品、价目与视觉资料
 ├── project.config.json       # 微信开发者工具项目配置
+├── go.mod                    # 仓库级 Go module
 ├── LICENSE
 └── README.md
 ```
@@ -63,6 +69,33 @@
 > 这是 P0 原型阶段的取舍：真实打通需要后端 API，属正式开发范围。
 > 两端的接口契约层（`apps/web-admin/data/api.js` 与 `apps/wechat-miniprogram/utils/api.js`）方法名、入参、返回结构完全一致，
 > 后端就位后各自把内部实现换成 HTTP 请求即可，页面代码不动。
+
+### API 服务基线
+
+需要 Go 1.26.5。在仓库根目录启动：
+
+```bash
+GOTOOLCHAIN=go1.26.5 go run ./services/api/cmd/order-api
+```
+
+默认监听 `:8080`，当前只提供进程级健康检查：
+
+```bash
+curl http://127.0.0.1:8080/health/live
+curl http://127.0.0.1:8080/health/ready
+```
+
+可通过 `ORDER_API_HTTP_ADDR` 修改监听地址，通过 `ORDER_API_SHUTDOWN_TIMEOUT` 修改优雅退出上限。完整本地验证命令：
+
+```bash
+go test ./services/api/...
+go test -race ./services/api/...
+go vet ./services/api/...
+go build ./services/api/...
+bash services/api/scripts/smoke.sh
+```
+
+该进程尚未提供商品、用户、订单、支付等业务 API，也未接入数据库或部署环境；两个前端当前不会调用它。
 
 ## 评审走查路径
 
@@ -119,4 +152,4 @@
 
 ## 版本说明
 
-当前版本适合客户演示、内部评审和正式开发前的范围确认，不应直接作为生产系统发布。正式开发阶段需要补齐后端、支付、安全、权限、监控和发布审核配置。
+当前版本适合客户演示、内部评审和正式开发前的范围确认，不应直接作为生产系统发布。正式开发阶段需要补齐业务后端、支付、安全、权限、监控和发布审核配置。

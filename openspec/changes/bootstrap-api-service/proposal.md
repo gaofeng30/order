@@ -23,8 +23,8 @@
 
 ## Impact
 
-- 状态：`DRAFT`；本 change 只完成规划，不授权实现。
-- owner：后续绑定到 `codex/bootstrap-api-service` worktree 的唯一 backend writer；绑定前不得进入 `IMPLEMENTING`。
+- 状态：`CANDIDATE`；用户于 2026-08-09 批准方案并授权实现，writer Gate 已通过，等待精确 SHA 独立验证。
+- owner：当前任务是 `codex/bootstrap-api-service` worktree 的唯一 backend writer。
 - owned paths：`go.mod`、`go.sum`、`services/api/**`、根 `README.md`、`openspec/changes/bootstrap-api-service/**`。
 - shared contracts：新增运维端点 `/health/live`、`/health/ready`；不新增业务 API，不修改两个前端 adapter。
 - 依赖：本地 `main@021e5c87ed31d02406031bb9c53cdf755fb2b071`；该 SHA 已完成独立验证并作为本规划 worktree 的精确基线，`origin/main` 暂未推送。
