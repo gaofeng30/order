@@ -33,7 +33,10 @@
 ├── docs/
 │   ├── README.md             # 文档索引与建议阅读顺序
 │   ├── product/              # PRD、需求、技术方案、客户沟通材料
-│   └── design/               # 视觉与设计约束
+│   ├── 合同相关/             # 当前正式合同
+│   ├── 微信小程序开发和运维指南/ # 注册、支付、域名、备案与云资源指南
+│   ├── archive/contracts/    # 历史合同草稿
+│   └── 商品列表和展示（旧版已归档）/ # 旧版商品、价目与视觉资料
 ├── project.config.json       # 微信开发者工具项目配置
 ├── LICENSE
 └── README.md
@@ -110,7 +113,8 @@
 - [技术文档](./docs/product/online-ordering-system-technical.md)
 - [客户沟通与待讨论事项](./docs/product/online-ordering-system-customer-discussion.md)
 - [PRD 草稿](./docs/product/online-ordering-system-prd.md)
-- [视觉颜色规则](./docs/design/color-proportion.md)
+- [微信小程序开发和运维指南](./docs/微信小程序开发和运维指南/)
+- [历史商品与视觉资料](./docs/商品列表和展示（旧版已归档）/)
 
 ## 版本说明
 
