@@ -1,0 +1,4 @@
+interface:
+  display_name: "Order Integrate Change"
+  short_description: "检查依赖和验证状态，安全集成并归档 OpenSpec change"
+  default_prompt: "Use $order-integrate-change to prepare this verified change for integration."

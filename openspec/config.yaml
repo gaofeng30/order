@@ -1,0 +1,19 @@
+schema: spec-driven
+
+context: |
+  产品是面向客户点单的微信小程序，配套商户 Web 管理端和 Go API。
+  仓库由两名开发者与多个 Agent 通过独立 worktree 协作。
+  所有参与者必须先读取根 AGENTS.md；业务事实以已确认 PRD、公共契约和对应 OpenSpec 为准。
+
+rules:
+  proposal:
+    - 只定义一个可独立验收和回滚的主能力；可分开验收的结果必须拆成不同 change。
+    - 明确 owner、owned paths、依赖、非目标和最小成功标准。
+  design:
+    - 给出单一选定方案、边界和理由，不提供过渡双轨或未来扩展占位。
+    - 明确并行关系、共享契约和会使旧验证失效的变更面。
+  specs:
+    - 每条 requirement 必须可由测试或验收命令验证，并覆盖关键失败场景。
+  tasks:
+    - 按 Red、Green、Refactor、本地验证、独立 worktree 验证的依赖顺序拆分。
+    - 每个任务完成后记录决定性命令、结果或设计理由。
