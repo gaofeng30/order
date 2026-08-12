@@ -2,7 +2,7 @@
 
 仓库已有 `$order-plan-change`、`$order-implement-tdd`、`$order-verify-change`、`$order-integrate-change` 四个 change 级执行 skill，也已有唯一 OpenSpec 状态流，但缺少跨 change 的常驻控制面。没有控制面时，主 Goal 容易重复开 session、过早建立 verifier、按文档数量而非阻断风险调度，或用总分掩盖 P0/P1 和 strict FAIL。
 
-本 change 只新增 `.agents/skills/order-run-loop/` 的薄编排层；根治理、四个既有 skill、业务代码和产品文档都是只读依赖。当前规划状态为 `DRAFT`，批准前不创建 skill 文件。
+本 change 只新增 `.agents/skills/order-run-loop/` 的薄编排层；根治理、四个既有 skill、业务代码和产品文档都是只读依赖。规划阶段保持 `DRAFT` 且批准前不创建 skill 文件。
 
 方法总纲唯一采用 Addy Osmani 于 2026-06-07 发布的 [Loop Engineering](https://addyosmani.com/blog/loop-engineering/)（访问日期：2026-08-12）。[Ralph](https://ghuntley.com/ralph/) 是更早的简单执行环；[ReAct](https://arxiv.org/abs/2210.03629) 与 [Reflexion](https://arxiv.org/abs/2303.11366) 是前置研究机制。它们只用于说明谱系，不作为本 skill 的同义名称或并列协议。
 

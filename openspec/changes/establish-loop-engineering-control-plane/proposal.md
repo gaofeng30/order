@@ -22,7 +22,10 @@
 
 ## Impact
 
-- 状态：`DRAFT`；本 change 只生成规划 artifacts，未经主 Agent 明确批准不得进入 apply。
+- 状态：`CANDIDATE`。
+  - `APPROVED` 证据（2026-08-12）：主 Agent 基于薄编排边界、主+2 lane、冲突串行、exact-SHA verifier、三次失败升级、固定 rubric 与硬 Gate 明确批准；授权来源为主 Goal `019ff620-bb1e-7702-b305-b1dd7c6651ca`。
+  - `IMPLEMENTING` 证据（2026-08-12）：依赖、branch/worktree、owned paths 与 strict Gate 通过后，结构性 Red `test -f .agents/skills/order-run-loop/SKILL.md && test -f .agents/skills/order-run-loop/agents/openai.yaml` 返回 exit 1。
+  - `CANDIDATE` 证据（2026-08-12）：writer tasks 1.1-4.3、quick validation、strict validation、metadata/contract checks 与 owned-path audit 全部 PASS；完整候选 SHA 和 clean status 由产生本记录的本地 commit 及主动回传给出，独立验证尚未开始。
 - owner：`codex/establish-loop-engineering-control-plane` 当前 worktree 的唯一 writer；其他 worker 不得写入 owned paths。
 - owned paths：
   - `openspec/changes/establish-loop-engineering-control-plane/**`
@@ -30,7 +33,7 @@
 - 只读共享契约：根 `AGENTS.md`，以及 `.agents/skills/order-plan-change/**`、`order-implement-tdd/**`、`order-verify-change/**`、`order-integrate-change/**`；本 change 不修改这些文件。
 - 依赖：已集成的 `adopt-openspec-governance`；基线为 `c47135b660a9ca3f9f9ee6ded6b09fbf0ee6f1af`。本 change 不依赖任何业务 change，也不阻塞 owned paths 无冲突的本地 change。
 - 非目标：实现业务能力、修改产品范围、创建主 Goal 或其他 session、创建 verifier、推送、部署、安装工具、写入外部系统。
-- 最小成功标准：本轮四个规划 artifacts 内部一致、状态保持 DRAFT、`openspec validate establish-loop-engineering-control-plane --strict` 通过且规划 commit 只包含 change owned path；批准后的 apply 还必须通过 skill 结构、metadata、薄引用、状态机、评分表、session/升级/停止规则和 owned-path 验收。
+- 最小成功标准：skill 结构、metadata、薄引用、状态机、评分表、session/升级/停止规则和 owned-path 验收全部通过，形成仅含 owned paths 的本地 `CANDIDATE` commit；独立验证、集成和归档由后续角色执行。
 
 ### Acceptance Commands
 

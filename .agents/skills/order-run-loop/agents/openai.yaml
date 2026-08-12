@@ -1,0 +1,4 @@
+interface:
+  display_name: "Order Run Loop"
+  short_description: "有界调度 OpenSpec change 并以证据闭环长任务"
+  default_prompt: "Use $order-run-loop to coordinate this goal through bounded OpenSpec change lanes."
