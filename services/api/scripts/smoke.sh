@@ -11,7 +11,7 @@ cleanup() {
     kill -TERM "${server_pid}" 2>/dev/null || true
     wait "${server_pid}" 2>/dev/null || true
   fi
-  rm -f "${binary_path}" "${log_path}"
+  rm -f "${binary_path}" "${log_path}" "${temporary_directory}/ready.json"
   rmdir "${temporary_directory}" 2>/dev/null || true
 }
 trap cleanup EXIT
@@ -20,6 +20,13 @@ go build -o "${binary_path}" ./services/api/cmd/order-api
 
 ORDER_API_HTTP_ADDR="127.0.0.1:0" \
 ORDER_API_SHUTDOWN_TIMEOUT="2s" \
+ORDER_ENV="development" \
+ORDER_DB_HOST="127.0.0.1" \
+ORDER_DB_PORT="1" \
+ORDER_DB_NAME="order_smoke" \
+ORDER_DB_USER="order_smoke" \
+ORDER_DB_PASSWORD="smoke-canary-secret" \
+ORDER_DB_TLS_MODE="disabled" \
   "${binary_path}" >"${log_path}" 2>&1 &
 server_pid=$!
 
@@ -42,10 +49,13 @@ if [[ -z "${server_address}" ]]; then
   exit 1
 fi
 
-for path in health/live health/ready; do
-  response="$(curl --fail --silent --show-error "http://${server_address}/${path}")"
-  [[ "${response}" == '{"status":"ok"}' ]]
-done
+live_response="$(curl --fail --silent --show-error "http://${server_address}/health/live")"
+[[ "${live_response}" == '{"status":"ok"}' ]]
+
+ready_file="${temporary_directory}/ready.json"
+ready_status="$(curl --silent --show-error --output "${ready_file}" --write-out '%{http_code}' "http://${server_address}/health/ready")"
+[[ "${ready_status}" == "503" ]]
+[[ "$(<"${ready_file}")" == '{"status":"not_ready","reason":"database_unreachable"}' ]]
 
 status="$(curl --silent --output /dev/null --write-out '%{http_code}' "http://${server_address}/missing")"
 [[ "${status}" == "404" ]]
@@ -54,10 +64,21 @@ kill -TERM "${server_pid}"
 wait "${server_pid}"
 server_pid=""
 
-if ORDER_API_SHUTDOWN_TIMEOUT="invalid" "${binary_path}" >>"${log_path}" 2>&1; then
-  echo "order-api accepted invalid shutdown timeout" >&2
+if ORDER_ENV="development" \
+  ORDER_DB_HOST="127.0.0.1" \
+  ORDER_DB_PORT="invalid" \
+  ORDER_DB_NAME="order_smoke" \
+  ORDER_DB_USER="order_smoke" \
+  ORDER_DB_PASSWORD="smoke-canary-secret" \
+  ORDER_DB_TLS_MODE="disabled" \
+  "${binary_path}" >>"${log_path}" 2>&1; then
+  echo "order-api accepted invalid database configuration" >&2
   exit 1
 fi
 
 grep -q 'configuration error' "${log_path}"
+if grep -q 'smoke-canary-secret' "${log_path}"; then
+  echo "order-api leaked the smoke canary" >&2
+  exit 1
+fi
 echo "smoke: PASS"

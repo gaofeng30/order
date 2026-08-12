@@ -23,10 +23,11 @@
 
 ## Impact
 
-- 状态：`APPROVED`。本轮只记录规划批准，不执行任何 apply task；acceptance verdict 仍只证明四类规划 artifact 完整、所有 tasks 未勾选、`openspec validate establish-mysql-persistence-foundation --strict` 和规划结构/owned-path 检查通过，不得把 APPROVED、mock 或缺失的真实 MySQL 资产写成实现 PASS。
+- 状态：`CANDIDATE`。主 Agent 于 2026-08-13 明确授权从 APPROVED exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 进入 apply；writer 已完成 Red→Green→Refactor、锁摘要真实 MySQL 8.0 W3 与全部 writer Gate，等待 exact-SHA independent verification。
 - `approval_date`：`2026-08-13`；`approver`：`主 Agent`。批准依据：单能力 `W3/UI0`，canonical `api-service-bootstrap` health 以完整 MODIFIED delta 表达，MySQL 连接、迁移、readiness、真实 W3 与 production secret 边界均唯一冻结，无行为未决，owned paths、依赖、非目标和 42 tasks 完整，strict PASS。该记录是主 Agent 在用户授予的自主裁决范围内作出的规划裁决，不表述为用户亲自确认。
-- `base_sha`：`5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`；`candidate_sha`：尚未产生。
-- `gate_type`：`W3`，因为 apply 将改变 migration、持久化 schema、并发锁和 readiness 数据结果；`ui_level_target=UI0`，`ui_level_actual=NOT_RUN`，无用户界面。
+- 实施环境校正：同一授权把专属 `order-mysql-w3` profile 的磁盘从规划值 20 GiB 收紧为 10 GiB；这不改变产品、数据或公共契约，以下 artifacts 以 10 GiB 为唯一执行值。
+- `base_sha`：`5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`；`candidate_sha=SELF`（由本地 candidate commit 生成并在 handoff 绑定精确 SHA）。
+- `gate_type`：`W3`，因为 apply 改变 migration、持久化 schema、并发锁和 readiness 数据结果；`ui_level_target=UI0`，`ui_level_actual=UI0`，无用户界面，JS syntax 与 42 JSON 静态检查 PASS。
 - owner：`MySQL Persistence Planning Writer`；branch `codex/establish-mysql-persistence-foundation`；独立 worktree `/Users/vivix/.codex/worktrees/7f1c/order`。同一路径不得存在第二 writer，且不得回退其他 worktree 的改动。
 - owned paths：
   - `openspec/changes/establish-mysql-persistence-foundation/**`
@@ -46,6 +47,6 @@
   - `README.md`
 - 只读共享契约：根 `AGENTS.md`、`docs/quality/change-quality-gates.md`、归档 `production-architecture-baseline` 与 `mvp-product-baseline`、canonical `openspec/specs/api-service-bootstrap/spec.md`、归档 `openspec/changes/archive/2026-08-12-bootstrap-api-service/**`、其余 `openspec/specs/**`、`services/api/internal/app/**`、`services/api/internal/httpapi/middleware.go`、产品文档、腾讯云指南、quality/loop skills、`apps/**` 和其他历史归档 artifacts。
 - 依赖：只读遵循已归档 `production-architecture-baseline` 的 MySQL 8.0、独立 `order-migrate`、`schema_migrations`、`GET_LOCK`、部署前迁移和 DB+schema readiness；`bootstrap-api-service` 已在 base 上归档，其 canonical `api-service-bootstrap` health requirement 是本 change 的 MODIFIED 前置。`serve-persistent-menu-catalog` 必须等待本 change 进入 `INTEGRATED`，并与本 change 串行占用根 README、`go.mod` 和 router 装配点。
-- 本地研发前置：当前宿主已确认没有 `mysql`、Docker 或 Colima，状态为 `NOT_ESTABLISHED`，真实 W3 测试为 `NOT_RUN`；这不是客户/平台 `BLOCKED_EXTERNAL`，也不是人工 TODO。获得 apply 批准后，writer 必须在任何 Red 前自行安装/核验 Homebrew stable Colima v0.10.3（当前 arm64 bottle SHA-256 `a9dfd1fa0a4aee62fef75974f39f174e4da774f7ba495c43dd0bcc23633381b8`），建立唯一 profile `order-mysql-w3`，用 `linux/arm64` 官方 `mysql:8.0.45-oraclelinux9` 镜像摘要 `sha256:0e7040b532c0f2ac8cb822695d33025522acd5252175cb104a5929aa66b40222` 启动只绑定 loopback 的隔离实例，生成一次性凭据并记录清理责任；candidate 前必须完成真实 W3 PASS。生产 SSM/CAM/云账号仍属于独立 change/外部门禁，但不阻塞本地 W3。
+- 本地研发前置：进入 apply 时宿主没有 `mysql`、Docker 或 Colima；writer 已自行安装 Colima 0.10.3、Docker CLI 29.7.2 与 Lima 2.2.0，并建立唯一 `order-mysql-w3` profile，当前环境状态为 `ESTABLISHED`、真实 W3 为 `PASS`。2026-08-13 当次 Docker Official Registry 显示最新 8.0 patch 为 `mysql:8.0.46-oraclelinux9`，manifest list digest 为 `sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b`，`linux/arm64/v8` platform digest 为 `sha256:213bbfaf699693a40a20a12bb4342d2589a15a3dc7153db698eaed252a92458e`；writer 已从同一 platform digest 重建 fresh 容器并完成全矩阵，当前唯一容器在 loopback 随机端口健康运行，使用 0600 一次性凭据与 noexec/nosuid 1 GiB tmpfs，不含 host bind/volume，随机测试 schema 残留为零。生产 SSM/CAM/云账号仍属于独立 change/外部门禁，但不阻塞本地 W3。
 - 非目标：全部业务表、repository 和业务 API；catalog/user/order/inventory/payment；inbox/outbox/worker；ORM、seed、自动 migration、down migration；SSM SDK、CAM、部署、COS、云 HA/备份/RPO 证明；前端；通用 secret/provider abstraction；`internal/app/**`、middleware、产品文档、腾讯云指南、quality/loop skills、`apps/**`、`AGENTS.md` 和历史 archived artifacts。
 - 最小实现成功标准：结构化连接和敏感配置边界、migration 不变量、200/503 readiness 契约及专属 Colima 中真实 MySQL 8.0 Red→Green→Refactor 矩阵全部通过；所有 writer Gate 与 exact-SHA independent verification 完成；diff 只含 owned paths 且 worktree clean。环境尚未建立或测试尚未运行时只能记录 `NOT_ESTABLISHED`/`NOT_RUN`，不得形成 candidate；apply writer 必须自行闭环到真实 W3 PASS，不向客户或平台转交本地环境。

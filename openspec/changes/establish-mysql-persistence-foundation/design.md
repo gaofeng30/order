@@ -2,7 +2,7 @@
 
 当前 base `5ba5340cf9098724c0eb2284fdc5b14cb97be5dc` 已归档 `bootstrap-api-service`，并生成含 6 Requirements/17 Scenarios 的 canonical `openspec/specs/api-service-bootstrap/spec.md`；其中既有 health requirement 冻结 live/ready 进程级 200、405 与 404 公共契约。代码仍只有一个 Go 1.26.5/Gin `order-api`：`config.Load` 读取 HTTP 地址和 shutdown timeout，`main.go` 把无依赖 router 传给 `internal/app.Run`；仓库没有数据库 driver、pool、migration executable、schema history 或真实数据库测试。本 change 以同名 MODIFIED requirement 完整替换既有 health 契约，MySQL 新 capability 不重复定义 HTTP 公共契约。
 
-治理状态为 `APPROVED`：主 Agent 于 2026-08-13 在用户授予的自主裁决范围内批准 DRAFT，依据是单能力与 W3/UI0 分类明确、两项 capability delta 和全部实现边界冻结、无行为未决、42 tasks 与 strict Gate 完整。本次仅记录该裁决，不进入 `IMPLEMENTING`，也不表述为用户亲自确认。
+治理状态为 `CANDIDATE`：主 Agent 于 2026-08-13 在用户授予的自主裁决范围内批准 DRAFT，并明确授权从 APPROVED exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 进入 apply；writer 已完成 Red→Green→Refactor、真实 W3 与全部 writer Gate。批准依据仍是单能力与 W3/UI0 分类明确、两项 capability delta 和全部实现边界冻结、无行为未决、42 tasks 与 strict Gate 完整；不表述为用户亲自确认。
 
 归档 `production-architecture-baseline` 已经冻结 TencentDB MySQL 8.0、发布前独立 `order-migrate`、forward-only SQL、`schema_migrations`、`GET_LOCK('order_schema_migrate', 30)`、DB+schema readiness，以及生产不自动 migration/down。本 change 只把其中 MySQL 持久化基础落成可实现、可验证的 W3/UI0 单能力，不重开产品或云架构选择。
 
@@ -11,7 +11,7 @@
 - https://pkg.go.dev/github.com/go-sql-driver/mysql@v1.10.0
 - https://github.com/go-sql-driver/mysql/tree/v1.10.0
 
-当前宿主已只读确认 `mysql`、`mysqladmin`、Docker、Colima 均不存在。本轮 approval-only 记录不得安装、下载或启动它们；本地环境继续记为 `NOT_ESTABLISHED`，真实 W3 继续记为 `NOT_RUN`。这不是客户/平台 `BLOCKED_EXTERNAL`：未来 apply writer 必须在 Red 前自行建立冻结的专属 Colima/MySQL 8.0 环境，并在 candidate 前闭环真实 W3 PASS。
+进入 IMPLEMENTING 时已只读确认 `mysql`、`mysqladmin`、Docker、Colima 均不存在；本地环境起始状态为 `NOT_ESTABLISHED`，真实 W3 为 `NOT_RUN`。这不是客户/平台 `BLOCKED_EXTERNAL`：apply writer 必须在 Red 前自行建立冻结的专属 Colima/MySQL 8.0 环境，并在 candidate 前闭环真实 W3 PASS。
 
 ## Goals / Non-Goals
 
@@ -35,7 +35,7 @@
 
 ### D1. 只占用真实装配所需的最小路径
 
-未来 apply 的职责固定为：
+本次实现的职责固定为：
 
 ```text
 services/api/
@@ -87,7 +87,7 @@ services/api/
 | --- | --- |
 | driver | `github.com/go-sql-driver/mysql v1.10.0` |
 | network/address | `tcp` + `net.JoinHostPort(host, port)` |
-| charset/collation | `utf8mb4` / `utf8mb4_0900_ai_ci` |
+| charset/collation | driver 结构化 option `mysql.Charset("utf8mb4", "utf8mb4_0900_ai_ci")` |
 | Go time parsing | `ParseTime=true`, `Loc=time.UTC` |
 | MySQL session timezone | `time_zone='+00:00'` |
 | TLS | `required` → verified TLS；`disabled` 仅 dev/test |
@@ -183,11 +183,11 @@ MySQL DDL 不被伪装为跨文件事务；checksum 和 dirty 是故障可见边
 
 ### D8. apply writer 建立专属 Colima/MySQL 8.0，再运行真实 Gate
 
-APPROVED 状态记录完成后，环境仍固定为 `NOT_ESTABLISHED`、真实 W3 仍为 `NOT_RUN`。未来进入 apply lane 时，任何 Red 前先执行环境任务，owner 就是当前 writer，不等待客户或平台：
+IMPLEMENTING 环境已由 writer 从 `NOT_ESTABLISHED` 建立为 `ESTABLISHED`，真实 W3 已完成 Red→Green→fresh-container Refactor `PASS`。任何 Red 前的环境任务均由当前 writer 完成，未等待客户或平台：
 
 1. 安装或核验 Homebrew stable Colima v0.10.3，arm64 bottle SHA-256 固定为 `a9dfd1fa0a4aee62fef75974f39f174e4da774f7ba495c43dd0bcc23633381b8`；不复用默认或其他项目 profile。
-2. 创建 profile `order-mysql-w3`：`--runtime docker --arch aarch64 --vm-type vz --cpus 2 --memory 4 --disk 20 --kubernetes=false --mount none`，不启用外部 network address。
-3. 通过 profile 内 Docker pull `docker.io/library/mysql@sha256:0e7040b532c0f2ac8cb822695d33025522acd5252175cb104a5929aa66b40222`；该 digest 是 Docker Official Image `mysql:8.0.45-oraclelinux9` 的 `linux/arm64` manifest。核对 repo digest 与 architecture，禁止 tag-only run。
+2. 创建 profile `order-mysql-w3`：`--runtime docker --arch aarch64 --vm-type vz --cpus 2 --memory 4 --disk 10 --kubernetes=false --mount none`，不启用外部 network address；10 GiB 是进入 IMPLEMENTING 时主 Agent 明确收紧后的唯一值。
+3. 先从 Docker Official Registry 枚举当前精确 8.0.x tags，再选择最新 patch。2026-08-13 当次结果为 `mysql:8.0.46-oraclelinux9`，OCI manifest list digest `sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b`，`linux/arm64/v8` platform digest `sha256:213bbfaf699693a40a20a12bb4342d2589a15a3dc7153db698eaed252a92458e`；只 pull/run `docker.io/library/mysql@sha256:213bbfaf699693a40a20a12bb4342d2589a15a3dc7153db698eaed252a92458e`，核对 repo digest 与 architecture，禁止 tag-only run或因旧缓存降级 patch。
 4. 在权限 0600 的 `mktemp -d` 中生成随机 root/test password env file；容器名固定 `order-mysql-w3`，只用 `127.0.0.1` 随机 host port 映射 3306，不挂宿主目录或复用 volume。
 5. 等待容器 health，并通过结构化 Go connector 执行 `SELECT VERSION()` 确认为 `8.0.x`；只把 host/port、脱敏 profile 与临时 env 文件路径交给当前 shell，不输出 secret。
 
@@ -235,7 +235,7 @@ dirty 表示真实结果未知，自动 runner/readiness持续阻断。恢复顺
 
 ### D10. W3/UI0 Gate、exact SHA 与验证失效
 
-本 change 的唯一最高风险是 `W3`，UI 为 `UI0`。当前 `APPROVED` 只获得规划 strict/结构/owned PASS，尚未进入 `IMPLEMENTING`，不得获得实现 C/T/V/R verdict。未来 apply 必须按 tasks 先形成可观察 Red，再最小 Green，同一真实 MySQL 矩阵 Refactor 重跑。
+本 change 的唯一最高风险是 `W3`，UI 为 `UI0`。writer 已按 tasks 先形成可观察 Red，再完成最小 Green，并在同一锁摘要、fresh-container 真实 MySQL 8.0 矩阵上完成 Refactor 重跑；当前 candidate 自评 `C=10、T=10、V=8、R=8`，independent verdict 仍未执行。
 
 writer candidate 必须同时通过：focused unit、真实 MySQL script、gofmt、全 API test/race/vet/build、无 DB smoke、strict、diff/owned/protected、README 事实、依赖锁定及敏感扫描。候选目标评分为 `C=10、T=10、V=8、R=8`，总分 36；V=8 只表示完整 exact-SHA verifier 包待执行，不是 independent PASS。
 
@@ -243,7 +243,7 @@ verifier 只接收已提交完整 SHA，在另一个 clean detached worktree 重
 
 ## Risks / Trade-offs
 
-- [本机尚无 Colima/MySQL 8.0] → APPROVED 状态仍记 `NOT_ESTABLISHED/NOT_RUN`；apply writer 在 Red 前自行建立专属 profile并锁 digest，candidate 前真实 W3 PASS，mock 不替代。
+- [初始本机无 Colima/MySQL 8.0] → writer 已在 Red 前自行建立专属 profile、锁定 digest，并以 fresh container 完成真实 W3 PASS；mock 未替代该证据。
 - [production 当前必然不能启动] → 明确依赖单能力 `load-runtime-secrets-from-ssm`；拒绝临时环境密码，避免把过渡路径变成生产契约。
 - [一条 statement 一文件会增加 migration 文件数] → 换取无 SQL splitter、无 multi-statements、失败 version 精确和更小恢复面。
 - [MySQL DDL 不能跨文件事务回滚] → checksum、dirty、命名锁、单 statement 和 forward-fix 让失败显式；不宣称原子跨版本。
@@ -254,8 +254,8 @@ verifier 只接收已提交完整 SHA，在另一个 clean detached worktree 重
 
 ## Migration Plan
 
-1. DRAFT proposal、一份新 capability spec、一份 MODIFIED delta spec、design 和全未勾选 tasks 已提交；本次只追加 APPROVED 治理记录，不修改 Go、SQL、README、依赖或外部系统。
-2. 主 Agent 已于 2026-08-13 完成规划批准；本次不进入 `IMPLEMENTING`。未来 apply lane 启动时，在同一 writer worktree 重新读取四类 artifacts、质量门禁和 exact main，确认 owned paths 无并行 writer后再开始执行 tasks。
+1. DRAFT proposal、一份新 capability spec、一份 MODIFIED delta spec、design 和全未勾选 tasks 已提交，随后由主 Agent 记录 APPROVED 治理状态。
+2. 主 Agent 已于 2026-08-13 完成规划批准并授权进入 `IMPLEMENTING`；writer 已在同一 worktree 重新读取四类 artifacts、质量门禁和 exact main，确认 owned paths 无并行 writer后开始执行 tasks。
 3. 在任何 Red 前由 writer 安装/核验锁定 bottle 的 Colima v0.10.3，建立 `order-mysql-w3`，拉取并验证冻结的 `linux/arm64` MySQL digest、loopback、随机临时凭据和 cleanup 边界；失败由 writer闭环，不能转给客户/平台。
 4. 新增失败 tests/fixtures：配置/脱敏、文件校验、schema 状态、health 503、CLI，并在专属真实 MySQL 8.0 记录首次/并发/dirty/too-new/无自动迁移的 Red。
 5. 最小实现 config → database pool → embedded version 1 → migrate runner/CLI → readiness 装配；不改 `internal/app/**` 或业务路径。

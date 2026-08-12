@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -12,31 +13,73 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func TestHealthRoutes(t *testing.T) {
-	router := NewRouter(discardLogger())
+func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
+	calls := 0
+	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
+		calls++
+		return ReadinessResult{Ready: false, Reason: "database_unreachable"}
+	})
 
-	for _, path := range []string{"/health/live", "/health/ready"} {
-		t.Run(path, func(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/live", nil))
+
+	assertJSONResponse(t, recorder, http.StatusOK, `{"status":"ok"}`)
+	if calls != 0 {
+		t.Fatalf("readiness calls = %d, want zero for liveness", calls)
+	}
+}
+
+func TestHealthReadinessReturnsCurrent(t *testing.T) {
+	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
+		return ReadinessResult{Ready: true}
+	})
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
+
+	assertJSONResponse(t, recorder, http.StatusOK, `{"status":"ok"}`)
+}
+
+func TestHealthReadinessReturnsStableFailureReasons(t *testing.T) {
+	for _, reason := range []string{
+		"database_unreachable",
+		"database_incompatible",
+		"schema_uninitialized",
+		"schema_dirty",
+		"schema_behind",
+		"schema_too_new",
+		"schema_checksum_mismatch",
+	} {
+		t.Run(reason, func(t *testing.T) {
+			router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
+				return ReadinessResult{Reason: reason}
+			})
 			recorder := httptest.NewRecorder()
-			request := httptest.NewRequest(http.MethodGet, path, nil)
 
-			router.ServeHTTP(recorder, request)
+			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
 
-			if recorder.Code != http.StatusOK {
-				t.Fatalf("status = %d, want 200", recorder.Code)
-			}
-			if contentType := recorder.Header().Get("Content-Type"); !strings.HasPrefix(contentType, "application/json") {
-				t.Fatalf("Content-Type = %q, want application/json", contentType)
-			}
-			if body := strings.TrimSpace(recorder.Body.String()); body != `{"status":"ok"}` {
-				t.Fatalf("body = %q, want health JSON", body)
-			}
+			assertJSONResponse(t, recorder, http.StatusServiceUnavailable, `{"status":"not_ready","reason":"`+reason+`"}`)
 		})
 	}
 }
 
+func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
+	const canary = "health-canary-secret-must-not-leak"
+	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
+		return ReadinessResult{Reason: canary}
+	})
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
+
+	assertJSONResponse(t, recorder, http.StatusServiceUnavailable, `{"status":"not_ready","reason":"database_unreachable"}`)
+	if strings.Contains(recorder.Body.String(), canary) {
+		t.Fatalf("response leaked unknown reason: %s", recorder.Body.String())
+	}
+}
+
 func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
-	router := NewRouter(discardLogger())
+	router := NewRouter(discardLogger(), alwaysReady)
 
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		recorder := httptest.NewRecorder()
@@ -62,7 +105,7 @@ func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
 func TestRequestIDAndAccessLogAreServerControlledAndSanitized(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
-	router := newRouter(logger, func(engine *gin.Engine) {
+	router := newRouter(logger, alwaysReady, func(engine *gin.Engine) {
 		engine.POST("/inspect", func(context *gin.Context) {
 			context.Status(http.StatusNoContent)
 		})
@@ -100,7 +143,7 @@ func TestRequestIDAndAccessLogAreServerControlledAndSanitized(t *testing.T) {
 func TestRecoveryReturns500WithoutExposingPanic(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
-	router := newRouter(logger, func(engine *gin.Engine) {
+	router := newRouter(logger, alwaysReady, func(engine *gin.Engine) {
 		engine.GET("/panic", func(context *gin.Context) {
 			panic("panic-secret")
 		})
@@ -127,6 +170,23 @@ func TestRecoveryReturns500WithoutExposingPanic(t *testing.T) {
 
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewJSONHandler(&bytes.Buffer{}, nil))
+}
+
+func alwaysReady(context.Context) ReadinessResult {
+	return ReadinessResult{Ready: true}
+}
+
+func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {
+	t.Helper()
+	if recorder.Code != status {
+		t.Fatalf("status = %d, want %d", recorder.Code, status)
+	}
+	if contentType := recorder.Header().Get("Content-Type"); !strings.HasPrefix(contentType, "application/json") {
+		t.Fatalf("Content-Type = %q, want application/json", contentType)
+	}
+	if got := strings.TrimSpace(recorder.Body.String()); got != body {
+		t.Fatalf("body = %q, want %q", got, body)
+	}
 }
 
 func findLogEntry(t *testing.T, data []byte, message string) map[string]any {

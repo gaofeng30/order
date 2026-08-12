@@ -6,7 +6,7 @@
 
 - **产品阶段**：P0 可预览交互原型。
 - **运行形态**：原生微信小程序、静态 Web 管理端，以及独立的 Go API 进程基线。
-- **数据来源**：两个前端仍使用本地 mock 数据；API 仅提供进程健康检查，暂不包含数据库、业务接口或支付接入。
+- **数据来源**：两个前端仍使用本地 mock 数据；API 已具备 MySQL 8.0 连接、显式迁移与 DB/schema readiness 基础，但仍没有业务表、业务接口或支付接入。
 - **评审目标**：确认页面效果、业务流程、功能范围和后续正式开发边界。
 
 ## 目录结构
@@ -33,9 +33,11 @@
 │       └── pages/            # 11 条路由，覆盖商户端全部功能
 ├── services/
 │   └── api/                   # Go API 进程基线（配置、健康检查、日志与优雅退出）
-│       ├── cmd/order-api/     # 唯一可执行入口
-│       ├── internal/          # app、config 与 httpapi 内部模块
-│       └── scripts/smoke.sh   # 真实进程 smoke 验收
+│       ├── cmd/order-api/     # API 进程入口（不会自动迁移）
+│       ├── cmd/order-migrate/ # 唯一 forward-only 迁移入口
+│       ├── internal/          # app、config、database、migrate 与 httpapi
+│       ├── migrations/        # compile-time embedded SQL migrations
+│       └── scripts/           # 无 DB smoke 与隔离 MySQL 8.0 W3 验收
 ├── docs/
 │   ├── README.md             # 文档索引与建议阅读顺序
 │   ├── product/              # PRD、需求、技术方案、客户沟通材料
@@ -72,20 +74,33 @@
 
 ### API 服务基线
 
-需要 Go 1.26.5。在仓库根目录启动：
+需要 Go 1.26.5 和隔离的 MySQL 8.0。development/test 只接受结构化连接配置，不接受原始 DSN：
 
 ```bash
+export ORDER_ENV=development
+export ORDER_DB_HOST=127.0.0.1
+export ORDER_DB_PORT=3306
+export ORDER_DB_NAME=order_development
+export ORDER_DB_USER=order_development
+export ORDER_DB_PASSWORD='<local-only password>'
+export ORDER_DB_TLS_MODE=disabled
+
+GOTOOLCHAIN=go1.26.5 go run ./services/api/cmd/order-migrate
 GOTOOLCHAIN=go1.26.5 go run ./services/api/cmd/order-api
 ```
 
-默认监听 `:8080`，当前只提供进程级健康检查：
+必须先显式执行零参数 `order-migrate`，API 启动和健康检查绝不会自动迁移。默认监听 `:8080`：
 
 ```bash
 curl http://127.0.0.1:8080/health/live
-curl http://127.0.0.1:8080/health/ready
+curl -i http://127.0.0.1:8080/health/ready
 ```
 
-可通过 `ORDER_API_HTTP_ADDR` 修改监听地址，通过 `ORDER_API_SHUTDOWN_TIMEOUT` 修改优雅退出上限。完整本地验证命令：
+`/health/live` 只反映进程存活并返回 200；`/health/ready` 仅在真实 MySQL 8.0 可达且 embedded migration history 完全 current 时返回 200，否则返回 503 与稳定 reason。可通过 `ORDER_API_HTTP_ADDR` 修改监听地址，通过 `ORDER_API_SHUTDOWN_TIMEOUT` 修改优雅退出上限。
+
+production 模式拒绝 `ORDER_DB_PASSWORD` 和 `ORDER_DB_DSN`；运行时 SSM secret loader 尚未实现，因此当前 production 模式会 fail fast，不能启动。不得用 development/test 环境变量绕过该边界。
+
+完整本地验证命令：
 
 ```bash
 go test ./services/api/...
@@ -93,9 +108,11 @@ go test -race ./services/api/...
 go vet ./services/api/...
 go build ./services/api/...
 bash services/api/scripts/smoke.sh
+# 由专属隔离 MySQL 8.0 环境注入 ORDER_TEST_MYSQL_* 后运行：
+bash services/api/scripts/mysql-integration.sh
 ```
 
-该进程尚未提供商品、用户、订单、支付等业务 API，也未接入数据库或部署环境；两个前端当前不会调用它。
+当前 migration 集合只创建 `schema_migrations`；没有商品、用户、订单、库存、支付等业务表，也没有 repository、ORM、seed、down/force/repair 命令或业务 API。两个前端当前不会调用该进程。
 
 ## 评审走查路径
 

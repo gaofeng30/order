@@ -2,7 +2,7 @@
 
 ### Requirement: Database configuration is structured, bounded, and secret-safe
 
-系统 MUST 锁定 `github.com/go-sql-driver/mysql v1.10.0`，并只允许 database 构造器接收内存中的结构化连接配置；构造器和运行日志 MUST NOT 接收、返回或记录原始 DSN。结构化配置 MUST 包含 host、`uint16` port、database、user、password 与 TLS mode，并固定使用 TCP、`parseTime=true`、UTC location、session `time_zone='+00:00'`、`utf8mb4`、`utf8mb4_0900_ai_ci`、3 秒连接 timeout、5 秒 read timeout 与 5 秒 write timeout。
+系统 MUST 锁定 `github.com/go-sql-driver/mysql v1.10.0`，并只允许 database 构造器接收内存中的结构化连接配置；构造器和运行日志 MUST NOT 接收、返回或记录原始 DSN。结构化配置 MUST 包含 host、`uint16` port、database、user、password 与 TLS mode，并固定使用 TCP、`parseTime=true`、UTC location、session `time_zone='+00:00'`、driver 结构化 `mysql.Charset("utf8mb4", "utf8mb4_0900_ai_ci")` option、3 秒连接 timeout、5 秒 read timeout 与 5 秒 write timeout。
 
 TLS mode MUST 且只能是 `required` 或 `disabled`；`required` MUST 验证服务端证书，`disabled` 只允许 dev/test，`skip-verify`、`preferred`、明文 fallback、multi-statements、参数插值和 unrestricted local infile MUST 被拒绝。端口、空字段、TLS mode 和结构化参数必须在建池前校验，错误只返回字段名与枚举原因，不得包含 password、格式化 DSN、host/user/database 组合或连接响应正文。
 
@@ -126,9 +126,9 @@ CLI MUST 向 stderr 输出 JSON `slog`：成功只记录 `event=migration_comple
 
 ### Requirement: W3 acceptance uses an agent-managed real MySQL 8.0
 
-本 change 在 DRAFT 阶段 MUST 不安装、下载或启动 MySQL、Docker、Colima 或其他 runtime；当前本地环境状态 MUST 记录为 `NOT_ESTABLISHED`，真实 W3 测试状态为 `NOT_RUN`。获得 apply 批准后，writer MUST 在任何 Red 前自行安装或核验 Homebrew stable Colima v0.10.3；arm64 bottle SHA-256 MUST 为 `a9dfd1fa0a4aee62fef75974f39f174e4da774f7ba495c43dd0bcc23633381b8`。writer 随后 MUST 建立唯一专属 profile `order-mysql-w3`：`linux/arm64`、Docker runtime、2 CPU、4 GiB memory、20 GiB disk、无 Kubernetes、无 workspace mount、仅 loopback port forwarding。
+本 change 在 DRAFT 阶段 MUST 不安装、下载或启动 MySQL、Docker、Colima 或其他 runtime；进入 IMPLEMENTING 时本地环境状态从 `NOT_ESTABLISHED` 开始，真实 W3 测试状态为 `NOT_RUN`。获得 apply 批准后，writer MUST 在任何 Red 前自行安装或核验 Homebrew stable Colima v0.10.3；arm64 bottle SHA-256 MUST 为 `a9dfd1fa0a4aee62fef75974f39f174e4da774f7ba495c43dd0bcc23633381b8`。writer 随后 MUST 建立唯一专属 profile `order-mysql-w3`：`linux/arm64`、Docker runtime、2 CPU、4 GiB memory、10 GiB disk、无 Kubernetes、无 workspace mount、仅 loopback port forwarding。
 
-writer MUST 只使用 Docker Official Image `mysql:8.0.45-oraclelinux9` 的 `linux/arm64` manifest digest `sha256:0e7040b532c0f2ac8cb822695d33025522acd5252175cb104a5929aa66b40222`；pull 后 MUST 核对 repo digest、architecture 与容器内 `SELECT VERSION()`，不得运行 mutable tag、MariaDB、mock server 或不同 digest。一次性随机凭据 MUST 只存在于权限为 0600 的临时 env file/进程内存，实例只绑定 `127.0.0.1` 的随机 host port，不得记录凭据或 DSN。
+writer MUST 在实际 pull/run 前从 Docker Official Registry 枚举当前可用的精确 8.0.x tags并选择最新 patch，不得因本地缓存降级，不得运行浮动 `8.0`/`latest`。2026-08-13 当次冻结为 `mysql:8.0.46-oraclelinux9`，OCI manifest list digest `sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b`，`linux/arm64/v8` platform digest `sha256:213bbfaf699693a40a20a12bb4342d2589a15a3dc7153db698eaed252a92458e`；pull/run 后 MUST 核对 repo digest、architecture 与容器内 `SELECT VERSION()`，不得运行 MariaDB、mock server 或不同 digest。一次性随机凭据 MUST 只存在于权限为 0600 的临时 env file/进程内存，实例只绑定 `127.0.0.1` 的随机 host port，不得记录凭据或 DSN。
 
 `services/api/scripts/mysql-integration.sh` MUST 只连接这个已建立的专属 profile，不负责选择另一 runtime。脚本 MUST 要求结构化的 `ORDER_TEST_MYSQL_HOST`、`ORDER_TEST_MYSQL_PORT`、`ORDER_TEST_MYSQL_USER`、`ORDER_TEST_MYSQL_PASSWORD`、`ORDER_TEST_MYSQL_TLS_MODE`、`ORDER_TEST_MYSQL_INSTANCE=order-mysql-w3` 和显式安全闩 `ORDER_TEST_MYSQL_ISOLATED=YES`；apply 前缺失时保持 `NOT_ESTABLISHED/NOT_RUN`，apply 开始后环境建立或字段校验失败 MUST 记 FAIL 并由 writer 从首个错误继续修复，不得转交客户/平台或冒充 `BLOCKED_EXTERNAL`。
 
