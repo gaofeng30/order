@@ -23,7 +23,8 @@
 
 ## Impact
 
-- 状态：`DRAFT`。本轮 acceptance verdict 只要求四类规划 artifact 完整、所有 tasks 未勾选、`openspec validate establish-mysql-persistence-foundation --strict` 和规划结构/owned-path 检查通过；不得把 DRAFT、mock 或缺失的真实 MySQL 资产写成实现 PASS。
+- 状态：`APPROVED`。本轮只记录规划批准，不执行任何 apply task；acceptance verdict 仍只证明四类规划 artifact 完整、所有 tasks 未勾选、`openspec validate establish-mysql-persistence-foundation --strict` 和规划结构/owned-path 检查通过，不得把 APPROVED、mock 或缺失的真实 MySQL 资产写成实现 PASS。
+- `approval_date`：`2026-08-13`；`approver`：`主 Agent`。批准依据：单能力 `W3/UI0`，canonical `api-service-bootstrap` health 以完整 MODIFIED delta 表达，MySQL 连接、迁移、readiness、真实 W3 与 production secret 边界均唯一冻结，无行为未决，owned paths、依赖、非目标和 42 tasks 完整，strict PASS。该记录是主 Agent 在用户授予的自主裁决范围内作出的规划裁决，不表述为用户亲自确认。
 - `base_sha`：`5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`；`candidate_sha`：尚未产生。
 - `gate_type`：`W3`，因为 apply 将改变 migration、持久化 schema、并发锁和 readiness 数据结果；`ui_level_target=UI0`，`ui_level_actual=NOT_RUN`，无用户界面。
 - owner：`MySQL Persistence Planning Writer`；branch `codex/establish-mysql-persistence-foundation`；独立 worktree `/Users/vivix/.codex/worktrees/7f1c/order`。同一路径不得存在第二 writer，且不得回退其他 worktree 的改动。

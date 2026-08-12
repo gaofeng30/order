@@ -1,10 +1,12 @@
-> 状态：`DRAFT`。`gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`candidate_sha=NOT_CREATED`。当前本地 MySQL 环境为 `NOT_ESTABLISHED`，真实 W3 为 `NOT_RUN`；这不是 `BLOCKED_EXTERNAL`。本轮所有 tasks 必须保持未勾选，未获明确批准不得 apply。
+> 状态：`APPROVED`。`gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`candidate_sha=NOT_CREATED`。当前本地 MySQL 环境为 `NOT_ESTABLISHED`，真实 W3 为 `NOT_RUN`；这不是 `BLOCKED_EXTERNAL`。本轮只记录 approval，所有 tasks 必须保持未勾选，不执行 apply。
 >
-> 每项完成后按 `docs/quality/change-quality-gates.md` 记录：change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界及本地环境状态。DRAFT 不计算 C/T/V/R 实现分数；candidate 目标 `C=10、T=10、V=8、R=8` 只在真实证据齐全后评定。
+> `approval_date=2026-08-13`；`approver=主 Agent`。批准依据是单能力 W3/UI0、canonical health 完整 MODIFIED、MySQL/真实 W3/production secret 边界唯一冻结、无行为未决、owned/依赖/非目标/42 tasks 完整且 strict PASS；这是主 Agent 在用户授予的自主裁决范围内作出的规划裁决，不表述为用户亲自确认。
+>
+> 每项完成后按 `docs/quality/change-quality-gates.md` 记录：change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界及本地环境状态。APPROVED 尚未实现，不计算 C/T/V/R 实现分数；candidate 目标 `C=10、T=10、V=8、R=8` 只在真实证据齐全后评定。
 
 ## 1. Approval, Ownership and Local MySQL Prerequisite
 
-- [ ] 1.1 取得对本 change 的明确批准；重新完整读取 proposal、两份 spec、design、tasks、根 `AGENTS.md`、`docs/quality/change-quality-gates.md`、canonical `api-service-bootstrap` 与归档 bootstrap/production/product baselines，运行 `openspec validate establish-mysql-persistence-foundation --strict`，确认状态才能由 `DRAFT` 进入 `APPROVED/IMPLEMENTING`，且没有 Open Question。
+- [ ] 1.1 核验本 change 的 APPROVED 记录；重新完整读取 proposal、两份 spec、design、tasks、根 `AGENTS.md`、`docs/quality/change-quality-gates.md`、canonical `api-service-bootstrap` 与归档 bootstrap/production/product baselines，运行 `openspec validate establish-mysql-persistence-foundation --strict`，确认没有 Open Question 后才能进入 `IMPLEMENTING`。
 - [ ] 1.2 在任何 Red 前确认 branch/worktree 仍是唯一 writer、HEAD 包含 exact base、index/worktree clean，且当前 diff 只含规划 commit；重新审计 main/router/config/README/smoke 的实际形态和全部 owned/protected paths，不吸收或回退其他 worker 改动。
 - [ ] 1.3 只读运行 `brew info --json=v2 colima`，要求 stable=`0.10.3` 且 arm64 bottle SHA-256=`a9dfd1fa0a4aee62fef75974f39f174e4da774f7ba495c43dd0bcc23633381b8`；若 `colima` 不存在则按锁定 bottle 安装，存在则版本必须精确一致。检查 `order-mysql-w3` profile 不存在；若已存在，停止并先确认归属，不得删除或复用未知 profile。
 - [ ] 1.4 创建唯一 `order-mysql-w3` profile，固定 Docker runtime、`aarch64`/VZ、2 CPU、4 GiB memory、20 GiB disk、Kubernetes off、workspace mount none、无外部 network address；记录 Colima/Docker engine 版本和 profile 配置的脱敏证据，环境状态从 `NOT_ESTABLISHED` 变为 `ESTABLISHED`。
