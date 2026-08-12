@@ -214,6 +214,30 @@
 
 - [x] 3.4 对照 `mvp-product-baseline` 确认技术文档只引用而不改变`营业日期 × 餐段 × 商品`、15 分钟软预占、九态和四角色；确认 RPO/RTO、容量、云 SKU 和成本均明确区分目标、未实测与外部值。
   - Evidence: `phase=Refactor`; `command=git diff --exit-code <base> -- mvp spec PRD; rg -nF <库存键/15 分钟/九态/四角色>; rg -n <未实测/外部值/RPO/RTO/容量/SKU/成本> <两个实际文档>`; `exit_result=0`; `sanitized_summary=PRD 与 mvp spec 无 diff，技术文档精确引用归档库存、九态、四角色；恢复/容量是未实测目标，SKU/成本是外部值`; `artifact=mvp spec/PRD/两个实际文档`; `unverified_boundary=不实现产品行为或云容量`; `external_asset=无`。
+  - Verifier Red: `phase=verifier`; `candidate_sha=493033a8ee002f8553762f9b0cca292ef1551c3f`; `exit_result=FAIL`; `sanitized_summary=ARCH_PRODUCT_INVENTORY_SCHEMA_DRIFT（第 1 次）：products 表仍含 stock_type/stock_quantity，与归档库存唯一键“营业日期 × 餐段 × 商品”冲突；旧 SHA 证据失效`; `artifact=docs/product/online-ordering-system-technical.md`; `unverified_boundary=其余 verifier Gate PASS`; `external_asset=无`。
+  - Writer Red: `phase=red`; `command=下列 product inventory schema consistency check`; `exit_result=1`; `sanitized_summary=同指纹 ARCH_PRODUCT_INVENTORY_SCHEMA_DRIFT，唯一命中 products_fields=[stock_type, stock_quantity]`; `artifact=technical.md products 小节`; `unverified_boundary=修复前证据`; `external_asset=无`。
+  - Writer Green: `phase=green`; `command=重跑下列检查并搜索两份实际文档/规范中的商品级总库存 schema`; `exit_result=0`; `sanitized_summary=product inventory schema consistency PASS；只删除 products 的两个遗留字段，未新增库存表、schema 或行为，同类正式 schema 无其他命中`; `artifact=两个实际文档与 change 规范`; `unverified_boundary=库存 schema 由后续 W3 change 设计`; `external_asset=无`。
+
+  ```bash
+  python3 - <<'PY'
+  from pathlib import Path
+
+  path = Path("docs/product/online-ordering-system-technical.md")
+  text = path.read_text(encoding="utf-8")
+  start = text.index("### 4.3 商品表 `products`")
+  end = text.index("### 4.4", start)
+  section = text[start:end]
+  forbidden = [
+      field for field in ("stock_type", "stock_quantity")
+      if f"- {field}" in section
+  ]
+  if forbidden:
+      raise SystemExit(
+          f"ARCH_PRODUCT_INVENTORY_SCHEMA_DRIFT products_fields={forbidden}"
+      )
+  print("product inventory schema consistency PASS")
+  PY
+  ```
 
 ## 4. Local Writer Gate
 

@@ -291,8 +291,6 @@ Nginx 只暴露 HTTPS；CDB 与应用端口只走内网，公网安全组只开�
 - description
 - image_object_key
 - price
-- stock_type
-- stock_quantity
 - sales_status
 - sort_order
 - created_at
