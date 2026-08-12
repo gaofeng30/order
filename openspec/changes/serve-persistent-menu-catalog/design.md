@@ -2,7 +2,9 @@
 
 Base `5ba5340cf9098724c0eb2284fdc5b14cb97be5dc` 只有 Go/Gin bootstrap：`main.go` 构造无数据库 router，`/health/live` 与 `/health/ready` 都是进程级 200，未知 path 404、已知 path 错误方法 405。canonical `mvp-product-baseline` 要求匿名用户可浏览分类和商品，并把库存唯一键冻结为 `营业日期 × 餐段 × 商品`；因此本 change 只交付目录读取，不得把目录误作库存或可售事实。
 
-上游 `establish-mysql-persistence-foundation` 在 exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 仅为 `APPROVED`：其设计冻结结构化 MySQL pool、embedded forward-only migrations、`order-migrate`、DB/schema readiness 和真实 MySQL 8.0 Gate，但尚未进入 local `main`、没有实现或集成。当前 DRAFT 可完整规划，apply 必须等待上游 `INTEGRATED` 后吸收最新 main 并按真实接口重验。
+上游 `establish-mysql-persistence-foundation` 在 exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 仅为 `APPROVED`：其设计冻结结构化 MySQL pool、embedded forward-only migrations、`order-migrate`、DB/schema readiness 和真实 MySQL 8.0 Gate，但尚未进入 local `main`、没有实现或集成。本 change 已完成规划批准，但 apply 必须等待上游 `INTEGRATED` 后吸收最新 main 并按真实接口重验。
+
+治理状态为 `APPROVED`：`approval_date=2026-08-13`，`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内，依据单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 ownership/依赖/45 tasks 与 strict PASS 作出规划裁决；该记录不表述为用户亲自确认。本次只记录 approval，不进入 `IMPLEMENTING` 或执行任何 apply task。
 
 本 change 的调用方是后续匿名微信小程序菜单客户端：进入/刷新菜单时调用列表，进入商品详情时调用详情。它不是结算或下单接口，也不构成小程序 UI、图片、员工价、库存或售罄交付。
 
@@ -29,7 +31,7 @@ Base `5ba5340cf9098724c0eb2284fdc5b14cb97be5dc` 只有 Go/Gin bootstrap：`main.
 
 ### D1. 依赖先集成，再以最新 main 作为唯一实现起点
 
-当前 change 只提交 DRAFT artifacts。上游 foundation exact SHA 只用于只读确认已批准的预期接口，不作为 implemented/integrated 依赖，也不 cherry-pick 到本分支。apply 的第一硬门是 foundation 已在当前 `main` 进入 `INTEGRATED`；解除后 writer 必须把本 branch 更新到最新 main，重新读取实际 `config/database/migrate/readiness/router/main` 和 migration embed 形态，并同步 proposal/spec/design/tasks 后重新 strict/approval。
+当前 change 只完成 APPROVED 规划 artifacts，尚未进入 `IMPLEMENTING`。上游 foundation exact SHA 只用于只读确认已批准的预期接口，不作为 implemented/integrated 依赖，也不 cherry-pick 到本分支。apply 的第一硬门是 foundation 已在当前 `main` 进入 `INTEGRATED`；解除后 writer 必须把本 branch 更新到最新 main，重新读取实际 `config/database/migrate/readiness/router/main` 和 migration embed 形态，并同步 proposal/spec/design/tasks 后重新 strict/approval。
 
 理由：catalog 必须复用唯一 pool、runner、checksum 和 readiness；在旧 base 上猜实现会复制 foundation 或让共享 router/main 产生不可验证冲突。没有依赖的 changes 仍可并行，只有本 change 与 foundation 在共享装配点串行。`connect-miniprogram-menu-catalog` 反向等待本 change `INTEGRATED`。
 
@@ -149,7 +151,7 @@ httptest 先冻结 exact JSON bytes/field types/empty arrays、GET-only、非法
 - visible detail、invalid/unknown/hidden 404，关闭 DB 后列表/详情 503；
 - foundation live/ready/migrate 与 catalog routes 在同一真实进程的联合 smoke。
 
-所有 PASS/FAIL/interrupt 路径都只尝试 drop 本次已创建、已记录且 prefix 精确匹配的 schema。目标为空、归属不明、prefix 不符或 cleanup 失败立即 FAIL，不扩大删除或换强命令。DRAFT 当前 runtime `NOT_ESTABLISHED`、W3 `NOT_RUN`；apply writer 在 foundation 集成后负责恢复其冻结的专属本地资产，这不是客户/平台 `BLOCKED_EXTERNAL`。
+所有 PASS/FAIL/interrupt 路径都只尝试 drop 本次已创建、已记录且 prefix 精确匹配的 schema。目标为空、归属不明、prefix 不符或 cleanup 失败立即 FAIL，不扩大删除或换强命令。APPROVED 当前 runtime `NOT_ESTABLISHED`、W3 `NOT_RUN`；apply writer 在 foundation 集成后负责恢复其冻结的专属本地资产，这不是客户/平台 `BLOCKED_EXTERNAL`。
 
 ### D7. RGR、writer/verifier 与 C/T/V/R 只认当前 exact SHA 证据
 
@@ -174,8 +176,8 @@ writer candidate 还必须通过 strict、diff check、owned allowlist、protect
 
 ## Migration Plan
 
-1. 当前只提交 DRAFT proposal/spec/design/tasks；strict 与规划范围检查通过，所有 tasks 未勾，不安装 runtime、不修改业务文件。
-2. 只有 foundation 已在 current main `INTEGRATED` 后，writer 才更新到 latest main，重读实际接口、同步 artifacts 并重新 approval/strict。
+1. DRAFT proposal/spec/design/tasks 已提交；本次只追加 APPROVED 治理记录，strict 与规划范围检查通过，所有 tasks 未勾，不安装 runtime、不修改业务文件。
+2. 只有 foundation 已在 current main `INTEGRATED` 后，writer 才能申请进入 apply lane；开始前更新到 latest main，重读实际接口，若 artifacts 发生变化则重新 approval/strict。
 3. 按 foundation 契约建立隔离真实 MySQL 8.0；先写 migration/repository/HTTP/real integration Red，再追加 000002/000003、catalog 包和最小 router/main 装配取得 Green。
 4. Refactor 后从 clean random schema 重跑真实 matrix、全 Go Gate、foundation+catalog smoke、strict、owned/protected/sensitive，提交 exact candidate。
 5. verifier 在另一 clean detached worktree 对 exact SHA 全量重跑；失败回原 writer产生新 SHA，任何变更从头验证。

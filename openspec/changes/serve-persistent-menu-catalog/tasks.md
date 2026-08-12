@@ -1,12 +1,14 @@
-> 状态：`DRAFT`。`gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`candidate_sha=NOT_CREATED`。foundation exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 当前仅 `APPROVED`；本 change 可规划/批准，但不得 apply，直到上游在 current main `INTEGRATED`。本轮所有任务保持未勾选，不安装 runtime、不修改业务文件。
+> 状态：`APPROVED`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划，不表述为用户亲自确认；批准依据为单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 owned/非目标/依赖硬门/45 tasks 与 strict PASS。
 >
-> 每项完成后按 `docs/quality/change-quality-gates.md` 记录 change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界和 asset/cleanup 状态。DRAFT 不评定实现 C/T/V/R；candidate 目标 `C=10、T=10、V=8、R=8` 只有在真实证据齐全且硬阻断为零时才能记录。
+> `gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`candidate_sha=NOT_CREATED`。foundation exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 当前仍仅 `APPROVED`；本 change 不得进入 `IMPLEMENTING` 或 apply，直到上游在 current main `INTEGRATED`。本轮所有任务保持未勾选，不安装 runtime、不修改业务文件。
+>
+> 每项完成后按 `docs/quality/change-quality-gates.md` 记录 change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界和 asset/cleanup 状态。APPROVED 不评定实现 C/T/V/R；candidate 目标 `C=10、T=10、V=8、R=8` 只有在进入 apply 后真实证据齐全且硬阻断为零时才能记录。
 
 ## 1. Approval、Dependency 与唯一 Writer Gate
 
-- [ ] 1.1 重新完整读取 proposal、spec、design、tasks、根 `AGENTS.md`、质量门禁、canonical mvp/production/api-service-bootstrap 与 current main 的 foundation artifacts；运行 `openspec validate serve-persistent-menu-catalog --strict`，确认无 Open Question 后取得明确 approval。
+- [ ] 1.1 核验本 change 的 APPROVED 记录；重新完整读取 proposal、spec、design、tasks、根 `AGENTS.md`、质量门禁、canonical mvp/production/api-service-bootstrap 与 current main 的 foundation artifacts，运行 `openspec validate serve-persistent-menu-catalog --strict`，确认无 Open Question 后才能进入 `IMPLEMENTING`。
 - [ ] 1.2 只读确认 `establish-mysql-persistence-foundation` 已在 current `main` 进入 `INTEGRATED`，不是 branch/APPROVED/CANDIDATE/INDEPENDENT_VERIFIED；未满足即保持阻断，不执行任何 Red 或共享路径修改。
-- [ ] 1.3 依赖满足后把本 branch 吸收 latest main，记录新的完整 `base_sha`，重新审阅实际 config/database/migrate/readiness/router/main/migration embed 接口；若与本 DRAFT 有差异，先同步四类 artifacts、重新 strict 和 approval，旧证据全部失效。
+- [ ] 1.3 依赖满足后把本 branch 吸收 latest main，记录新的完整 `base_sha`，重新审阅实际 config/database/migrate/readiness/router/main/migration embed 接口；若与本 APPROVED 规划有差异，先同步四类 artifacts、重新 strict 和 approval，旧证据全部失效。
 - [ ] 1.4 确认 branch/worktree 是本 change 唯一 writer、开场 index/worktree clean、owned paths 无第二 writer；显式复核 router/router_test/main 三个共享路径已与其他 changes 串行。
 - [ ] 1.5 按 integrated foundation 当前冻结的方式建立专属隔离真实 MySQL 8.0 本地资产，核对 engine/digest/loopback/随机凭据/安全闩/cleanup preflight；环境未建立或目标归属不明即 FAIL，不进入 Red，不转交客户/平台或冒充 `BLOCKED_EXTERNAL`。
 

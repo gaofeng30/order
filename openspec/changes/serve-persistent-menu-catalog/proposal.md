@@ -24,12 +24,13 @@
 
 ### 状态、Outcome 与 Acceptance Verdict
 
-- 状态：`DRAFT`。本轮只创建、严格校验并提交规划 artifacts；不执行 apply task，不修改 Go、SQL、依赖、README 或外部系统，所有 tasks 保持未勾选。
+- 状态：`APPROVED`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划，依据为单能力 `persistent-menu-catalog`、`W3/UI0`、目录与库存/售罄/员工价/图片边界、schema/HTTP/ID/排序/可见性/一致性读取/真实 MySQL 8.0 RGR 均唯一冻结，owned/非目标/依赖硬门/45 tasks 完整且 strict PASS；该记录不得表述为用户亲自确认。
+- 本次只记录 approval，不执行 apply task、不进入 `IMPLEMENTING`，不修改 Go、SQL、依赖、README、runtime 或外部系统，所有 tasks 保持未勾选。
 - 唯一 outcome：匿名调用方可从真实 MySQL 读取稳定、最小、与库存事实解耦的菜单目录及可见商品详情。
 - 单一 acceptance verdict：未来 candidate 只有在 schema migration、repository 一致性、HTTP 精确契约、真实 MySQL 8.0 故障矩阵、全仓相关回归和 exact-SHA 独立验证全部通过后才可接受；任一部分不可独立发布或回滚。
 - `base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`；`candidate_sha=NOT_CREATED`。
 - `gate_type=W3`：apply 将追加持久化 schema 并改变公共读取结果；`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`，本 change 无 UI，且不宣称交付 PRD 的完整菜单页面。
-- DRAFT 不评定实现 C/T/V/R；candidate 目标为 `C=10、T=10、V=8、R=8`，只有真实证据齐全且硬阻断为零时才能记录。
+- APPROVED 仍不评定实现 C/T/V/R；candidate 目标为 `C=10、T=10、V=8、R=8`，只有进入 apply 后真实证据齐全且硬阻断为零时才能记录。
 
 ### 调用方与使用时机
 
@@ -65,7 +66,7 @@
 
 ### 必要资产与最小成功标准
 
-- DRAFT/approval 无外部资产；当前 `ui_level_actual=NOT_RUN`。真实 MySQL 8.0 本地验收资产当前为 `NOT_ESTABLISHED`、catalog W3 为 `NOT_RUN`，本轮禁止安装或启动 runtime，也不得把 unit/mock 写成 W3 PASS。
+- APPROVED 规划阶段无外部资产；当前 `ui_level_actual=NOT_RUN`。真实 MySQL 8.0 本地验收资产当前为 `NOT_ESTABLISHED`、catalog W3 为 `NOT_RUN`，本轮禁止安装或启动 runtime，也不得把 unit/mock 写成 W3 PASS。
 - 未来 apply writer 负责在上游集成后按 foundation 已冻结的隔离 MySQL 8.0、随机 `order_test_` schema、安全闩和清理边界建立本地资产；这不是客户或平台 `BLOCKED_EXTERNAL`。若资产未建立、目标不安全或 cleanup 失败，writer Gate 为 FAIL。
 - 最小成功标准：两份单 statement migration 的首次/重复/checksum/无 seed/down 与随机 schema cleanup 通过；列表/详情在真实 MySQL 上满足可见性、空目录/空分类、稳定排序、一致性读取、无 N+1、整数分和 DB 断开 503；httptest 满足 exact JSON、GET-only、非法/未知/隐藏 404 且既有 404/405 不漂移；Go test/race/vet/build/smoke、foundation+catalog integration、strict、owned/protected/sensitive 检查和 exact-SHA verifier 全部通过。UI actual 保持 `NOT_RUN`。
 
