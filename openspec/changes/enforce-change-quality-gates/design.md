@@ -2,7 +2,7 @@
 
 仓库当前由根 `AGENTS.md` 固定七态治理，由 `$order-plan-change`、`$order-implement-tdd`、`$order-verify-change`、`$order-integrate-change` 分别处理单个 change 的四个阶段；已归档并集成的 `loop-engineering-control-plane` 负责跨 change 的 lane、调度、session、失败升级和主动回传。现有流程尚未回答一个 change 改了不同风险面时最低需要哪些测试与运行证据，导致静态检查、writer 自测、UI 模拟、真实平台结果可能被混写成同一个 PASS。
 
-本 change 从本地 `main@69cc9b6437dc3181681603d1bb060c07acba97f1` 建立，并在形成 candidate 前按授权 rebase 到最新本地 `main@d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e`，只实现一个 change-local 质量协议。产品基线已进入新 main，但不是本 change 的声明依赖且无 owned-path 重叠；本 lane 不回退其改动。详细门禁落在 `docs/quality/change-quality-gates.md`，四个 stage skill 只增加各自阶段必须读取和检查该协议的最小入口；`order-run-loop` 与根治理保持只读。
+本 change 从本地 `main@69cc9b6437dc3181681603d1bb060c07acba97f1` 建立，并在形成 candidate 前按授权两次吸收 moving main，最终 rebase 到本地 `main@b6e24f97bb20f37543e10a1dc354cf75f07d47a6`，只实现一个 change-local 质量协议。产品基线已归档进入新 main，但不是本 change 的声明依赖且无 owned-path 重叠；本 lane 不回退其改动。详细门禁落在 `docs/quality/change-quality-gates.md`，四个 stage skill 只增加各自阶段必须读取和检查该协议的最小入口；`order-run-loop` 与根治理保持只读。
 
 ## Goals / Non-Goals
 
