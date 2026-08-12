@@ -23,15 +23,15 @@
 
 ## Impact
 
-- 状态：`DRAFT`；本轮只创建规划 artifacts，不修改实际技术文档，不执行 tasks，不进入实现。
+- 状态：`CANDIDATE`；主 Agent 已明确批准，writer 已按 W0/UI0 的 Red → Green → Refactor 门禁完成两个文档视图，等待 exact-SHA independent verification。
 - `base_sha`：`cb2605f477e58ac5471a0c535b85256c6be80a00`。
 - `gate_type`：`W0`，因为 apply 只改变文档契约、链接和内容完整性，不改变运行行为、公共 API 或数据结果。
 - `ui_level_target`：`UI0`；本 change 没有用户界面或真实平台运行结果，UI1–UI3 不适用。
 - owner：`Production Architecture Writer`；唯一 writer 位于既有 worktree `/Users/vivix/.codex/worktrees/9d75/order` 的 branch `codex/establish-production-architecture-baseline`。
 - owned paths：
   - `openspec/changes/establish-production-architecture-baseline/**`
-  - `docs/product/online-ordering-system-technical.md`（批准 apply 前只读）
-  - `docs/微信小程序开发和运维指南/腾讯云操作指南.md`（批准 apply 前只读）
+  - `docs/product/online-ordering-system-technical.md`
+  - `docs/微信小程序开发和运维指南/腾讯云操作指南.md`
 - 只读共享契约：根 `AGENTS.md`、`docs/quality/change-quality-gates.md`、`openspec/specs/mvp-product-baseline/spec.md`、`openspec/changes/bootstrap-api-service/**`、产品 PRD、客户清单、合同、质量与 loop skills、全部业务代码。
 - 依赖：`bootstrap-api-service` 已集成；`formalize-mvp-product-baseline`、`establish-loop-engineering-control-plane`、`enforce-change-quality-gates` 均已归档并进入当前 `main@cb2605f477e58ac5471a0c535b85256c6be80a00`。
 - 必要外部资产：candidate 必须能通过 public internet 实际访问文档中的腾讯云/微信支付官方直链，owner 为 `Production Architecture Writer`；规划时该资产可用，candidate 时不可用则记 `BLOCKED_EXTERNAL`，恢复条件为官方页面或网络恢复后重跑链接 Gate。真实云账号、域名、微信身份、数据库和监控权限不是本 W0 change 的必要资产，由客户云管理员、客户平台管理员和后续平台 owner 在对应部署/UAT change 提供。

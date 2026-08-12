@@ -190,7 +190,7 @@ Go JSON 日志写 stderr，经 LogListener 进入 CLS 并保留 30 天。请求�
 
 两份实际文档必须在同一 change 修改和回滚，否则当前指南的二选一、公有读和长期 key 会继续污染事实源。外部占位符严格采用 spec 白名单；不允许“待定”“二选一”“按需选择”“视情况”等实现选择。敏感正文禁止入文档。
 
-公开官方链接是 W0 link Gate 的必要外部资产：owner 为 `Production Architecture Writer`，规划时可公开访问；candidate 时必须重新访问并记录日期。网络不可用或官方页面不可访问时记 `BLOCKED_EXTERNAL`，不得用静态 URL 字符串冒充链接 PASS。真实云账号、域名和微信身份不是本 change 的必要资产。
+公开官方链接是 W0 link Gate 的必要外部资产：owner 为 `Production Architecture Writer`，规划时可公开访问；candidate 时必须按单链接 20 秒、全组 90 秒、零重试重新访问并记录日期。网络不可用或官方页面不可访问时记 `BLOCKED_EXTERNAL` 与恢复条件，不得用静态 URL 字符串冒充链接 PASS，也不得无限重试或使已经独立判定的本地内容 Gate 失效。真实云账号、域名和微信身份不是本 change 的必要资产。
 
 ### D11. W0/UI0 Gate 与并行所有权不可降级
 
@@ -200,7 +200,7 @@ Go JSON 日志写 stderr，经 LogListener 进入 CLS 并保留 30 天。请求�
 - Go、前端和治理路径是只读共享契约；并行 worker 可继续修改互斥路径，但任何目标文档或 change artifact 的并行 writer 必须先协调所有权。
 - 任何 proposal/design/spec/tasks、实际文档、验收命令、base、依赖、rebase、merge 或 candidate SHA 变化都使旧验证失效。
 
-规划的 candidate 评分目标为 `C=9、T=9、V=8、R=9`：writer 阶段 V 上限为 8；只有 exact-SHA independent PASS 后才能提高 V 并进入 `INDEPENDENT_VERIFIED`。DRAFT 本身不获得 candidate PASS。
+candidate 评分目标为 `C=10、T=9、V=8、R=9`，合计 36：writer 阶段 V 上限为 8；只有 exact-SHA independent PASS 后才能提高 V 并进入 `INDEPENDENT_VERIFIED`。DRAFT 本身不获得 candidate PASS。
 
 ## Risks / Trade-offs
 
