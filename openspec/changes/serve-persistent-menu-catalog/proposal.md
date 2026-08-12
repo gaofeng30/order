@@ -24,13 +24,13 @@ MySQL foundation 已集成并归档，但仓库仍没有持久化菜单业务表
 
 ### 状态、Outcome 与 Acceptance Verdict
 
-- 状态：`IMPLEMENTING`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划，并在 foundation 归档后正式批准 moving-main recovery 与 apply；该记录不得表述为用户亲自确认。批准依据仍为单能力 `persistent-menu-catalog`、`W3/UI0`、目录与库存/售罄/员工价/图片边界、schema/HTTP/ID/排序/可见性/一致性读取/真实 MySQL 8.0 RGR 均唯一冻结，owned/非目标/依赖/45 tasks 完整且 strict PASS。
+- 状态：`CANDIDATE`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划，并在 foundation 归档后正式批准 moving-main recovery 与 apply；该记录不得表述为用户亲自确认。批准依据仍为单能力 `persistent-menu-catalog`、`W3/UI0`、目录与库存/售罄/员工价/图片边界、schema/HTTP/ID/排序/可见性/一致性读取/真实 MySQL 8.0 RGR 均唯一冻结，owned/非目标/依赖/45 tasks 完整且 strict PASS。2026-08-13 实现 Gate 先后暴露上游 embed test 与 foundation MySQL integration test 永久硬编码“全量仅 000001”，主 Agent分别自主裁决只把这两个测试加入 owned paths，以精确 v1-v3 链和显式 v1 原语 fixture 替换失效假设；不改变 persistent-menu-catalog 行为 spec。
 - moving-main recovery 已把旧 planning branch 从 `base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc` 无冲突、无 merge commit 地线性重放到 `base_sha=cbfb803bb74f34b4b39fd0feff2c753613a06de2`；旧 DRAFT/APPROVED exact SHA 因重放失效，批准的产品、API 与 schema 语义不变。
 - 唯一 outcome：匿名调用方可从真实 MySQL 读取稳定、最小、与库存事实解耦的菜单目录及可见商品详情。
 - 单一 acceptance verdict：未来 candidate 只有在 schema migration、repository 一致性、HTTP 精确契约、真实 MySQL 8.0 故障矩阵、全仓相关回归和 exact-SHA 独立验证全部通过后才可接受；任一部分不可独立发布或回滚。
-- `base_sha=cbfb803bb74f34b4b39fd0feff2c753613a06de2`；`candidate_sha=NOT_CREATED`。
+- `base_sha=cbfb803bb74f34b4b39fd0feff2c753613a06de2`；`candidate_sha=SELF`（由本地中文 candidate commit 生成，并在 writer handoff 绑定完整 SHA）。
 - `gate_type=W3`：apply 将追加持久化 schema 并改变公共读取结果；`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`，本 change 无 UI，且不宣称交付 PRD 的完整菜单页面。
-- IMPLEMENTING 尚不评定 candidate C/T/V/R；目标为 `C=10、T=10、V=8、R=8`，只有真实证据齐全且硬阻断为零时才能记录。
+- 当前 writer evidence 评定 `C=10、T=10、V=8、R=8`，总分 36、单项均不低于 8、硬阻断为零；V=8 只表示 exact-SHA independent verification 尚待另一 clean detached worktree完成，不冒充独立 PASS。
 
 ### 调用方与使用时机
 
@@ -49,14 +49,16 @@ MySQL foundation 已集成并归档，但仓库仍没有持久化菜单业务表
 - `openspec/changes/serve-persistent-menu-catalog/**`
 - `services/api/migrations/000002_create_categories.sql`
 - `services/api/migrations/000003_create_products.sql`
+- `services/api/migrations/embed_test.go`（只允许把失效的 foundation-only 资产断言更新为精确、完整、有序的 v1-v3 migration 链及既有安全不变量）
 - `services/api/internal/catalog/**`
+- `services/api/internal/migrate/mysql_integration_test.go`（只允许把 foundation v1 原语 fixture 与 current-system v1-v3 联合场景显式分层）
 - `services/api/internal/httpapi/router.go`（共享串行装配点）
 - `services/api/internal/httpapi/router_test.go`（共享串行契约测试）
 - `services/api/cmd/order-api/main.go`（共享串行装配点）
 - `services/api/scripts/catalog-integration.sh`（仅用于冻结的真实 MySQL 8.0 catalog Gate）
 - `README.md`（只允许同步目录 API、v1-v3 migration 当前事实、匿名 curl、真实 MySQL 验证命令与非目标）
 
-README ownership 是 moving-main 后唯一新增路径：catalog 集成后原文“无业务表/无业务接口”“migration 只创建 schema_migrations”会直接失真，主 Agent 已批准由同一能力最小修正，不另拆文档 change。禁止继续扩大 ownership；尤其不拥有 `go.mod`、`go.sum`、`services/api/internal/app/**`、`services/api/internal/config/**`、`services/api/internal/database/**`、`services/api/internal/migrate/**`、`services/api/internal/httpapi/health.go`、`services/api/internal/httpapi/middleware.go`、`apps/**`、产品/架构/云文档、canonical/archived specs、skills 或 `AGENTS.md`。
+README ownership 是 moving-main 后的必要事实同步；catalog 集成后原文“无业务表/无业务接口”“migration 只创建 schema_migrations”会直接失真。`services/api/migrations/embed_test.go` ownership 是 Green 后首个全量 Gate 的必要测试同步：上游把当时资产清单硬编码为永久“仅 000001”，合法追加获批 000002/000003 后 `go test`/race 必然失败。随后 `services/api/internal/migrate/mysql_integration_test.go` 又把当时全量集合等同 v1，并用正式集合自造 v2/v3，导致 current v1-v3 下 AppliedCount 与 checksum 必然冲突；它只获批把 foundation 原语场景显式截取 v1、把 current-system/真实进程场景保留全量 v1-v3。三项均由主 Agent 于 2026-08-13 在用户授权的自主裁决范围内批准，不另拆 change，也不表述为用户亲自确认。禁止继续扩大 ownership；尤其不拥有 `services/api/migrations/embed.go`、`go.mod`、`go.sum`、`services/api/internal/app/**`、`services/api/internal/config/**`、`services/api/internal/database/**`、除该单一 integration test 外的 `services/api/internal/migrate/**`、`services/api/internal/httpapi/health.go`、`services/api/internal/httpapi/middleware.go`、`apps/**`、产品/架构/云文档、canonical/archived specs、skills 或 `AGENTS.md`。
 
 ### 只读共享契约与依赖硬门
 
@@ -67,9 +69,9 @@ README ownership 是 moving-main 后唯一新增路径：catalog 集成后原文
 
 ### 必要资产与最小成功标准
 
-- 当前 `ui_level_actual=NOT_RUN`。foundation 留下的专属 `order-mysql-w3` 真实 MySQL 8.0 本地资产可供复用，但 catalog preflight 与 W3 仍为 `NOT_RUN`；writer 必须先只读核验 exact identity、双 label、loopback、tmpfs、zero mounts 和随机 schema 残留 0，再进入 Red。这不是客户或平台 `BLOCKED_EXTERNAL`。
+- 当前 `ui_level_actual=NOT_RUN`；本 change 不含 UI。foundation 留下的专属 `order-mysql-w3` 已完成 exact identity、双 label、loopback、tmpfs、zero mounts 与随机 schema 残留 0 核验，catalog/foundation 真实 W3 已 PASS；writer 保留 fresh healthy 容器供 exact-SHA verifier 重建随机空 schema，这不是客户或平台 `BLOCKED_EXTERNAL`。
 - apply writer 只按 foundation 已冻结的隔离 MySQL 8.0、随机 `order_test_` schema、安全闩和清理边界执行；若资产未建立、目标不安全或 cleanup 失败，writer Gate 为 FAIL。
-- 最小成功标准：两份单 statement migration 的首次/重复/checksum/无 seed/down 与随机 schema cleanup 通过；列表/详情在真实 MySQL 上满足可见性、空目录/空分类、稳定排序、一致性读取、无 N+1、整数分和 DB 断开 503；httptest 满足 exact JSON、GET-only、非法/未知/隐藏 404 且既有 404/405 不漂移；README 只同步当前 API/migration/curl/验证与非目标且保留 production SSM fail-fast；Go test/race/vet/build/smoke、foundation+catalog integration、strict、owned/protected/sensitive 检查和 exact-SHA verifier 全部通过。UI actual 保持 `NOT_RUN`。
+- 最小成功标准：两份单 statement migration 的首次/重复/checksum/无 seed/down 与随机 schema cleanup 通过，embed test 精确冻结完整有序 v1-v3 链而不接受任意额外 migration；列表/详情在真实 MySQL 上满足可见性、空目录/空分类、稳定排序、一致性读取、无 N+1、整数分和 DB 断开 503；httptest 满足 exact JSON、GET-only、非法/未知/隐藏 404 且既有 404/405 不漂移；README 只同步当前 API/migration/curl/验证与非目标且保留 production SSM fail-fast；Go test/race/vet/build/smoke、foundation+catalog integration、strict、owned/protected/sensitive 检查和 exact-SHA verifier 全部通过。UI actual 保持 `NOT_RUN`。
 
 ### Non-Goals
 

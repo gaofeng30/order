@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -34,7 +35,25 @@ func TestMySQL8Integration(t *testing.T) {
 	}
 	admin := openIntegrationDatabase(t, configuration)
 	assertServerAndConnectorSession(t, admin)
-	foundation := loadFoundation(t)
+	current := loadEmbeddedMigrations(t)
+	foundation := current[:1]
+
+	t.Run("current embedded first repeat reaches latest", func(t *testing.T) {
+		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, _ database.ConnectionConfig) {
+			if state := migrate.Check(context.Background(), db, current); state.Reason != migrate.ReasonSchemaUninitialized {
+				t.Fatalf("empty current Check() = %#v", state)
+			}
+			first, err := migrate.Run(context.Background(), db, current)
+			if err != nil || first.AppliedCount != 3 || first.ToVersion != 3 {
+				t.Fatalf("current first Run() = %#v, %v", first, err)
+			}
+			repeat, err := migrate.Run(context.Background(), db, current)
+			if err != nil || repeat.AppliedCount != 0 || repeat.FromVersion != 3 || repeat.ToVersion != 3 {
+				t.Fatalf("current repeat Run() = %#v, %v", repeat, err)
+			}
+			assertCurrent(t, db, current)
+		})
+	})
 
 	t.Run("first repeat and create-history crash recovery", func(t *testing.T) {
 		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, _ database.ConnectionConfig) {
@@ -203,7 +222,7 @@ func TestMySQL8Integration(t *testing.T) {
 
 	t.Run("real api never migrates and becomes ready after external cli", func(t *testing.T) {
 		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, schemaConfig database.ConnectionConfig) {
-			testRealProcessBoundary(t, db, schemaConfig)
+			testRealProcessBoundary(t, db, schemaConfig, current)
 		})
 	})
 }
@@ -265,11 +284,20 @@ func assertServerAndConnectorSession(t *testing.T, db *sql.DB) {
 	}
 }
 
-func loadFoundation(t *testing.T) []migrate.Migration {
+func loadEmbeddedMigrations(t *testing.T) []migrate.Migration {
 	t.Helper()
 	set, err := migrate.Load(migrations.FS)
 	if err != nil {
-		t.Fatalf("load foundation: %v", err)
+		t.Fatalf("load embedded migrations: %v", err)
+	}
+	wantNames := []string{"000001_create_schema_migrations.sql", "000002_create_categories.sql", "000003_create_products.sql"}
+	if len(set) != len(wantNames) {
+		t.Fatalf("embedded migration count = %d, want %d", len(set), len(wantNames))
+	}
+	for index, migration := range set {
+		if migration.Version != uint64(index+1) || migration.Name != wantNames[index] {
+			t.Fatalf("embedded migration %d = %d/%q", index, migration.Version, migration.Name)
+		}
 	}
 	return set
 }
@@ -358,7 +386,7 @@ func openLatin1Pool(t *testing.T, configuration database.ConnectionConfig) *sql.
 	return db
 }
 
-func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.ConnectionConfig) {
+func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.ConnectionConfig, current []migrate.Migration) {
 	t.Helper()
 	repoRoot := repositoryRoot(t)
 	binDir := t.TempDir()
@@ -391,6 +419,7 @@ func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.Co
 
 	waitHTTPStatus(t, "http://"+address+"/health/live", http.StatusOK, 5*time.Second)
 	waitHealthReason(t, "http://"+address+"/health/ready", migrate.ReasonSchemaUninitialized, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusServiceUnavailable, `{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`, 5*time.Second)
 	var tableCount int
 	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE() AND table_name='schema_migrations'").Scan(&tableCount); err != nil || tableCount != 0 {
 		t.Fatalf("API auto-migrated: count=%d err=%v", tableCount, err)
@@ -405,6 +434,43 @@ func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.Co
 		t.Fatalf("external order-migrate failed: %v logs=%s", err, redactLog(migrateLogs.String(), configuration))
 	}
 	waitHTTPStatus(t, "http://"+address+"/health/ready", http.StatusOK, 5*time.Second)
+	rows, err := db.QueryContext(context.Background(), "SELECT version,name,checksum,dirty FROM schema_migrations ORDER BY version")
+	if err != nil {
+		t.Fatalf("read current process migration history")
+	}
+	defer rows.Close()
+	index := 0
+	for rows.Next() {
+		if index >= len(current) {
+			t.Fatalf("current process created unexpected migration row")
+		}
+		var version uint64
+		var name string
+		var checksum []byte
+		var dirty bool
+		if err := rows.Scan(&version, &name, &checksum, &dirty); err != nil {
+			t.Fatalf("scan current process migration history")
+		}
+		migration := current[index]
+		if version != migration.Version || name != migration.Name || !bytes.Equal(checksum, migration.Checksum[:]) || dirty {
+			t.Fatalf("current process migration row %d does not match embedded set", index)
+		}
+		index++
+	}
+	if rows.Err() != nil || index != 3 || index != len(current) {
+		t.Fatalf("current process migration history rows = %d, want 3", index)
+	}
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[]}`, 5*time.Second)
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'process',TRUE),(2,'hidden',FALSE)"); err != nil {
+		t.Fatalf("insert process catalog categories")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents,is_listed) VALUES (1,1,'visible',250,TRUE),(2,1,'unlisted',300,FALSE),(3,2,'hidden-parent',400,TRUE)"); err != nil {
+		t.Fatalf("insert process catalog products")
+	}
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"process","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}]}]}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/1", http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/2", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/3", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
 	if err := api.Process.Signal(os.Interrupt); err != nil {
 		t.Fatalf("stop order-api: %v", err)
 	}
@@ -481,6 +547,23 @@ func waitHealthReason(t *testing.T, url, reason string, timeout time.Duration) {
 		time.Sleep(25 * time.Millisecond)
 	}
 	t.Fatalf("%s did not return reason %s", url, reason)
+}
+
+func waitHTTPBody(t *testing.T, url string, status int, body string, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		response, err := http.Get(url) // #nosec G107 -- fixed loopback integration URL.
+		if err == nil {
+			data, readErr := io.ReadAll(response.Body)
+			_ = response.Body.Close()
+			if readErr == nil && response.StatusCode == status && string(data) == body {
+				return
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("loopback API did not return expected status/body")
 }
 
 func waitCommand(command *exec.Cmd, timeout time.Duration) (error, bool) {

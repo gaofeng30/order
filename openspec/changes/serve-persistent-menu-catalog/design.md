@@ -4,7 +4,7 @@ Current base `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 已集成并归档 MySQL
 
 上游 `establish-mysql-persistence-foundation` candidate/integrated exact `14fc3c3b10eda28a1c61cc0ac552ca46d1cb14e1` 已随 archive/main exact `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 进入 `ARCHIVED`。moving-main recovery 已把两个 planning commits 无冲突、无 merge commit 地线性重放到该 base；实际 config/database/migrate/readiness/router/main/README 与 approved 实现假设一致。
 
-治理状态为 `IMPLEMENTING`：`approval_date=2026-08-13`，`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内，依据单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 ownership/依赖/45 tasks 与 strict PASS 作出规划及 moving-main 后 apply 裁决；该记录不表述为用户亲自确认。
+治理状态为 `CANDIDATE`：`approval_date=2026-08-13`，`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内，依据单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 ownership/依赖/45 tasks 与 strict PASS 作出规划及 moving-main 后 apply 裁决；writer 已完成 RGR 与全部 writer Gate，该记录不表述为用户亲自确认，也不冒充 independent verification。
 
 本 change 的调用方是后续匿名微信小程序菜单客户端：进入/刷新菜单时调用列表，进入商品详情时调用详情。它不是结算或下单接口，也不构成小程序 UI、图片、员工价、库存或售罄交付。
 
@@ -16,7 +16,7 @@ Current base `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 已集成并归档 MySQL
 - 用一次 snapshot query 读取启用分类及其上架商品，用一次 query 读取同可见性规则下的商品详情。
 - 冻结匿名 GET、精确 JSON、字符串 ID、整数分、稳定排序、空集合、404/503 与非敏感错误边界。
 - 用真实 MySQL 8.0 验证 schema、visibility、排序、一致性、无 N+1、故障和 cleanup；保持 bootstrap/foundation 回归。
-- 保持 ownership 最小，仅串行修改 router、router tests 与 `main.go` 三个共享装配点，并最小同步根 README 的当前事实。
+- 保持 ownership 最小，仅串行修改 router、router tests 与 `main.go` 三个共享装配点，最小同步根 README 的当前事实，并把失效的 foundation-only embed test 精确更新为完整 v1-v3 migration 链。
 
 **Non-Goals:**
 
@@ -25,7 +25,7 @@ Current base `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 已集成并归档 MySQL
 - 不做员工价、身份、登录、手机号、RBAC 或任何后台字段。
 - 不做库存、售罄、availability/orderable、日期、餐段、预约、购物车、报价、订单、支付或退款。
 - 不做多门店/tenant、软删除、销量、口味选项、ORM、通用 repository abstraction、down/force/repair。
-- 不修改 dependency、foundation config/database/migrate/health/middleware、app、前端、产品/架构/云文档、canonical/archive 或治理文件；README 只更新 catalog API/migration/curl/验证与非目标，不宣称 production 可用且保留 SSM fail-fast。
+- 不修改 dependency、foundation config/database/migrate/health/middleware、migration embed 实现、app、前端、产品/架构/云文档、canonical/archive 或治理文件；`embed_test.go` 只冻结 exact v1-v3 资产与既有安全不变量，README 只更新 catalog API/migration/curl/验证与非目标，不宣称 production 可用且保留 SSM fail-fast。
 
 ## Decisions
 
@@ -68,6 +68,10 @@ products(
 ```
 
 两表固定 InnoDB、`utf8mb4`、`utf8mb4_0900_ai_ci`。`INT UNSIGNED price_cents` 同时保证非负、整数和 JSON 安全整数范围；不使用 `DECIMAL/FLOAT` 或元单位。`description/specification` 用非空字符串避免 JSON `null`/omitempty 分支。外键 `RESTRICT` 防止目录读取出现孤儿商品。索引直接服务两个冻结的可见性与排序条件，不增加全文、唯一名称或未来查询索引。
+
+上游 `services/api/migrations/embed_test.go` 的“仅 000001”只描述 foundation 当时资产，不是永久业务约束；catalog 合法追加 000002/000003 后必须把测试改为精确、有序且长度固定的三文件清单，并逐文件保持非空、可加载、单 statement 与无 seed/down 等不变量。不得放宽为“至少一个”或接受未知额外 migration，也不修改 `embed.go` 或 runner。
+
+同理，`internal/migrate/mysql_integration_test.go` 必须分开两个集合：迁移器锁、dirty、checksum、behind/too-new 等 foundation 原语场景显式使用只含正式 000001 bytes 的 v1 fixture，再在这个隔离集合内构造 synthetic v2/v3；current-system first/repeat 与真实 order-api/order-migrate/readiness 场景必须加载正式 embedded 全量 v1-v3，fresh 精确 applied 3、repeat 0、latest 3。这样既不跳过 catalog migrations，也不让 synthetic checksum 与正式 000002/000003 混用；不修改 production runner、正式 checksum 或 `mysql-integration.sh`。
 
 不在目录表加入 `stock_type/stock_quantity/sold_out/orderable`，因为库存事实必须由后续 change 按日期、餐段和商品建模；不加入 `employee_price`、图片、销量、timestamps、soft delete 或 tenant，因为这些都不是本读取切片的必需事实。fixture 只在 test runtime 直接写随机 schema，不存在生产 seed/down 文件。
 
@@ -151,11 +155,11 @@ httptest 先冻结 exact JSON bytes/field types/empty arrays、GET-only、非法
 - visible detail、invalid/unknown/hidden 404，关闭 DB 后列表/详情 503；
 - foundation live/ready/migrate 与 catalog routes 在同一真实进程的联合 smoke。
 
-所有 PASS/FAIL/interrupt 路径都只尝试 drop 本次已创建、已记录且 prefix 精确匹配的 schema。目标为空、归属不明、prefix 不符或 cleanup 失败立即 FAIL，不扩大删除或换强命令。IMPLEMENTING 当前 catalog runtime preflight 与 W3 为 `NOT_RUN`；writer 先只读核验 foundation 留下的专属本地资产再进入 Red，这不是客户/平台 `BLOCKED_EXTERNAL`。
+所有 PASS/FAIL/interrupt 路径都只尝试 drop 本次已创建、已记录且 prefix 精确匹配的 schema。目标为空、归属不明、prefix 不符或 cleanup 失败立即 FAIL，不扩大删除或换强命令。writer 已在 foundation 专属本地资产完成 preflight 与 catalog/foundation W3，所有最终轮次随机 schema 残留 0；容器保持 fresh healthy 供 verifier 使用，这不是客户/平台 `BLOCKED_EXTERNAL`。
 
 ### D7. RGR、writer/verifier 与 C/T/V/R 只认当前 exact SHA 证据
 
-Red 顺序固定为：migration/schema assertions → repository query/visibility/snapshot tests → httptest HTTP contracts → real MySQL foundation+catalog matrix；失败必须由目标实现缺失产生。Green 只追加两份 SQL、`internal/catalog/**` 与三个共享装配点的最小实现，再让同一检查通过。Refactor 只做职责/重复清理，并重跑同一 focused、real MySQL、全 API regression、race/vet/build/smoke。
+Red 顺序固定为：migration/schema assertions → repository query/visibility/snapshot tests → httptest HTTP contracts → real MySQL foundation+catalog matrix；失败必须由目标实现缺失产生。Green 只追加两份 SQL、`internal/catalog/**` 与三个共享装配点的最小实现，再让同一检查通过。首次全量 Gate 已保留并记录旧 embed test 对合法 v1-v3 的稳定 Red；主 Agent批准后只最小更新该测试的精确资产断言。Refactor 只做职责/重复清理，并重跑同一 focused、real MySQL、全 API regression、race/vet/build/smoke。
 
 writer candidate 还必须通过 strict、diff check、owned allowlist、protected zero-diff、migration forbidden schema/seed/down 和 sensitive scan。目标 `C=10,T=10,V=8,R=8` 只在真实 evidence 完整后记录；UI actual 始终 `NOT_RUN`。verifier 只在另一 clean detached worktree 对已提交完整 SHA 从空随机 schema 重跑全部 Gate，结尾确认 worktree 和 fixture clean。
 
@@ -168,6 +172,7 @@ writer candidate 还必须通过 strict、diff check、owned allowlist、protect
 ## Risks / Trade-offs
 
 - [moving-main 后 shared API 可能漂移] → 已对 exact archive/main 重新审计；current main、公共契约或 owned paths再变化立即停止并重新裁决。
+- [上游测试把阶段资产清单误作永久约束] → 已记录 `PROTECTED_MIGRATION_EMBED_TEST_FOUNDATION_ONLY` #1 与 `PROTECTED_FOUNDATION_MYSQL_INTEGRATION_ASSUMES_V1_ONLY` #1；主 Agent只批准对应两个测试随本 change 精确演进，`embed.go`、runner、其它 migrate文件与 foundation artifacts保持只读。
 - [单 join 重复 category columns] → 目录规模下换取单 statement snapshot、空分类和无 N+1；只有真实容量 Gate 失败才另立优化 change。
 - [目录不返回售罄/图片/员工价，尚不是完整菜单体验] → 明确这是 W3/UI0 服务端目录切片；availability、图片和 client connector 分别独立集成后才宣称完整 UI。
 - [unsigned auto-increment id 在 JS 中不安全] → API 永远返回十进制 string；只在 Go/MySQL 内使用 uint64。
@@ -177,7 +182,7 @@ writer candidate 还必须通过 strict、diff check、owned allowlist、protect
 ## Migration Plan
 
 1. 两个 planning commits 已线性重放到 archive/main exact `cbfb803bb74f34b4b39fd0feff2c753613a06de2`；本治理修正记录 foundation `ARCHIVED`、new base、IMPLEMENTING 与 README 唯一 ownership 扩展，spec 行为不变。
-2. 先只读核验 foundation 留下的隔离真实 MySQL 8.0；再写 migration/repository/HTTP/real integration Red，随后追加 000002/000003、catalog 包、最小 router/main 装配与 README 事实更新取得 Green。
+2. 先只读核验 foundation 留下的隔离真实 MySQL 8.0；再写 migration/repository/HTTP/real integration Red，随后追加 000002/000003、catalog 包、最小 router/main 装配与 README 事实更新取得 Green；保留全量 Gate 中旧 embed test 与 foundation MySQL integration 的稳定 Red，经主 Agent裁决后仅把前者更新为 exact v1-v3 链、后者分为显式 v1 原语 fixture 与 current v1-v3 联合场景。
 3. Refactor 后从 clean random schema 重跑真实 matrix、全 Go Gate、foundation+catalog smoke、strict、owned/protected/sensitive，提交 exact candidate。
 4. verifier 在另一 clean detached worktree 对 exact SHA 全量重跑；失败回原 writer产生新 SHA，任何变更从头验证。
 5. 获得单独集成授权且依赖/verification 均有效后才能集成；`connect-miniprogram-menu-catalog` 此后才能开始。生产 rollout/deploy 不在本 change。

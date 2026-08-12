@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/app"
+	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
@@ -45,11 +46,12 @@ func run() int {
 		state := migrate.Check(checkContext, db, migrationSet)
 		return httpapi.ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
+	catalogHandler := catalog.NewHandler(catalog.NewRepository(db))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

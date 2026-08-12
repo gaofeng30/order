@@ -3,22 +3,36 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/gaofeng30/order/services/api/internal/catalog"
+	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/migrate"
+	"github.com/gaofeng30/order/services/api/migrations"
 	"github.com/gin-gonic/gin"
 )
+
+var catalogSmokeSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 	calls := 0
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		calls++
 		return ReadinessResult{Ready: false, Reason: "database_unreachable"}
-	})
+	}, testCatalogHandler())
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/live", nil))
@@ -32,7 +46,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 func TestHealthReadinessReturnsCurrent(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Ready: true}
-	})
+	}, testCatalogHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -53,7 +67,7 @@ func TestHealthReadinessReturnsStableFailureReasons(t *testing.T) {
 		t.Run(reason, func(t *testing.T) {
 			router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 				return ReadinessResult{Reason: reason}
-			})
+			}, testCatalogHandler())
 			recorder := httptest.NewRecorder()
 
 			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -67,7 +81,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 	const canary = "health-canary-secret-must-not-leak"
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Reason: canary}
-	})
+	}, testCatalogHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -79,7 +93,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 }
 
 func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
-	router := NewRouter(discardLogger(), alwaysReady)
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler())
 
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		recorder := httptest.NewRecorder()
@@ -100,6 +114,156 @@ func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
 	if recorder.Code != http.StatusNotFound {
 		t.Fatalf("unknown path status = %d, want 404", recorder.Code)
 	}
+}
+
+func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
+	reader := &catalogReaderStub{categories: []catalog.Category{}}
+	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader))
+
+	list := httptest.NewRecorder()
+	router.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, list, http.StatusOK, `{"categories":[]}`)
+	if reader.listCalls != 1 {
+		t.Fatalf("catalog list calls = %d, want 1", reader.listCalls)
+	}
+
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodPost, "/api/v1/catalog", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
+		t.Fatalf("catalog wrong method = %d/%q, want 405 empty", wrongMethod.Code, wrongMethod.Body.String())
+	}
+
+	unknown := httptest.NewRecorder()
+	router.ServeHTTP(unknown, httptest.NewRequest(http.MethodGet, "/api/v1/catalog/missing", nil))
+	if unknown.Code != http.StatusNotFound || unknown.Body.Len() != 0 {
+		t.Fatalf("catalog unknown path = %d/%q, want 404 empty", unknown.Code, unknown.Body.String())
+	}
+}
+
+func TestCatalogUnavailableDoesNotLeakRepositoryErrorToBodyOrAccessLog(t *testing.T) {
+	const canary = "catalog-log-canary-dsn-sql-password"
+	var output bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&output, nil))
+	reader := &catalogReaderStub{listErr: errors.New(canary)}
+	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader))
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, response, http.StatusServiceUnavailable, `{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`)
+	if strings.Contains(response.Body.String(), canary) || strings.Contains(output.String(), canary) {
+		t.Fatalf("catalog error leaked to response or log")
+	}
+}
+
+func TestFoundationAndCatalogIntegration(t *testing.T) {
+	serverConfig, ok := catalogSmokeConfig(t, "mysql")
+	if !ok {
+		t.Skip("catalog MySQL integration environment not provided")
+	}
+	serverDB, err := database.Open(serverConfig)
+	if err != nil {
+		t.Fatal("open isolated MySQL server failed")
+	}
+
+	schemaName := randomCatalogSmokeSchema(t)
+	if !catalogSmokeSchemaPattern.MatchString(schemaName) {
+		t.Fatal("generated smoke schema failed ownership validation")
+	}
+	if _, err := serverDB.ExecContext(context.Background(), "CREATE DATABASE `"+schemaName+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"); err != nil {
+		t.Fatal("create smoke schema failed")
+	}
+	defer func() {
+		defer serverDB.Close()
+		if !catalogSmokeSchemaPattern.MatchString(schemaName) {
+			t.Error("unsafe smoke schema cleanup target")
+			return
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := serverDB.ExecContext(ctx, "DROP DATABASE `"+schemaName+"`"); err != nil {
+			t.Error("smoke schema cleanup failed")
+		}
+	}()
+
+	databaseConfig, _ := catalogSmokeConfig(t, schemaName)
+	db, err := database.Open(databaseConfig)
+	if err != nil {
+		t.Fatal("open smoke schema failed")
+	}
+	defer db.Close()
+	migrationSet, err := migrate.Load(migrations.FS)
+	if err != nil {
+		t.Fatal("load smoke migrations failed")
+	}
+	if _, err := migrate.Run(context.Background(), db, migrationSet); err != nil {
+		t.Fatal("apply smoke migrations failed")
+	}
+
+	readiness := func(ctx context.Context) ReadinessResult {
+		state := migrate.Check(ctx, db, migrationSet)
+		return ReadinessResult{Ready: state.Ready, Reason: state.Reason}
+	}
+	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)))
+	assertSmokeResponse(t, router, "/health/ready", http.StatusOK, `{"status":"ok"}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[]}`)
+
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'smoke',TRUE),(2,'hidden',FALSE)"); err != nil {
+		t.Fatal("insert smoke categories failed")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents,is_listed) VALUES (1,1,'visible',250,TRUE),(2,1,'unlisted',300,FALSE),(3,2,'hidden-parent',400,TRUE)"); err != nil {
+		t.Fatal("insert smoke products failed")
+	}
+	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"smoke","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}]}]}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/1", http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/2", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/3", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
+
+	if err := db.Close(); err != nil {
+		t.Fatal("close smoke database failed")
+	}
+	assertSmokeResponse(t, router, "/health/ready", http.StatusServiceUnavailable, `{"status":"not_ready","reason":"database_unreachable"}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusServiceUnavailable, `{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`)
+}
+
+func assertSmokeResponse(t *testing.T, router http.Handler, path string, status int, body string) {
+	t.Helper()
+	recorder := httptest.NewRecorder()
+	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
+	assertJSONResponse(t, recorder, status, body)
+}
+
+func catalogSmokeConfig(t *testing.T, databaseName string) (database.ConnectionConfig, bool) {
+	t.Helper()
+	keys := []string{"ORDER_TEST_MYSQL_HOST", "ORDER_TEST_MYSQL_PORT", "ORDER_TEST_MYSQL_USER", "ORDER_TEST_MYSQL_PASSWORD", "ORDER_TEST_MYSQL_TLS_MODE", "ORDER_TEST_MYSQL_INSTANCE", "ORDER_TEST_MYSQL_ISOLATED"}
+	present := 0
+	for _, key := range keys {
+		if _, ok := os.LookupEnv(key); ok {
+			present++
+		}
+	}
+	if present == 0 {
+		return database.ConnectionConfig{}, false
+	}
+	if present != len(keys) || os.Getenv("ORDER_TEST_MYSQL_INSTANCE") != "order-mysql-w3" || os.Getenv("ORDER_TEST_MYSQL_ISOLATED") != "YES" {
+		t.Fatal("catalog smoke environment is incomplete or not owned")
+	}
+	port, err := strconv.ParseUint(os.Getenv("ORDER_TEST_MYSQL_PORT"), 10, 16)
+	if err != nil || port == 0 {
+		t.Fatal("catalog smoke port is invalid")
+	}
+	return database.ConnectionConfig{
+		Host: os.Getenv("ORDER_TEST_MYSQL_HOST"), Port: uint16(port), Database: databaseName,
+		User: os.Getenv("ORDER_TEST_MYSQL_USER"), Password: os.Getenv("ORDER_TEST_MYSQL_PASSWORD"), TLSMode: os.Getenv("ORDER_TEST_MYSQL_TLS_MODE"),
+	}, true
+}
+
+func randomCatalogSmokeSchema(t *testing.T) string {
+	t.Helper()
+	value := make([]byte, 16)
+	if _, err := rand.Read(value); err != nil {
+		t.Fatal("generate random smoke schema failed")
+	}
+	return fmt.Sprintf("order_test_%s", hex.EncodeToString(value))
 }
 
 func TestRequestIDAndAccessLogAreServerControlledAndSanitized(t *testing.T) {
@@ -174,6 +338,25 @@ func discardLogger() *slog.Logger {
 
 func alwaysReady(context.Context) ReadinessResult {
 	return ReadinessResult{Ready: true}
+}
+
+type catalogReaderStub struct {
+	categories []catalog.Category
+	listErr    error
+	listCalls  int
+}
+
+func (reader *catalogReaderStub) List(context.Context) ([]catalog.Category, error) {
+	reader.listCalls++
+	return reader.categories, reader.listErr
+}
+
+func (*catalogReaderStub) GetProduct(context.Context, uint64) (catalog.Product, error) {
+	return catalog.Product{}, catalog.ErrProductNotFound
+}
+
+func testCatalogHandler() *catalog.Handler {
+	return catalog.NewHandler(&catalogReaderStub{categories: []catalog.Category{}})
 }
 
 func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {

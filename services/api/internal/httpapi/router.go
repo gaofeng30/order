@@ -4,12 +4,13 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gin-gonic/gin"
 )
 
 // NewRouter builds the complete bootstrap HTTP handler.
-func NewRouter(logger *slog.Logger, readiness ReadinessFunc) *gin.Engine {
-	return newRouter(logger, readiness, nil)
+func NewRouter(logger *slog.Logger, readiness ReadinessFunc, catalogHandler *catalog.Handler) *gin.Engine {
+	return newRouter(logger, readiness, catalogHandler.RegisterRoutes)
 }
 
 func newRouter(logger *slog.Logger, readiness ReadinessFunc, register func(*gin.Engine)) *gin.Engine {
@@ -22,9 +23,11 @@ func newRouter(logger *slog.Logger, readiness ReadinessFunc, register func(*gin.
 	engine.GET("/health/ready", ready(readiness))
 	engine.NoRoute(func(context *gin.Context) {
 		context.Status(http.StatusNotFound)
+		context.Writer.WriteHeaderNow()
 	})
 	engine.NoMethod(func(context *gin.Context) {
 		context.Status(http.StatusMethodNotAllowed)
+		context.Writer.WriteHeaderNow()
 	})
 
 	if register != nil {

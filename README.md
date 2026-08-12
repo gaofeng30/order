@@ -6,7 +6,7 @@
 
 - **产品阶段**：P0 可预览交互原型。
 - **运行形态**：原生微信小程序、静态 Web 管理端，以及独立的 Go API 进程基线。
-- **数据来源**：两个前端仍使用本地 mock 数据；API 已具备 MySQL 8.0 连接、显式迁移与 DB/schema readiness 基础，但仍没有业务表、业务接口或支付接入。
+- **数据来源**：两个前端仍使用本地 mock 数据；API 已具备 MySQL 8.0 连接、显式迁移、DB/schema readiness，以及匿名菜单目录读取接口，但前端尚未接入，也没有业务写接口或支付接入。
 - **评审目标**：确认页面效果、业务流程、功能范围和后续正式开发边界。
 
 ## 目录结构
@@ -35,7 +35,7 @@
 │   └── api/                   # Go API 进程基线（配置、健康检查、日志与优雅退出）
 │       ├── cmd/order-api/     # API 进程入口（不会自动迁移）
 │       ├── cmd/order-migrate/ # 唯一 forward-only 迁移入口
-│       ├── internal/          # app、config、database、migrate 与 httpapi
+│       ├── internal/          # app、catalog、config、database、migrate 与 httpapi
 │       ├── migrations/        # compile-time embedded SQL migrations
 │       └── scripts/           # 无 DB smoke 与隔离 MySQL 8.0 W3 验收
 ├── docs/
@@ -94,9 +94,13 @@ GOTOOLCHAIN=go1.26.5 go run ./services/api/cmd/order-api
 ```bash
 curl http://127.0.0.1:8080/health/live
 curl -i http://127.0.0.1:8080/health/ready
+curl http://127.0.0.1:8080/api/v1/catalog
+curl http://127.0.0.1:8080/api/v1/catalog/products/1
 ```
 
 `/health/live` 只反映进程存活并返回 200；`/health/ready` 仅在真实 MySQL 8.0 可达且 embedded migration history 完全 current 时返回 200，否则返回 503 与稳定 reason。可通过 `ORDER_API_HTTP_ADDR` 修改监听地址，通过 `ORDER_API_SHUTDOWN_TIMEOUT` 修改优雅退出上限。
+
+两条 `/api/v1/catalog` GET 接口供后续匿名小程序客户端在进入/刷新菜单和进入商品详情时调用，不要求登录或手机号。当前目录只返回启用分类下的上架商品，不返回库存、售罄、可购买状态、员工价、销量或图片；它不是下单、算价或商户管理接口。
 
 production 模式拒绝 `ORDER_DB_PASSWORD` 和 `ORDER_DB_DSN`；运行时 SSM secret loader 尚未实现，因此当前 production 模式会 fail fast，不能启动。不得用 development/test 环境变量绕过该边界。
 
@@ -110,9 +114,10 @@ go build ./services/api/...
 bash services/api/scripts/smoke.sh
 # 由专属隔离 MySQL 8.0 环境注入 ORDER_TEST_MYSQL_* 后运行：
 bash services/api/scripts/mysql-integration.sh
+bash services/api/scripts/catalog-integration.sh
 ```
 
-当前 migration 集合只创建 `schema_migrations`；没有商品、用户、订单、库存、支付等业务表，也没有 repository、ORM、seed、down/force/repair 命令或业务 API。两个前端当前不会调用该进程。
+当前 migration 集合依次创建 `schema_migrations`、`categories` 和 `products`，仅承载菜单目录事实；没有用户、订单、库存、支付等表，也没有 ORM、seed、down/force/repair 命令。两个前端当前不会调用该进程。
 
 ## 评审走查路径
 
