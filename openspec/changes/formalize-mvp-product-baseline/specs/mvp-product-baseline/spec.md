@@ -258,12 +258,13 @@
 11. 隐私与手机号；
 12. 体验版真机、审核、客户发布确认，且该 Gate 内部严格按此三步推进。
 
-每个 Gate MUST 只记录责任方、非敏感证据引用、状态、所阻塞的阶段和更新时间；任何台账、PRD 或 OpenSpec MUST 不包含密钥、证书内容、账号标识、手机号、员工名单或其他个人数据。外部 Gate 不得阻塞本地技术 OpenSpec，只能阻塞其声明的联调、UAT、提审或发布阶段。
+每个 Gate MUST 只记录责任方、非敏感证据引用、状态、所阻塞的阶段和更新时间。尚未取得完成证据的 Gate 状态 MUST 统一为 `BLOCKED_EXTERNAL`，取得可核查完成证据后 MUST 变为 `READY`；不得使用行为 TODO 或空值代替状态。任何台账、PRD 或 OpenSpec MUST 不包含密钥、证书内容、账号标识、手机号、员工名单或其他个人数据。外部 Gate 不得阻塞本地技术 OpenSpec，只能阻塞其声明的联调、UAT、提审或发布阶段。
 
 #### Scenario: Local OpenSpec is planned before external readiness
 
 - **WHEN** 一个技术 change 的行为、模型和本地验收已确定但外部 Gate 尚未完成
 - **THEN** change 可继续本地规划、严格校验和提交
+- **AND** 未完成 Gate 明确记录为`BLOCKED_EXTERNAL`
 - **AND** 不得把未完成 Gate 伪装为已验证或越过其对应外部阶段
 
 #### Scenario: Gate ledger is reviewed for sensitive content
