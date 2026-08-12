@@ -1,6 +1,6 @@
 ## 1. Approval and W0 Red
 
-- [x] 1.1 获得主 Agent 对 DRAFT 的明确批准后，确认 branch、`base_sha=69cc9b6437dc3181681603d1bb060c07acba97f1`、已集成依赖、W0/UI0 分类与固定 owned paths 未变化；若发现更高风险面，先更新并重新批准 OpenSpec。完成后在本条下记录决定性命令与结果。
+- [x] 1.1 获得主 Agent 对 DRAFT 的明确批准后，确认 branch、当前 `base_sha`、已集成依赖、W0/UI0 分类与固定 owned paths 未变化；若发现更高风险面，先更新并重新批准 OpenSpec。完成后在本条下记录决定性命令与结果。
   - Evidence (2026-08-12): 主 Agent 明确批准；`git branch --show-current`=`codex/enforce-change-quality-gates`，`git rev-parse main`=`69cc9b6437dc3181681603d1bb060c07acba97f1`，基线是 HEAD 祖先；loop 主 spec 与归档 change 可读，`openspec validate enforce-change-quality-gates --strict` PASS，worktree clean。
 - [x] 1.2 运行 `test -f docs/quality/change-quality-gates.md`，记录协议文件尚不存在的真实 W0 Red；不得提前创建该文件。完成后在本条下记录退出结果与脱敏摘要。
   - Evidence (Red, 2026-08-12): `test -f docs/quality/change-quality-gates.md` exit 1；决定性失败为目标协议文件尚不存在，无敏感输出。
@@ -35,18 +35,26 @@
 
 ## 4. Writer Local Gate and Candidate
 
-- [ ] 4.1 运行 `openspec validate enforce-change-quality-gates --strict`、`git diff --check 69cc9b6437dc3181681603d1bb060c07acba97f1...HEAD` 和固定 owned-path audit，确认 spec/tasks/base/依赖/验收一致。完成后在本条下记录命令与结果。
+- [ ] 4.1 运行 `openspec validate enforce-change-quality-gates --strict`、`git diff --check d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e...HEAD` 和固定 owned-path audit，确认 spec/tasks/base/依赖/验收一致。完成后在本条下记录命令与结果。
   - Evidence (Writer, 2026-08-12): 最终 Gate 前 `git rev-parse main` 仍为 `69cc9b6437dc3181681603d1bb060c07acba97f1` 且是 HEAD 祖先；strict、`git diff --check`、结构/链接/内容检查与 `git status --porcelain --untracked-files=all` owned-path audit PASS。最终 commit 后另用 `base...HEAD` 复核。
   - Invalidation (2026-08-12): 本地 main 随后推进到 `d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e`，`git merge-base --is-ancestor main HEAD` exit 1；按协议撤销旧 writer verdict，待 rebase 后重跑。
+  - Revalidation (2026-08-12): `git rebase main` 无冲突；新 main `d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e` 是 HEAD 祖先。strict、`base...HEAD`/working `git diff --check`、结构/链接/内容、敏感模式、forbidden path 与 owned-path audit 全部 PASS。
+  - Invalidation (2026-08-12): 本地 main 再次推进到 `b6e24f97bb20f37543e10a1dc354cf75f07d47a6`，祖先检查 exit 1；上一轮 writer verdict 作废。
 - [ ] 4.2 运行当前 Go/API Gate：gofmt、`go test`、`go test -race`、`go vet`、`go build` 和 `services/api/scripts/smoke.sh`；所有 Go 命令使用 `GOPROXY=off GOTOOLCHAIN=go1.26.5`。完成后在本条下记录每个退出结果，不得把未运行项写 PASS。
   - Evidence (Writer, 2026-08-12): `test -z "$(gofmt -l services/api)"`、`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/...`、同路径 `go test -race`、`go vet`、`go build` 与 `bash services/api/scripts/smoke.sh` 全部 exit 0；smoke 输出 `smoke: PASS`。
   - Invalidation (2026-08-12): base 变化使旧 writer 验证失效，待最新 main 成为祖先后重跑。
+  - Revalidation (2026-08-12): rebase 后重新运行 gofmt、`go test`、`go test -race`、`go vet`、`go build`、API smoke 全部 exit 0，smoke 输出 `smoke: PASS`。
+  - Invalidation (2026-08-12): main 再次变化，上一轮 Go/static writer 验证失效，待 rebase 后重跑。
 - [ ] 4.3 运行当前前端 static Gate：全部 `apps/**/*.js` 的 `node --check`，以及使用 Node `JSON.parse` 检查 `apps/**/*.json` 与 `project.config.json`。完成后在本条下记录命令与结果。
   - Evidence (Writer, 2026-08-12): `find apps -type f -name '*.js' -print0 | xargs -0 -n 1 node --check` exit 0；协议内 Node `JSON.parse` 命令 exit 0，输出 `JSON static PASS files=42`。仅证明 UI0 static，未声称 UI1/UI2/UI3。
   - Invalidation (2026-08-12): base 变化使旧 writer 验证失效，待最新 main 成为祖先后重跑。
+  - Revalidation (2026-08-12): rebase 后重新运行全部 JS `node --check` 与 JSON `JSON.parse` 均 exit 0，JSON 文件数 42；仅证明 UI0 static，未声称 UI1/UI2/UI3。
+  - Invalidation (2026-08-12): main 再次变化，上一轮前端 static writer 验证失效，待 rebase 后重跑。
 - [ ] 4.4 对 diff 和证据执行敏感信息红线检查，按 C/T/V/R 各 10 分给出可追溯评分；只有总分不低于 36、每项不低于 8 且硬阻断为零才继续。完成后在本条下记录评分依据和 verdict。
   - Evidence (Writer, 2026-08-12): 敏感值模式与禁止路径检查 PASS；C=10（协议/调用边界完整）、T=10（真实 W0 RGR 和全量 current gates）、V=8（exact-SHA 验证包完整，独立结果待 verifier）、R=9（失败回流/失效/恢复条件完整），总分 37，六项硬阻断均为零，verdict=`CANDIDATE_READY`。
   - Invalidation (2026-08-12): moving-main 硬门触发，旧 `CANDIDATE_READY` 未形成 candidate，待 rebase 后重新评分。
+  - Revalidation (2026-08-12): 新 base 上敏感模式和禁止路径检查 PASS；C=10、T=10、V=8、R=9，总分 37，六项硬阻断为零，verdict=`CANDIDATE_READY`。
+  - Invalidation (2026-08-12): moving-main 硬门再次触发，上一轮 `CANDIDATE_READY` 未形成最终 candidate。
 - [ ] 4.5 仅提交固定 owned paths，形成新的完整 candidate SHA；记录 `git status --short --branch`、`git diff --exit-code` 与 `git diff --cached --exit-code` 为 clean，并主动回传主会话。完成后在本条下记录 SHA 与结果。
 
 ## 5. Independent Verification and Integration Handoff

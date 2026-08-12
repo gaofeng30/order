@@ -22,7 +22,7 @@
 
 ## Impact
 
-- 状态：`IMPLEMENTING`；主 Agent 于 2026-08-12 明确批准 DRAFT，Red → Green → Refactor 已完成；本地 main 在最终 Gate 时推进，旧 writer Gate 已失效，正在吸收新 main 并重验。
+- 状态：`IMPLEMENTING`；主 Agent 于 2026-08-12 明确批准 DRAFT，Red → Green → Refactor 已完成；本地 main 在最终提交窗口再次推进，上一轮 writer Gate 已失效，正在吸收新 main 并重验。
 - 本 change 的 `gate_type`：W0；`ui_level`：UI0。理由是 apply 只新增质量协议文档并修改四个 stage skill 的文字入口，不改变产品运行行为、公共契约、持久化数据、资金或并发结果；若 apply 发现更高风险面，必须先更新并重新批准本 OpenSpec。
 - owner：`codex/enforce-change-quality-gates` 当前独立 worktree 的 Loop Writer；同一时刻其他 worker 不得写入 owned paths。
 - owned paths：
@@ -33,7 +33,7 @@
   - `.agents/skills/order-verify-change/**`
   - `.agents/skills/order-integrate-change/**`
 - 只读共享契约：根 `AGENTS.md`、`.agents/skills/order-run-loop/**` 和 `openspec/specs/loop-engineering-control-plane/spec.md`；本 change 不修改它们，也不复制其 lane、调度、session、checkpoint 或主动回传规则。
-- 依赖：`loop-engineering-control-plane` 已归档并集成到本地 `main@69cc9b6437dc3181681603d1bb060c07acba97f1`；同时沿用已集成的 `change-governance` 七态与 exact-SHA 规则。本 change 不依赖正在其他 worktree 推进的产品基线，也不得回退其改动。
+- candidate 基线：本地 `main@d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e`；`loop-engineering-control-plane` 已归档集成，同时沿用已集成的 `change-governance` 七态与 exact-SHA 规则。产品基线已进入该 main，但不是本 change 的声明依赖且无 owned-path 重叠；本 change 不得回退其改动。
 - 非目标：修改 `.agents/skills/order-run-loop/**`、根 `AGENTS.md`、业务代码、产品/架构文档；安装工具；创建 CI/监控；连接数据库、微信或支付；推送、部署或写入外部系统。
 - 最小成功标准：DRAFT 四件 artifact 完整且 strict PASS；apply 后决策表覆盖 W0-W3 × UI0-UI3，每类命令/证据模板、C/T/V/R rubric、硬阻断、敏感信息和未验证边界可机器检查；四个 stage skill 只做最小引用/检查；diff 只包含 owned paths。
 
@@ -54,8 +54,8 @@ done
 ```
 
 ```bash
-git diff --check 69cc9b6437dc3181681603d1bb060c07acba97f1...HEAD
-git diff --name-only 69cc9b6437dc3181681603d1bb060c07acba97f1...HEAD | awk '
+git diff --check d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e...HEAD
+git diff --name-only d68886931dcfb01d50d65cc0bd8c4cc7cea54a4e...HEAD | awk '
   !/^openspec\/changes\/enforce-change-quality-gates\// &&
   !/^docs\/quality\/change-quality-gates\.md$/ &&
   !/^\.agents\/skills\/order-(plan-change|implement-tdd|verify-change|integrate-change)\// { print; bad=1 }
