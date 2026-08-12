@@ -1,14 +1,14 @@
-> 状态：`APPROVED`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划，不表述为用户亲自确认；批准依据为单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 owned/非目标/依赖硬门/45 tasks 与 strict PASS。
+> 状态：`IMPLEMENTING`。`approval_date=2026-08-13`；`approver=主 Agent`。主 Agent 在用户授权的自主裁决范围内批准本规划与 moving-main 后 apply，不表述为用户亲自确认；批准依据仍为单能力 `persistent-menu-catalog`、`W3/UI0`、唯一冻结的目录/schema/HTTP/真实 MySQL 8.0 RGR 边界、完整 owned/非目标/依赖/45 tasks 与 strict PASS。
 >
-> `gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`candidate_sha=NOT_CREATED`。foundation exact SHA `c17ba4a5bfe7556b779fac093925df609358fe05` 当前仍仅 `APPROVED`；本 change 不得进入 `IMPLEMENTING` 或 apply，直到上游在 current main `INTEGRATED`。本轮所有任务保持未勾选，不安装 runtime、不修改业务文件。
+> `gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=NOT_RUN`、`base_sha=cbfb803bb74f34b4b39fd0feff2c753613a06de2`、`candidate_sha=NOT_CREATED`。foundation candidate/integrated exact `14fc3c3b10eda28a1c61cc0ac552ca46d1cb14e1` 已随 archive/main exact `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 进入 `ARCHIVED`；moving-main 已无冲突、无 merge commit完成，旧 planning exact SHA 失效。README 是主 Agent 批准的唯一新增 owned path，只允许最小同步当前事实；persistent-menu-catalog spec 行为不变。
 >
-> 每项完成后按 `docs/quality/change-quality-gates.md` 记录 change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界和 asset/cleanup 状态。APPROVED 不评定实现 C/T/V/R；candidate 目标 `C=10、T=10、V=8、R=8` 只有在进入 apply 后真实证据齐全且硬阻断为零时才能记录。
+> 每项完成后按 `docs/quality/change-quality-gates.md` 记录 change/gate/ui/base/candidate/phase、实际命令或操作、exit result、首个脱敏结果、artifact/environment、未验证边界和 asset/cleanup 状态。IMPLEMENTING 尚不评定 candidate C/T/V/R；目标 `C=10、T=10、V=8、R=8` 只有在真实证据齐全且硬阻断为零时才能记录。
 
 ## 1. Approval、Dependency 与唯一 Writer Gate
 
 - [ ] 1.1 核验本 change 的 APPROVED 记录；重新完整读取 proposal、spec、design、tasks、根 `AGENTS.md`、质量门禁、canonical mvp/production/api-service-bootstrap 与 current main 的 foundation artifacts，运行 `openspec validate serve-persistent-menu-catalog --strict`，确认无 Open Question 后才能进入 `IMPLEMENTING`。
-- [ ] 1.2 只读确认 `establish-mysql-persistence-foundation` 已在 current `main` 进入 `INTEGRATED`，不是 branch/APPROVED/CANDIDATE/INDEPENDENT_VERIFIED；未满足即保持阻断，不执行任何 Red 或共享路径修改。
-- [ ] 1.3 依赖满足后把本 branch 吸收 latest main，记录新的完整 `base_sha`，重新审阅实际 config/database/migrate/readiness/router/main/migration embed 接口；若与本 APPROVED 规划有差异，先同步四类 artifacts、重新 strict 和 approval，旧证据全部失效。
+- [ ] 1.2 只读确认 `establish-mysql-persistence-foundation` candidate/integrated exact `14fc3c3b10eda28a1c61cc0ac552ca46d1cb14e1` 已随 current archive/main exact `cbfb803bb74f34b4b39fd0feff2c753613a06de2` 进入 `ARCHIVED`，canonical 与真实 W3 Gate 完整。
+- [ ] 1.3 核验两个 planning commits 已无冲突、无 merge commit线性重放到 new `base_sha=cbfb803bb74f34b4b39fd0feff2c753613a06de2`，重新审阅实际 config/database/migrate/readiness/router/main/migration embed/README；确认与 approved 行为一致，旧 exact SHA 与旧证据失效。
 - [ ] 1.4 确认 branch/worktree 是本 change 唯一 writer、开场 index/worktree clean、owned paths 无第二 writer；显式复核 router/router_test/main 三个共享路径已与其他 changes 串行。
 - [ ] 1.5 按 integrated foundation 当前冻结的方式建立专属隔离真实 MySQL 8.0 本地资产，核对 engine/digest/loopback/随机凭据/安全闩/cleanup preflight；环境未建立或目标归属不明即 FAIL，不进入 Red，不转交客户/平台或冒充 `BLOCKED_EXTERNAL`。
 
@@ -41,12 +41,12 @@
 
 ## 5. Green: 最小 Catalog 纵向实现
 
-- [ ] 5.1 只新增两份冻结的单 statement migration，使 2.1–2.4 Green；不改 embed/runner、go.mod/go.sum/README，不加入任何禁止字段、seed 或 down。
+- [ ] 5.1 只新增两份冻结的单 statement migration，使 2.1–2.4 Green；不改 embed/runner、go.mod/go.sum，不加入任何禁止字段、seed 或 down。
 - [ ] 5.2 在 `services/api/internal/catalog/**` 实现 uint64/uint32 model、concrete `*sql.DB` repository、single LEFT JOIN list fold、single INNER JOIN detail 与稳定 sentinel，使 3.1–3.6 Green；不建 ORM、cache、retry、第二 pool或通用 repository abstraction。
 - [ ] 5.3 实现窄 Reader seam、strict positive unsigned decimal parser、固定 DTO/error structs 与两个 GET handler，使 4.1–4.5 Green；不使用 `omitempty`，不记录/返回 raw error。
 - [ ] 5.4 只在 `router.go` 直接接收并注册 catalog handler、在 `router_test.go` 保持共享契约、在 `main.go` 用 foundation 唯一 pool 装配 repository/handler，使 4.6–4.7 Green；不创建第二 router/middleware/pool，不修改 health/app/config/database/migrate。
 - [ ] 5.5 新增 `services/api/scripts/catalog-integration.sh`，只校验 foundation 结构化 test 变量、实例名与隔离安全闩并运行真实 catalog tests；不安装/选择 runtime、不输出 secret/DSN，完成 2.5 Green。
-- [ ] 5.6 在同一真实进程完成 foundation migrate/readiness + catalog list/detail 联合 Green：空 v1 应用 v2/v3、ready current、catalog success/404、断开 DB 后 ready/catalog 503，且随机 schema cleanup PASS。
+- [ ] 5.6 在同一真实进程完成 foundation migrate/readiness + catalog list/detail 联合 Green：空 v1 应用 v2/v3、ready current、catalog success/404、断开 DB 后 ready/catalog 503，且随机 schema cleanup PASS；最小更新 README 的目录 API、v1-v3 migration、匿名 curl、真实 MySQL 验证与非目标，保留 production SSM fail-fast。
 
 ## 6. Refactor 与 Forward Recovery Review
 
@@ -61,7 +61,7 @@
 - [ ] 7.2 运行 `GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/...`、`go test -race ./services/api/...`、`go vet ./services/api/...`、`go build ./services/api/...`，记录当前 candidate diff 的真实结果。
 - [ ] 7.3 运行 foundation 既有 smoke、真实 MySQL integration 与 `services/api/scripts/catalog-integration.sh`；记录 v1→v3 first/repeat/checksum/cleanup、visibility、sorting、empty/snapshot/no-N+1、DB disconnect 和 foundation+catalog joint PASS，UI actual 仍为 `NOT_RUN`。
 - [ ] 7.4 运行 `openspec validate serve-persistent-menu-catalog --strict`、`openspec status --change serve-persistent-menu-catalog --json`、`git diff --check <base_sha>...HEAD`，确认四 artifacts 与实现一致、tasks 有真实证据且无行为未决。
-- [ ] 7.5 运行 owned-path allowlist：只允许本 change、两份 migration、`internal/catalog/**`、router/router_test/main 与 catalog integration script；显式确认 go.mod/go.sum/README、app/config/database/migrate/health/middleware、apps、product/architecture docs、canonical/archive、skills/AGENTS 零 diff。
+- [ ] 7.5 运行 owned-path allowlist：只允许本 change、两份 migration、`internal/catalog/**`、router/router_test/main、catalog integration script 与根 README；显式确认 go.mod/go.sum、app/config/database/migrate/health/middleware、apps、product/architecture/cloud docs、canonical/archive、skills/AGENTS 零 diff，并确认 README 只含批准的最小事实更新。
 - [ ] 7.6 对全部 owned source/SQL/artifacts/script 执行 forbidden schema、`SELECT *`、seed/down 与敏感扫描；禁止 SQL/DSN/password/Authorization/Cookie、私钥/证书、手机号/身份、raw DB error/body，canary 必须证明 HTTP/log 不泄漏。
 - [ ] 7.7 基于当前真实 evidence 才评定 `C=10,T=10,V=8,R=8` 且硬阻断为零；只暂存 owned paths并提交一个中文完整 CANDIDATE，记录 full SHA/base/命令摘要，确认 index/worktree clean。不得推送、创建/更新 PR、部署或写外部系统。
 
