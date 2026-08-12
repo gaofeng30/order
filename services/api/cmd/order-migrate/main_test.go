@@ -23,12 +23,12 @@ func TestExecuteSuccessAndCurrentExitZero(t *testing.T) {
 		code := execute(nil, &stdout, &stderr, func(context.Context) (migrate.Result, error) {
 			return result, nil
 		}, func() time.Time { return time.Unix(0, 0) })
-		if code != 0 || stderr.Len() != 0 {
-			t.Fatalf("code/stderr = %d/%q, want 0/empty", code, stderr.String())
+		if code != 0 || stdout.Len() != 0 {
+			t.Fatalf("code/stdout = %d/%q, want 0/empty", code, stdout.String())
 		}
-		entry := decodeSingleJSONLog(t, stdout.Bytes())
+		entry := decodeSingleJSONLog(t, stderr.Bytes())
 		assertExactKeys(t, entry, "time", "level", "msg", "event", "from_version", "to_version", "applied_count", "duration_ms")
-		if entry["event"] != "migration_completed" {
+		if entry["event"] != "migration_complete" {
 			t.Fatalf("event = %v", entry["event"])
 		}
 	}

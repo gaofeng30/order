@@ -1,4 +1,4 @@
-> 状态：`CANDIDATE`。`gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=UI0`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`approved_sha=c17ba4a5bfe7556b779fac093925df609358fe05`、`candidate_sha=SELF（由本地 candidate commit 生成并在 handoff 绑定精确 SHA）`。本地 MySQL 环境为 `ESTABLISHED`、真实 W3 为 `PASS`；这不是 `BLOCKED_EXTERNAL`。writer 已完成全部 writer tasks，等待 exact-SHA independent verification。
+> 状态：`CANDIDATE`。`gate_type=W3`、`ui_level_target=UI0`、`ui_level_actual=UI0`、`base_sha=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc`、`approved_sha=c17ba4a5bfe7556b779fac093925df609358fe05`、`previous_candidate_sha=836c8a5c829ddd3ac394d682612f037dccb0383a（INVALIDATED）`、`replacement_candidate_sha=SELF（由本地 replacement commit 生成并在 handoff 绑定精确 SHA）`。本地 MySQL 环境为 `ESTABLISHED`、真实 W3 为 `PASS`；这不是 `BLOCKED_EXTERNAL`。writer 已完成最小修复与全部 writer Gate，等待新 exact-SHA independent verification。
 >
 > `approval_date=2026-08-13`；`approver=主 Agent`。批准依据是单能力 W3/UI0、canonical health 完整 MODIFIED、MySQL/真实 W3/production secret 边界唯一冻结、无行为未决、owned/依赖/非目标/42 tasks 完整且 strict PASS；这是主 Agent 在用户授予的自主裁决范围内作出的规划裁决，不表述为用户亲自确认。
 >
@@ -38,6 +38,8 @@
   - Evidence: migrate focused test exit 1；`runLocked` 尚不存在；测试已冻结首次、重复、lock 三失败、dirty 停止及 history-table-create crash 重跑顺序。
 - [x] 3.4 先新增 `order-migrate` tests，覆盖零参数 exit 0、所有运行错误 exit 1、任意参数 exit 2 且不连接，以及成功/失败 JSON 字段白名单；用 DSN/password/SQL/server-error canary 断言 stdout/stderr 不泄漏，记录 Red。
   - Evidence: CLI focused test exit 1；目标 migrate package/execute 尚不存在。
+  - Verifier Red: exact candidate `836c8a5c829ddd3ac394d682612f037dccb0383a` 已失效；`MIGRATION_SUCCESS_EVENT_CONTRACT_MISMATCH #1`。先把 success test 改为 stdout 必须为空、stderr 恰有一条 JSON 且 `event=migration_complete`，再在未改实现上运行 `GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/cmd/order-migrate -run '^TestExecuteSuccessAndCurrentExitZero$' -count=1`，exit 1；首错为 stdout 实际含 `event=migration_completed` 的单条成功摘要。
+  - Writer Green/Refactor: 仅把成功 logger 改为 stderr 且 `event=migration_complete`；同一 focused test 与 CLI 全包 test 均 exit 0，stdout empty、stderr 单条 JSON、失败日志与 0/1/2 exit 语义不变；生产/测试断言中的旧串为 0。
 - [x] 3.5 先创建 `000001_create_schema_migrations.sql` 预期结构 tests 与 embed existence test；目标 SQL 只能创建精确 InnoDB/utf8mb4_0900_ai_ci history table，不含业务表。运行 test 并记录文件/包尚不存在的 Red，随后才允许写 production SQL。
   - Evidence: migrations focused test exit 1；`FS` 未定义且 SQL 不存在；测试明确要求 `CREATE TABLE IF NOT EXISTS` 的崩溃窗口可恢复语义。
 
@@ -100,6 +102,7 @@
   - Evidence: static sensitive/logging scan PASS，真实临时凭据未进入 repo；config/CLI/HTTP/smoke canary tests PASS；SQL 集合仅 `schema_migrations`，无业务表/ORM/seed/down/force/repair。
 - [x] 7.7 汇总真实 evidence 后才评定 candidate `C=10、T=10、V=8、R=8` 且硬阻断为零；只暂存 owned paths并提交一个中文完整 CANDIDATE，记录 full SHA、base、digest、命令结果，确认 index/worktree clean。不得推送、创建/更新 PR、部署或写生产/外部系统。
   - Evidence: `change=establish-mysql-persistence-foundation; gate=W3/UI0; base=5ba5340cf9098724c0eb2284fdc5b14cb97be5dc; candidate=SELF; phase=writer; exit=PASS; C/T/V/R=10/10/8/8 total=36; hard_blockers=0; artifact=owned paths only; unverified=exact-SHA independent verification/integration/archive 仍待 8.1-8.4; external=production SSM/CAM 独立 change`。本地中文 candidate commit与 exact SHA 由提交本身及 handoff绑定；无 push/PR/deploy/external write。
+  - Verifier recovery: 旧 SHA FAIL 后只修改 CLI implementation/test 与本 tasks 证据；focused、Go fmt/test/race/vet/build、no-DB smoke、fresh digest MySQL 8.0.46 W3、strict/status、owned/protected/sensitive、JS/42 JSON 全部 PASS，随机 schema 残留=0；`C/T/V/R=10/10/8/8`、hard blockers=0，8.1-8.4 仍未勾，新 exact SHA 由 replacement commit/handoff 绑定。
 
 ## 8. Exact-SHA Independent Verification and Local Runtime Cleanup
 

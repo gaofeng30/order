@@ -47,8 +47,8 @@ func execute(args []string, stdout, stderr io.Writer, command commandFunc, now f
 		logger.Error("migration failed", "event", "migration_failed", "reason", reason, "version", version, "duration_ms", duration)
 		return 1
 	}
-	logger := slog.New(slog.NewJSONHandler(stdout, nil))
-	logger.Info("migration completed", "event", "migration_completed", "from_version", result.FromVersion, "to_version", result.ToVersion, "applied_count", result.AppliedCount, "duration_ms", duration)
+	logger := slog.New(slog.NewJSONHandler(stderr, nil))
+	logger.Info("migration completed", "event", "migration_complete", "from_version", result.FromVersion, "to_version", result.ToVersion, "applied_count", result.AppliedCount, "duration_ms", duration)
 	return 0
 }
 
