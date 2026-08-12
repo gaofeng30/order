@@ -160,7 +160,6 @@ Nginx 只暴露 HTTPS；CDB 与应用端口只走内网，公网安全组只开�
 - 手机号。
 - 姓名。
 - 员工/访客类型。
-- 部门、工号，待客户确认后启用。
 
 ### 3.2 商品模块
 
@@ -271,8 +270,6 @@ Nginx 只暴露 HTTPS；CDB 与应用端口只走内网，公网安全组只开�
 - phone
 - name
 - user_type
-- department
-- employee_no
 - status
 - created_at
 - updated_at

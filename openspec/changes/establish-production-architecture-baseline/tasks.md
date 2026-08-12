@@ -59,6 +59,9 @@
 
 - [x] 3.1 运行以下歧义与外部占位符检查；两个实际文档合计必须只含完整白名单，不得残留普通占位、行为未决或旧选型口径：
   - Evidence: `phase=Refactor`; `command=下列术语与占位符检查`; `exit_result=0`; `sanitized_summary=architecture terminology and placeholder check PASS；17 个命名外部值完整且无未知值/行为未决/旧选型口径`; `artifact=两个实际文档`; `unverified_boundary=占位符真实值尚未提供`; `external_asset=由甲方与后续平台 owner 补齐`。
+  - Verifier Red: `phase=verifier`; `candidate_sha=b084f7b50561f44bb40001f2157c35145de3d598`; `exit_result=FAIL`; `sanitized_summary=ARCH_BEHAVIOR_TODO_OUTSIDE_WHITELIST（第 1 次）：技术文档第 163 行把部门/工号作为客户条件启用字段，且用户表仍含 department/employee_no，超出 17 个命名外部值白名单；旧 SHA 证据失效`; `artifact=docs/product/online-ordering-system-technical.md`; `unverified_boundary=其余 verifier Gate PASS`; `external_asset=无`。
+  - Writer Red: `phase=red`; `command=behavior-decision wording check`; `exit_result=1`; `sanitized_summary=同指纹 ARCH_BEHAVIOR_TODO_OUTSIDE_WHITELIST，唯一命中原第 163 行`; `artifact=两个实际文档`; `unverified_boundary=修复前证据`; `external_asset=无`。
+  - Writer Green: `phase=green`; `command=behavior-decision wording check; ! rg -n 'department|employee_no|部门|工号' docs/product/online-ordering-system-technical.md`; `exit_result=0`; `sanitized_summary=删除一期正式用户说明与用户表中的部门/工号三行，自然语言行为未决与目标字段均无命中；未扩张白名单或产品行为`; `artifact=docs/product/online-ordering-system-technical.md`; `unverified_boundary=新 candidate 仍待独立验证`; `external_asset=无`。
 
   ```bash
   python3 - <<'PY'
@@ -84,6 +87,7 @@
       raise SystemExit(f"placeholder mismatch missing={sorted(allowed-found)} unknown={sorted(found-allowed)}")
   forbidden = [
       r"\bTODO\b", r"\bTBD\b", r"待定", r"二选一", r"按需选择", r"视情况选择",
+      r"待[^。\n]{0,12}确认", r"确认后启用", r"启用后", r"视客户", r"由客户确认", r"客户[^。\n]{0,8}确认后",
       r"MySQL\s*/\s*TDSQL-C", r"MySQL 还是 TDSQL-C", r"公有读私有写",
       r"COS 密钥（SecretId\s*/\s*SecretKey）配置", r"配 CDN 加速",
       r"实际角色需要和客户确认",
