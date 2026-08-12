@@ -7,13 +7,15 @@ description: Prepare and integrate one independently verified OpenSpec change in
 
 ## Check the gate
 
+Read and enforce `docs/quality/change-quality-gates.md` before deciding integration readiness.
+
 Require all of the following:
 
 - OpenSpec artifacts and tasks are complete and strict validation passes;
-- dependencies are integrated or pinned exactly as declared;
+- every dependency is already `INTEGRATED` in the current `main`; a dependency branch, candidate or main-external PASS is insufficient;
 - the candidate full SHA has an independent PASS attestation;
 - the diff contains only owned paths and intentional shared-contract edits;
-- required review and repository checks pass.
+- required review, C/T/V/R threshold, hard blockers and repository checks pass.
 
 Do not treat another change's unfinished work as a blocker unless there is a declared dependency or ownership conflict.
 

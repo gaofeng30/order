@@ -22,7 +22,7 @@
 
 ## Impact
 
-- 状态：`DRAFT`；本轮只完成规划 artifact 和 strict validation，不执行任何 tasks。
+- 状态：`IMPLEMENTING`；主 Agent 于 2026-08-12 明确批准 DRAFT，Red → Green → Refactor 已完成；本地 main 在最终 Gate 时推进，旧 writer Gate 已失效，正在吸收新 main 并重验。
 - 本 change 的 `gate_type`：W0；`ui_level`：UI0。理由是 apply 只新增质量协议文档并修改四个 stage skill 的文字入口，不改变产品运行行为、公共契约、持久化数据、资金或并发结果；若 apply 发现更高风险面，必须先更新并重新批准本 OpenSpec。
 - owner：`codex/enforce-change-quality-gates` 当前独立 worktree 的 Loop Writer；同一时刻其他 worker 不得写入 owned paths。
 - owned paths：

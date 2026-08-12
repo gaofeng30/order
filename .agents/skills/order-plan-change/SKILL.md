@@ -7,7 +7,7 @@ description: Create or refine one fine-grained OpenSpec change for the order rep
 
 ## Establish the boundary
 
-1. Read the root `AGENTS.md` and the minimum relevant PRD, code, contract, and existing OpenSpec files.
+1. Read the root `AGENTS.md`, `docs/quality/change-quality-gates.md`, and the minimum relevant PRD, code, contract, and existing OpenSpec files.
 2. State one primary outcome and one acceptance verdict. If parts can be accepted or rolled back independently, create separate changes.
 3. Declare:
    - owner and branch/worktree;
@@ -16,6 +16,8 @@ description: Create or refine one fine-grained OpenSpec change for the order rep
    - non-goals;
    - executable acceptance checks.
 4. Ask one concise question with a recommended answer only when ambiguity changes behavior, contract, data, authorization, or acceptance. Keep unresolved recommendations out of confirmed requirements.
+
+Before approval, apply the planning gate from `docs/quality/change-quality-gates.md`: declare the single highest `gate_type`, target `ui_level`, required external assets and executable acceptance checks. A required unavailable asset is `BLOCKED_EXTERNAL`, never a planned PASS.
 
 ## Build the OpenSpec artifacts
 

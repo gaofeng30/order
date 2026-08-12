@@ -7,9 +7,10 @@ description: Implement one approved OpenSpec change in the order repository with
 
 ## Confirm the implementation context
 
-1. Read root `AGENTS.md` and every context file returned by `openspec instructions apply --change <name> --json`.
+1. Read root `AGENTS.md`, `docs/quality/change-quality-gates.md`, and every context file returned by `openspec instructions apply --change <name> --json`.
 2. Confirm the current branch/worktree belongs to this change and edits stay within its owned paths.
-3. Run `openspec validate <name> --strict`. Stop if artifacts are incomplete or a dependency blocks implementation.
+3. Confirm the approved change declares its single highest `gate_type`, target `ui_level`, external assets, dependencies and acceptance commands.
+4. Run `openspec validate <name> --strict`. Stop if artifacts are incomplete or a dependency blocks implementation.
 
 ## Execute Red → Green → Refactor
 
@@ -22,6 +23,8 @@ For each behavior-sized task:
 
 For docs, config, migrations and file moves, use meaningful link, schema, migration, structure or content-integrity checks instead of artificial unit tests.
 
+Use the minimum RGR and sanitized evidence template for the declared class in `docs/quality/change-quality-gates.md`. If a required database, WeChat, payment, device or other external asset is unavailable, record `BLOCKED_EXTERNAL`; never report the missing Gate as PASS.
+
 ## Handle discoveries
 
 - If implementation requires behavior outside the spec, update the OpenSpec artifacts first; obtain confirmation when public behavior, data, authorization or acceptance changes.
@@ -30,8 +33,9 @@ For docs, config, migrations and file moves, use meaningful link, schema, migrat
 
 ## Produce a candidate
 
-1. Run all change-local acceptance checks and `openspec validate <name> --strict`.
-2. Review the diff against owned paths and commit only this change.
-3. Record the candidate SHA and hand it to `order-verify-change`.
+1. Run the writer Gate in `docs/quality/change-quality-gates.md`, all change-local acceptance checks and `openspec validate <name> --strict`.
+2. Reject every hard blocker; require C/T/V/R total at least 36 and every dimension at least 8. The writer's V score cannot claim independent PASS.
+3. Review the diff against owned paths and commit only this change.
+4. Record the candidate SHA and hand it to `order-verify-change`.
 
 Implementation self-test creates CANDIDATE, not INDEPENDENT_VERIFIED. Do not claim independent verification from the writer worktree.

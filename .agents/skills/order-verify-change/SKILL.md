@@ -9,6 +9,8 @@ description: Independently verify an exact candidate SHA for one OpenSpec change
 
 Obtain the repository, change name and full candidate SHA. Do not verify an uncommitted working tree, branch name alone, or a moving ref.
 
+Read and enforce `docs/quality/change-quality-gates.md`. Reject a candidate whose declared highest `gate_type`, actual `ui_level`, required external evidence, score or hard-blocker result is missing or inconsistent.
+
 ## Create an isolated verification surface
 
 1. Create a separate clean detached worktree at the exact candidate SHA. Never reuse the writer worktree.
@@ -25,6 +27,8 @@ Use a narrowly named temporary directory. Before removal, confirm it is the exac
 4. Confirm the worktree remains clean after verification.
 
 Do not edit business code, specs or tasks. On failure, report the first decisive error with command and evidence; return the change to its writer. The writer creates a new SHA and verification starts again.
+
+Implementation, spec, tasks, base, dependency, acceptance-command or SHA changes invalidate prior verification. For a repaired SHA, reuse the verifier session only with a newly clean detached worktree and a full rerun; repeated-error escalation remains owned by `order-run-loop`.
 
 ## Attest the result
 
