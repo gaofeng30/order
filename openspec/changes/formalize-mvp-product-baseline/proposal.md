@@ -9,7 +9,7 @@
 - 固定库存、下单软预占、支付确认、超时和迟到支付、九态订单状态机、取消退款、员工/访客识别、逐商品员工价、预约取餐与后台四角色规则。
 - 固定外部依赖的 12 项顺序链、责任边界、进入后续阶段的 Gate，以及不得在任何台账中保存密钥、证书、账号标识或个人数据的安全边界。
 - 为需求、页面、状态、角色和外部依赖建立追踪矩阵，并把后续 PRD 更新拆成可执行、可检查、可回滚的实现任务。
-- 主 Agent 已依据用户授权批准本 change；状态按 `DRAFT → APPROVED → IMPLEMENTING` 推进，当前只执行 writer-owned PRD 与 change 任务。
+- 主 Agent 已依据用户授权批准本 change；writer-owned PRD 与 change 任务已完成，状态按 `DRAFT → APPROVED → IMPLEMENTING → CANDIDATE` 推进。
 
 ## Capabilities
 
@@ -23,7 +23,7 @@
 
 ## Impact
 
-- 状态：`IMPLEMENTING`；主 Agent 于 2026-08-12 确认单能力边界、12 requirements/35 scenarios、无行为 TODO、外部 Gate 和 owned paths 均满足批准条件。
+- 状态：`CANDIDATE`；主 Agent 于 2026-08-12 确认单能力边界、12 requirements/35 scenarios、无行为 TODO、外部 Gate 和 owned paths 均满足批准条件；writer 已在最新本地 `main@69cc9b6437dc3181681603d1bb060c07acba97f1` 上完成实现与本地 Gate。
 - owner：`codex/formalize-mvp-product-baseline` 分支及当前既有独立 worktree 的唯一 writer。
 - owned paths：`openspec/changes/formalize-mvp-product-baseline/**`、`docs/product/online-ordering-system-prd.md`；本轮只写 change 目录，批准后的实现才允许修改 PRD。
 - shared contracts：后续将修改 PRD §1–§14 的一期范围、业务规则、验收标准与文档优先级；它会成为身份、商品、库存、订单、支付、退款、履约、核销、后台权限和上线准备等后续 changes 的产品输入，但本 change 不定义这些能力的 API 或数据库实现。

@@ -1,4 +1,4 @@
-> 状态：`IMPLEMENTING`。主 Agent 已依据用户授权于 2026-08-12 将 change 从 `DRAFT` 批准为 `APPROVED`，writer 完成 preflight 后进入 `IMPLEMENTING`。每完成一项，必须在该项下记录决定性命令、结果或设计理由。
+> 状态：`CANDIDATE`。主 Agent 已依据用户授权于 2026-08-12 将 change 从 `DRAFT` 批准为 `APPROVED`，writer 完成 preflight 后进入 `IMPLEMENTING`；writer-owned tasks 和本地 Gate 完成后进入 `CANDIDATE`。每完成一项，必须在该项下记录决定性命令、结果或设计理由。
 
 ## 1. Approval, Ownership and Red Evidence
 
@@ -80,12 +80,16 @@
 
 - [x] 4.2 逐条对照 `specs/mvp-product-baseline/spec.md` 与 PRD §14 追踪矩阵，确认每条 requirement 都有 PRD 位置、页面、状态、角色、外部 Gate 和验收方法；不适用维度显式标注，不允许空单元格。
   - 证据：Python 解析 spec 的 12 个 requirement 和矩阵 12 行，断言每行恰有 7 个非空单元格，并检查 U01/U03/U05/U06/U07/U08、M01/M03/M04/M09、九态、四角色、Gate 1–12 与“不适用”，输出 `traceability matrix check PASS: 12 requirements / 12 complete rows`。
-- [ ] 4.3 运行 `openspec validate formalize-mvp-product-baseline --strict`，并核对 `openspec status --change formalize-mvp-product-baseline --json` 所有 artifacts 完整。
-- [ ] 4.4 以 `c47135b660a9ca3f9f9ee6ded6b09fbf0ee6f1af` 为边界运行 owned-path 检查；`git diff --name-only c47135b660a9ca3f9f9ee6ded6b09fbf0ee6f1af` 只能列出 `openspec/changes/formalize-mvp-product-baseline/**` 与 `docs/product/online-ordering-system-prd.md`，并确认客户清单、合同、technical.md 和业务代码无 diff。
-- [ ] 4.5 运行 `git diff --check`、检查 Markdown 标题/表格/链接，并把 4.1–4.4 的决定性结果记录到已完成任务下；任何规则、spec 或任务调整后重跑全部本地 Gate。
+- [x] 4.3 运行 `openspec validate formalize-mvp-product-baseline --strict`，并核对 `openspec status --change formalize-mvp-product-baseline --json` 所有 artifacts 完整。
+  - 证据：在最新本地 main 上重跑 strict，输出 `Change 'formalize-mvp-product-baseline' is valid`；status 返回 `isComplete=true`，proposal/design/specs/tasks 四类 artifact 均为 `done`。
+- [x] 4.4 吸收当前本地 main 后运行 owned-path 检查；以精确 main SHA 与三点 diff 区分本 change 和已集成的并行 change，仅允许 `openspec/changes/formalize-mvp-product-baseline/**` 与 `docs/product/online-ordering-system-prd.md`，并确认客户清单、合同、technical.md 和业务代码无本 change diff。
+  - 证据：本地 main 最终由 integrator 前移至归档 SHA `69cc9b6437dc3181681603d1bb060c07acba97f1`，其 parent 为 `76e30b9e4a2dd7a9034cc37023a68e68487cebc3`；writer 保存未提交证据后运行 `git rebase main`，无冲突完成。`git merge-base --is-ancestor 69cc9b6437dc3181681603d1bb060c07acba97f1 HEAD` exit 0；`git diff --name-only main...HEAD` 只列出 PRD 和本 change 目录，归档路径不计入本 change，protected-path 检查 PASS。
+- [x] 4.5 运行 `git diff --check`、检查 Markdown 标题/表格/链接，并把 4.1–4.4 的决定性结果记录到已完成任务下；任何规则、spec 或任务调整后重跑全部本地 Gate。
+  - 证据：`git diff --check main...HEAD` exit 0；Markdown 检查确认 5 个 owned Markdown 文件代码围栏闭合、相对链接有效、正式章节严格为 §1–§14 且 §15 边界唯一；原型保真检查确认相对 main 的 §15 仅有 5 处获批生产边界注释；敏感数据检查 PASS。
 
 ## 5. Candidate and Independent Verification
 
-- [ ] 5.1 将完成证据和状态更新写入本 change，只暂存 owned paths，提交一个完整 `CANDIDATE`，记录完整 SHA 并确认 writer worktree clean；不得推送、创建 PR 或修改外部系统。
+- [x] 5.1 将完成证据和状态更新写入本 change，只暂存 owned paths，提交一个完整 `CANDIDATE`，记录完整 SHA 并确认 writer worktree clean；不得推送、创建 PR 或修改外部系统。
+  - 证据：候选提交前已在 `main@69cc9b6437dc3181681603d1bb060c07acba97f1` 上完成 4.1–4.5，且只暂存 owned paths；提交后以 `git rev-parse HEAD`、`git status --short --branch`、`git diff --exit-code` 和 `git diff --cached --exit-code` 生成精确候选 SHA 与 clean 证据并在 handoff 回传。候选不能在自身内容中记录自己的最终 SHA，否则写回会产生新候选。
 - [ ] 5.2 verifier 在另一个干净 detached worktree 检出 5.1 的精确 SHA，只读重跑 4.1–4.5、严格 OpenSpec 和完整 diff 审查，并确认 worktree 在验证后仍 clean。
 - [ ] 5.3 若需要把独立验证结果写回 artifacts，写回提交视为新候选；必须由 verifier 对新的完整 SHA 再跑 5.2，只有最终 SHA 可进入 `INDEPENDENT_VERIFIED`，任何 PRD/spec/tasks/rebase/merge 变化都使旧验证失效。
