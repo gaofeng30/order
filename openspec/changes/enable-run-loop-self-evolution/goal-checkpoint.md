@@ -14,11 +14,13 @@
 | runner_skill_sha256 | `558b549a4410d72d4c22acad621ffae96af3aeccd26adc186ede76601097aa59` |
 | runner_version | `legacy front matter: no version` |
 | candidate_sha | `external post-commit evidence: exact clean branch HEAD emitted without changing this candidate tree` |
+| invalidated_candidate_sha | `e54040ef4f8c5363a618876d9bf8ea5299877ba4: stale checkpoint authorization boundary; must not be verified or integrated` |
 | integrated_sha | `none` |
 | archive_sha | `none` |
 | strict | `PASS: openspec validate enable-run-loop-self-evolution --strict` |
-| C/T/V/R | `C=9, T=10, V=8, R=9, total=36; writer candidate only, independent result pending` |
-| hard_blockers | `0; implementation is gated by approval, not yet authorized` |
+| C/T/V/R | `C=9, T=10, V=8, R=9, total=36; reconfirmed after the corrected-tree full writer Gate; independent result pending` |
+| hard_blockers | `0; implementation is complete for the writer candidate, while independent verification and integration remain pending lifecycle Gates` |
+| writer_gate_rerun | `PASS after stale authorization fix: checkpoint semantic check, strict, quick_validate, contract, 7 positive/7 negative checker regressions, forward-validator positive/negative, gofmt, Go test/race/vet/build/smoke, JS, 42 JSON, diff/owned/sensitive/untracked audits` |
 | blocked_external | `none` |
 | approval | `PASS: main Agent explicitly approved on 2026-08-13 after 4/4 artifacts, strict, ownership, dependency, architecture and hard-blocker Gates passed` |
 | architecture_decision | `DRAFT admission requires reproducible + (generalizable OR safety-critical) + non-weakening intent + executable regression/forward-test plans; it is not promotion. Promotion requires implemented regression PASS + clean-detached exact-SHA independent minimal-context forward-test PASS + full independent verification PASS. Activation requires local-main integration and a later module base.` |
@@ -54,3 +56,5 @@
 | 7 | `/usr/bin/python3 .../checks/verify_contract.py --repo .` | 1 | `legacy control invariant drifted: contiguous seven-state text missing` | first Green runner implementation | `verify-contract|1|synthetic-contiguous-state-token|2209c071|local-writer` | checker false negative; replaced only that assertion with the seven existing transition rows, then the same command PASS and repeat count reset |
 | 8 | working-tree scope/whitespace audit | 127 | `zsh: command not found: git` after loop variable `path` shadowed command search | local writer zsh | `working-audit|127|zsh-path-shadowed|2209c071|local-writer` | renamed only the loop variable to `candidate_file`; the same audit PASS and repeat count reset |
 | 9 | read OpenSpec apply progress with inline Python | 1 | `SyntaxError: f-string expression part cannot include a backslash` | local writer shell/Python tool boundary | `task-progress|1|f-string-backslash|2209c071|local-writer` | replaced only the inline formatter with `.format()`; corrected read-only command PASS and repeat count reset |
+| 10 | pre-verifier checkpoint consistency Gate | semantic FAIL | `state=CANDIDATE and approval=PASS contradicted hard_blockers text saying implementation not authorized` | stale candidate `e54040ef4f8c5363a618876d9bf8ea5299877ba4` | `checkpoint-consistency|semantic|stale-not-authorized-hard-blocker|e54040ef|pre-verifier` | repeat 1; invalidate old SHA, update only the current lifecycle boundary, then rerun the complete writer Gate and produce a new candidate |
+| 11 | forward-validator regression rerun | 1 | `result candidate_sha does not match exact input SHA` | validator fixture embeds frozen base while command passed invalidated candidate SHA | `forward-validator|1|fixture-input-sha-mismatch|e54040ef|local-writer` | repeat 1; changed no code or assertion, reran with the fixture-declared SHA, positive exit 0 and negative exit 1; count reset |
