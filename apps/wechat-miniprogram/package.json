@@ -1,0 +1,8 @@
+{
+  "name": "order-wechat-miniprogram-ui1",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/catalog-ui1.test.js"
+  }
+}

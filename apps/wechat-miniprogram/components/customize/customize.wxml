@@ -3,10 +3,9 @@
   <view class="sheet cz-sheet">
     <!-- 菜品抬头 -->
     <view class="cz-head">
-      <imageph item="{{item}}" h="120" w="120" radius="24" tag="{{false}}" />
       <view class="cz-head-info">
         <view class="cz-name serif">{{item.name}}</view>
-        <money v="{{item.price}}" size="38" />
+        <money v="{{item.price_text}}" size="38" />
       </view>
       <view class="cz-close" catchtap="close"><icon name="close" size="20" color="#8f9384" /></view>
     </view>
@@ -44,7 +43,7 @@
     <!-- 数量 + 确认 -->
     <view class="cz-foot" style="padding-bottom:{{safeBottom + 24}}px">
       <stepper value="{{qty}}" bind:sub="sub" bind:add="add" />
-      <view class="btn btn--primary cz-confirm" catchtap="confirm">{{confirmLabel}} · ¥{{total}}</view>
+      <view class="btn btn--primary cz-confirm" catchtap="confirm">{{confirmLabel}} · ¥{{totalText}}</view>
     </view>
   </view>
 </view>

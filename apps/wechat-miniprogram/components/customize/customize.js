@@ -1,5 +1,6 @@
 /* 口味偏好 + 备注 选择弹层 (菜品级, 复用于菜单/详情/确认订单) */
 const data = require('../../utils/data.js');
+const catalogStore = require('../../utils/catalogStore.js');
 
 Component({
   properties: {
@@ -13,7 +14,8 @@ Component({
     flavors: [],
     note: '',
     qty: 1,
-    total: 0,
+    totalCents: 0,
+    totalText: '0.00',
     safeBottom: 0,
   },
   observers: {
@@ -22,9 +24,11 @@ Component({
       const flavors = (init && init.flavors) ? init.flavors.slice() : [];
       const note = (init && init.note) || '';
       const qty = (init && init.qty) || 1;
+      const totalCents = qty * ((item && item.price_cents) || 0);
       this.setData({
         flavors, note, qty,
-        total: qty * ((item && item.price) || 0),
+        totalCents,
+        totalText: catalogStore.formatCents(totalCents),
         chips: this._chips(flavors),
         safeBottom: getApp().globalData.safeBottom,
       });
@@ -40,8 +44,16 @@ Component({
       this.setData({ flavors, chips: this._chips(flavors) });
     },
     onNote(e) { this.setData({ note: e.detail.value }); },
-    sub() { const qty = Math.max(1, this.data.qty - 1); this.setData({ qty, total: qty * this.data.item.price }); },
-    add() { const qty = this.data.qty + 1; this.setData({ qty, total: qty * this.data.item.price }); },
+    sub() {
+      const qty = Math.max(1, this.data.qty - 1);
+      const totalCents = qty * this.data.item.price_cents;
+      this.setData({ qty, totalCents, totalText: catalogStore.formatCents(totalCents) });
+    },
+    add() {
+      const qty = this.data.qty + 1;
+      const totalCents = qty * this.data.item.price_cents;
+      this.setData({ qty, totalCents, totalText: catalogStore.formatCents(totalCents) });
+    },
     close() { this.triggerEvent('close'); },
     confirm() {
       this.triggerEvent('confirm', { qty: this.data.qty, flavors: this.data.flavors, note: this.data.note });

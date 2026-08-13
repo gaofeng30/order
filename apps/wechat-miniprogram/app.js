@@ -3,6 +3,8 @@ const data = require('./utils/data.js');
 
 App({
   globalData: {
+    apiBaseUrl: 'http://127.0.0.1:8080',
+
     // ---- 屏幕适配信息（各机型自适应核心）----
     statusBarHeight: 20, // 状态栏高度 px
     navBarHeight: 44,    // 标题栏高度 px（与右上胶囊对齐）
@@ -13,7 +15,7 @@ App({
 
     // ---- 业务状态（跨页共享，模拟后端）----
     store: { status: '营业中' },
-    cart: {},               // { [id]: { qty, flavors:[], note:'' } } 口味/备注绑定到菜品
+    cart: {},               // { [id]: { product, qty, flavors:[], note:'' } } 商品为首次选择时的目录快照
     orderMode: 'now',       // 下单模式 'now'尽快 | 'reserve'预约
     orders: [],             // 用户端订单
     lastOrder: null,        // 最近一笔下单

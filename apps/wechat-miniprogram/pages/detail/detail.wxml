@@ -1,85 +1,43 @@
 <view class="page">
-  <navbar tone="dark" overlay back />
+  <navbar tone="light" title="商品详情" back />
 
-  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
-    <!-- 大图：多图手动滑动，不自动播放、不循环；点击进入全屏预览 -->
-    <view class="gal">
-      <swiper
-        wx:if="{{imgs.length > 1}}"
-        class="gal-sw"
-        autoplay="{{false}}"
-        circular="{{false}}"
-        current="{{gi}}"
-        bindchange="onGal"
-      >
-        <swiper-item wx:for="{{imgs}}" wx:key="*this">
-          <image src="{{item}}" class="gal-img" mode="aspectFill" data-i="{{index}}" bindtap="preview" />
-        </swiper-item>
-      </swiper>
-      <image wx:elif="{{imgs.length === 1}}" src="{{imgs[0]}}" class="gal-img" mode="aspectFill" data-i="0" bindtap="preview" />
-      <imageph wx:else item="{{m}}" h="720" radius="0" fontsize="240" tag="{{false}}" />
-      <view wx:if="{{imgs.length > 1}}" class="gal-idx tnum">{{gi + 1}} / {{imgs.length}}</view>
-    </view>
-
-    <view class="detail-body">
-      <!-- 信息卡 -->
-      <view class="card info-card">
-        <view class="info-top">
-          <view class="info-name serif">{{m.name}}</view>
-          <pill wx:if="{{off}}" s="{{m.status === 'soldout' ? '售罄' : '已下架'}}" />
-          <pill wx:else s="可购" dot />
-        </view>
-        <view class="info-price">
-          <money v="{{m.price}}" size="60" />
-          <text class="info-sold">月售 {{m.sold}} · 到店自提</text>
-        </view>
-        <view class="info-tags">
-          <view wx:for="{{m.tags}}" wx:key="*this" class="pill pill--ok">{{item}}</view>
-        </view>
-        <view class="info-desc">{{m.desc}}</view>
-      </view>
-
-      <!-- 规格 -->
-      <view class="card spec-card">
-        <view class="sec-h" style="padding-bottom:12rpx"><text class="t" style="font-size:30rpx">规格信息</text></view>
-        <view wx:for="{{m.specs}}" wx:key="index" class="spec-row {{index === m.specs.length - 1 ? 'last' : ''}}">
-          <text class="spec-k">{{item[0]}}</text>
-          <text class="spec-v">{{item[1]}}</text>
-        </view>
-      </view>
-
-      <!-- 过敏原 -->
-      <view class="card aller-card">
-        <view class="aller-head">
-          <icon name="warn" size="16" color="#a4873f" />
-          <text class="serif aller-title">过敏原提示</text>
-        </view>
-        <view class="aller-list">
-          <view wx:for="{{m.allergens}}" wx:key="*this" class="pill pill--warn">含 {{item}}</view>
-        </view>
-      </view>
-    </view>
-    <view style="height:40rpx"></view>
-  </scroll-view>
-
-  <!-- 底部固定栏 -->
-  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
-    <stepper wx:if="{{qty > 0 && !off}}" value="{{qty}}" bind:sub="sub" bind:add="add" />
-    <view wx:else class="have-qty"><text>购物车已有</text><text class="have-num">{{qty}}</text><text>份</text></view>
-    <view class="btn btn--block {{off ? 'btn--mute' : 'btn--primary'}} addcart-btn" bindtap="openCustomize">
-      <block wx:if="{{off}}">{{m.status === 'soldout' ? '已售罄' : '已下架'}}</block>
-      <block wx:else>选规格加购 · <money v="{{m.price}}" color="#ffffff" size="30" /></block>
-    </view>
+  <view wx:if="{{detailState === 'loading'}}" class="detail-state">商品加载中…</view>
+  <view wx:elif="{{detailState === 'not_found'}}" class="detail-state">商品不存在</view>
+  <view wx:elif="{{detailState === 'error'}}" class="detail-state">
+    <text>商品加载失败</text>
+    <view class="btn btn--ghost-blue btn--sm" bindtap="retryProduct">重试</view>
   </view>
 
-  <!-- 口味/备注 弹层 -->
-  <customize
-    visible="{{czVisible}}"
-    item="{{m}}"
-    init="{{czInit}}"
-    bind:close="onCzClose"
-    bind:confirm="onCzConfirm"
-  />
+  <block wx:elif="{{detailState === 'ready'}}">
+    <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="detail-body">
+        <view class="card info-card">
+          <view class="info-name serif">{{m.name}}</view>
+          <view class="info-price"><money v="{{m.price_text}}" size="60" /></view>
+          <view class="info-desc">{{m.description}}</view>
+        </view>
+
+        <view class="card spec-card">
+          <view class="sec-h" style="padding-bottom:12rpx"><text class="t" style="font-size:30rpx">规格信息</text></view>
+          <view class="spec-text">{{m.specification}}</view>
+        </view>
+
+        <view class="card local-card">
+          <icon name="cart" size="16" color="#467a32" />
+          <text>目录仅供浏览与本地选择</text>
+        </view>
+      </view>
+      <view style="height:40rpx"></view>
+    </scroll-view>
+
+    <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+      <stepper wx:if="{{qty > 0}}" value="{{qty}}" bind:sub="sub" bind:add="add" />
+      <view wx:else class="have-qty">尚未选择</view>
+      <view class="btn btn--block btn--primary addcart-btn" bindtap="openCustomize">选择 · <money v="{{m.price_text}}" color="#ffffff" size="30" /></view>
+    </view>
+
+    <customize visible="{{czVisible}}" item="{{m}}" init="{{czInit}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
+  </block>
 
   <toast id="toast" />
 </view>

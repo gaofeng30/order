@@ -98,13 +98,13 @@ Page({
     const entry = cart.entry(id);
     this.setData({
       czVisible: true,
-      czItem: data.itemById(id),
+      czItem: entry.product,
       czInit: entry ? { qty: entry.qty, flavors: entry.flavors, note: entry.note } : null,
     });
   },
   onCzClose() { this.setData({ czVisible: false }); },
   onCzConfirm(e) {
-    cart.setPrefs(this.data.czItem.id, e.detail);
+    cart.setPrefs(this.data.czItem, e.detail);
     this.setData({ czVisible: false });
     this.refreshItems();
   },

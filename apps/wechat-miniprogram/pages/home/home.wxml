@@ -18,7 +18,7 @@
         </view>
         <view class="search" bindtap="toMenu">
           <icon name="search" size="17" color="rgba(255,255,255,0.8)" />
-          <text class="search-ph">搜索　商务双拼饭 / 鸡腿排 / 能量碗…</text>
+          <text class="search-ph">进入菜单查看当日商品目录</text>
         </view>
       </view>
     </view>
@@ -38,8 +38,7 @@
                 <view class="btn btn--primary btn--sm camp-cta">{{item.cta}}</view>
               </view>
               <view class="camp-media" style="background:{{item.bg}}">
-                <image wx:if="{{item.img}}" src="{{item.img}}" mode="aspectFill" class="camp-img" />
-                <view wx:else class="camp-emblem-wrap">
+                <view class="camp-emblem-wrap">
                   <view class="camp-dash"></view>
                   <image src="/assets/emblem.png" class="camp-emblem" mode="aspectFit" />
                 </view>
@@ -93,24 +92,36 @@
 
       <!-- 今日招牌 -->
       <view class="sec-h"><text class="t">今日招牌</text><text class="more" bindtap="toMenu">全部 ›</text></view>
-      <scroll-view class="signature" scroll-x enhanced show-scrollbar="{{false}}">
-        <view class="sig-track">
-          <view
-            wx:for="{{signature}}"
-            wx:key="id"
-            class="card sig-card"
-            data-id="{{item.id}}"
-            bindtap="toDetail"
-          >
-            <imageph item="{{item}}" h="184" radius="24" />
-            <view class="sig-name">{{item.name}}</view>
-            <view class="sig-foot">
-              <money v="{{item.price}}" />
-              <text class="sig-sold">月售{{item.sold}}</text>
+      <view wx:if="{{listState === 'loading'}}" class="catalog-state">目录加载中…</view>
+      <view wx:elif="{{listState === 'empty'}}" class="catalog-state">
+        <text>当前目录为空</text>
+        <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载</view>
+      </view>
+      <view wx:elif="{{listState === 'error'}}" class="catalog-state">
+        <text>目录加载失败</text>
+        <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">重试</view>
+      </view>
+      <block wx:elif="{{listState === 'ready'}}">
+        <view wx:if="{{signature.length === 0}}" class="catalog-state">暂无招牌商品</view>
+        <scroll-view wx:else class="signature" scroll-x enhanced show-scrollbar="{{false}}">
+          <view class="sig-track">
+            <view
+              wx:for="{{signature}}"
+              wx:key="id"
+              class="card sig-card"
+              data-id="{{item.id}}"
+              bindtap="toDetail"
+            >
+              <view class="sig-name">{{item.name}}</view>
+              <view class="sig-desc ellipsis-2">{{item.description}}</view>
+              <view class="sig-foot">
+                <money v="{{item.price_text}}" />
+                <text class="sig-local">本地选择</text>
+              </view>
             </view>
           </view>
-        </view>
-      </scroll-view>
+        </scroll-view>
+      </block>
       <view style="height:{{safeBottom + 24}}px"></view>
     </view>
   </scroll-view>

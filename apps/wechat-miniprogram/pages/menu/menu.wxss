@@ -9,22 +9,15 @@
 .menu-scroll { padding-top: 8rpx; }
 .sec-anchor { height: 1rpx; }
 
+.catalog-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }
 .dish-row { display: flex; gap: 24rpx; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.dish-row.off { opacity: .62; }
-.dish-pic { position: relative; }
-.dish-mask {
-  position: absolute; inset: 0; background: rgba(40, 44, 30, .45); border-radius: 28rpx;
-  display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26rpx; font-weight: 600;
-}
 .dish-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .dish-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
 .dish-desc { font-size: 23rpx; color: var(--ink-3); margin-top: 6rpx; line-height: 1.5; }
-.dish-tags { display: flex; gap: 12rpx; margin-top: 12rpx; }
-.dish-tag { font-size: 20rpx; color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 14rpx; border-radius: 12rpx; }
+.dish-spec { font-size: 22rpx; color: var(--ink-2); margin-top: 12rpx; }
 .dish-foot { display: flex; align-items: flex-end; justify-content: space-between; margin-top: auto; padding-top: 16rpx; }
-.dish-price { display: flex; align-items: baseline; }
-.dish-sold { font-size: 21rpx; color: var(--ink-3); margin-left: 16rpx; }
 .act-btn { height: 60rpx; }
+.group-empty { padding: 24rpx 0 36rpx; color: var(--ink-3); font-size: 24rpx; }
 
 .menu-end { text-align: center; font-size: 22rpx; color: var(--ink-3); padding: 28rpx 0; }
 

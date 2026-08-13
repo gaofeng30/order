@@ -1,33 +1,13 @@
-/* ---------- 菜品图廊 ---------- */
-.gal { position: relative; width: 100%; height: 720rpx; background: var(--bg2); }
-.gal-sw { width: 100%; height: 720rpx; }
-.gal-img { width: 100%; height: 720rpx; display: block; }
-.gal-idx {
-  position: absolute; right: 32rpx; bottom: 84rpx; z-index: 5;
-  height: 44rpx; padding: 0 20rpx; border-radius: var(--r-pill);
-  background: rgba(15, 20, 12, .42); color: #fff; font-size: 22rpx; font-weight: 600;
-  display: flex; align-items: center;
-}
-
-.detail-body { padding: 0 32rpx; margin-top: -52rpx; position: relative; }
+.detail-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }
+.detail-body { padding: 24rpx 32rpx 0; position: relative; }
 .info-card { padding: 36rpx; }
-.info-top { display: flex; align-items: flex-start; gap: 20rpx; }
-.info-name { flex: 1; font-size: 46rpx; font-weight: 700; color: var(--ink); }
-.info-price { display: flex; align-items: baseline; gap: 24rpx; margin-top: 24rpx; }
-.info-sold { font-size: 24rpx; color: var(--ink-3); }
-.info-tags { display: flex; flex-wrap: wrap; gap: 14rpx; margin-top: 24rpx; }
+.info-name { font-size: 46rpx; font-weight: 700; color: var(--ink); }
+.info-price { display: flex; align-items: baseline; margin-top: 24rpx; }
 .info-desc { font-size: 27rpx; color: var(--ink-2); margin-top: 28rpx; line-height: 1.75; }
 
-.spec-card { padding: 8rpx 36rpx; margin-top: 24rpx; }
-.spec-row { display: flex; align-items: center; padding: 22rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.spec-row.last { border-bottom: none; }
-.spec-k { font-size: 26rpx; color: var(--ink-3); width: 128rpx; }
-.spec-v { flex: 1; font-size: 27rpx; color: var(--ink); }
-
-.aller-card { padding: 32rpx 36rpx; margin-top: 24rpx; }
-.aller-head { display: flex; align-items: center; gap: 14rpx; margin-bottom: 24rpx; }
-.aller-title { font-size: 30rpx; font-weight: 700; }
-.aller-list { display: flex; flex-wrap: wrap; gap: 16rpx; }
+.spec-card { padding: 8rpx 36rpx 32rpx; margin-top: 24rpx; }
+.spec-text { font-size: 27rpx; color: var(--ink); line-height: 1.7; }
+.local-card { padding: 28rpx 36rpx; margin-top: 24rpx; display: flex; align-items: center; gap: 14rpx; font-size: 24rpx; color: var(--ink-2); }
 
 .bottom-bar {
   flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);

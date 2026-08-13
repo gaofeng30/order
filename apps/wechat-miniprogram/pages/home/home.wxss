@@ -58,7 +58,9 @@
 /* 今日招牌 */
 .signature { white-space: nowrap; padding-bottom: 36rpx; }
 .sig-track { display: inline-flex; gap: 24rpx; padding-right: 16rpx; }
-.sig-card { width: 264rpx; padding: 16rpx; }
-.sig-name { font-size: 26rpx; font-weight: 600; color: var(--ink); margin-top: 16rpx; }
+.sig-card { width: 264rpx; min-height: 184rpx; padding: 28rpx; }
+.sig-name { font-size: 26rpx; font-weight: 600; color: var(--ink); }
+.sig-desc { min-height: 64rpx; margin-top: 14rpx; font-size: 22rpx; color: var(--ink-3); line-height: 1.5; white-space: normal; }
 .sig-foot { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8rpx; }
-.sig-sold { font-size: 21rpx; color: var(--ink-3); }
+.sig-local { font-size: 21rpx; color: var(--ink-3); }
+.catalog-state { min-height: 184rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }

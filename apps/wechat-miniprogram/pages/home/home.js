@@ -1,13 +1,10 @@
 const data = require('../../utils/data.js');
+const catalogStore = require('../../utils/catalogStore.js');
 const { nav, orderMode } = require('../../utils/util.js');
 
 const CAMPAIGNS = [
-  { pill: '新店首发', tone: 'warn', title: '首单立减 ¥8', sub: ['新人入群即领，到店自提，', '下单自动抵扣。'], cta: '立即点单',
-    bg: 'linear-gradient(150deg,#123f7e,#0b2f63)', emblem: true, go: 'menu' },
-  { pill: '今日套餐', tone: 'info', title: '商务双拼饭 ¥32', sub: ['黑椒牛肉 + 低温鸡胸，', '午间快速取餐。'], cta: '去看套餐',
-    bg: 'linear-gradient(150deg,#3f6e8c,#264a63)', img: '/assets/dishes/p001.jpg', go: 'detail', id: 'p001' },
-  { pill: '轻食低脂', tone: 'ok', title: '能量碗 ¥30', sub: ['高蛋白低脂，配油醋汁，', '轻负担也好吃。'], cta: '立即点单',
-    bg: 'linear-gradient(150deg,#5b8f3f,#3d6b2f)', img: '/assets/dishes/p005.jpg', go: 'detail', id: 'p005' },
+  { pill: '当日目录', tone: 'info', title: '查看菜单', sub: ['商品信息由门店目录提供，', '选择后到店自提。'], cta: '进入菜单',
+    bg: 'linear-gradient(150deg,#123f7e,#0b2f63)', go: 'menu' },
 ];
 
 Page({
@@ -16,6 +13,7 @@ Page({
     store: data.STORE,
     campaigns: CAMPAIGNS,
     bannerIdx: 0,
+    listState: 'loading',
     signature: [],
     grid: [
       { k: 'now', icon: 'list', cn: '到店点单' },
@@ -26,14 +24,17 @@ Page({
       { k: 'service', icon: 'headset', cn: '联系客服' },
     ],
   },
-  onLoad() { this.buildSignature(); },
-  onShow() { this.buildSignature(); },
-  buildSignature() {
-    this.setData({
-      signature: data.menuList()
-        .filter(m => m.status !== 'off' && (m.tags.includes('今日推荐') || m.tags.includes('热销')))
-        .slice(0, 4),
-    });
+  onShow() { return this.loadCatalog(); },
+  retryCatalog() { return this.loadCatalog(); },
+  async loadCatalog() {
+    this.setData({ listState: 'loading', signature: [] });
+    try {
+      const catalog = await catalogStore.loadCatalog();
+      const signature = catalogStore.flattenProducts(catalog.categories).slice(0, 4).map(catalogStore.withPrice);
+      this.setData({ listState: catalog.categories.length ? 'ready' : 'empty', signature });
+    } catch (error) {
+      this.setData({ listState: 'error', signature: [] });
+    }
   },
   onBanner(e) { this.setData({ bannerIdx: e.detail.current }); },
   dotTap(e) { this.setData({ bannerIdx: e.currentTarget.dataset.i }); },
@@ -41,7 +42,7 @@ Page({
   toDetail(e) { nav.go('detail', { id: e.currentTarget.dataset.id }); },
   openBanner(e) {
     const c = CAMPAIGNS[e.currentTarget.dataset.i];
-    if (c.id) nav.go('detail', { id: c.id }); else nav.tabTo(c.go);
+    nav.tabTo(c.go);
   },
   toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
   gridTap(e) {

@@ -1,47 +1,61 @@
 const data = require('../../utils/data.js');
+const catalogStore = require('../../utils/catalogStore.js');
 const { nav, cart } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     store: data.STORE,
-    cats: data.CATS,
+    listState: 'loading',
+    cats: [],
     groups: [],
-    qtyMap: {},       // { [id]: qty }
+    qtyMap: {},
     count: 0,
     total: 0,
-    active: data.CATS[0],
+    active: '',
     intoView: '',
     sheet: false,
     cartItems: [],
     _offsets: [],
-    // 口味/备注弹层
     czVisible: false,
     czItem: null,
     czInit: null,
     czLabel: '加入购物车',
   },
-  onLoad() {
-    this.buildGroups();
-    this.refresh();
+  onLoad() { this.refresh(); },
+  onShow() { this.refresh(); return this.loadCatalog(); },
+  retryCatalog() { return this.loadCatalog(); },
+  async loadCatalog() {
+    this.setData({ listState: 'loading', cats: [], groups: [], active: '' });
+    try {
+      const catalog = await catalogStore.loadCatalog();
+      const groups = catalog.categories.map(category => ({
+        id: category.id,
+        name: category.name,
+        products: category.products.map(catalogStore.withPrice),
+      }));
+      this._productsById = {};
+      groups.forEach(group => group.products.forEach(product => { this._productsById[product.id] = product; }));
+      this.setData({
+        listState: groups.length ? 'ready' : 'empty',
+        cats: groups.map(group => ({ id: group.id, name: group.name })),
+        groups,
+        active: groups.length ? groups[0].id : '',
+      }, () => this.measure());
+    } catch (error) {
+      this._productsById = {};
+      this.setData({ listState: 'error', cats: [], groups: [], active: '' });
+    }
   },
-  // 商户端可能刚上下架或改过菜品，每次进入都按最新菜品表重建
-  buildGroups() {
-    // 用户端隐藏已下架 (off) 菜品
-    const list = data.menuList();
-    const groups = data.CATS.map(c => ({ cat: c, items: list.filter(m => m.cat === c && m.status !== 'off') }));
-    this.setData({ groups });
-  },
-  onShow() { this.buildGroups(); this.refresh(); },
   onReady() { this.measure(); },
   measure() {
-    const q = this.createSelectorQuery();
-    q.select('#menuScroll').boundingClientRect();
-    q.selectAll('.sec-anchor').boundingClientRect();
-    q.exec((res) => {
-      if (!res || !res[0] || !res[1]) return;
-      const base = res[0].top;
-      const offsets = res[1].map(r => ({ cat: r.dataset.cat, top: r.top - base }));
+    const query = this.createSelectorQuery();
+    query.select('#menuScroll').boundingClientRect();
+    query.selectAll('.sec-anchor').boundingClientRect();
+    query.exec((result) => {
+      if (!result || !result[0] || !result[1]) return;
+      const base = result[0].top;
+      const offsets = result[1].map(row => ({ id: row.dataset.id, top: row.top - base }));
       this.setData({ _offsets: offsets });
     });
   },
@@ -56,13 +70,19 @@ Page({
       cartItems: cart.list(),
     });
   },
-  add(e) { cart.add(e.currentTarget.dataset.id); this.refresh(); },
+  add(e) {
+    const id = e.currentTarget.dataset.id;
+    const entry = cart.entry(id);
+    const product = entry ? entry.product : this._productsById[id];
+    if (!product) return;
+    cart.add(product);
+    this.refresh();
+  },
   sub(e) { cart.sub(e.currentTarget.dataset.id); this.refresh(); },
   clear() { cart.clear(); this.refresh(); this.setData({ sheet: false }); },
-  // 选规格 / 加口味备注 弹层
   openCustomize(e) {
     const id = e.currentTarget.dataset.id;
-    this.setData({ czVisible: true, czItem: data.itemById(id), czInit: null, czLabel: '加入购物车' });
+    this.setData({ czVisible: true, czItem: this._productsById[id], czInit: null, czLabel: '加入购物车' });
   },
   editItem(e) {
     const id = e.currentTarget.dataset.id;
@@ -70,29 +90,28 @@ Page({
     this.setData({
       sheet: false,
       czVisible: true,
-      czItem: data.itemById(id),
-      czInit: entry ? { qty: entry.qty, flavors: entry.flavors, note: entry.note } : null,
+      czItem: entry.product,
+      czInit: { qty: entry.qty, flavors: entry.flavors, note: entry.note },
       czLabel: '保存',
     });
   },
   onCzClose() { this.setData({ czVisible: false }); },
   onCzConfirm(e) {
-    cart.setPrefs(this.data.czItem.id, e.detail);
+    cart.setPrefs(this.data.czItem, e.detail);
     this.setData({ czVisible: false });
     this.refresh();
   },
   jump(e) {
-    const c = e.currentTarget.dataset.cat;
-    const idx = e.currentTarget.dataset.idx;
-    this.setData({ active: c, intoView: 'sec-' + idx });
+    const id = e.currentTarget.dataset.id;
+    this.setData({ active: id, intoView: `sec-${e.currentTarget.dataset.idx}` });
   },
   onScroll(e) {
     const top = e.detail.scrollTop + 70;
-    const offs = this.data._offsets;
-    if (!offs.length) return;
-    let cur = offs[0].cat;
-    for (const o of offs) { if (o.top <= top) cur = o.cat; }
-    if (cur !== this.data.active) this.setData({ active: cur });
+    const offsets = this.data._offsets;
+    if (!offsets.length) return;
+    let current = offsets[0].id;
+    for (const offset of offsets) { if (offset.top <= top) current = offset.id; }
+    if (current !== this.data.active) this.setData({ active: current });
   },
   goDetail(e) { nav.go('detail', { id: e.currentTarget.dataset.id }); },
   openSheet() { if (this.data.count) this.setData({ sheet: true }); },

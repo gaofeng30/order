@@ -51,21 +51,21 @@
     <!-- 商品明细 -->
     <view class="card sec-card">
       <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">商品明细</text><text class="faint" style="font-size:23rpx">共 {{count}} 件 · 口味/备注按菜品填写</text></view>
+      <view class="snapshot-notice faint" style="padding:18rpx 0;line-height:1.6;border-bottom:1rpx solid #ececdf">目录商品为本地快照，不锁定价格或库存；真实结算与下单需服务端再次校验。</view>
       <view wx:for="{{items}}" wx:for-item="ci" wx:key="item.id" class="ci-item">
-        <imageph item="{{ci.item}}" h="92" w="92" radius="22" tag="{{false}}" />
         <view class="ci-info">
           <view class="ci-top">
             <text class="ci-name">{{ci.item.name}}</text>
             <view class="ci-edit" data-id="{{ci.item.id}}" catchtap="editItem"><icon name="edit" size="12" color="#2a5fa6" />口味/备注</view>
           </view>
-          <view class="ci-unit">¥{{ci.item.price}} × {{ci.q}}</view>
+          <view class="ci-unit">¥{{ci.item.price_text}} × {{ci.q}}</view>
           <view wx:if="{{ci.flavors.length || ci.note}}" class="ci-prefs">
             <text wx:for="{{ci.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
             <text wx:if="{{ci.note}}" class="pref-note">“{{ci.note}}”</text>
           </view>
           <view wx:else class="ci-empty">未填写 · 点右上添加</view>
         </view>
-        <money v="{{ci.item.price * ci.q}}" size="30" />
+        <money v="{{ci.line_total_text}}" size="30" />
       </view>
     </view>
 
