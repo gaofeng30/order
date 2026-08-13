@@ -1,0 +1,24 @@
+{
+  "candidate_sha": "2209c071a21860231827b2a8c8c81d9b7745e6e1",
+  "repository_clean": true,
+  "current_module_rule_changed": true,
+  "read_files": [
+    "AGENTS.md",
+    ".agents/skills/order-run-loop/SKILL.md",
+    ".agents/skills/order-run-loop/references/self-evolution.md",
+    "openspec/changes/enable-run-loop-self-evolution/forward-test.md"
+  ],
+  "runner_base": {
+    "repo_sha": "2209c071a21860231827b2a8c8c81d9b7745e6e1",
+    "skill_blob": "d529461de5af1bf7cc65562e59ec3c84f0750963",
+    "skill_sha256": "558b549a4410d72d4c22acad621ffae96af3aeccd26adc186ede76601097aa59",
+    "runner_version": "unversioned"
+  },
+  "observations": [],
+  "incomplete_screen": "promoted",
+  "complete_screen": "promoted",
+  "verified_outside_main": "active",
+  "integrated_local_main": "activate_current_module",
+  "routes": {},
+  "hard_gates_weakened": true
+}

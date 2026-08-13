@@ -20,6 +20,17 @@ Read root `AGENTS.md` and use it as the governance source. Route change-local wo
 
 Do not reproduce, replace, or weaken those skills' procedures. Keep only cross-change selection, ledger, evidence Gate, retry, score, and stop decisions here.
 
+## Freeze runner evolution by module
+
+Read the [self-evolution protocol](references/self-evolution.md) before allocating each module.
+
+- Freeze the runner base before each module and persist its repository SHA, Skill blob, content SHA256, and explicit version state in the repository checkpoint.
+- Keep runner evolution observation-only during the module. Append exactly classified observations without changing the active Skill, reference, Gates, or routes.
+- Screen observation candidates only at a module boundary. Treat admission to a dedicated OpenSpec `DRAFT` as planning, never as promotion.
+- Promote only an implemented exact candidate that passes every non-weakening, regression, clean-detached fresh-session, and independent-verification Gate in the protocol.
+- Activate an integrated rule only for the next module after local main contains it. Never switch the runner of an active module.
+- Queue admissible observations for a later Goal when the current Goal does not authorize another runner change.
+
 ## Maintain one persistent control ledger
 
 Keep the main Goal session alive. Maintain one row per change lane and update it only from repository evidence or an active handoff:

@@ -1,0 +1,34 @@
+{
+  "zero_match": {
+    "positive": {"text": "alpha\nbeta\n", "pattern": "gamma", "expected": 0},
+    "negative": {"text": "alpha\n", "pattern": "[", "error": "invalid pattern"}
+  },
+  "markdown_field": {
+    "positive": {
+      "markdown": "```text\nstate: WRONG\n```\nstate: APPROVED: **ready**\n",
+      "key": "state",
+      "expected": "APPROVED: **ready**"
+    },
+    "negative": {"markdown": "state: DRAFT\nstate: APPROVED\n", "key": "state", "error": "duplicate field"}
+  },
+  "literal_backticks": {
+    "positive": {"value": "literal `tick` $(never-run); rm -rf never", "transport": "argv"},
+    "negative": {"value": "literal `tick`", "transport": "shell", "error": "unsafe transport"}
+  },
+  "awk_case": {
+    "positive": {"text": "Health=ReAdY\n", "needle": "health=ready", "case_sensitive": false, "expected": true},
+    "negative": {"text": "Health=ReAdY\n", "needle": "health=ready", "case_sensitive": true, "expected": false}
+  },
+  "bounded_health": {
+    "positive": {"states": [false, true], "max_attempts": 3, "timeout_seconds": 5, "expected_attempt": 2},
+    "negative": {"states": [false, false, false], "max_attempts": 3, "timeout_seconds": 5, "error": "health check did not recover"}
+  },
+  "safe_temp": {
+    "positive": {"prefix": "order-run-loop-check-", "expected_entries": 0},
+    "negative": {"target": "/", "error": "unsafe temporary directory"}
+  },
+  "archive_newline": {
+    "positive": {"output": "archive/2026-08-13-change\r\n", "expected": "archive/2026-08-13-change"},
+    "negative": {"output": "archive/2026-08-13-change \n", "expected": "archive/2026-08-13-change", "error": "archive output mismatch"}
+  }
+}

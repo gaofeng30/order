@@ -1,0 +1,34 @@
+{
+  "candidate_sha": "2209c071a21860231827b2a8c8c81d9b7745e6e1",
+  "repository_clean": true,
+  "current_module_rule_changed": false,
+  "read_files": [
+    "AGENTS.md",
+    ".agents/skills/order-run-loop/SKILL.md",
+    ".agents/skills/order-run-loop/references/self-evolution.md",
+    "openspec/changes/enable-run-loop-self-evolution/forward-test.md"
+  ],
+  "runner_base": {
+    "repo_sha": "2209c071a21860231827b2a8c8c81d9b7745e6e1",
+    "skill_blob": "d529461de5af1bf7cc65562e59ec3c84f0750963",
+    "skill_sha256": "558b549a4410d72d4c22acad621ffae96af3aeccd26adc186ede76601097aa59",
+    "runner_version": "unversioned"
+  },
+  "observations": [
+    {"id": "candidate-1", "class": "candidate", "current_module_applied": false},
+    {"id": "environment-1", "class": "environment", "current_module_applied": false},
+    {"id": "checker-1", "class": "checker", "current_module_applied": false, "derived_candidate_id": "candidate-2"},
+    {"id": "external-1", "class": "external", "current_module_applied": false}
+  ],
+  "incomplete_screen": "stay_observation",
+  "complete_screen": "draft_admissible_not_promoted",
+  "verified_outside_main": "inactive",
+  "integrated_local_main": "activate_next_module_only",
+  "routes": {
+    "DRAFT": "$order-plan-change",
+    "APPROVED": "$order-implement-tdd",
+    "CANDIDATE": "$order-verify-change",
+    "INDEPENDENT_VERIFIED": "$order-integrate-change"
+  },
+  "hard_gates_weakened": false
+}
