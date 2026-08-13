@@ -1,0 +1,38 @@
+{
+  "bindings_version": "mechanical-bindings/v1",
+  "bindings": [
+    {
+      "registry_version": "mechanical-profiles/v1",
+      "profile_id": "self-evolution-v1",
+      "change_name": "enable-run-loop-self-evolution",
+      "target_sha": "7a5e8bb261b994d68ce9af5eada347df6700c490",
+      "profile_definition_sha256": "5c50ae6ce0557e11d1a0487cfbf0830be9d5ade6e0f2821969ef1a2c97f6b6bf",
+      "tool_source_path": "tools/lifecycle-receipts/profiles/self_evolution.py",
+      "tool_source_blob": "840e2cc31bcf1b0c9eff7d4e5089f4329521deba",
+      "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
+      "executor_source_blob": "abcdb3259579f8adaf5ad782a048b33707526bf2"
+    },
+    {
+      "registry_version": "mechanical-profiles/v1",
+      "profile_id": "old-menu-artifact-fail-v1",
+      "change_name": "connect-miniprogram-menu-catalog",
+      "target_sha": "6d77bdd6319722b7c71b4726c6159955da9a84b6",
+      "profile_definition_sha256": "382283cd4a2b44bb3bb6505b982fd49c0ea50843f4889fada490736b56ff9709",
+      "tool_source_path": "tools/lifecycle-receipts/profiles/old_menu_artifact_fail.py",
+      "tool_source_blob": "024ec8f2dd12b9718e2f67f516e48165aba85ed0",
+      "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
+      "executor_source_blob": "abcdb3259579f8adaf5ad782a048b33707526bf2"
+    },
+    {
+      "registry_version": "mechanical-profiles/v1",
+      "profile_id": "menu-supersession-v1",
+      "change_name": "supersede-miniprogram-catalog-evidence",
+      "target_sha": "109c8e828f6f5a10adff33ccdb73d4fd784b2f3d",
+      "profile_definition_sha256": "78bfdcb5f8179dcc24fccf60a4f19390030b291387ad712f688e3af6f04f77dd",
+      "tool_source_path": "tools/lifecycle-receipts/profiles/menu_supersession.py",
+      "tool_source_blob": "704bc1e63c3aada914f2f636be08ba532843e547",
+      "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
+      "executor_source_blob": "abcdb3259579f8adaf5ad782a048b33707526bf2"
+    }
+  ]
+}

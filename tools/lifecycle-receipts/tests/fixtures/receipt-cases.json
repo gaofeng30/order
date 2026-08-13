@@ -1,0 +1,5 @@
+{
+  "literal_value": "literal `backtick` and $(never-run) remain data",
+  "old_failure_fingerprint": "artifact-consistency|semantic|proposal-stale-draft-not-run|6d77bdd|verifier",
+  "verdicts": ["VERIFIED", "FAILED", "VERIFIED_SUPERSESSION"]
+}

@@ -1,0 +1,11 @@
+{
+  "candidate_sha": "510a84baddfb5b61200c159fd2041b7c512a92db",
+  "repository_clean_before": true,
+  "repository_clean_after": true,
+  "verdict": "MECHANICAL_EVIDENCE_ONLY",
+  "invalid_fixture_verdict": "PASS",
+  "receipt_head_result_persisted": true,
+  "receipts": [],
+  "delivery": {"mechanically_reproducible": false, "historical_change_verdict": "VERIFIED", "actor_independence": "NOT_PROVEN_BY_MECHANICAL_REPLAY"},
+  "routes": {}
+}

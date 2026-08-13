@@ -1,0 +1,61 @@
+{
+  "candidate_sha": "1111111111111111111111111111111111111111",
+  "repository_clean_before": true,
+  "repository_clean_after": true,
+  "verdict": "MECHANICAL_EVIDENCE_ONLY",
+  "invalid_fixture_verdict": "NO-GO",
+  "receipt_head_result_persisted": false,
+  "receipts": [
+    {
+      "change_name": "enable-run-loop-self-evolution",
+      "expected_historical_verdict": "VERIFIED",
+      "candidate_sha": "7a5e8bb261b994d68ce9af5eada347df6700c490",
+      "integrated_sha": "7a5e8bb261b994d68ce9af5eada347df6700c490",
+      "archive_sha": "94e04bf26e37e93299c26ef2c9c8aa7552619444",
+      "profile_id": "self-evolution-v1",
+      "profile_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recorded_attestation": {"trust": "UNTRUSTED_FOR_MECHANICAL_PASS", "payload": {"claimed_verdict": "PASS"}},
+      "mechanical_verification": "MECHANICAL_PASS",
+      "actor_independence": "NOT_PROVEN_BY_MECHANICAL_REPLAY",
+      "receipt_head": "1111111111111111111111111111111111111111",
+      "receipt_head_verification": "PASS_DERIVED"
+    },
+    {
+      "change_name": "connect-miniprogram-menu-catalog",
+      "expected_historical_verdict": "FAILED",
+      "candidate_sha": "6d77bdd6319722b7c71b4726c6159955da9a84b6",
+      "integrated_sha": "6d77bdd6319722b7c71b4726c6159955da9a84b6",
+      "archive_sha": "7d01fe22ded67aeded78cb7d03de87aa12416ada",
+      "profile_id": "old-menu-artifact-fail-v1",
+      "profile_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recorded_attestation": {"trust": "UNTRUSTED_FOR_MECHANICAL_PASS", "payload": {"claimed_verdict": "FAIL"}},
+      "mechanical_verification": "EXPECTED_MECHANICAL_FAIL",
+      "actor_independence": "NOT_PROVEN_BY_MECHANICAL_REPLAY",
+      "receipt_head": "1111111111111111111111111111111111111111",
+      "receipt_head_verification": "PASS_DERIVED"
+    },
+    {
+      "change_name": "supersede-miniprogram-catalog-evidence",
+      "expected_historical_verdict": "VERIFIED_SUPERSESSION",
+      "candidate_sha": "109c8e828f6f5a10adff33ccdb73d4fd784b2f3d",
+      "integrated_sha": "109c8e828f6f5a10adff33ccdb73d4fd784b2f3d",
+      "archive_sha": "510a84baddfb5b61200c159fd2041b7c512a92db",
+      "profile_id": "menu-supersession-v1",
+      "profile_binding_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "recorded_attestation": {"trust": "UNTRUSTED_FOR_MECHANICAL_PASS", "payload": {"claimed_verdict": "PASS"}},
+      "mechanical_verification": "MECHANICAL_PASS",
+      "actor_independence": "NOT_PROVEN_BY_MECHANICAL_REPLAY",
+      "receipt_head": "1111111111111111111111111111111111111111",
+      "receipt_head_verification": "PASS_DERIVED"
+    }
+  ],
+  "delivery": {"mechanically_reproducible": true, "historical_change_verdict": "FAILED", "actor_independence": "NOT_PROVEN_BY_MECHANICAL_REPLAY"},
+  "routes": {
+    "DRAFT": "$order-plan-change",
+    "APPROVED": "$order-implement-tdd",
+    "IMPLEMENTING": "$order-implement-tdd",
+    "CANDIDATE": "$order-verify-change",
+    "INDEPENDENT_VERIFIED": "$order-integrate-change",
+    "INTEGRATED": "$order-integrate-change"
+  }
+}

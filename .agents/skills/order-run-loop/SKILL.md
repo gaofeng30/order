@@ -67,6 +67,12 @@ Use this decision table; never advance from an Agent's unsupported status claim:
 
 Invalidate independent verification after any code, spec, task, rebase, merge, or SHA change.
 
+## Close archived recovery with one receipt
+
+For modules whose frozen runner base includes this rule, keep candidate checkpoint/tasks immutable after exact verification. After the existing authorized integration and archive Gates pass, append exactly one `lifecycle-receipt.md` in the actual dated archive directory and verify it with `tools/lifecycle-receipts/verify_receipt.py`. A receipt stores audit-only attestation plus `mechanical_verification=REQUIRED_DERIVED` and `receipt_head_verification=REQUIRED_DERIVED`; only the repository-controlled exact-SHA profile registry may derive current mechanical evidence, and it never proves actor independence or an `INDEPENDENT_VERIFIED` state. Treat a missing, invalid, unbound, later-edited or falsely upgraded receipt as `NO-GO`.
+
+Do not let a business module define or edit its own judge. Its separately owned control-plane profile must already be independently verified, integrated and archived in the frozen runner base. After the ordinary candidate/integration/archive Gates, require integrator-only exact binding, a different clean-detached binding-head PASS, the later receipt commit, and another clean-detached receipt-head derivation before allocating the next module. Read detailed trust, replay, bootstrap and supersession rules in the self-evolution reference; receipt closure adds no lifecycle state and replaces none of the existing verifier, integration, archive, quality or authorization Gates.
+
 ## Select the next smallest blocker
 
 Run this scheduling algorithm whenever a slot becomes free:

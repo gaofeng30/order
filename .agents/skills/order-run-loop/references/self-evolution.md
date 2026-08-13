@@ -54,6 +54,16 @@ Reject promotion if any item is missing, failed or `BLOCKED_EXTERNAL`. Never use
 
 A promoted rule remains inactive until its change is integrated into local main. Activate it only when the next module captures a new runner base after that integration. A verified rule outside main stays inactive, and an active module never switches runners.
 
+## Preserve archive verdicts with lifecycle receipts
+
+For an archive governed by the active receipt rule, append one `lifecycle receipt` only after its existing exact-candidate, authorized integration and archive decisions are known. Keep the candidate checkpoint and tasks byte-identical. The receipt records expected history `VERIFIED`, `FAILED` or `VERIFIED_SUPERSESSION`, never a new lifecycle state. Its `recorded_attestation_json` is always `UNTRUSTED_FOR_MECHANICAL_PASS`; provenance text, writer identity and Git author cannot prove mechanical PASS or actor independence. Persist only the controlled profile/binding reference and `mechanical_verification=REQUIRED_DERIVED`; rerun the fixed argv-only exact-SHA profile to derive `MECHANICAL_PASS`, `EXPECTED_MECHANICAL_FAIL` or `UNVERIFIED`.
+
+A `FAILED` history keeps its exact failure and later `NOT_RUN` Gates forever. Its `superseded_by` link and reciprocal supersession link may support only `mechanically_reproducible=true` for current delivery when both receipt histories, replacement mechanical replay, integration/archive facts and declared product-tree identity agree; they never turn the old SHA or recorded attestation into PASS. Mechanical replay is additive recovery evidence and never replaces fresh independent exact-SHA verification.
+
+Store `receipt_head_verification=REQUIRED_DERIVED`, never write the derived receipt-head SHA or PASS into the receipt, checkpoint or tasks, and fail any later edit of the receipt path. On every recovery, rerun the local schema/Git/profile checker and return `NO-GO` for missing, duplicate, stale, tampered, structurally ambiguous, ancestry-inconsistent, task-inconsistent, unbound, profile-mismatched or link/tree-inconsistent evidence.
+
+For each future business module, independently verify, integrate and archive a separate preceding control-plane change that defines the fixed profile/wrapper before freezing the business runner base. The business module cannot edit its judge. After its ordinary independent candidate PASS and pure-FF integration/archive, only the integrator appends the exact-target binding; a different clean-detached verifier must pass that binding-head before a later receipt commit, and another clean-detached verifier derives the receipt-head before the next module. The one-time receipt-control bootstrap still requires candidate, binding-head and receipt-head independent verifiers; it cannot be reused as actor proof.
+
 ## Keep checker evidence portable and truthful
 
 Apply these contracts to regression and Gate tooling:

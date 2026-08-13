@@ -1,0 +1,228 @@
+{
+  "registry_version": "mechanical-profiles/v1",
+  "profiles": [
+    {
+      "profile_id": "self-evolution-v1",
+      "change_name": "enable-run-loop-self-evolution",
+      "result_on_success": "MECHANICAL_PASS",
+      "network": false,
+      "write_scope": "temp-only",
+      "isolation_contract": "trusted-wrapper-audited",
+      "required_tools": {
+        "python": "Python 3.14.6",
+        "git": "git version 2.53.0"
+      },
+      "excluded_claims": [
+        "actor independence",
+        "user-directory quick_validate",
+        "OpenSpec CLI",
+        "Go and Node toolchains"
+      ],
+      "timeout_seconds": 180,
+      "output_limit_bytes": 65536,
+      "steps": [
+        {
+          "step_id": "repository-contract-and-checker-regressions",
+          "argv": [
+            "{python}",
+            "{profile_tool}",
+            "--repo",
+            "{worktree}",
+            "--temp-root",
+            "{profile_temp}",
+            "--git",
+            "{git}"
+          ],
+          "cwd": ".",
+          "env_allowlist": ["HOME", "TMPDIR", "PATH", "PYTHONDONTWRITEBYTECODE", "LANG", "LC_ALL"],
+          "timeout_seconds": 120,
+          "expected_exit": 0,
+          "expected_stdout_exact": "self-evolution-v1=MECHANICAL_PASS\n",
+          "output_limit_bytes": 16384
+        }
+      ]
+    },
+    {
+      "profile_id": "old-menu-artifact-fail-v1",
+      "change_name": "connect-miniprogram-menu-catalog",
+      "result_on_success": "EXPECTED_MECHANICAL_FAIL",
+      "network": false,
+      "write_scope": "temp-only",
+      "isolation_contract": "trusted-wrapper-audited",
+      "required_tools": {
+        "python": "Python 3.14.6",
+        "git": "git version 2.53.0"
+      },
+      "excluded_claims": [
+        "later verification Gates",
+        "actor independence",
+        "product delivery recovery"
+      ],
+      "timeout_seconds": 120,
+      "output_limit_bytes": 32768,
+      "steps": [
+        {
+          "step_id": "fixed-artifact-semantic-failure",
+          "argv": [
+            "{python}",
+            "{profile_tool}",
+            "--repo",
+            "{worktree}",
+            "--temp-root",
+            "{profile_temp}",
+            "--git",
+            "{git}"
+          ],
+          "cwd": ".",
+          "env_allowlist": ["HOME", "TMPDIR", "PATH", "PYTHONDONTWRITEBYTECODE", "LANG", "LC_ALL"],
+          "timeout_seconds": 90,
+          "expected_exit": 0,
+          "expected_stdout_exact": "old-menu-artifact-fail-v1=EXPECTED_MECHANICAL_FAIL\nfingerprint=artifact-consistency|semantic|proposal-stale-draft-not-run|6d77bdd|verifier\nsubsequent_gates=NOT_RUN\n",
+          "output_limit_bytes": 16384
+        }
+      ]
+    },
+    {
+      "profile_id": "menu-supersession-v1",
+      "change_name": "supersede-miniprogram-catalog-evidence",
+      "result_on_success": "MECHANICAL_PASS",
+      "network": false,
+      "write_scope": "temp-only",
+      "isolation_contract": "trusted-wrapper-audited",
+      "required_tools": {
+        "python": "Python 3.14.6",
+        "git": "git version 2.53.0",
+        "node": "v25.8.1",
+        "npm": "11.11.0",
+        "go": "go version go1.26.5 darwin/arm64"
+      },
+      "excluded_claims": [
+        "actor independence",
+        "UI2 and UI3",
+        "real order and payment",
+        "network availability"
+      ],
+      "timeout_seconds": 900,
+      "output_limit_bytes": 1048576,
+      "steps": [
+        {
+          "step_id": "supersession-deterministic-matrix",
+          "argv": [
+            "{python}",
+            "{profile_tool}",
+            "--repo",
+            "{worktree}",
+            "--temp-root",
+            "{profile_temp}",
+            "--git",
+            "{git}",
+            "--python",
+            "{python}",
+            "--node",
+            "{node}",
+            "--npm",
+            "{npm}",
+            "--go",
+            "{go}",
+            "--module-cache-download",
+            "{module_cache_download}"
+          ],
+          "cwd": ".",
+          "env_allowlist": [
+            "HOME",
+            "TMPDIR",
+            "XDG_CACHE_HOME",
+            "PATH",
+            "PYTHONDONTWRITEBYTECODE",
+            "LANG",
+            "LC_ALL",
+            "GOENV",
+            "GOTOOLCHAIN",
+            "GOPROXY",
+            "GOSUMDB",
+            "GOCACHE",
+            "GOFLAGS",
+            "GOMODCACHE",
+            "npm_config_cache",
+            "npm_config_offline",
+            "npm_config_audit",
+            "npm_config_fund",
+            "npm_config_update_notifier"
+          ],
+          "timeout_seconds": 840,
+          "expected_exit": 0,
+          "expected_stdout_exact": "menu-supersession-v1=MECHANICAL_PASS\n",
+          "output_limit_bytes": 1048576
+        }
+      ]
+    },
+    {
+      "profile_id": "lifecycle-receipt-control-v1",
+      "change_name": "persist-archived-lifecycle-receipt",
+      "result_on_success": "MECHANICAL_PASS",
+      "network": false,
+      "write_scope": "temp-only",
+      "isolation_contract": "trusted-wrapper-audited",
+      "required_tools": {
+        "python": "Python 3.14.6",
+        "git": "git version 2.53.0",
+        "node": "v25.8.1",
+        "npm": "11.11.0",
+        "go": "go version go1.26.5 darwin/arm64"
+      },
+      "excluded_claims": [
+        "actor independence",
+        "user-directory quick_validate",
+        "mutable OpenSpec CLI behavior",
+        "network availability",
+        "UI2 and UI3",
+        "real order and payment"
+      ],
+      "timeout_seconds": 1200,
+      "output_limit_bytes": 1048576,
+      "steps": [
+        {
+          "step_id": "bootstrap-receipt-control-suite",
+          "argv": [
+            "{python}",
+            "{profile_tool}",
+            "--repo",
+            "{worktree}",
+            "--temp-root",
+            "{profile_temp}",
+            "--git",
+            "{git}",
+            "--module-cache-download",
+            "{module_cache_download}"
+          ],
+          "cwd": ".",
+          "env_allowlist": [
+            "HOME",
+            "TMPDIR",
+            "XDG_CACHE_HOME",
+            "PATH",
+            "PYTHONDONTWRITEBYTECODE",
+            "LANG",
+            "LC_ALL",
+            "GOENV",
+            "GOTOOLCHAIN",
+            "GOPROXY",
+            "GOSUMDB",
+            "GOCACHE",
+            "GOFLAGS",
+            "GOMODCACHE",
+            "npm_config_cache",
+            "npm_config_offline",
+            "npm_config_audit",
+            "npm_config_fund",
+            "npm_config_update_notifier"
+          ],
+          "timeout_seconds": 1140,
+          "expected_exit": 0,
+          "expected_stdout_exact": "lifecycle-receipt-control-v1=MECHANICAL_PASS\n",
+          "output_limit_bytes": 1048576
+        }
+      ]
+    }
+  ]
+}

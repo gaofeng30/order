@@ -1,0 +1,7 @@
+# Minimal-context archived-receipt recovery forward-test
+
+Run only in a clean detached worktree at the exact candidate SHA. The session may read only root `AGENTS.md`, `.agents/skills/order-run-loop/SKILL.md`, its one-level `references/self-evolution.md`, `tools/lifecycle-receipts/receipt-schema-v1.json`, `tools/lifecycle-receipts/verify_receipt.py`, and this file. Do not provide prior chat, writer claims, tasks, design, or external lifecycle prose.
+
+The read-only session runs the receipt checker to enumerate the three historical receipts and the menu chain. It must preserve self-evolution `VERIFIED`, old menu `FAILED`, supersession `VERIFIED_SUPERSESSION`, exact candidate/integrated/archive SHAs, each Git-derived receipt-head, and only the separately derived menu `mechanically_reproducible=true`. Every recorded attestation remains `UNTRUSTED_FOR_MECHANICAL_PASS`; every replay reports actor independence as `NOT_PROVEN_BY_MECHANICAL_REPLAY`. It must also evaluate one invalid receipt fixture as `NO-GO`, retain the four stage-skill routes, and leave the repository clean.
+
+Return one JSON object accepted by `checks/verify_forward_test.py` with top-level verdict `MECHANICAL_EVIDENCE_ONLY`; never write a receipt-head SHA or derived mechanical result back to repository evidence. A prior SHA, writer output, missing receipt, old-menu PASS, broken reciprocal link/tree identity, actor-independence claim, or route weakening must fail.
