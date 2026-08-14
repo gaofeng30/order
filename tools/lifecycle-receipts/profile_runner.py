@@ -26,6 +26,28 @@ EXPECTED_PROFILE_TARGETS = {
     "old-menu-artifact-fail-v1": "6d77bdd6319722b7c71b4726c6159955da9a84b6",
     "menu-supersession-v1": "109c8e828f6f5a10adff33ccdb73d4fd784b2f3d",
 }
+BOOTSTRAP_PROFILE_ID = "lifecycle-receipt-control-v1"
+BOOTSTRAP_TARGET_SHA = "d0b70a077bcaa64c401837eb0e9b6f27035210a0"
+BOOTSTRAP_CHANGE_NAME = "allow-post-archive-bootstrap-binding"
+BOOTSTRAP_ACTIVE_ROOT = f"openspec/changes/{BOOTSTRAP_CHANGE_NAME}"
+BOOTSTRAP_ARCHIVE_RE = re.compile(
+    rf"^openspec/changes/archive/[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}-{BOOTSTRAP_CHANGE_NAME}$"
+)
+BOOTSTRAP_CHECKER_RELATIVE = "checks/verify_archive.py"
+BOOTSTRAP_EXPECTED_CANONICAL = (
+    f"{BOOTSTRAP_ACTIVE_ROOT}/checks/expected-canonical-loop-engineering-control-plane-spec.md"
+)
+CANONICAL_CONTROL_SPEC = "openspec/specs/loop-engineering-control-plane/spec.md"
+BINDINGS_REGISTRY_PATH = "tools/lifecycle-receipts/mechanical-bindings-v1.json"
+BOOTSTRAP_PROTECTED_PATHS = (
+    "tools/lifecycle-receipts/mechanical-profiles-v1.json",
+    BINDINGS_REGISTRY_PATH,
+    "tools/lifecycle-receipts/profiles/lifecycle_receipt_control.py",
+    "tools/lifecycle-receipts/profile_runner.py",
+    "tools/lifecycle-receipts/verify_receipt.py",
+    ".agents/skills/order-run-loop/SKILL.md",
+    ".agents/skills/order-run-loop/references/self-evolution.md",
+)
 EXPECTED_TOOL_PATHS = {
     "self-evolution-v1": "tools/lifecycle-receipts/profiles/self_evolution.py",
     "old-menu-artifact-fail-v1": "tools/lifecycle-receipts/profiles/old_menu_artifact_fail.py",
@@ -225,6 +247,211 @@ def _git(repo: Path, *args: str, check: bool = True, binary: bool = False) -> An
     return result.stdout if check else result
 
 
+def _require_commit(repo: Path, value: str, label: str) -> None:
+    if not isinstance(value, str) or SHA_RE.fullmatch(value) is None:
+        fail(f"{label} must be a full SHA")
+    resolved = _git(repo, "rev-parse", "--verify", f"{value}^{{commit}}").strip()
+    if resolved != value:
+        fail(f"{label} is not an exact commit")
+
+
+def _blob_at(repo: Path, revision: str, path: str) -> str:
+    value = _git(repo, "rev-parse", f"{revision}:{path}").strip()
+    if SHA_RE.fullmatch(value) is None:
+        fail(f"invalid Git blob at {revision}:{path}")
+    return value
+
+
+def _blob_bytes_at(repo: Path, revision: str, path: str) -> bytes:
+    return _git(repo, "cat-file", "blob", f"{revision}:{path}", binary=True)
+
+
+def _require_clean(repo: Path) -> None:
+    status = _git(repo, "status", "--porcelain=v1", "--untracked-files=all")
+    if status:
+        fail("archive worktree is not clean")
+
+
+def validate_archive_commit(
+    repo: Path,
+    candidate_sha: str,
+    archive_sha: str,
+    *,
+    require_head: bool,
+) -> str:
+    """Validate the one approved candidate-to-archive transition without writing."""
+    repo = repo.resolve()
+    _require_commit(repo, candidate_sha, "candidate")
+    _require_commit(repo, archive_sha, "archive")
+    head = _git(repo, "rev-parse", "HEAD").strip()
+    if require_head and head != archive_sha:
+        fail("HEAD is not exact archive")
+    if not require_head:
+        ancestry = _git(repo, "merge-base", "--is-ancestor", archive_sha, head, check=False)
+        if ancestry.returncode != 0:
+            fail("archive is not an ancestor of HEAD")
+    _require_clean(repo)
+    parents = _git(repo, "rev-list", "--parents", "-n", "1", archive_sha).strip()
+    if parents != f"{archive_sha} {candidate_sha}":
+        fail("archive parent is not exact candidate")
+
+    active_output = _git(
+        repo, "ls-tree", "-r", "--name-only", candidate_sha, "--", BOOTSTRAP_ACTIVE_ROOT
+    )
+    active_paths = [line for line in active_output.splitlines() if line]
+    required = {
+        f"{BOOTSTRAP_ACTIVE_ROOT}/.openspec.yaml",
+        f"{BOOTSTRAP_ACTIVE_ROOT}/{BOOTSTRAP_CHECKER_RELATIVE}",
+        BOOTSTRAP_EXPECTED_CANONICAL,
+    }
+    if not active_paths or not required.issubset(active_paths):
+        fail("candidate active change or exact Gate outputs are missing")
+
+    rows = _git(
+        repo,
+        "diff",
+        "--find-renames=100%",
+        "--name-status",
+        candidate_sha,
+        archive_sha,
+    ).splitlines()
+    archive_roots: set[str] = set()
+    for row in rows:
+        fields = row.split("\t")
+        if len(fields) != 3 or fields[0] != "R100" or fields[1] not in active_paths:
+            continue
+        relative = fields[1].removeprefix(BOOTSTRAP_ACTIVE_ROOT + "/")
+        suffix = "/" + relative
+        if not fields[2].endswith(suffix):
+            continue
+        root = fields[2][: -len(suffix)]
+        if BOOTSTRAP_ARCHIVE_RE.fullmatch(root):
+            archive_roots.add(root)
+    if len(archive_roots) != 1:
+        fail("archive move does not resolve one dated change directory")
+    archive_root = next(iter(archive_roots))
+    expected_rows = {
+        f"R100\t{source}\t{archive_root}/{source.removeprefix(BOOTSTRAP_ACTIVE_ROOT + '/')}"
+        for source in active_paths
+    }
+    expected_rows.add(f"M\t{CANONICAL_CONTROL_SPEC}")
+    if len(rows) != len(expected_rows) or set(rows) != expected_rows:
+        fail("archive diff is not the exact dated move plus canonical path")
+
+    expected_bytes = _blob_bytes_at(
+        repo, candidate_sha, BOOTSTRAP_EXPECTED_CANONICAL
+    )
+    canonical_bytes = _blob_bytes_at(repo, archive_sha, CANONICAL_CONTROL_SPEC)
+    if canonical_bytes != expected_bytes:
+        fail("archive canonical bytes do not match candidate fixture")
+    for path in BOOTSTRAP_PROTECTED_PATHS:
+        if _blob_at(repo, candidate_sha, path) != _blob_at(repo, archive_sha, path):
+            fail(f"archive protected blob changed: {path}")
+    return archive_root
+
+
+def _discover_archive(repo: Path) -> tuple[str, str, str]:
+    tree = _git(repo, "ls-tree", "-r", "--name-only", "HEAD", "--", "openspec/changes/archive")
+    checker_suffix = "/" + BOOTSTRAP_CHECKER_RELATIVE
+    checker_paths = [
+        path
+        for path in tree.splitlines()
+        if path.endswith(checker_suffix)
+        and BOOTSTRAP_ARCHIVE_RE.fullmatch(path[: -len(checker_suffix)])
+    ]
+    if len(checker_paths) != 1:
+        fail("bootstrap archive checker path is missing or ambiguous")
+    checker_path = checker_paths[0]
+    archive_root = checker_path[: -len(checker_suffix)]
+    touches = _git(repo, "log", "--format=%H", "--no-renames", "--", checker_path).splitlines()
+    if len(touches) != 1:
+        fail("bootstrap archive commit is missing, ambiguous, or later edited")
+    archive_sha = touches[0]
+    parent_fields = _git(repo, "rev-list", "--parents", "-n", "1", archive_sha).split()
+    if len(parent_fields) != 2:
+        fail("bootstrap archive must have one parent")
+    candidate_sha = parent_fields[1]
+    resolved_root = validate_archive_commit(
+        repo, candidate_sha, archive_sha, require_head=False
+    )
+    if resolved_root != archive_root:
+        fail("bootstrap archive path does not match archive commit")
+    return candidate_sha, archive_sha, archive_root
+
+
+def _load_json_blob(repo: Path, revision: str, path: str, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(_blob_bytes_at(repo, revision, path).decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        fail(f"{label} load failed: {exc}")
+    if not isinstance(value, dict):
+        fail(f"{label} must be a JSON object")
+    return value
+
+
+def _validate_bootstrap_binding_history(
+    repo: Path,
+    document: dict[str, Any],
+    binding: dict[str, Any],
+) -> None:
+    candidate_sha, archive_sha, _ = _discover_archive(repo)
+    touches = _git(
+        repo,
+        "rev-list",
+        "--reverse",
+        f"{archive_sha}..HEAD",
+        "--",
+        BINDINGS_REGISTRY_PATH,
+    ).splitlines()
+    if len(touches) != 1:
+        fail("bootstrap binding commit is missing, ambiguous, or later edited")
+    binding_sha = touches[0]
+    if _git(repo, "merge-base", "--is-ancestor", archive_sha, binding_sha, check=False).returncode != 0:
+        fail("bootstrap binding does not descend from archive")
+    parent_fields = _git(repo, "rev-list", "--parents", "-n", "1", binding_sha).split()
+    if len(parent_fields) != 2:
+        fail("bootstrap binding commit must have one parent")
+    parent_sha = parent_fields[1]
+    changed = _git(
+        repo, "diff-tree", "--no-commit-id", "--name-status", "-r", binding_sha
+    )
+    if changed != f"M\t{BINDINGS_REGISTRY_PATH}\n":
+        fail("bootstrap binding commit must change only the bindings registry")
+    parent_document = _load_json_blob(
+        repo, parent_sha, BINDINGS_REGISTRY_PATH, "parent bindings"
+    )
+    binding_document = _load_json_blob(
+        repo, binding_sha, BINDINGS_REGISTRY_PATH, "binding commit bindings"
+    )
+    parent_bindings = parent_document.get("bindings")
+    bound_bindings = binding_document.get("bindings")
+    if (
+        not isinstance(parent_bindings, list)
+        or len(parent_bindings) != 3
+        or not isinstance(bound_bindings, list)
+        or len(bound_bindings) != 4
+        or bound_bindings[:3] != parent_bindings
+        or bound_bindings[3] != binding
+        or binding_document != document
+    ):
+        fail("bootstrap binding is not one exact fourth append")
+    if _blob_at(repo, binding_sha, BINDINGS_REGISTRY_PATH) != _blob_at(
+        repo, "HEAD", BINDINGS_REGISTRY_PATH
+    ):
+        fail("bootstrap bindings registry was later changed")
+    for path in BOOTSTRAP_PROTECTED_PATHS:
+        if path == BINDINGS_REGISTRY_PATH:
+            continue
+        if _blob_at(repo, archive_sha, path) != _blob_at(repo, "HEAD", path):
+            fail(f"current protected blob differs from archive: {path}")
+    if binding["tool_source_blob"] != _blob_at(repo, candidate_sha, binding["tool_source_path"]):
+        fail("bootstrap tool source does not match candidate")
+    if binding["executor_source_blob"] != _blob_at(
+        repo, candidate_sha, binding["executor_source_path"]
+    ):
+        fail("bootstrap executor source does not match candidate")
+
+
 def validate_bindings_document(
     document: dict[str, Any],
     profiles: dict[str, dict[str, Any]],
@@ -237,9 +464,10 @@ def validate_bindings_document(
     if document["bindings_version"] != "mechanical-bindings/v1":
         fail("unsupported mechanical bindings registry")
     bindings = document["bindings"]
-    if not isinstance(bindings, list):
+    if not isinstance(bindings, list) or len(bindings) not in (3, 4):
         fail("bindings must be an array")
     result: dict[str, dict[str, Any]] = {}
+    bootstrap_binding: dict[str, Any] | None = None
     for binding in bindings:
         if not isinstance(binding, dict) or set(binding) != BINDING_KEYS:
             fail("binding fields mismatch")
@@ -252,8 +480,11 @@ def validate_bindings_document(
         if binding["change_name"] != profile["change_name"]:
             fail(f"{identifier} binding change mismatch")
         expected_target = EXPECTED_PROFILE_TARGETS.get(identifier)
-        if expected_target is None:
-            fail("bootstrap profile must remain unbound in the candidate")
+        if identifier == BOOTSTRAP_PROFILE_ID:
+            expected_target = BOOTSTRAP_TARGET_SHA
+            bootstrap_binding = binding
+        elif expected_target is None:
+            fail(f"unexpected bound profile: {identifier}")
         if binding["target_sha"] != expected_target:
             fail(f"{identifier} target SHA mismatch")
         if binding["profile_definition_sha256"] != sha256_json(profile):
@@ -270,18 +501,32 @@ def validate_bindings_document(
             ("tool_source_path", "tool_source_blob"),
             ("executor_source_path", "executor_source_blob"),
         ):
-            path = repo / binding[path_field]
-            if not path.is_file() or path.is_symlink():
-                fail(f"{identifier} bound source is missing or unsafe: {binding[path_field]}")
-            if git_blob_id(path.read_bytes()) != binding[blob_field]:
-                fail(f"{identifier} {blob_field} does not match source bytes")
-            if verify_git_blobs:
+            if identifier == BOOTSTRAP_PROFILE_ID:
+                path = repo / binding[path_field]
+                if not path.is_file() or path.is_symlink():
+                    fail(f"{identifier} bound source is missing or unsafe: {binding[path_field]}")
+                if git_blob_id(path.read_bytes()) != binding[blob_field]:
+                    fail(f"{identifier} {blob_field} does not match source bytes")
                 head_blob = _git(repo, "rev-parse", f"HEAD:{binding[path_field]}").strip()
                 if head_blob != binding[blob_field]:
                     fail(f"{identifier} bound source is not exact at HEAD")
+            else:
+                try:
+                    historical_bytes = _git(
+                        repo, "cat-file", "blob", binding[blob_field], binary=True
+                    )
+                except ProfileError:
+                    fail(f"{identifier} {blob_field} is not an available historical blob")
+                if git_blob_id(historical_bytes) != binding[blob_field]:
+                    fail(f"{identifier} {blob_field} historical blob mismatch")
         result[identifier] = binding
-    if set(result) != set(EXPECTED_PROFILE_TARGETS):
-        fail("candidate must contain exactly the three historical bindings")
+    historical_ids = list(EXPECTED_PROFILE_TARGETS)
+    identifiers = [binding["profile_id"] for binding in bindings]
+    if identifiers == historical_ids:
+        return result
+    if identifiers != [*historical_ids, BOOTSTRAP_PROFILE_ID] or bootstrap_binding is None:
+        fail("bindings must be the exact historical three or one exact later bootstrap append")
+    _validate_bootstrap_binding_history(repo, document, bootstrap_binding)
     return result
 
 
