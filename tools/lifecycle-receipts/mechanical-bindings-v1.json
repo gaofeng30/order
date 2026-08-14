@@ -33,6 +33,17 @@
       "tool_source_blob": "704bc1e63c3aada914f2f636be08ba532843e547",
       "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
       "executor_source_blob": "abcdb3259579f8adaf5ad782a048b33707526bf2"
+    },
+    {
+      "registry_version": "mechanical-profiles/v1",
+      "profile_id": "lifecycle-receipt-control-v1",
+      "change_name": "persist-archived-lifecycle-receipt",
+      "target_sha": "d0b70a077bcaa64c401837eb0e9b6f27035210a0",
+      "profile_definition_sha256": "44593a9c2b9796b1195941cefbe02a0dd4c64a22ebc82d551faaf344fb6caf39",
+      "tool_source_path": "tools/lifecycle-receipts/profiles/lifecycle_receipt_control.py",
+      "tool_source_blob": "45fe3b8deadd193403f11e13830f268e30ccc730",
+      "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
+      "executor_source_blob": "8e82700469cb96d718b767e803a7b4a67812a40b"
     }
   ]
 }
