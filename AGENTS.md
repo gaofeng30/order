@@ -32,6 +32,13 @@
 - 存在依赖或共享路径时，必须在 OpenSpec 中声明依赖或重新划分所有权后再开工。
 - 不得直接在 `main` 上提交。提交只包含当前 change 的 owned paths，不得覆盖或回退其他人改动。
 
+## Harness 开发闭环
+
+- 开工先运行 `./tools/harness status`，从当前 checkout、OpenSpec、Git 和本地控制账本恢复 change、task、阻塞与下一步；状态为 `UNKNOWN` 时不得猜测。
+- 主控制 Agent 只在获得当前证据后运行 `./tools/harness checkpoint`；本地账本只是可重建的调度索引，不替代 OpenSpec、exact-SHA、独立验证、集成、归档或运行证据。
+- 每次交接或收尾运行 `./tools/harness check`；失败必须先处理首个 `WHAT / WHY / FIX`，不得降级 Gate 或把未验证写成 PASS。
+- 可复现的流程摩擦使用 `./tools/harness observe` 留证；当前模块只记录不自改，只有后续独立 OpenSpec change 通过完整 Gate 并集成后，规则才从下一模块生效。
+
 ## TDD 与实现
 
 - 行为实现严格遵循 Red → Green → Refactor：先得到可观察的失败证据，再完成最小实现，重构后重跑同一验证。

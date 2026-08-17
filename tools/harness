@@ -1,0 +1,784 @@
+#!/usr/bin/env python3
+"""Small repository-local control loop for Order development."""
+
+import argparse
+import contextlib
+import datetime as dt
+import json
+import os
+import re
+import secrets
+import subprocess
+import sys
+import tempfile
+from collections import Counter
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+
+
+SCHEMA_VERSION = 1
+LIFECYCLE = (
+    "DRAFT",
+    "APPROVED",
+    "IMPLEMENTING",
+    "CANDIDATE",
+    "INDEPENDENT_VERIFIED",
+    "INTEGRATED",
+    "ARCHIVED",
+)
+OBSERVATION_CLASSES = {"candidate", "environment", "checker", "external"}
+BLOCKER_KINDS = {"BLOCKED_EXTERNAL", "DEPENDENCY", "FAILURE"}
+TASK_RE = re.compile(r"^\s*- \[([ xX])\]\s+([0-9]+(?:\.[0-9]+)*)\s+(.+?)\s*$")
+FULL_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+class HarnessError(Exception):
+    def __init__(self, what: str, why: str, fix: str) -> None:
+        super().__init__(what)
+        self.what = what
+        self.why = why
+        self.fix = fix
+
+
+class FriendlyParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise HarnessError(
+            "invalid harness command",
+            message,
+            "run ./tools/harness --help and provide the required arguments",
+        )
+
+
+def fail(what: str, why: str, fix: str) -> None:
+    raise HarnessError(what, why, fix)
+
+
+def utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def run_git(cwd: Path, *args: str, allow_failure: bool = False) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=str(cwd),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0 and not allow_failure:
+        fail(
+            "git command failed",
+            f"git {' '.join(args)} returned {result.returncode}: {result.stderr.strip()}",
+            "run the failing git command directly and repair the repository before retrying",
+        )
+    return result
+
+
+def discover_repository() -> Tuple[Path, Path]:
+    cwd = Path.cwd()
+    root_result = run_git(cwd, "rev-parse", "--show-toplevel", allow_failure=True)
+    if root_result.returncode != 0:
+        fail(
+            "current directory is not a Git worktree",
+            root_result.stderr.strip() or "git could not find a repository",
+            "run the command inside an Order repository worktree",
+        )
+    root = Path(root_result.stdout.strip()).resolve()
+    common_result = run_git(
+        root,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+        allow_failure=True,
+    )
+    if common_result.returncode != 0:
+        fail(
+            "Git common directory cannot be resolved",
+            common_result.stderr.strip(),
+            "repair the worktree metadata and retry",
+        )
+    common = Path(common_result.stdout.strip()).resolve()
+    if not common.is_dir():
+        fail(
+            "Git common directory is invalid",
+            f"{common} is not a directory",
+            "repair the Git worktree before retrying",
+        )
+    return root, common
+
+
+def state_paths(common: Path, create: bool = False) -> Tuple[Path, Path, Path]:
+    directory = common / "codex-harness"
+    if directory.exists() and (directory.is_symlink() or not directory.is_dir()):
+        fail(
+            "harness state directory is unsafe",
+            f"{directory} must be a real directory, not a link or file",
+            "move the unexpected path aside and retry",
+        )
+    if create:
+        directory.mkdir(mode=0o700, parents=False, exist_ok=True)
+        if directory.is_symlink() or not directory.is_dir():
+            fail(
+                "harness state directory is unsafe",
+                f"{directory} changed type while being created",
+                "stop other writers, inspect the Git common directory and retry",
+            )
+    return directory / "state.json", directory / "observations.jsonl", directory / "write.lock"
+
+
+@contextlib.contextmanager
+def writer_lock(common: Path) -> Iterator[Tuple[Path, Path]]:
+    state_path, observations_path, lock_path = state_paths(common, create=True)
+    try:
+        descriptor = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        fail(
+            "another harness writer holds the lock",
+            f"{lock_path} already exists, so overwriting shared state could lose a checkpoint",
+            "let the active writer finish; if it crashed, inspect the lock and state before removing only that lock",
+        )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(f"pid={os.getpid()} at={utc_now()}\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        yield state_path, observations_path
+    finally:
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def atomic_write(path: Path, content: bytes) -> None:
+    descriptor, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(str(temp_path), str(path))
+        directory_fd = os.open(str(path.parent), os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def empty_state() -> Dict[str, Any]:
+    return {"schema_version": SCHEMA_VERSION, "changes": {}}
+
+
+def load_state(path: Path) -> Dict[str, Any]:
+    if not path.exists():
+        return empty_state()
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        fail(
+            "harness state cannot be read",
+            f"{path}: {exc}",
+            "restore or remove only the corrupt local state file, then bootstrap from tracked evidence",
+        )
+    if not isinstance(payload, dict):
+        fail("harness state schema is invalid", "root must be an object", "rebuild the local state with checkpoint")
+    if payload.get("schema_version") != SCHEMA_VERSION:
+        fail(
+            "harness state schema is unsupported",
+            f"expected schema_version={SCHEMA_VERSION}",
+            "use the repository's current harness to rebuild the local state",
+        )
+    if not isinstance(payload.get("changes"), dict):
+        fail("harness state schema is invalid", "changes must be an object", "rebuild the local state with checkpoint")
+    return payload
+
+
+def save_state(path: Path, payload: Dict[str, Any]) -> None:
+    data = (json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    atomic_write(path, data)
+
+
+def load_observations(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+    records: List[Dict[str, Any]] = []
+    seen = set()
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError) as exc:
+        fail(
+            "harness observations cannot be read",
+            f"{path}: {exc}",
+            "repair only the local observations file before retrying",
+        )
+    for number, line in enumerate(lines, start=1):
+        if not line.strip():
+            fail(
+                "harness observation is invalid",
+                f"line {number} is empty",
+                "remove the empty local line after preserving valid observation records",
+            )
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError as exc:
+            fail(
+                "harness observation is invalid",
+                f"line {number} is not JSON: {exc}",
+                "repair only the corrupt local line from its original evidence",
+            )
+        if not isinstance(record, dict):
+            fail("harness observation is invalid", f"line {number} must be an object", "repair the local record")
+        required = ("id", "at", "class", "summary", "evidence", "next")
+        missing = [field for field in required if not isinstance(record.get(field), str) or not record[field].strip()]
+        if missing:
+            fail(
+                "harness observation is invalid",
+                f"line {number} has empty fields: {', '.join(missing)}",
+                "recreate the observation with class, summary, evidence and next",
+            )
+        if record["class"] not in OBSERVATION_CLASSES:
+            fail(
+                "harness observation is invalid",
+                f"line {number} has unsupported class {record['class']}",
+                "use candidate, environment, checker or external",
+            )
+        if record["id"] in seen:
+            fail(
+                "harness observation is invalid",
+                f"duplicate observation id {record['id']}",
+                "preserve one immutable record and assign a new ID to a distinct observation",
+            )
+        seen.add(record["id"])
+        records.append(record)
+    return records
+
+
+def save_observations(path: Path, records: Sequence[Dict[str, Any]]) -> None:
+    text = "".join(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n" for record in records)
+    atomic_write(path, text.encode("utf-8"))
+
+
+def active_change_paths(root: Path) -> Dict[str, Path]:
+    changes = root / "openspec" / "changes"
+    if not changes.is_dir():
+        fail(
+            "OpenSpec changes directory is missing",
+            f"{changes} does not exist",
+            "run the harness in the Order repository or restore openspec/changes",
+        )
+    result: Dict[str, Path] = {}
+    for child in sorted(changes.iterdir(), key=lambda item: item.name):
+        if child.name == "archive" or child.name.startswith(".") or not child.is_dir():
+            continue
+        result[child.name] = child
+    return result
+
+
+def parse_tasks(change: str, path: Path) -> List[Dict[str, Any]]:
+    tasks_path = path / "tasks.md"
+    if not tasks_path.is_file():
+        fail(
+            "active change has no task list",
+            f"{change} is missing {tasks_path}",
+            "complete the OpenSpec tasks artifact before using the harness",
+        )
+    tasks: List[Dict[str, Any]] = []
+    seen = set()
+    for line_number, line in enumerate(tasks_path.read_text(encoding="utf-8").splitlines(), start=1):
+        match = TASK_RE.match(line)
+        if not match:
+            continue
+        task_id = match.group(2)
+        if task_id in seen:
+            fail(
+                "task IDs are not unique",
+                f"{change} repeats task {task_id} at line {line_number}",
+                "assign one stable numeric ID to each checkbox task",
+            )
+        seen.add(task_id)
+        tasks.append(
+            {
+                "id": task_id,
+                "title": match.group(3),
+                "done": match.group(1).lower() == "x",
+            }
+        )
+    if not tasks:
+        fail(
+            "active change has no parseable tasks",
+            f"{tasks_path} contains no '- [ ] <id>' or '- [x] <id>' entries",
+            "use the repository OpenSpec task checkbox format",
+        )
+    return tasks
+
+
+def commit_exists(root: Path, sha: str) -> bool:
+    if not FULL_SHA_RE.fullmatch(sha):
+        return False
+    result = run_git(root, "cat-file", "-e", f"{sha}^{{commit}}", allow_failure=True)
+    return result.returncode == 0
+
+
+def is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    result = run_git(root, "merge-base", "--is-ancestor", ancestor, descendant, allow_failure=True)
+    return result.returncode == 0
+
+
+def validate_transition(old: Optional[str], new: str, bootstrap: bool) -> None:
+    if new not in LIFECYCLE:
+        fail(
+            "invalid lifecycle state",
+            f"{new} is not part of the repository lifecycle",
+            "use DRAFT, APPROVED, IMPLEMENTING, CANDIDATE, INDEPENDENT_VERIFIED, INTEGRATED or ARCHIVED",
+        )
+    if old is None:
+        if new == "DRAFT" and not bootstrap:
+            return
+        if new == "INTEGRATED" and bootstrap:
+            return
+        fail(
+            "illegal lifecycle transition",
+            f"an untracked change cannot enter {new}{' without' if not bootstrap else ' with'} this bootstrap",
+            "start a new change at DRAFT, or use --bootstrap only for evidence-backed legacy INTEGRATED state",
+        )
+    if bootstrap:
+        fail(
+            "illegal lifecycle transition",
+            "--bootstrap is only valid for a change with no existing checkpoint",
+            "remove --bootstrap and use the normal transition path",
+        )
+    if old == new:
+        return
+    if LIFECYCLE.index(new) == LIFECYCLE.index(old) + 1:
+        return
+    if old in {"CANDIDATE", "INDEPENDENT_VERIFIED"} and new == "IMPLEMENTING":
+        return
+    fail(
+        "illegal lifecycle transition",
+        f"{old} cannot transition directly to {new}",
+        "advance one evidence-gated state at a time, or return a failed/invalidated candidate to IMPLEMENTING",
+    )
+
+
+def validate_record(root: Path, change: str, record: Dict[str, Any], tasks: List[Dict[str, Any]]) -> List[str]:
+    issues: List[str] = []
+    lifecycle = record.get("lifecycle")
+    if lifecycle not in LIFECYCLE:
+        issues.append(f"{change}: lifecycle is invalid")
+    if not isinstance(record.get("next"), str) or not record["next"].strip():
+        issues.append(f"{change}: next is empty")
+    evidence = record.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        issues.append(f"{change}: evidence is empty")
+    elif any(
+        not isinstance(item, dict)
+        or not isinstance(item.get("at"), str)
+        or not isinstance(item.get("summary"), str)
+        or not item["summary"].strip()
+        for item in evidence
+    ):
+        issues.append(f"{change}: evidence entries are invalid")
+
+    task_map = {task["id"]: task for task in tasks}
+    current = record.get("current_task")
+    if current is not None:
+        if current not in task_map:
+            issues.append(f"{change}: current_task {current} does not exist")
+        elif task_map[current]["done"]:
+            issues.append(f"{change}: current_task {current} is already DONE")
+    blocker = record.get("blocker")
+    if blocker is not None:
+        if not isinstance(blocker, dict):
+            issues.append(f"{change}: blocker must be an object or null")
+        else:
+            if blocker.get("kind") not in BLOCKER_KINDS:
+                issues.append(f"{change}: blocker kind is invalid")
+            if not isinstance(blocker.get("summary"), str) or not blocker["summary"].strip():
+                issues.append(f"{change}: blocker summary is empty")
+            blocked_task = blocker.get("task")
+            if blocked_task is not None:
+                if blocked_task not in task_map:
+                    issues.append(f"{change}: blocked task {blocked_task} does not exist")
+                elif task_map[blocked_task]["done"]:
+                    issues.append(f"{change}: blocked task {blocked_task} is already DONE")
+                if blocked_task == current:
+                    issues.append(f"{change}: task {blocked_task} cannot be both DOING and BLOCKED")
+
+    candidate_sha = record.get("candidate_sha")
+    integrated_sha = record.get("integrated_sha")
+    if lifecycle in {"CANDIDATE", "INDEPENDENT_VERIFIED", "INTEGRATED", "ARCHIVED"}:
+        if not isinstance(candidate_sha, str) or not commit_exists(root, candidate_sha):
+            issues.append(f"{change}: candidate_sha is not a full existing commit")
+    elif candidate_sha is not None and (not isinstance(candidate_sha, str) or not commit_exists(root, candidate_sha)):
+        issues.append(f"{change}: optional candidate_sha is invalid")
+    if lifecycle in {"INTEGRATED", "ARCHIVED"}:
+        if not isinstance(integrated_sha, str) or not commit_exists(root, integrated_sha):
+            issues.append(f"{change}: integrated_sha is not a full existing commit")
+        elif isinstance(candidate_sha, str) and commit_exists(root, candidate_sha):
+            if not is_ancestor(root, candidate_sha, integrated_sha):
+                issues.append(f"{change}: candidate_sha is not an ancestor of integrated_sha")
+            head = run_git(root, "rev-parse", "HEAD").stdout.strip()
+            if not is_ancestor(root, integrated_sha, head):
+                issues.append(f"{change}: integrated_sha is not in the current checkout history")
+    elif integrated_sha is not None and (not isinstance(integrated_sha, str) or not commit_exists(root, integrated_sha)):
+        issues.append(f"{change}: optional integrated_sha is invalid")
+    return issues
+
+
+def task_view(tasks: List[Dict[str, Any]], record: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    current = record.get("current_task") if record else None
+    blocker = record.get("blocker") if record else None
+    blocked = blocker.get("task") if isinstance(blocker, dict) else None
+    result = []
+    for task in tasks:
+        if task["done"]:
+            state = "DONE"
+        elif task["id"] == current:
+            state = "DOING"
+        elif task["id"] == blocked:
+            state = "BLOCKED"
+        else:
+            state = "TODO"
+        result.append({"id": task["id"], "title": task["title"], "state": state})
+    return result
+
+
+def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
+    state_path, observations_path, _ = state_paths(common)
+    state = load_state(state_path)
+    observations = load_observations(observations_path)
+    changes = []
+    warnings: List[str] = []
+    for name, path in active_change_paths(root).items():
+        try:
+            tasks = parse_tasks(name, path)
+        except HarnessError as exc:
+            tasks = []
+            warnings.append(f"{name}: {exc.what}: {exc.why}")
+        record = state["changes"].get(name)
+        if record is not None and not isinstance(record, dict):
+            warnings.append(f"{name}: state record must be an object")
+            record = None
+        visible_tasks = task_view(tasks, record)
+        summary = Counter(task["state"] for task in visible_tasks)
+        changes.append(
+            {
+                "name": name,
+                "lifecycle": record.get("lifecycle", "UNKNOWN") if record else "UNKNOWN",
+                "current_task": record.get("current_task") if record else None,
+                "blocker": record.get("blocker") if record else None,
+                "next": record.get("next") if record else None,
+                "candidate_sha": record.get("candidate_sha") if record else None,
+                "integrated_sha": record.get("integrated_sha") if record else None,
+                "evidence": record.get("evidence", []) if record else [],
+                "tasks": visible_tasks,
+                "task_summary": {
+                    "total": len(visible_tasks),
+                    "done": summary["DONE"],
+                    "doing": summary["DOING"],
+                    "blocked": summary["BLOCKED"],
+                    "todo": summary["TODO"],
+                },
+            }
+        )
+    branch_result = run_git(root, "symbolic-ref", "--short", "-q", "HEAD", allow_failure=True)
+    branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "DETACHED"
+    head = run_git(root, "rev-parse", "HEAD").stdout.strip()
+    dirty = bool(run_git(root, "status", "--porcelain=v1").stdout.strip())
+    classes = Counter(record["class"] for record in observations)
+    return {
+        "repository": {
+            "root": str(root),
+            "head": head,
+            "branch": branch,
+            "dirty": dirty,
+            "state_path": str(state_path),
+            "state_is_operational_index_only": True,
+        },
+        "changes": changes,
+        "observations": {"count": len(observations), "by_class": dict(sorted(classes.items()))},
+        "warnings": warnings,
+    }
+
+
+def command_status(args: argparse.Namespace, root: Path, common: Path) -> int:
+    snapshot = build_snapshot(root, common)
+    if args.json:
+        print(json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    repository = snapshot["repository"]
+    cleanliness = "dirty" if repository["dirty"] else "clean"
+    print(f"HARNESS {repository['branch']}@{repository['head'][:12]} {cleanliness}")
+    print(f"STATE {repository['state_path']} (operational index; evidence remains authoritative)")
+    for change in snapshot["changes"]:
+        summary = change["task_summary"]
+        print(
+            f"{change['name']}  {change['lifecycle']}  "
+            f"tasks={summary['done']}/{summary['total']} current={change['current_task'] or '-'}"
+        )
+        for task in change["tasks"]:
+            print(f"  [{task['state']}] {task['id']} {task['title']}")
+        if change["blocker"]:
+            print(f"  BLOCKER {change['blocker']['kind']}: {change['blocker']['summary']}")
+        print(f"  NEXT {change['next'] or 'checkpoint required'}")
+    observations = snapshot["observations"]
+    print(f"OBSERVATIONS {observations['count']} {json.dumps(observations['by_class'], sort_keys=True)}")
+    for warning in snapshot["warnings"]:
+        print(f"WARNING {warning}")
+    return 0
+
+
+def format_issues(issues: Sequence[str]) -> HarnessError:
+    joined = "; ".join(issues)
+    return HarnessError(
+        "harness consistency check failed",
+        joined,
+        "repair the first reported state/task/evidence mismatch, use checkpoint for lifecycle state, then rerun ./tools/harness check",
+    )
+
+
+def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
+    state_path, observations_path, _ = state_paths(common)
+    active = active_change_paths(root)
+    if not state_path.exists():
+        names = ", ".join(active) or "none"
+        raise format_issues([f"local state is missing; active changes are UNKNOWN: {names}"])
+    state = load_state(state_path)
+    observations = load_observations(observations_path)
+    issues: List[str] = []
+    for name, path in active.items():
+        record = state["changes"].get(name)
+        if not isinstance(record, dict):
+            issues.append(f"{name}: checkpoint is missing")
+            continue
+        try:
+            tasks = parse_tasks(name, path)
+        except HarnessError as exc:
+            issues.append(f"{name}: {exc.what}: {exc.why}")
+            continue
+        issues.extend(validate_record(root, name, record, tasks))
+    for name, record in state["changes"].items():
+        if name in active:
+            continue
+        if not isinstance(record, dict) or record.get("lifecycle") != "ARCHIVED":
+            issues.append(f"{name}: stale checkpoint has no active change and is not ARCHIVED")
+            continue
+        archives = root / "openspec" / "changes" / "archive"
+        if not any(path.is_dir() and path.name.endswith(f"-{name}") for path in archives.glob(f"*-{name}")):
+            issues.append(f"{name}: ARCHIVED checkpoint has no matching archive directory")
+    if issues:
+        raise format_issues(issues)
+    print(
+        f"HARNESS_CHECK=PASS active_changes={len(active)} observations={len(observations)} "
+        "ledger=operational-index-only"
+    )
+    return 0
+
+
+def validate_checkpoint_args(root: Path, args: argparse.Namespace) -> None:
+    if not args.next.strip():
+        fail("checkpoint next is empty", "every handoff needs one executable next action", "provide --next")
+    if not args.evidence.strip():
+        fail("checkpoint evidence is empty", "state cannot advance from an unsupported claim", "provide --evidence")
+    if args.current_task and args.clear_current_task:
+        fail("checkpoint task arguments conflict", "current task cannot be set and cleared together", "choose one task action")
+    blocker_values = (args.blocker, args.blocked_task, args.blocker_kind)
+    if args.clear_blocker and any(value is not None for value in blocker_values):
+        fail("checkpoint blocker arguments conflict", "blocker cannot be set and cleared together", "choose one blocker action")
+    if any(value is not None for value in blocker_values) and not all(value is not None for value in (args.blocker, args.blocker_kind)):
+        fail(
+            "checkpoint blocker is incomplete",
+            "--blocker and --blocker-kind are required together",
+            "provide both fields, optionally --blocked-task, or use --clear-blocker",
+        )
+    if args.blocker_kind is not None and args.blocker_kind not in BLOCKER_KINDS:
+        fail(
+            "checkpoint blocker kind is invalid",
+            args.blocker_kind,
+            "use BLOCKED_EXTERNAL, DEPENDENCY or FAILURE",
+        )
+    for label, sha in (("candidate_sha", args.candidate_sha), ("integrated_sha", args.integrated_sha)):
+        if sha is not None and not commit_exists(root, sha):
+            fail(
+                f"checkpoint {label} is invalid",
+                f"{sha} is not a full existing commit",
+                f"provide the full immutable Git commit for {label}",
+            )
+    if args.state in {"CANDIDATE", "INDEPENDENT_VERIFIED", "INTEGRATED", "ARCHIVED"} and not args.candidate_sha:
+        fail(
+            "checkpoint candidate SHA is missing",
+            f"{args.state} requires an exact candidate commit",
+            "provide --candidate-sha with the full verified candidate commit",
+        )
+    if args.state in {"INTEGRATED", "ARCHIVED"} and not args.integrated_sha:
+        fail(
+            "checkpoint integrated SHA is missing",
+            f"{args.state} requires an exact integrated commit",
+            "provide --integrated-sha with the full commit present in the current checkout history",
+        )
+    if args.integrated_sha and args.candidate_sha:
+        if not is_ancestor(root, args.candidate_sha, args.integrated_sha):
+            fail(
+                "checkpoint Git ancestry is invalid",
+                "candidate_sha is not an ancestor of integrated_sha",
+                "use the exact candidate and its actual integration commit",
+            )
+        head = run_git(root, "rev-parse", "HEAD").stdout.strip()
+        if not is_ancestor(root, args.integrated_sha, head):
+            fail(
+                "checkpoint integration is not in this checkout",
+                "integrated_sha is not an ancestor of HEAD",
+                "update to the integrated main checkout before recording INTEGRATED",
+            )
+
+
+def command_checkpoint(args: argparse.Namespace, root: Path, common: Path) -> int:
+    validate_checkpoint_args(root, args)
+    active = active_change_paths(root)
+    if args.change not in active:
+        fail(
+            "checkpoint change is not active",
+            f"openspec/changes/{args.change} does not exist in this checkout",
+            "use an active change name; archive handling remains in order-integrate-change",
+        )
+    tasks = parse_tasks(args.change, active[args.change])
+    with writer_lock(common) as (state_path, _observations_path):
+        state = load_state(state_path)
+        old_record = state["changes"].get(args.change)
+        if old_record is not None and not isinstance(old_record, dict):
+            fail("checkpoint state is corrupt", f"{args.change} record is not an object", "repair local state before retrying")
+        old_lifecycle = old_record.get("lifecycle") if old_record else None
+        validate_transition(old_lifecycle, args.state, args.bootstrap)
+        record = dict(old_record or {})
+        current_task = record.get("current_task")
+        if args.clear_current_task:
+            current_task = None
+        elif args.current_task is not None:
+            current_task = args.current_task
+        blocker = record.get("blocker")
+        if args.clear_blocker:
+            blocker = None
+        elif args.blocker is not None:
+            blocker = {
+                "kind": args.blocker_kind,
+                "summary": args.blocker.strip(),
+                "task": args.blocked_task,
+            }
+        record.update(
+            {
+                "lifecycle": args.state,
+                "current_task": current_task,
+                "blocker": blocker,
+                "next": args.next.strip(),
+                "candidate_sha": args.candidate_sha if args.candidate_sha is not None else record.get("candidate_sha"),
+                "integrated_sha": args.integrated_sha if args.integrated_sha is not None else record.get("integrated_sha"),
+                "updated_at": utc_now(),
+            }
+        )
+        evidence = list(record.get("evidence") or [])
+        evidence.append({"at": record["updated_at"], "summary": args.evidence.strip()})
+        record["evidence"] = evidence
+        issues = validate_record(root, args.change, record, tasks)
+        if issues:
+            raise format_issues(issues)
+        state["changes"][args.change] = record
+        save_state(state_path, state)
+    print(f"CHECKPOINT=PASS change={args.change} lifecycle={args.state} next={record['next']}")
+    return 0
+
+
+def command_observe(args: argparse.Namespace, _root: Path, common: Path) -> int:
+    if args.observation_class not in OBSERVATION_CLASSES:
+        fail(
+            "observation class is invalid",
+            args.observation_class,
+            "use candidate, environment, checker or external",
+        )
+    values = {"summary": args.summary, "evidence": args.evidence, "next": args.next}
+    empty = [name for name, value in values.items() if not value.strip()]
+    if empty:
+        fail(
+            "observation is incomplete",
+            f"empty fields: {', '.join(empty)}",
+            "provide non-empty summary, reproducible evidence and next",
+        )
+    with writer_lock(common) as (_state_path, observations_path):
+        records = load_observations(observations_path)
+        timestamp = utc_now()
+        compact = timestamp.replace("-", "").replace(":", "").replace(".", "")
+        record = {
+            "id": f"obs-{compact}-{secrets.token_hex(3)}",
+            "at": timestamp,
+            "class": args.observation_class,
+            "summary": args.summary.strip(),
+            "evidence": args.evidence.strip(),
+            "next": args.next.strip(),
+        }
+        records.append(record)
+        save_observations(observations_path, records)
+    print(f"OBSERVATION=RECORDED id={record['id']} class={record['class']} promotion=NOT_RUN")
+    return 0
+
+
+def build_parser() -> FriendlyParser:
+    parser = FriendlyParser(prog="./tools/harness", description="Order repository development control loop")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    status = subparsers.add_parser("status", help="show current repository, change and task state")
+    status.add_argument("--json", action="store_true", help="emit machine-readable JSON only")
+
+    subparsers.add_parser("check", help="fail closed on inconsistent local control state")
+
+    checkpoint = subparsers.add_parser("checkpoint", help="record one evidence-backed lifecycle checkpoint")
+    checkpoint.add_argument("change")
+    checkpoint.add_argument("--state", required=True)
+    checkpoint.add_argument("--next", required=True)
+    checkpoint.add_argument("--evidence", required=True)
+    checkpoint.add_argument("--current-task")
+    checkpoint.add_argument("--clear-current-task", action="store_true")
+    checkpoint.add_argument("--blocker")
+    checkpoint.add_argument("--blocker-kind")
+    checkpoint.add_argument("--blocked-task")
+    checkpoint.add_argument("--clear-blocker", action="store_true")
+    checkpoint.add_argument("--candidate-sha")
+    checkpoint.add_argument("--integrated-sha")
+    checkpoint.add_argument("--bootstrap", action="store_true")
+
+    observe = subparsers.add_parser("observe", help="append an observation without changing the runner")
+    observe.add_argument("--class", dest="observation_class", required=True)
+    observe.add_argument("--summary", required=True)
+    observe.add_argument("--evidence", required=True)
+    observe.add_argument("--next", required=True)
+    return parser
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    try:
+        args = build_parser().parse_args(argv)
+        root, common = discover_repository()
+        handlers = {
+            "status": command_status,
+            "check": command_check,
+            "checkpoint": command_checkpoint,
+            "observe": command_observe,
+        }
+        return handlers[args.command](args, root, common)
+    except HarnessError as exc:
+        print(f"WHAT: {exc.what}", file=sys.stderr)
+        print(f"WHY: {exc.why}", file=sys.stderr)
+        print(f"FIX: {exc.fix}", file=sys.stderr)
+        return 2
+    except (OSError, UnicodeError) as exc:
+        print("WHAT: harness encountered a local filesystem error", file=sys.stderr)
+        print(f"WHY: {exc}", file=sys.stderr)
+        print("FIX: inspect the exact reported path and retry without broad cleanup", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -20,6 +20,15 @@ Read root `AGENTS.md` and use it as the governance source. Route change-local wo
 
 Do not reproduce, replace, or weaken those skills' procedures. Keep only cross-change selection, ledger, evidence Gate, retry, score, and stop decisions here.
 
+## Use the lightweight repository loop
+
+1. Start or resume with `./tools/harness status`; treat `UNKNOWN` as missing recovery evidence, never as a guessed lifecycle state.
+2. After every evidence-backed transition, block, failure or handoff, run `./tools/harness checkpoint` with the current task, blocker, next action and decisive evidence.
+3. Before handing off or stopping, run `./tools/harness check` and repair the first `WHAT / WHY / FIX` failure without weakening another Gate.
+4. Record reproducible runner friction with `./tools/harness observe`; keep it observation-only in the active module and apply the self-evolution protocol at the module boundary.
+
+The Git-common-dir ledger is a shared, rebuildable local scheduling index. It does not prove approval, exact-SHA verification, actor independence, integration, archive, deployment or runtime behavior; the existing repository and external evidence Gates remain authoritative.
+
 ## Freeze runner evolution by module
 
 Read the [self-evolution protocol](references/self-evolution.md) before allocating each module.
@@ -33,14 +42,14 @@ Read the [self-evolution protocol](references/self-evolution.md) before allocati
 
 ## Maintain one persistent control ledger
 
-Keep the main Goal session alive. Maintain one row per change lane and update it only from repository evidence or an active handoff:
+Keep the main Goal session alive. Use the harness checkpoint as the persistent cross-session record for change lifecycle, current task, blocker, next action and evidence. Keep only live application routing handles in the active coordinator and recover a missing handle from the recorded change/worktree/next instead of treating an old session identity as proof:
 
 | lane | threadId | hostId | worktree | change | state | SHA | cursor | error_fingerprint | repeat_count | dependency | owned_paths | blocker | next |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
 
 Use a full immutable SHA only in `SHA`; write `none` before a candidate exists. Store the latest consumed cursor so snapshots are incremental. Derive `error_fingerprint` from the failed command, exit code, first decisive error, SHA, and environment identifier.
 
-Keep a separate Goal checkpoint with the readiness evidence, current score, OPEN P0/P1 list, blocking OpenSpec strict results, `BLOCKED_EXTERNAL` entries, and last scheduling decision.
+Keep the separate tracked Goal checkpoint with the frozen runner base, readiness evidence, current score, OPEN P0/P1 list, blocking OpenSpec strict results, `BLOCKED_EXTERNAL` entries and last scheduling decision. It is durable audit/recovery input; `./tools/harness check` validates the local operational index but replaces none of those facts.
 
 ## Enforce lane and module Gates
 
