@@ -48,19 +48,22 @@ state 使用同目录临时文件、flush/fsync 后 `os.replace`；observation �
 
 `observe` 固定四类 observation，写入唯一 ID、UTC 时间、summary、evidence、next。它没有 edit/promote/apply 子命令。模块边界由主 Goal 根据现有 self-evolution protocol 决定是否建立新的 OpenSpec DRAFT；规则只有独立验证并集成本地 main 后，才对下一模块生效。
 
+本 change 不把工具接入根 `AGENTS.md` 或受保护 `order-run-loop`。当前 lifecycle receipt 会对 runner protected-byte 漂移 fail closed，而本 change 没有预先独立的 judge 可以合法更新该边界。显式命令已经构成可独立验收的最小能力；自动路由作为 observation 留到后续专属控制面 change。
+
 ## Risks / Trade-offs
 
 - [本地状态不会随 clone 自动复制] → 这是有意边界；状态是调度索引，不是证明。新 clone 必须从 tracked OpenSpec/Git evidence 显式 bootstrap，不能继承旧机器的 session 假设。
 - [人工 evidence 可能不真实] → 工具只保存引用并验证 Git/path/task 等可机械部分；独立验证、批准和外部事实仍由既有 Gate 决定，输出不把 ledger 称为 proof。
 - [多个进程同时 checkpoint] → 使用 Git common dir 下的专属排他 lock 与原子替换；锁存在时失败，不等待或覆盖。
 - [Markdown task 格式变化] → 只接受现有稳定 checkbox + task ID 语法；无法解析即 fail closed，并通过独立 OpenSpec change 演进 parser。
-- [工具膨胀成新控制面] → 固定四个子命令，禁止实现调度、网络或 stage handler；根规则和 Skill 只保留最小入口。
+- [工具膨胀成新控制面] → 固定四个子命令，禁止实现调度、网络或 stage handler；根规则和受保护 Skill 保持不变。
+- [工具不会被旧 runner 自动调用] → 这是受控激活边界；当前可由开发者或 agent 显式运行，自动接入必须另开拥有独立 judge 的 change，不能为方便绕过 receipt。
 
 ## Migration Plan
 
 1. 先在测试 fixture 中证明当前没有入口、缺状态、非法跃迁和损坏 observation 会失败。
 2. 实现工具与单元/CLI 测试；在 writer worktree 初始化当前四个 active change 的本地状态，其中三个 legacy change 只允许通过可验证 Git ancestry 显式 bootstrap。
-3. 最小更新 root governance、`order-run-loop` 和 canonical spec，使后续主 control session 开工先 `status`、转移后 `checkpoint`、收尾 `check`、经验用 `observe`。
+3. 保持 root governance、`order-run-loop` 和 canonical spec 不变；当前模块通过显式命令验收，自动接入只作为 observation 进入后续独立控制面 change。
 4. candidate 在 clean detached exact-SHA worktree 从空本地状态开始，先证明 `UNKNOWN/NO-GO`，再 bootstrap fixture 并完成 fresh-session PASS。
 5. 回滚只需撤销 tracked change；本地 `codex-harness/` 可保留为无调用方数据，工具不存在时不会影响代码、OpenSpec 或运行产品。
 

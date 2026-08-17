@@ -41,12 +41,12 @@ class RepositoryContractTest(unittest.TestCase):
         for forbidden in ("git push", "openspec archive", "deploy", "send_message_to_thread"):
             self.assertNotIn(forbidden, source)
 
-    def test_governance_routes_through_harness_without_weakening(self) -> None:
+    def test_protected_governance_does_not_route_through_unjudged_harness(self) -> None:
         root_rules = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
         runner = (REPO_ROOT / ".agents/skills/order-run-loop/SKILL.md").read_text(encoding="utf-8")
         for token in ("./tools/harness status", "./tools/harness checkpoint", "./tools/harness check", "./tools/harness observe"):
-            self.assertIn(token, root_rules)
-            self.assertIn(token, runner)
+            self.assertNotIn(token, root_rules)
+            self.assertNotIn(token, runner)
         for token in (
             "$order-plan-change",
             "$order-implement-tdd",
@@ -59,8 +59,11 @@ class RepositoryContractTest(unittest.TestCase):
         ):
             self.assertIn(token, runner)
 
-    def test_stage_skills_remain_byte_unchanged(self) -> None:
+    def test_protected_governance_and_stage_skills_remain_byte_unchanged(self) -> None:
         paths = [
+            "AGENTS.md",
+            ".agents/skills/order-run-loop/SKILL.md",
+            ".agents/skills/order-run-loop/references/self-evolution.md",
             ".agents/skills/order-plan-change/SKILL.md",
             ".agents/skills/order-implement-tdd/SKILL.md",
             ".agents/skills/order-verify-change/SKILL.md",

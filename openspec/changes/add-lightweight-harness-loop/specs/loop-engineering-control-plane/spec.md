@@ -63,10 +63,10 @@
 - **WHEN** class 非法、字段为空、ID 重复或 observations 文件损坏
 - **THEN** `observe` 或 `check` MUST 返回非零且不得覆盖既有记录
 
-### Requirement: The harness stays a thin convenience layer
-根 `AGENTS.md` 与 `order-run-loop` MUST 只增加对 `./tools/harness` 的最小开工、checkpoint、检查和观察入口；四个 stage skills、质量 Gate、exact-SHA 失效、独立验证、lane 限制、授权边界和 receipt 规则 MUST 保持不变。Harness 失败只能暴露或记录问题，不能放宽、跳过或替代原 Gate。
+### Requirement: The harness stays outside the protected runner until separately promoted
+本 change MUST 保持根 `AGENTS.md`、`.agents/skills/order-run-loop/**`、四个 stage skills、质量 Gate、exact-SHA 失效、独立验证、lane 限制、授权边界和 receipt 规则字节不变，只交付可显式运行的 `./tools/harness`。Harness 失败只能暴露或记录问题，不能放宽、跳过或替代原 Gate；把工具接入受保护 runner 必须由后续拥有预先独立 judge 的 OpenSpec change 晋升并从下一模块生效。
 
-#### Scenario: Existing governance remains authoritative
-- **WHEN** reviewer 对候选执行 thin-layer 与 non-weakening 检查
-- **THEN** 新入口 MUST 只索引和校验现有事实
-- **AND** 不得复制 stage skill 步骤、自动改变业务代码或把 recorded state 当成独立 PASS
+#### Scenario: Existing governance and receipts remain authoritative
+- **WHEN** reviewer 对候选执行 protected-byte、thin-layer、receipt 与 non-weakening 检查
+- **THEN** 受保护治理文件 MUST 与 base 字节一致且现有 receipt replay MUST 保持可验证
+- **AND** 新工具不得复制 stage skill 步骤、自动改变业务代码或把 recorded state 当成独立 PASS
