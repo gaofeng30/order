@@ -90,6 +90,12 @@ class HarnessCliTest(unittest.TestCase):
         run("git", "init", "-q", cwd=self.repo, check=True)
         run("git", "config", "user.name", "Harness Test", cwd=self.repo, check=True)
         run("git", "config", "user.email", "harness@example.invalid", cwd=self.repo, check=True)
+        (self.repo / "README.md").write_text("base fixture\n", encoding="utf-8")
+        (self.repo / "openspec" / "changes").mkdir(parents=True)
+        (self.repo / "openspec" / "changes" / ".keep").write_text("\n", encoding="utf-8")
+        run("git", "add", ".", cwd=self.repo, check=True)
+        run("git", "commit", "-qm", "base fixture", cwd=self.repo, check=True)
+        self.base = run("git", "rev-parse", "HEAD", cwd=self.repo, check=True).stdout.strip()
         self.write_change(
             "alpha",
             """## 1. Work
@@ -100,7 +106,6 @@ class HarnessCliTest(unittest.TestCase):
 - [ ] 1.4 todo task
 """,
         )
-        (self.repo / "README.md").write_text("fixture\n", encoding="utf-8")
         run("git", "add", ".", cwd=self.repo, check=True)
         run("git", "commit", "-qm", "fixture", cwd=self.repo, check=True)
         self.head = run("git", "rev-parse", "HEAD", cwd=self.repo, check=True).stdout.strip()
@@ -231,11 +236,14 @@ class HarnessCliTest(unittest.TestCase):
     def test_state_is_shared_by_a_second_worktree(self) -> None:
         self.assertEqual(self.checkpoint("--state", "DRAFT").returncode, 0)
         sibling = Path(self.temp.name) / "sibling"
-        run("git", "worktree", "add", "--detach", str(sibling), "HEAD", cwd=self.repo, check=True)
+        run("git", "worktree", "add", "--detach", str(sibling), self.base, cwd=self.repo, check=True)
         status = self.harness("status", "--json", cwd=sibling)
         self.assertEqual(status.returncode, 0, status.stderr)
         payload = json.loads(status.stdout)
         self.assertEqual(payload["changes"][0]["lifecycle"], "DRAFT")
+        self.assertEqual(payload["changes"][0]["source_worktree"], str(self.repo.resolve()))
+        checked = self.harness("check", cwd=sibling)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
 
     def test_lock_prevents_checkpoint_overwrite(self) -> None:
         self.assertEqual(self.checkpoint("--state", "DRAFT").returncode, 0)

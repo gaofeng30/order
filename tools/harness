@@ -279,6 +279,57 @@ def active_change_paths(root: Path) -> Dict[str, Path]:
     return result
 
 
+def branch_name(root: Path) -> str:
+    result = run_git(root, "symbolic-ref", "--short", "-q", "HEAD", allow_failure=True)
+    return result.stdout.strip() if result.returncode == 0 else "DETACHED"
+
+
+def change_sources(
+    root: Path, common: Path, state: Dict[str, Any]
+) -> Tuple[Dict[str, Tuple[Path, Path]], List[str]]:
+    sources = {name: (path, root) for name, path in active_change_paths(root).items()}
+    issues: List[str] = []
+    for name, record in state["changes"].items():
+        if name in sources or (isinstance(record, dict) and record.get("lifecycle") == "ARCHIVED"):
+            continue
+        if not isinstance(record, dict):
+            issues.append(f"{name}: state record must be an object")
+            continue
+        raw_worktree = record.get("worktree")
+        if not isinstance(raw_worktree, str) or not raw_worktree.strip():
+            issues.append(f"{name}: source worktree is missing")
+            continue
+        candidate = Path(raw_worktree)
+        if not candidate.is_absolute() or candidate.is_symlink() or not candidate.is_dir():
+            issues.append(f"{name}: source worktree is missing or unsafe: {raw_worktree}")
+            continue
+        source = candidate.resolve()
+        source_root = run_git(source, "rev-parse", "--show-toplevel", allow_failure=True)
+        source_common = run_git(
+            source,
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+            allow_failure=True,
+        )
+        if source_root.returncode != 0 or Path(source_root.stdout.strip()).resolve() != source:
+            issues.append(f"{name}: source worktree root cannot be verified: {source}")
+            continue
+        if source_common.returncode != 0 or Path(source_common.stdout.strip()).resolve() != common:
+            issues.append(f"{name}: source worktree does not share this Git common directory")
+            continue
+        recorded_branch = record.get("branch")
+        if not isinstance(recorded_branch, str) or recorded_branch != branch_name(source):
+            issues.append(f"{name}: source worktree branch no longer matches its checkpoint")
+            continue
+        change_path = source / "openspec" / "changes" / name
+        if not change_path.is_dir():
+            issues.append(f"{name}: source worktree does not contain the active change")
+            continue
+        sources[name] = (change_path, source)
+    return sources, issues
+
+
 def parse_tasks(change: str, path: Path) -> List[Dict[str, Any]]:
     tasks_path = path / "tasks.md"
     if not tasks_path.is_file():
@@ -453,10 +504,19 @@ def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
     state = load_state(state_path)
     observations = load_observations(observations_path)
     changes = []
-    warnings: List[str] = []
-    for name, path in active_change_paths(root).items():
+    sources, warnings = change_sources(root, common, state)
+    visible_names = set(sources)
+    visible_names.update(
+        name
+        for name, record in state["changes"].items()
+        if not isinstance(record, dict) or record.get("lifecycle") != "ARCHIVED"
+    )
+    for name in sorted(visible_names):
+        source = sources.get(name)
+        path = source[0] if source else None
+        source_root = source[1] if source else None
         try:
-            tasks = parse_tasks(name, path)
+            tasks = parse_tasks(name, path) if path else []
         except HarnessError as exc:
             tasks = []
             warnings.append(f"{name}: {exc.what}: {exc.why}")
@@ -469,6 +529,7 @@ def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
         changes.append(
             {
                 "name": name,
+                "source_worktree": str(source_root) if source_root else record.get("worktree") if record else None,
                 "lifecycle": record.get("lifecycle", "UNKNOWN") if record else "UNKNOWN",
                 "current_task": record.get("current_task") if record else None,
                 "blocker": record.get("blocker") if record else None,
@@ -486,8 +547,6 @@ def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
                 },
             }
         )
-    branch_result = run_git(root, "symbolic-ref", "--short", "-q", "HEAD", allow_failure=True)
-    branch = branch_result.stdout.strip() if branch_result.returncode == 0 else "DETACHED"
     head = run_git(root, "rev-parse", "HEAD").stdout.strip()
     dirty = bool(run_git(root, "status", "--porcelain=v1").stdout.strip())
     classes = Counter(record["class"] for record in observations)
@@ -495,7 +554,7 @@ def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
         "repository": {
             "root": str(root),
             "head": head,
-            "branch": branch,
+            "branch": branch_name(root),
             "dirty": dirty,
             "state_path": str(state_path),
             "state_is_operational_index_only": True,
@@ -544,14 +603,14 @@ def format_issues(issues: Sequence[str]) -> HarnessError:
 
 def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
     state_path, observations_path, _ = state_paths(common)
-    active = active_change_paths(root)
+    current = active_change_paths(root)
     if not state_path.exists():
-        names = ", ".join(active) or "none"
+        names = ", ".join(current) or "none"
         raise format_issues([f"local state is missing; active changes are UNKNOWN: {names}"])
     state = load_state(state_path)
     observations = load_observations(observations_path)
-    issues: List[str] = []
-    for name, path in active.items():
+    sources, issues = change_sources(root, common, state)
+    for name, (path, _source_root) in sources.items():
         record = state["changes"].get(name)
         if not isinstance(record, dict):
             issues.append(f"{name}: checkpoint is missing")
@@ -563,7 +622,7 @@ def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
             continue
         issues.extend(validate_record(root, name, record, tasks))
     for name, record in state["changes"].items():
-        if name in active:
+        if name in sources:
             continue
         if not isinstance(record, dict) or record.get("lifecycle") != "ARCHIVED":
             issues.append(f"{name}: stale checkpoint has no active change and is not ARCHIVED")
@@ -574,7 +633,7 @@ def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
     if issues:
         raise format_issues(issues)
     print(
-        f"HARNESS_CHECK=PASS active_changes={len(active)} observations={len(observations)} "
+        f"HARNESS_CHECK=PASS active_changes={len(sources)} observations={len(observations)} "
         "ledger=operational-index-only"
     )
     return 0
@@ -677,6 +736,8 @@ def command_checkpoint(args: argparse.Namespace, root: Path, common: Path) -> in
                 "next": args.next.strip(),
                 "candidate_sha": args.candidate_sha if args.candidate_sha is not None else record.get("candidate_sha"),
                 "integrated_sha": args.integrated_sha if args.integrated_sha is not None else record.get("integrated_sha"),
+                "worktree": str(root),
+                "branch": branch_name(root),
                 "updated_at": utc_now(),
             }
         )

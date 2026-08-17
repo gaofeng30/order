@@ -6,7 +6,7 @@
 | --- | --- |
 | goal | 用一个轻量仓库入口闭环当前状态、检查、交接和受控自进化观察 |
 | module | `add-lightweight-harness-loop` |
-| lifecycle | `CANDIDATE` |
+| lifecycle | `IMPLEMENTING` |
 | repo_sha | `d817aeb3ac5de29d2695ed17ed6277b737ba3ee8` |
 | skill_blob | `0f41f64ad87fc9fd410cb916b4d1562aee92e42f` |
 | skill_sha256 | `2781bdda1544106e30e7483c4b500d611df85c79753cc1bd3b717d91d1edaac8` |
@@ -14,12 +14,12 @@
 | owner | branch `codex/add-lightweight-harness-loop`, worktree `/Users/vivix/.codex/worktrees/order-harness-loop.Writer` |
 | dependency | local main integrated control-plane, quality-gate and receipt-control baselines |
 | blocker | none |
-| candidate_sha | external post-commit evidence; `f6402ceb276e5a6fcd79987d61017fea3e55360f` is invalidated |
+| candidate_sha | `2ff87fa185c13abff011c8c05b912f989b5b5b24` invalidated by cross-worktree stale-state failure; `f6402ceb276e5a6fcd79987d61017fea3e55360f` also invalidated |
 | integrated_sha | none |
 | archive_sha | none |
-| error_fingerprint | none; prior protected-runner failure is repaired and retained below |
-| repeat_count | `0` |
-| next | commit final metadata, rerun all clean exact-SHA Gates, then hand to an independent verifier |
+| error_fingerprint | `harness-check|2|writer-change-stale-from-main|2ff87fa|local-writer` |
+| repeat_count | `1` |
+| next | preserve and validate owning worktree metadata, then rerun all Gates for a new candidate |
 
 ## Boundary
 
@@ -37,8 +37,8 @@
 
 ## Current writer verdict
 
-- `C9/T10/V8/R9=36`; hard blockers `0`.
-- Final base diff excludes root governance and every protected Skill; candidate SHA will be bound externally after the immutable commit.
+- Candidate `2ff87fa185c13abff011c8c05b912f989b5b5b24` is invalidated: main checkout could not resolve the active change stored by its writer worktree and falsely marked it stale.
+- Protected governance repair remains valid, but writer/fresh-session/verification evidence must be rerun after the focused source-worktree fix.
 
 ## Observations
 
