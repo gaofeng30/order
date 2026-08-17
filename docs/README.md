@@ -4,15 +4,16 @@
 
 ## 建议阅读顺序
 
-1. [需求文档](./product/online-ordering-system-requirements.md)：先了解产品目标、功能范围和 P0 原型要求。
-2. [Demo 说明](./product/online-ordering-system-demo-guide.md)：用于向商户介绍当前 Demo 已具备的功能。
-3. [客户沟通与待讨论事项](./product/online-ordering-system-customer-discussion.md)：用于客户会议前确认业务规则。
-4. [微信点单小程序客户资料与业务规则确认清单](./product/微信点单小程序客户资料与业务规则确认清单.md)：用于客户准备注册、认证、支付、权限配置、上线审核资料，并确认取餐、预约、退款等业务规则。
-5. [技术文档](./product/online-ordering-system-technical.md)：用于开发前确认系统形态、模块边界和数据结构。
-6. [PRD 草稿](./product/online-ordering-system-prd.md)：保留更完整的产品上下文和历史信息。
-7. [微信小程序注册与企业认证指南](./微信小程序开发和运维指南/微信小程序注册与企业认证指南.md)：用于准备账号主体、认证和项目成员权限。
-8. [微信支付操作指南](./微信小程序开发和运维指南/微信支付操作指南.md)：用于准备商户号、收款账户和支付配置。
-9. [正式合同](./合同相关/online-ordering-system-contract-final.md)：用于核对已确认的交付范围和责任边界。
+1. [仓库 README](../README.md)：开发者先从当前实现边界、运行方式、验证命令和 Harness 入口开始。
+2. [需求文档](./product/online-ordering-system-requirements.md)：了解产品目标、功能范围和 P0 原型要求。
+3. [Demo 说明](./product/online-ordering-system-demo-guide.md)：用于向商户介绍当前 Demo 已具备的功能。
+4. [客户沟通与待讨论事项](./product/online-ordering-system-customer-discussion.md)：用于客户会议前确认业务规则。
+5. [微信点单小程序客户资料与业务规则确认清单](./product/微信点单小程序客户资料与业务规则确认清单.md)：用于客户准备注册、认证、支付、权限配置、上线审核资料，并确认取餐、预约、退款等业务规则。
+6. [技术文档](./product/online-ordering-system-technical.md)：用于开发前确认系统形态、模块边界和数据结构。
+7. [PRD 草稿](./product/online-ordering-system-prd.md)：保留更完整的产品上下文和历史信息。
+8. [微信小程序注册与企业认证指南](./微信小程序开发和运维指南/微信小程序注册与企业认证指南.md)：用于准备账号主体、认证和项目成员权限。
+9. [微信支付操作指南](./微信小程序开发和运维指南/微信支付操作指南.md)：用于准备商户号、收款账户和支付配置。
+10. [正式合同](./合同相关/online-ordering-system-contract-final.md)：用于核对已确认的交付范围和责任边界。
 
 ## 历史资料归档
 

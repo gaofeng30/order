@@ -8,6 +8,17 @@
 
 本节是一期生产承载、交易一致性与运维边界的唯一技术基线。适用规模为 500 人以内、短时集中点单；其中容量、RPO/RTO 只是不高于目标云规格的验收目标，当前均未实测，不代表已达成结果、SLA 或云厂商保证。
 
+### 2.0 当前代码实现边界
+
+当前仓库只落地了生产基线中的匿名目录读取切片，尚未部署到真实业务环境：
+
+- `order-migrate` 显式执行 forward-only migration，当前 schema 只有 `schema_migrations`、`categories` 和 `products`。
+- `order-api` 已实现结构化配置、脱敏日志、优雅退出、liveness/readiness，以及 `GET /api/v1/catalog` 和 `GET /api/v1/catalog/products/{id}`。
+- 微信小程序首页推荐、菜单和商品详情调用上述匿名接口，并对响应结构和分价做校验；Web Admin 不调用该进程。
+- 购物车、订单、商户管理、登录、支付、worker、COS、生产 SSM、部署、监控和备份仍未实现或未验证，不得从本节架构设计推断为已交付。
+
+本节后续内容描述一期目标架构和验收边界；只有上面的代码切片是当前仓库的已实现事实，且本地测试通过不等于外部环境已经部署或运行。
+
 ### 2.1 组件与数据流
 
 ```mermaid
@@ -138,7 +149,7 @@ Nginx 只暴露 HTTPS；CDB 与应用端口只走内网，公网安全组只开�
 
 ### 2.10 本阶段非目标
 
-本阶段不实现或部署数据库 schema、库存、订单、支付、worker、migration、监控或备份；不购买或写入腾讯云/微信资源。架构不包含 Kubernetes、微服务、CloudBase Run、Docker 运行依赖、Redis、MQ、读写分离、数据库代理、CLB、CDN、跨地域灾备或 7×24 人工值守。任何新增组件必须由上述实测触发条件支持，并另建 OpenSpec change。
+当前代码已实现目录所需的数据库 schema 和 migration，但本阶段不实现或部署库存、订单、支付、worker、监控或备份，也不部署目录 schema 或购买、写入腾讯云/微信资源。架构不包含 Kubernetes、微服务、CloudBase Run、Docker 运行依赖、Redis、MQ、读写分离、数据库代理、CLB、CDN、跨地域灾备或 7×24 人工值守。任何新增组件必须由上述实测触发条件支持，并另建 OpenSpec change。
 
 官方依据访问日期：2026-08-13。核心参考：[MySQL 双节点](https://cloud.tencent.com/document/product/236/47906)、[备份与 binlog](https://cloud.tencent.com/document/product/236/35172)、[时间点恢复](https://cloud.tencent.com/document/product/236/7276)、[COS 安全基线](https://cloud.tencent.com/document/product/436/50200)、[COS 预签名请求](https://cloud.tencent.com/document/product/436/14114)、[SSM](https://cloud.tencent.com/document/product/1140/40416)、[CAM Role](https://cloud.tencent.com/document/product/598/19421)、[CLS](https://cloud.tencent.com/document/product/614/56479)、[云监控](https://cloud.tencent.com/document/product/248/62458)、[CAT](https://cloud.tencent.com/document/product/280)、[微信支付回调](https://pay.wechatpay.cn/doc/v3/merchant/4012791861)。
 

@@ -6,7 +6,7 @@
 
 - **产品阶段**：P0 可预览交互原型。
 - **运行形态**：原生微信小程序、静态 Web 管理端，以及独立的 Go API 进程基线。
-- **数据来源**：两个前端仍使用本地 mock 数据；API 已具备 MySQL 8.0 连接、显式迁移、DB/schema readiness，以及匿名菜单目录读取接口，但前端尚未接入，也没有业务写接口或支付接入。
+- **数据来源**：当前是混合态。微信小程序的首页推荐、菜单和商品详情读取 Go API 的匿名目录接口；购物车、订单、商户端和 Web Admin 仍使用本地状态或 mock。API 已具备 MySQL 8.0 连接、显式迁移和 DB/schema readiness，但没有业务写接口或支付接入。
 - **评审目标**：确认页面效果、业务流程、功能范围和后续正式开发边界。
 
 ## 目录结构
@@ -23,7 +23,7 @@
 │   │   ├── components/       # 复用组件
 │   │   ├── assets/           # 静态资源
 │   │   ├── mock/             # 演示数据
-│   │   └── utils/            # 本地状态与工具函数
+│   │   └── utils/            # 目录 API 客户端、本地状态与工具函数
 │   └── web-admin/            # 商户端 PC 网页版
 │       ├── index.html        # 唯一入口，浏览器直接打开
 │       ├── app.css           # 设计 token + 布局与控件
@@ -61,6 +61,8 @@
 
 `project.config.json` 已配置 `miniprogramRoot: "apps/wechat-miniprogram/"`，因此导入根目录即可识别小程序源码。
 
+首页推荐、菜单和商品详情需要先按下方“API 服务基线”启动 MySQL、执行 migration 并运行 API；小程序默认请求 `http://127.0.0.1:8080`，可在 `apps/wechat-miniprogram/app.js` 的 `apiBaseUrl` 调整本地地址。API 不可用时，这三个页面会展示可重试错误，不会回退到 mock 目录。
+
 ### 商户端 PC 网页版
 
 双击 `apps/web-admin/index.html` 用浏览器打开即可，无需构建、无需服务器、无需安装依赖。建议窗口宽度 ≥ 1280px。
@@ -68,9 +70,7 @@
 两个入口互相独立、可同时打开：想看手机形态开微信开发者工具，想看电脑形态开浏览器。
 
 > **当前阶段两端数据不互通。** PC 端自带一套独立演示数据，在小程序里下的单电脑上看不到，反之亦然。
-> 这是 P0 原型阶段的取舍：真实打通需要后端 API，属正式开发范围。
-> 两端的接口契约层（`apps/web-admin/data/api.js` 与 `apps/wechat-miniprogram/utils/api.js`）方法名、入参、返回结构完全一致，
-> 后端就位后各自把内部实现换成 HTTP 请求即可，页面代码不动。
+> 小程序只有匿名目录读取已经接入 Go API；订单、商品管理等业务写链路尚未接入，PC 端也未调用该 API。
 
 ### API 服务基线
 
@@ -100,7 +100,7 @@ curl http://127.0.0.1:8080/api/v1/catalog/products/1
 
 `/health/live` 只反映进程存活并返回 200；`/health/ready` 仅在真实 MySQL 8.0 可达且 embedded migration history 完全 current 时返回 200，否则返回 503 与稳定 reason。可通过 `ORDER_API_HTTP_ADDR` 修改监听地址，通过 `ORDER_API_SHUTDOWN_TIMEOUT` 修改优雅退出上限。
 
-两条 `/api/v1/catalog` GET 接口供后续匿名小程序客户端在进入/刷新菜单和进入商品详情时调用，不要求登录或手机号。当前目录只返回启用分类下的上架商品，不返回库存、售罄、可购买状态、员工价、销量或图片；它不是下单、算价或商户管理接口。
+两条 `/api/v1/catalog` GET 接口由小程序在进入或刷新首页、菜单以及进入商品详情时调用，不要求登录或手机号。当前目录只返回启用分类下的上架商品，不返回库存、售罄、可购买状态、员工价、销量或图片；它不是下单、算价或商户管理接口。
 
 production 模式拒绝 `ORDER_DB_PASSWORD` 和 `ORDER_DB_DSN`；运行时 SSM secret loader 尚未实现，因此当前 production 模式会 fail fast，不能启动。不得用 development/test 环境变量绕过该边界。
 
@@ -117,15 +117,26 @@ bash services/api/scripts/mysql-integration.sh
 bash services/api/scripts/catalog-integration.sh
 ```
 
-当前 migration 集合依次创建 `schema_migrations`、`categories` 和 `products`，仅承载菜单目录事实；没有用户、订单、库存、支付等表，也没有 ORM、seed、down/force/repair 命令。两个前端当前不会调用该进程。
+当前 migration 集合依次创建 `schema_migrations`、`categories` 和 `products`，仅承载菜单目录事实；没有用户、订单、库存、支付等表，也没有 ORM、seed、down/force/repair 命令。微信小程序只调用匿名目录读取接口，Web Admin 当前不调用该进程。
+
+### 开发 Harness
+
+Harness 提供当前 change、任务和本地 Gate 的快速入口：
+
+```bash
+./tools/harness status
+./tools/harness check
+```
+
+状态保存在 Git common dir 下的 `codex-harness` 本地索引，可跨同一仓库的 worktree 读取；它不替代 OpenSpec 生命周期、任务证据或独立验证。`checkpoint` 和 `observe` 会写本地索引，只在已批准 change 的执行流程中使用，参数见 `./tools/harness --help`。
 
 ## 评审走查路径
 
 用户端主链路：
 
 1. 启动页进入“用户端点单”。
-2. 首页查看营业状态、取餐地点、公告、今日推荐和外卖预留入口。
-3. 进入点单页，切换分类并加购菜品；售罄和下架菜品会显示不可购买状态。
+2. 首页查看营业状态、取餐地点、公告、API 返回的推荐菜品和外卖预留入口。
+3. 进入点单页，切换 API 返回的分类并加购菜品。
 4. 打开购物车弹层调整数量，进入确认订单。
 5. 填写联系人、手机号和备注，模拟确认支付。
 6. 查看支付成功页、取餐号、二维码样式凭证和订单详情。
@@ -156,8 +167,8 @@ bash services/api/scripts/catalog-integration.sh
 当前原型已按发布审阅习惯拆分为“配置、源码、文档、设计规则”四类目录。正式上线前仍需完成以下事项：
 
 - 接入真实微信登录、微信支付、支付回调和退款流程。
-- 接入后端 API、数据库、对象存储和订单核销服务。
-- 将 mock 数据替换为服务端数据，并补充异常、空状态和权限校验。
+- 补齐登录、订单、支付、商品管理、对象存储和核销等后端接口。
+- 将剩余本地状态和 mock 替换为服务端事实，并补充异常、空状态和权限校验。
 - 确认正式 AppID、服务器域名、业务域名、隐私协议和小程序类目。
 - 在微信开发者工具中完成体验版上传、真机预览、性能检查和提交审核。
 - 根据 `docs/product/online-ordering-system-customer-discussion.md` 回填客户确认后的业务规则。
