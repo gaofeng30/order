@@ -46,3 +46,4 @@
 
 - [ ] 6.1 In another clean detached worktree at the exact candidate SHA, start from an empty local harness state, prove `UNKNOWN/NO-GO`, bootstrap only from declared evidence, then rerun every acceptance and regression command without modifying tracked files.
 - [ ] 6.2 Record independent PASS/FAIL, exact SHA, command results and remaining limitations; any code/spec/task/base/SHA change invalidates the result.
+  - Evidence (Invalidated verification, 2026-08-17): exact SHA `9d71a7dd345f2320792ab994388e3ed12741f2dc` failed because `proposal.md` declared `ui_level_actual=UI0` while `goal-checkpoint.md` declared `NOT_RUN`; all other specified gates passed. The candidate is invalidated, the field is aligned to `UI0`, and the replacement requires independent verification from a fresh environment.

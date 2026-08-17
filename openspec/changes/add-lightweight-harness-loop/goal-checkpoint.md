@@ -14,16 +14,16 @@
 | owner | branch `codex/add-lightweight-harness-loop`, worktree `/Users/vivix/.codex/worktrees/order-harness-loop.Writer` |
 | dependency | local main integrated control-plane, quality-gate and receipt-control baselines |
 | blocker | none |
-| candidate_sha | external post-commit evidence; `2ff87fa185c13abff011c8c05b912f989b5b5b24` and `f6402ceb276e5a6fcd79987d61017fea3e55360f` are invalidated |
+| candidate_sha | external post-commit evidence; `9d71a7dd345f2320792ab994388e3ed12741f2dc`, `2ff87fa185c13abff011c8c05b912f989b5b5b24` and `f6402ceb276e5a6fcd79987d61017fea3e55360f` are invalidated |
 | integrated_sha | none |
 | archive_sha | none |
-| error_fingerprint | none; both distinct prior failures are repaired and retained below |
+| error_fingerprint | none; all three distinct prior failures are repaired and retained below |
 | repeat_count | `0` |
 | next | commit replacement metadata, bind its exact SHA and restart independent verification from scratch |
 
 ## Boundary
 
-- `gate_type=W1`; `ui_level_target=UI0`; `ui_level_actual=NOT_RUN`.
+- `gate_type=W1`; `ui_level_target=UI0`; `ui_level_actual=UI0`.
 - External assets: none.
 - Owned paths and non-goals are the exact lists in `proposal.md`.
 - Current module uses the frozen runner above. Any observation during implementation is observation-only and cannot alter this module's rules.
@@ -32,6 +32,7 @@
 ## Invalidated writer verdict
 
 - Candidate `f6402ceb276e5a6fcd79987d61017fea3e55360f` is `FAIL/INVALIDATED`; the current receipt checker correctly rejected direct protected-runner drift.
+- Candidate `9d71a7dd345f2320792ab994388e3ed12741f2dc` is `FAIL/INVALIDATED`; independent verification found `ui_level_actual` inconsistent between `proposal.md` and this checkpoint. The value is now consistently `UI0`.
 - Minimal repair is to restore root governance and `order-run-loop` to base bytes and keep the tool explicit. Updating the receipt judge or activating the runner is outside this change.
 - Both system-Python-3.9 and protected-runner-drift observations remain `promotion=NOT_RUN`; neither can alter this frozen runner contract.
 
