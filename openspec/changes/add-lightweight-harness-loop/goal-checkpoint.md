@@ -6,7 +6,7 @@
 | --- | --- |
 | goal | 用一个轻量仓库入口闭环当前状态、检查、交接和受控自进化观察 |
 | module | `add-lightweight-harness-loop` |
-| lifecycle | `IMPLEMENTING` |
+| lifecycle | `CANDIDATE` |
 | repo_sha | `d817aeb3ac5de29d2695ed17ed6277b737ba3ee8` |
 | skill_blob | `0f41f64ad87fc9fd410cb916b4d1562aee92e42f` |
 | skill_sha256 | `2781bdda1544106e30e7483c4b500d611df85c79753cc1bd3b717d91d1edaac8` |
@@ -14,12 +14,12 @@
 | owner | branch `codex/add-lightweight-harness-loop`, worktree `/Users/vivix/.codex/worktrees/order-harness-loop.Writer` |
 | dependency | local main integrated control-plane, quality-gate and receipt-control baselines |
 | blocker | none |
-| candidate_sha | `f6402ceb276e5a6fcd79987d61017fea3e55360f` invalidated by protected-runner receipt drift |
+| candidate_sha | external post-commit evidence; `f6402ceb276e5a6fcd79987d61017fea3e55360f` is invalidated |
 | integrated_sha | none |
 | archive_sha | none |
-| error_fingerprint | `verify_receipt|2|protected-order-run-loop-blob-drift|f6402ceb|local-writer` |
-| repeat_count | `1` |
-| next | remove protected-runner wiring, rerun all Gates, then create a new candidate |
+| error_fingerprint | none; prior protected-runner failure is repaired and retained below |
+| repeat_count | `0` |
+| next | commit final metadata, rerun all clean exact-SHA Gates, then hand to an independent verifier |
 
 ## Boundary
 
@@ -34,6 +34,11 @@
 - Candidate `f6402ceb276e5a6fcd79987d61017fea3e55360f` is `FAIL/INVALIDATED`; the current receipt checker correctly rejected direct protected-runner drift.
 - Minimal repair is to restore root governance and `order-run-loop` to base bytes and keep the tool explicit. Updating the receipt judge or activating the runner is outside this change.
 - Both system-Python-3.9 and protected-runner-drift observations remain `promotion=NOT_RUN`; neither can alter this frozen runner contract.
+
+## Current writer verdict
+
+- `C9/T10/V8/R9=36`; hard blockers `0`.
+- Final base diff excludes root governance and every protected Skill; candidate SHA will be bound externally after the immutable commit.
 
 ## Observations
 
