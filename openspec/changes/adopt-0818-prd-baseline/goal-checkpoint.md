@@ -13,13 +13,13 @@
 | runner_version | `unversioned` |
 | owner | branch `codex/adopt-0818-prd-baseline`, worktree `/Users/vivix/.codex/worktrees/order-adopt-0818-prd-baseline.Writer` |
 | dependency | none |
-| blocker | none for this W0; P1–P5 only block the targeted downstream modules below |
-| candidate_sha | external post-commit evidence; bind the immutable full SHA through Harness and handoff immediately after commit |
+| blocker | none active; verifier FAIL is repaired locally but requires a replacement candidate and fresh independent verification |
+| candidate_sha | replacement exact SHA is external post-commit evidence; prior `f716348280c08df0f9bbb71d029f5dfd6a28c13e` remains `INVALIDATED` |
 | integrated_sha | none |
 | archive_sha | none |
-| error_fingerprint | none |
-| repeat_count | `0` |
-| next | commit only owned paths, bind the exact full SHA, then hand off to a separate clean detached verifier |
+| error_fingerprint | `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2` |
+| repeat_count | `1` |
+| next | commit only the owned repair paths, bind the replacement exact SHA, and restart independent verification from scratch |
 
 ## Boundary
 
@@ -36,7 +36,10 @@
 - Red PASS: the unchanged old PRD made `checks/verify_baseline.py` exit `1` because it contains `985` lines rather than an at-most-40-line thin pointer.
 - Green PASS: the exact same checker passed after the minimal pointer replacement; Refactor PASS after deduplication reports `pointer_lines=11 invariants=16 removed_requirements=6 blockers=5`.
 - Writer Gate PASS prepared on final candidate bytes: focused checker, strict, diff, owned-path, link/structure, read-only byte guard, recoverable base blob and Harness consistency passed; `C9/T10/V8/R9=36`, hard blockers `0`.
-- Candidate SHA is bound externally after the immutable commit. Independent verification, integration and archive remain `NOT_RUN`.
+- Exact candidate `f716348280c08df0f9bbb71d029f5dfd6a28c13e` received verifier `FAIL` for `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2`; that candidate and all prior verification are invalid.
+- Repair Red reproduced I16 marker count `2` after only strengthening the checker; Green and Refactor passed after removing only the duplicate non-normative marker while retaining the `Production facts...` I16 marker.
+- Replacement writer Gate PASS: focused uniqueness checker, strict, diff, owned-path, links/structure, read-only byte guards, recoverable base blob and Harness consistency passed; `C9/T10/V8/R9=36`, hard blockers `0`.
+- Lifecycle is prepared as `CANDIDATE`; fingerprint repeat count remains `1`. Replacement exact SHA is bound externally after commit; fresh independent verification, integration and archive remain `NOT_RUN`.
 - No push, deploy, external write, integration or archive is authorized.
 
 ## Downstream product-decision blockers

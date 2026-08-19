@@ -27,10 +27,22 @@
 
 ## 5. Independent exact-SHA verification
 
-- [ ] 5.1 verifier 在另一 clean detached worktree 检出完整 `candidate_sha`，确认 HEAD 精确匹配、worktree clean、只读共享契约相对 base 未变，并从头重跑 2.1/3.2 的 focused check、strict、diff check 和 owned-path audit。
-- [ ] 5.2 verifier 只记录 exact-SHA `PASS` 或首个真实 `FAIL` 与未验证边界，不修改 candidate bytes；proposal/design/spec/tasks、验收命令、base 或 SHA 任一变化使旧验证立即失效并返回 writer。
+- [x] 5.1 verifier 在另一 clean detached worktree 检出完整 `candidate_sha`，确认 HEAD 精确匹配、worktree clean、只读共享契约相对 base 未变，并从头重跑 2.1/3.2 的 focused check、strict、diff check 和 owned-path audit。
+  - Verifier result：exact SHA `f716348280c08df0f9bbb71d029f5dfd6a28c13e` 返回 `FAIL`；唯一高危 fingerprint 为 `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2`。
+- [x] 5.2 verifier 只记录 exact-SHA `PASS` 或首个真实 `FAIL` 与未验证边界，不修改 candidate bytes；proposal/design/spec/tasks、验收命令、base 或 SHA 任一变化使旧验证立即失效并返回 writer。
+  - Failure routing：旧 candidate 与全部 verification 结论已失效，Harness 返回 `IMPLEMENTING`；`repeat_count=1`，修复仅限 I16 规范标记唯一性。
 
 ## 6. Authorized integration boundary
 
 - [ ] 6.1 仅在 exact candidate 获未失效的 independent PASS、当前 main 仍满足 base/无依赖条件且用户单独授权集成后，按仓库流程集成本地 main；main 已推进时产生新 candidate 并重跑 writer 与 independent Gates。
 - [ ] 6.2 集成后只核对 main 包含已验证内容和 owned paths，记录 `INTEGRATED`；本 change 明确禁止 archive、push、deploy、外部写入和权限变更。
+
+## 7. Verifier failure repair
+
+- [x] 7.1 记录 exact candidate `f716348280c08df0f9bbb71d029f5dfd6a28c13e` 已失效，fingerprint `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2`、`repeat_count=1`，并保持 P2/P3 及其他范围不变。
+- [x] 7.2 只加强 `checks/verify_baseline.py`：对 delta 中全角规范标记 `（I1）` 至 `（I16）` 逐项精确计数并要求各为 `1`；在不改 spec 时运行得到 I16 count `2` 的真实 Red。
+  - Repair Red：只改 checker 后运行 `PYTHONDONTWRITEBYTECODE=1 python3 openspec/changes/adopt-0818-prd-baseline/checks/verify_baseline.py` exit `1`；首错 `invariant marker （I16） must appear exactly once; found 2`，与 verifier fingerprint 一致。
+- [x] 7.3 只从 `Product sources have one explicit authority order` 的非规范权威说明移除重复 `（I16）`，保留 `Production facts and statistics come from server-confirmed data` 中唯一规范落点；重跑相同 checker 得 Green 与 Refactor PASS。
+  - Repair Green/Refactor：完全相同命令连续两次 exit `0`；`BASELINE_CHECK=PASS pointer_lines=11 invariants=16 removed_requirements=6 blockers=5`。未改变任何不变量文字、P1–P5、旧 PRD 指针或只读共享契约。
+- [x] 7.4 更新修复证据，重跑完整 W0 writer Gate，满足 `C/T/V/R>=36`、每项 `>=8`、hard blockers `0` 后只提交 owned paths，并通过 Harness/交接绑定 replacement exact SHA。
+  - Replacement writer Gate：focused uniqueness checker、OpenSpec strict、base diff check、8-path owned audit、三份只读共享契约 byte guard、链接/结构、recoverable base blob 与 Harness consistency 全部 PASS；`C9/T10/V8/R9=36`，hard blockers `0`。replacement `candidate_sha=external-post-commit`；旧 SHA `f716348280c08df0f9bbb71d029f5dfd6a28c13e` 永久 `INVALIDATED`，fresh independent verification 仍为 `NOT_RUN`。

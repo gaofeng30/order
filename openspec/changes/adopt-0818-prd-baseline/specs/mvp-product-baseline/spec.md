@@ -4,7 +4,7 @@
 
 仓库 MUST 以 `docs/product/online-ordering-system-prd-0818.md` §1–§14 作为唯一有效产品 PRD；该文件已经吸收 `docs/product/online-ordering-system-prd-0818-review.md` 中 2026-08-19 的客户确认与逐轮澄清，review 文件 MUST 只作为裁决证据而不形成第二套产品正文。`docs/product/online-ordering-system-prd.md` MUST 只保留薄指针、废止说明和 0818 PRD §13.2 所需的外部 Gate 重定向，不得保留可被解释为仍生效的旧业务规则。
 
-真实适用合同与客户正式确认记录 MUST 高于唯一 PRD；唯一 PRD §1–§14 MUST 高于 §15 前端现状与改造说明；mock、客户端内存态、前端支付结果及原型简化状态 MUST 不得作为生产契约（I16）。仓库内合同证据 MUST 只表述为“仓库范围内未发现已签署证据，现实签署状态未知”。
+真实适用合同与客户正式确认记录 MUST 高于唯一 PRD；唯一 PRD §1–§14 MUST 高于 §15 前端现状与改造说明；mock、客户端内存态、前端支付结果及原型简化状态 MUST 不得作为生产契约。仓库内合同证据 MUST 只表述为“仓库范围内未发现已签署证据，现实签署状态未知”。
 
 #### Scenario: A reader enters through the retired PRD
 

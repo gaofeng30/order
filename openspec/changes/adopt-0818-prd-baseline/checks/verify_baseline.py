@@ -72,7 +72,12 @@ def main() -> None:
 
     delta = DELTA.read_text(encoding="utf-8")
     for index in range(1, 17):
-        require(delta, f"I{index}", DELTA)
+        marker = f"（I{index}）"
+        count = delta.count(marker)
+        if count != 1:
+            fail(
+                f"invariant marker {marker} must appear exactly once; found {count}"
+            )
 
     removed_requirements = (
         "### Requirement: Inventory is keyed by service date, meal period, and product",
