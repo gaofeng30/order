@@ -14,6 +14,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
+	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
@@ -47,11 +48,12 @@ func run() int {
 		return httpapi.ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
 	catalogHandler := catalog.NewHandler(catalog.NewRepository(db))
+	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

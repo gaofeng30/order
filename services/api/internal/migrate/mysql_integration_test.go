@@ -44,11 +44,11 @@ func TestMySQL8Integration(t *testing.T) {
 				t.Fatalf("empty current Check() = %#v", state)
 			}
 			first, err := migrate.Run(context.Background(), db, current)
-			if err != nil || first.AppliedCount != 3 || first.ToVersion != 3 {
+			if err != nil || first.AppliedCount != len(current) || first.ToVersion != uint64(len(current)) {
 				t.Fatalf("current first Run() = %#v, %v", first, err)
 			}
 			repeat, err := migrate.Run(context.Background(), db, current)
-			if err != nil || repeat.AppliedCount != 0 || repeat.FromVersion != 3 || repeat.ToVersion != 3 {
+			if err != nil || repeat.AppliedCount != 0 || repeat.FromVersion != uint64(len(current)) || repeat.ToVersion != uint64(len(current)) {
 				t.Fatalf("current repeat Run() = %#v, %v", repeat, err)
 			}
 			assertCurrent(t, db, current)
@@ -290,7 +290,15 @@ func loadEmbeddedMigrations(t *testing.T) []migrate.Migration {
 	if err != nil {
 		t.Fatalf("load embedded migrations: %v", err)
 	}
-	wantNames := []string{"000001_create_schema_migrations.sql", "000002_create_categories.sql", "000003_create_products.sql"}
+	wantNames := []string{
+		"000001_create_schema_migrations.sql",
+		"000002_create_categories.sql",
+		"000003_create_products.sql",
+		"000004_add_products_meal_period.sql",
+		"000005_create_meal_periods.sql",
+		"000006_initialize_meal_periods.sql",
+		"000007_create_product_sold_out_dates.sql",
+	}
 	if len(set) != len(wantNames) {
 		t.Fatalf("embedded migration count = %d, want %d", len(set), len(wantNames))
 	}
@@ -457,8 +465,8 @@ func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.Co
 		}
 		index++
 	}
-	if rows.Err() != nil || index != 3 || index != len(current) {
-		t.Fatalf("current process migration history rows = %d, want 3", index)
+	if rows.Err() != nil || index != len(current) {
+		t.Fatalf("current process migration history rows = %d, want %d", index, len(current))
 	}
 	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[]}`, 5*time.Second)
 	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'process',TRUE),(2,'hidden',FALSE)"); err != nil {

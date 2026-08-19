@@ -9,37 +9,45 @@ import (
 )
 
 func TestEmbeddedMigrationChainIsExactAndRecoverable(t *testing.T) {
-	wantNames := []string{
-		"000001_create_schema_migrations.sql",
-		"000002_create_categories.sql",
-		"000003_create_products.sql",
+	want := []struct {
+		name   string
+		prefix string
+	}{
+		{name: "000001_create_schema_migrations.sql", prefix: "CREATE TABLE "},
+		{name: "000002_create_categories.sql", prefix: "CREATE TABLE "},
+		{name: "000003_create_products.sql", prefix: "CREATE TABLE "},
+		{name: "000004_add_products_meal_period.sql", prefix: "ALTER TABLE "},
+		{name: "000005_create_meal_periods.sql", prefix: "CREATE TABLE "},
+		{name: "000006_initialize_meal_periods.sql", prefix: "INSERT INTO "},
+		{name: "000007_create_product_sold_out_dates.sql", prefix: "CREATE TABLE "},
 	}
 	entries, err := fs.ReadDir(FS, ".")
 	if err != nil {
 		t.Fatalf("ReadDir() error = %v", err)
 	}
-	if len(entries) != len(wantNames) {
-		t.Fatalf("embedded migrations = %d, want exact v1-v3 chain", len(entries))
+	if len(entries) != len(want) {
+		t.Fatalf("embedded migrations = %d, want exact v1-v7 chain", len(entries))
 	}
-	for index, wantName := range wantNames {
-		if entries[index].IsDir() || entries[index].Name() != wantName {
-			t.Fatalf("embedded migration %d = %q, want %q", index, entries[index].Name(), wantName)
+	for index, expected := range want {
+		if entries[index].IsDir() || entries[index].Name() != expected.name {
+			t.Fatalf("embedded migration %d = %q, want %q", index, entries[index].Name(), expected.name)
 		}
-		data, err := fs.ReadFile(FS, wantName)
+		data, err := fs.ReadFile(FS, expected.name)
 		if err != nil {
-			t.Fatalf("ReadFile(%s) error = %v", wantName, err)
+			t.Fatalf("ReadFile(%s) error = %v", expected.name, err)
 		}
 		sql := string(data)
 		trimmed := strings.TrimSpace(sql)
 		if trimmed == "" || !strings.HasSuffix(sql, "\n") || strings.Contains(sql, "\r") {
-			t.Fatalf("%s must be nonempty LF text with a final newline", wantName)
+			t.Fatalf("%s must be nonempty LF text with a final newline", expected.name)
 		}
-		if strings.Count(trimmed, ";") != 1 || !strings.HasSuffix(trimmed, ";") || strings.Count(strings.ToUpper(trimmed), "CREATE TABLE ") != 1 {
-			t.Fatalf("%s must contain exactly one terminated CREATE TABLE statement", wantName)
+		upper := strings.ToUpper(trimmed)
+		if strings.Count(trimmed, ";") != 1 || !strings.HasSuffix(trimmed, ";") || !strings.HasPrefix(upper, expected.prefix) {
+			t.Fatalf("%s must contain exactly one terminated %s statement", expected.name, strings.TrimSpace(expected.prefix))
 		}
 		for _, forbidden := range []string{" seed", " down", " repair", " force", "drop table", "delimiter", "load data"} {
 			if strings.Contains(strings.ToLower(trimmed), forbidden) {
-				t.Fatalf("%s contains forbidden token %q", wantName, forbidden)
+				t.Fatalf("%s contains forbidden token %q", expected.name, forbidden)
 			}
 		}
 	}
@@ -48,11 +56,11 @@ func TestEmbeddedMigrationChainIsExactAndRecoverable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if len(loaded) != len(wantNames) {
-		t.Fatalf("loaded migrations = %d, want %d", len(loaded), len(wantNames))
+	if len(loaded) != len(want) {
+		t.Fatalf("loaded migrations = %d, want %d", len(loaded), len(want))
 	}
 	for index, migration := range loaded {
-		if migration.Version != uint64(index+1) || migration.Name != wantNames[index] || len(migration.SQL) == 0 {
+		if migration.Version != uint64(index+1) || migration.Name != want[index].name || len(migration.SQL) == 0 {
 			t.Fatalf("loaded migration %d = %d/%q", index, migration.Version, migration.Name)
 		}
 	}

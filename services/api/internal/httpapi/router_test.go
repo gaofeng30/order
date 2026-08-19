@@ -20,6 +20,7 @@ import (
 
 	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/migrations"
 	"github.com/gin-gonic/gin"
@@ -32,7 +33,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		calls++
 		return ReadinessResult{Ready: false, Reason: "database_unreachable"}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler())
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/live", nil))
@@ -46,7 +47,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 func TestHealthReadinessReturnsCurrent(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Ready: true}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -67,7 +68,7 @@ func TestHealthReadinessReturnsStableFailureReasons(t *testing.T) {
 		t.Run(reason, func(t *testing.T) {
 			router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 				return ReadinessResult{Reason: reason}
-			}, testCatalogHandler())
+			}, testCatalogHandler(), testMenuHandler())
 			recorder := httptest.NewRecorder()
 
 			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -81,7 +82,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 	const canary = "health-canary-secret-must-not-leak"
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Reason: canary}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -93,7 +94,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 }
 
 func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
-	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler())
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler())
 
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		recorder := httptest.NewRecorder()
@@ -118,7 +119,7 @@ func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
 
 func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
 	reader := &catalogReaderStub{categories: []catalog.Category{}}
-	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader))
+	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader), testMenuHandler())
 
 	list := httptest.NewRecorder()
 	router.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -140,12 +141,56 @@ func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
 	}
 }
 
+func TestMenuRoutesAreVersionedAndPreserveCatalogContract(t *testing.T) {
+	menuReader := &routerMenuReader{
+		periods: []menu.MealPeriodRecord{
+			{Code: "lunch", CutoffTime: "11:30:00", PickupStartTime: "11:30:00", PickupEndTime: "13:30:00", IntervalMinutes: 30},
+			{Code: "dinner", CutoffTime: "17:00:00", PickupStartTime: "17:00:00", PickupEndTime: "19:00:00", IntervalMinutes: 30},
+		},
+	}
+	now := time.Date(2026, 8, 20, 10, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	router := NewRouter(
+		discardLogger(), alwaysReady,
+		catalog.NewHandler(&catalogReaderStub{categories: []catalog.Category{}}),
+		menu.NewHandler(menuReader, func() time.Time { return now }),
+	)
+
+	valid := httptest.NewRecorder()
+	router.ServeHTTP(valid, httptest.NewRequest(http.MethodGet, "/api/v1/menu?date=2026-08-20&time=12:00", nil))
+	if valid.Code != http.StatusOK || !strings.Contains(valid.Body.String(), `"categories":[]`) {
+		t.Fatalf("versioned menu = %d %q", valid.Code, valid.Body.String())
+	}
+	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+		t.Fatalf("versioned menu reader calls = %d/%d", menuReader.periodCalls, menuReader.listCalls)
+	}
+
+	for _, path := range []string{"/menu?date=2026-08-20&time=12:00", "/api/v1/menu/anything?date=2026-08-20&time=12:00"} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusNotFound || response.Body.Len() != 0 {
+			t.Fatalf("unknown menu path %q = %d/%q", path, response.Code, response.Body.String())
+		}
+	}
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodPost, "/api/v1/menu?date=2026-08-20&time=12:00", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
+		t.Fatalf("menu wrong method = %d/%q", wrongMethod.Code, wrongMethod.Body.String())
+	}
+	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+		t.Fatal("unknown or wrong-method menu request reached repository")
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+}
+
 func TestCatalogUnavailableDoesNotLeakRepositoryErrorToBodyOrAccessLog(t *testing.T) {
 	const canary = "catalog-log-canary-dsn-sql-password"
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	reader := &catalogReaderStub{listErr: errors.New(canary)}
-	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader))
+	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader), testMenuHandler())
 
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -203,7 +248,7 @@ func TestFoundationAndCatalogIntegration(t *testing.T) {
 		state := migrate.Check(ctx, db, migrationSet)
 		return ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
-	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)))
+	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)), testMenuHandler())
 	assertSmokeResponse(t, router, "/health/ready", http.StatusOK, `{"status":"ok"}`)
 	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[]}`)
 
@@ -357,6 +402,30 @@ func (*catalogReaderStub) GetProduct(context.Context, uint64) (catalog.Product, 
 
 func testCatalogHandler() *catalog.Handler {
 	return catalog.NewHandler(&catalogReaderStub{categories: []catalog.Category{}})
+}
+
+type routerMenuReader struct {
+	periods     []menu.MealPeriodRecord
+	periodCalls int
+	listCalls   int
+}
+
+func (reader *routerMenuReader) MealPeriods(context.Context) ([]menu.MealPeriodRecord, error) {
+	reader.periodCalls++
+	return reader.periods, nil
+}
+
+func (reader *routerMenuReader) List(context.Context, string, menu.MealCode) ([]menu.Category, error) {
+	reader.listCalls++
+	return []menu.Category{}, nil
+}
+
+func testMenuHandler() *menu.Handler {
+	now := time.Date(2026, 8, 20, 10, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	return menu.NewHandler(&routerMenuReader{periods: []menu.MealPeriodRecord{
+		{Code: "lunch", CutoffTime: "11:30:00", PickupStartTime: "11:30:00", PickupEndTime: "13:30:00", IntervalMinutes: 30},
+		{Code: "dinner", CutoffTime: "17:00:00", PickupStartTime: "17:00:00", PickupEndTime: "19:00:00", IntervalMinutes: 30},
+	}}, func() time.Time { return now })
 }
 
 func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {

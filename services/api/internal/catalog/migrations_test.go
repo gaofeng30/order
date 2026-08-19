@@ -19,6 +19,10 @@ func TestCatalogMigrationSet(t *testing.T) {
 		"000001_create_schema_migrations.sql",
 		"000002_create_categories.sql",
 		"000003_create_products.sql",
+		"000004_add_products_meal_period.sql",
+		"000005_create_meal_periods.sql",
+		"000006_initialize_meal_periods.sql",
+		"000007_create_product_sold_out_dates.sql",
 	}
 	if len(loaded) != len(wantNames) {
 		t.Fatalf("migration count = %d, want %d", len(loaded), len(wantNames))
@@ -29,7 +33,7 @@ func TestCatalogMigrationSet(t *testing.T) {
 		}
 	}
 
-	for _, name := range wantNames[1:] {
+	for _, name := range wantNames[1:3] {
 		data, err := fs.ReadFile(migrations.FS, name)
 		if err != nil {
 			t.Fatalf("read %s: %v", name, err)
@@ -52,6 +56,38 @@ func TestCatalogMigrationSet(t *testing.T) {
 		for _, forbidden := range []string{" SEED", " DOWN", " REPAIR", " FORCE", "DELIMITER", "SOURCE ", "LOAD DATA"} {
 			if strings.Contains(upper, forbidden) {
 				t.Fatalf("%s contains forbidden token %q", name, forbidden)
+			}
+		}
+	}
+}
+
+func TestMenuMigrationContracts(t *testing.T) {
+	checks := map[string][]string{
+		"000004_add_products_meal_period.sql": {
+			"ALTER TABLE products", "meal_period ENUM('all','lunch','dinner') NOT NULL DEFAULT 'all'", "idx_products_menu",
+		},
+		"000005_create_meal_periods.sql": {
+			"CREATE TABLE meal_periods", "code ENUM('lunch','dinner')", "cutoff_time TIME NOT NULL", "pickup_start_time TIME NOT NULL", "pickup_end_time TIME NOT NULL", "interval_minutes SMALLINT UNSIGNED NOT NULL", "SECOND(cutoff_time) = 0", "SECOND(pickup_start_time) = 0", "SECOND(pickup_end_time) = 0", "interval_minutes BETWEEN 1 AND 1440", "cutoff_time <= pickup_start_time", "pickup_start_time <= pickup_end_time",
+		},
+		"000006_initialize_meal_periods.sql": {
+			"INSERT INTO meal_periods", "('lunch','11:30:00','11:30:00','13:30:00',30)", "('dinner','17:00:00','17:00:00','19:00:00',30)",
+		},
+		"000007_create_product_sold_out_dates.sql": {
+			"CREATE TABLE product_sold_out_dates", "service_date DATE NOT NULL", "product_id BIGINT UNSIGNED NOT NULL", "PRIMARY KEY (service_date, product_id)", "ON UPDATE RESTRICT ON DELETE RESTRICT",
+		},
+	}
+	for name, required := range checks {
+		data, err := fs.ReadFile(migrations.FS, name)
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		text := string(data)
+		if strings.Count(strings.TrimSpace(text), ";") != 1 || !strings.HasSuffix(text, "\n") {
+			t.Fatalf("%s must remain one LF-terminated statement", name)
+		}
+		for _, fragment := range required {
+			if !strings.Contains(text, fragment) {
+				t.Fatalf("%s missing %q", name, fragment)
 			}
 		}
 	}
