@@ -36,7 +36,7 @@ Every response produced by this GET handler, including 200, 400, 401 and 503, MU
 
 For an authenticated user with a v10 primary phone, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":true,"masked_phone":"<integrated-mask>"}`. The mask MUST use the integrated primary-phone mask rule: retain `+`, replace every normalized digit except the last at most four with `*`, and hide at least one digit.
 
-For an authenticated user whose v10 primary phone is unbound, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":false,"masked_phone":null}`. The field MUST be present as JSON null, not omitted or encoded as an empty string. Neither representation MUST include internal user ID, openid, full phone, employee/visitor state, discount, whitelist, merchant/PC state, avatar, nickname, or another profile field.
+For an authenticated user whose v10 primary phone is SQL NULL, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":false,"masked_phone":null}`. SQL NULL validity MUST be preserved through the repository/domain result; an empty string MUST NOT be treated as equivalent to NULL. The field MUST be present as JSON null, not omitted or encoded as an empty string. Neither representation MUST include internal user ID, openid, full phone, employee/visitor state, discount, whitelist, merchant/PC state, avatar, nickname, or another profile field.
 
 #### Scenario: Current user is bound
 
@@ -72,6 +72,8 @@ The complete GET path MUST NOT call WeChat, stable-token/getPhoneNumber code, th
 
 Authentication persistence failure or current-user phone persistence failure MUST return HTTP 503 with exact body `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}` and `Cache-Control: no-store`. A missing/invalid stored user identity or invalid stored phone that cannot be safely masked MUST use the same sanitized 503. The route MUST NOT convert any such failure into HTTP 200 unbound.
 
+The persisted phone state MUST be valid only when `(bound=false, phone empty)` or `(bound=true, phone is a maskable canonical value)`. Bound plus empty/malformed, or unbound plus non-empty, MUST fail closed. The existing POST bind preflight MUST apply the same validation before provider access: inconsistent state returns its existing sanitized HTTP 503 unavailable envelope without provider, transaction, binding call or write; valid bound/unbound POST behavior remains unchanged. If the binding transaction observes a non-NULL current value after provider access, it MUST accept only a canonical phone: same phone remains idempotent, different canonical phone remains conflict, and empty/malformed returns persistence failure/HTTP 503 without a write.
+
 Errors, logs, responses and ordinary evidence MUST NOT contain Authorization, session token/hash, internal user ID, openid, full phone, SQL, DSN, database error text, provider data, employee/whitelist/discount or merchant state.
 
 #### Scenario: Authentication database is unavailable
@@ -85,6 +87,13 @@ Errors, logs, responses and ordinary evidence MUST NOT contain Authorization, se
 - **WHEN** authentication succeeds but `FindPhoneUser` fails or returns an invalid current-user record
 - **THEN** the route returns the same exact HTTP 503 unavailable envelope with `Cache-Control: no-store`
 - **AND** it does not report unbound, expose persistence detail or modify data
+
+#### Scenario: Non-NULL empty stored phone is inconsistent
+
+- **WHEN** v10 contains a non-NULL empty `primary_phone` paired with non-NULL `primary_phone_bound_at`
+- **THEN** the authenticated GET returns the exact HTTP 503 status-unavailable envelope instead of HTTP 200 unbound
+- **AND** POST bind returns its exact HTTP 503 binding-unavailable envelope before provider or write access
+- **AND** both requests leave the user and session rows unchanged
 
 ### Requirement: Real MySQL proves the read contract while real WeChat is not required
 

@@ -20,8 +20,9 @@ var (
 
 // PhoneUser contains only the provider identity and optional canonical primary phone.
 type PhoneUser struct {
-	OpenID       string
-	PrimaryPhone string
+	OpenID            string
+	PrimaryPhoneBound bool
+	PrimaryPhone      string
 }
 
 // PhoneBinding is the only successful phone-binding representation.
@@ -68,8 +69,11 @@ func (service *PhoneService) Bind(ctx context.Context, userID uint64, code strin
 	if err != nil || userID == 0 || user.OpenID == "" {
 		return PhoneBinding{}, ErrUnavailable
 	}
-	if user.PrimaryPhone != "" {
+	if user.PrimaryPhoneBound {
 		return maskedBinding(user.PrimaryPhone)
+	}
+	if user.PrimaryPhone != "" {
+		return PhoneBinding{}, ErrUnavailable
 	}
 
 	phone, err := service.provider.Exchange(ctx, code, user.OpenID)
@@ -78,8 +82,11 @@ func (service *PhoneService) Bind(ctx context.Context, userID uint64, code strin
 		if readErr != nil {
 			return PhoneBinding{}, ErrUnavailable
 		}
-		if current.PrimaryPhone != "" {
+		if current.PrimaryPhoneBound {
 			return maskedBinding(current.PrimaryPhone)
+		}
+		if current.PrimaryPhone != "" {
+			return PhoneBinding{}, ErrUnavailable
 		}
 		return PhoneBinding{}, ErrPhoneCodeRejected
 	}
@@ -104,7 +111,10 @@ func (service *PhoneService) Status(ctx context.Context, userID uint64) (PhoneSt
 	if err != nil || userID == 0 || user.OpenID == "" {
 		return PhoneStatus{}, ErrUnavailable
 	}
-	if user.PrimaryPhone == "" {
+	if !user.PrimaryPhoneBound {
+		if user.PrimaryPhone != "" {
+			return PhoneStatus{}, ErrUnavailable
+		}
 		return PhoneStatus{}, nil
 	}
 	binding, err := maskedBinding(user.PrimaryPhone)

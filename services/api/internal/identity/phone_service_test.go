@@ -35,7 +35,7 @@ func TestPhoneServiceMasksMinimumE164(t *testing.T) {
 func TestPhoneServiceBypassesProviderWhenBound(t *testing.T) {
 	t.Parallel()
 	provider := &phoneProviderStub{err: errors.New("must not be called")}
-	store := &phoneStoreStub{reads: []PhoneUser{{OpenID: "opaque-user", PrimaryPhone: "+8613712345678"}}}
+	store := &phoneStoreStub{reads: []PhoneUser{{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "+8613712345678"}}}
 	service := newPhoneService(provider, store, func() time.Time { return testNow })
 
 	result, err := service.Bind(context.Background(), 42, "unused-phone-code")
@@ -52,7 +52,7 @@ func TestPhoneServiceRecoversRejectedSameCode(t *testing.T) {
 	provider := &phoneProviderStub{err: wechat.ErrPhoneCodeRejected}
 	store := &phoneStoreStub{reads: []PhoneUser{
 		{OpenID: "opaque-user"},
-		{OpenID: "opaque-user", PrimaryPhone: "+8613712345678"},
+		{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "+8613712345678"},
 	}}
 	service := newPhoneService(provider, store, func() time.Time { return testNow })
 
@@ -119,7 +119,7 @@ func TestPhoneStatusReadsBoundAndUnboundWithoutWrites(t *testing.T) {
 		wantBound  bool
 		wantMasked string
 	}{
-		{name: "bound", user: PhoneUser{OpenID: "bound-user", PrimaryPhone: "+8613712345678"}, wantBound: true, wantMasked: "+*********5678"},
+		{name: "bound", user: PhoneUser{OpenID: "bound-user", PrimaryPhoneBound: true, PrimaryPhone: "+8613712345678"}, wantBound: true, wantMasked: "+*********5678"},
 		{name: "unbound", user: PhoneUser{OpenID: "unbound-user"}},
 	}
 	for _, test := range tests {
@@ -152,7 +152,9 @@ func TestPhoneStatusFailsClosedOnInvalidOrUnavailableState(t *testing.T) {
 		{name: "zero user", user: PhoneUser{OpenID: "unexpected"}},
 		{name: "read unavailable", userID: 42, readError: errors.New("store canary")},
 		{name: "missing identity", userID: 42, user: PhoneUser{}},
-		{name: "invalid stored phone", userID: 42, user: PhoneUser{OpenID: "opaque-user", PrimaryPhone: "not-e164"}},
+		{name: "bound empty", userID: 42, user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true}},
+		{name: "bound malformed", userID: 42, user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "not-e164"}},
+		{name: "unbound non-empty", userID: 42, user: PhoneUser{OpenID: "opaque-user", PrimaryPhone: "+8613712345678"}},
 	}
 	for _, test := range tests {
 		test := test
@@ -167,6 +169,34 @@ func TestPhoneStatusFailsClosedOnInvalidOrUnavailableState(t *testing.T) {
 			}
 			if provider.calls != 0 || store.bindCalls != 0 {
 				t.Fatal("failed primary-phone status reached provider or write path")
+			}
+		})
+	}
+}
+
+func TestPhoneStatusProtectsBindFromInconsistentStoredState(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		user PhoneUser
+	}{
+		{name: "bound empty", user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true}},
+		{name: "bound malformed", user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "not-e164"}},
+		{name: "unbound non-empty", user: PhoneUser{OpenID: "opaque-user", PrimaryPhone: "+8613712345678"}},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			provider := &phoneProviderStub{phone: "+8613712345678"}
+			store := &phoneStoreStub{reads: []PhoneUser{test.user}, boundPhone: "+8613712345678"}
+			service := newPhoneService(provider, store, func() time.Time { return testNow })
+
+			if _, err := service.Bind(context.Background(), 42, "unused-code"); !errors.Is(err, ErrUnavailable) {
+				t.Fatal("inconsistent stored state did not fail closed before bind")
+			}
+			if provider.calls != 0 || store.readCalls != 1 || store.bindCalls != 0 {
+				t.Fatal("inconsistent stored state reached provider or bind transaction")
 			}
 		})
 	}

@@ -21,7 +21,7 @@ func (repository *Repository) FindPhoneUser(ctx context.Context, userID uint64) 
 	if err != nil || userID == 0 || openID == "" {
 		return PhoneUser{}, errPersistence
 	}
-	return PhoneUser{OpenID: openID, PrimaryPhone: phone.String}, nil
+	return PhoneUser{OpenID: openID, PrimaryPhoneBound: phone.Valid, PrimaryPhone: phone.String}, nil
 }
 
 // BindPrimaryPhone locks one user and writes only its first canonical phone.
@@ -45,8 +45,13 @@ func (repository *Repository) BindPrimaryPhone(ctx context.Context, userID uint6
 	`, userID).Scan(&current); err != nil {
 		return "", errPersistence
 	}
-	if current.Valid && current.String != phone {
-		return "", ErrPrimaryPhoneAlreadyBound
+	if current.Valid {
+		if _, err := maskedBinding(current.String); err != nil {
+			return "", errPersistence
+		}
+		if current.String != phone {
+			return "", ErrPrimaryPhoneAlreadyBound
+		}
 	}
 	if !current.Valid {
 		update, err := transaction.ExecContext(ctx, `
