@@ -50,7 +50,7 @@ The bound value is produced only by the integrated mask function. A pointer/null
 
 ### Reuse the current-user read and perform no side effects
 
-`PhoneUser` carries both `PrimaryPhone` and `PrimaryPhoneBound`. `Repository.FindPhoneUser` keeps the existing SELECT and `WHERE id=?` query byte-identical, but maps `sql.NullString.Valid` into `PrimaryPhoneBound`. NULL plus empty is the only unbound state. Bound plus empty/malformed, or unbound plus non-empty, is inconsistent and returns sanitized unavailable; only a valid bound phone reaches the existing mask helper.
+`PhoneUser` carries both `PrimaryPhone` and `PrimaryPhoneBound`. `Repository.FindPhoneUser` keeps the existing SELECT and `WHERE id=?` query byte-identical, but maps `sql.NullString.Valid` into `PrimaryPhoneBound`. NULL plus empty is the only unbound state. Bound plus empty/malformed, including `+0` whose first digit is not canonical E.164 `1..9`, or unbound plus non-empty, is inconsistent and returns sanitized unavailable; only a valid bound phone reaches the existing mask helper.
 
 `PhoneService.Bind` applies the same state validation to its initial read before provider access. A valid bound phone retains the existing idempotent masked response; valid unbound continues into the existing provider/write flow. Any inconsistent initial state returns unavailable without provider or binding calls. The same validation fails closed on the rejected-code recovery read, without changing valid-state POST behavior.
 

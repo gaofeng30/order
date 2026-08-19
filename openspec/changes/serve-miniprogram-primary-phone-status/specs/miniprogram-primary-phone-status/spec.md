@@ -34,7 +34,7 @@ Every response produced by this GET handler, including 200, 400, 401 and 503, MU
 
 ### Requirement: Bound and unbound representations are exact and minimal
 
-For an authenticated user with a v10 primary phone, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":true,"masked_phone":"<integrated-mask>"}`. The mask MUST use the integrated primary-phone mask rule: retain `+`, replace every normalized digit except the last at most four with `*`, and hide at least one digit.
+For an authenticated user with a v10 primary phone, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":true,"masked_phone":"<integrated-mask>"}`. The canonical phone MUST start with `+` followed by a first digit in `1..9`; later characters remain digits under the existing length rule. The mask MUST use the integrated primary-phone mask rule: retain `+`, replace every normalized digit except the last at most four with `*`, and hide at least one digit.
 
 For an authenticated user whose v10 primary phone is SQL NULL, the route MUST return HTTP 200 with exactly `{"primary_phone_bound":false,"masked_phone":null}`. SQL NULL validity MUST be preserved through the repository/domain result; an empty string MUST NOT be treated as equivalent to NULL. The field MUST be present as JSON null, not omitted or encoded as an empty string. Neither representation MUST include internal user ID, openid, full phone, employee/visitor state, discount, whitelist, merchant/PC state, avatar, nickname, or another profile field.
 

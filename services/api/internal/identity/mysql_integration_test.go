@@ -150,6 +150,14 @@ func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal("create corrupt status session failed")
 		}
+		leadingZeroSessionService := newService(
+			mysqlStaticExchanger{openid: "status-leading-zero-openid"}, repository,
+			func() time.Time { return now }, bytes.NewReader(bytes.Repeat([]byte{0x70}, tokenEntropyBytes)),
+		)
+		leadingZeroSession, err := leadingZeroSessionService.Issue(context.Background(), "leading-zero-login-code")
+		if err != nil {
+			t.Fatal("create leading-zero status session failed")
+		}
 
 		var boundUserID uint64
 		if err := db.QueryRowContext(context.Background(), "SELECT id FROM miniprogram_users WHERE openid=?", "status-bound-openid").Scan(&boundUserID); err != nil {
@@ -166,6 +174,13 @@ func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "UPDATE miniprogram_users SET primary_phone=?,primary_phone_bound_at=? WHERE id=?", "", boundAt, corruptUserID); err != nil {
 			t.Fatal("seed non-null empty phone state failed")
 		}
+		var leadingZeroUserID uint64
+		if err := db.QueryRowContext(context.Background(), "SELECT id FROM miniprogram_users WHERE openid=?", "status-leading-zero-openid").Scan(&leadingZeroUserID); err != nil {
+			t.Fatal("read leading-zero status user failed")
+		}
+		if _, err := db.ExecContext(context.Background(), "UPDATE miniprogram_users SET primary_phone=?,primary_phone_bound_at=? WHERE id=?", "+0", boundAt, leadingZeroUserID); err != nil {
+			t.Fatal("seed leading-zero phone state failed")
+		}
 
 		before := readPhoneStatusDatabaseSnapshot(t, db)
 		provider := &phoneStatusProviderSpy{}
@@ -179,6 +194,11 @@ func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
 		assertMySQLPhoneBindHTTP(t, router, corruptSession.AccessToken, http.StatusServiceUnavailable, `{"error":{"code":"PHONE_BINDING_UNAVAILABLE","message":"phone binding temporarily unavailable"}}`)
 		if _, err := repository.BindPrimaryPhone(context.Background(), corruptUserID, "+8613800009999", boundAt.Add(time.Minute)); !errors.Is(err, errPersistence) {
 			t.Fatal("invalid current phone did not fail closed in repository transaction")
+		}
+		assertMySQLPhoneStatusHTTP(t, router, leadingZeroSession.AccessToken, http.StatusServiceUnavailable, `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}`)
+		assertMySQLPhoneBindHTTP(t, router, leadingZeroSession.AccessToken, http.StatusServiceUnavailable, `{"error":{"code":"PHONE_BINDING_UNAVAILABLE","message":"phone binding temporarily unavailable"}}`)
+		if _, err := repository.BindPrimaryPhone(context.Background(), leadingZeroUserID, "+8613800009998", boundAt.Add(time.Minute)); !errors.Is(err, errPersistence) {
+			t.Fatal("leading-zero current phone did not fail closed in repository transaction")
 		}
 
 		unknownToken := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0x77}, tokenEntropyBytes))

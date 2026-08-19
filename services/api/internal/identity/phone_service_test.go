@@ -174,6 +174,19 @@ func TestPhoneStatusFailsClosedOnInvalidOrUnavailableState(t *testing.T) {
 	}
 }
 
+func TestPhoneStatusRejectsCanonicalLeadingZero(t *testing.T) {
+	provider := &phoneProviderStub{err: errors.New("provider must not be called")}
+	store := &phoneStoreStub{reads: []PhoneUser{{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "+0"}}}
+	service := newPhoneService(provider, store, func() time.Time { return testNow })
+
+	if _, err := service.Status(context.Background(), 42); !errors.Is(err, ErrUnavailable) {
+		t.Fatal("leading-zero primary-phone status did not fail closed")
+	}
+	if provider.calls != 0 || store.readCalls != 1 || store.bindCalls != 0 {
+		t.Fatal("leading-zero primary-phone status reached provider or write path")
+	}
+}
+
 func TestPhoneStatusProtectsBindFromInconsistentStoredState(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -182,6 +195,7 @@ func TestPhoneStatusProtectsBindFromInconsistentStoredState(t *testing.T) {
 	}{
 		{name: "bound empty", user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true}},
 		{name: "bound malformed", user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "not-e164"}},
+		{name: "bound leading zero", user: PhoneUser{OpenID: "opaque-user", PrimaryPhoneBound: true, PrimaryPhone: "+0"}},
 		{name: "unbound non-empty", user: PhoneUser{OpenID: "opaque-user", PrimaryPhone: "+8613712345678"}},
 	}
 	for _, test := range tests {

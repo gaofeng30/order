@@ -125,7 +125,7 @@ func (service *PhoneService) Status(ctx context.Context, userID uint64) (PhoneSt
 }
 
 func maskedBinding(phone string) (PhoneBinding, error) {
-	if len(phone) < 2 || phone[0] != '+' || !phoneDigits(phone[1:]) || len(phone) > 16 {
+	if len(phone) < 2 || phone[0] != '+' || phone[1] < '1' || phone[1] > '9' || !phoneDigits(phone[1:]) || len(phone) > 16 {
 		return PhoneBinding{}, ErrUnavailable
 	}
 	digitCount := len(phone) - 1
