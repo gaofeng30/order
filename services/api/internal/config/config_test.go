@@ -10,6 +10,11 @@ import (
 
 const configCanarySecret = "config-canary-secret-must-not-leak"
 
+const (
+	configMiniProgramAppID     = "wx-config-test-app-id"
+	configMiniProgramAppSecret = "config-miniprogram-secret-canary"
+)
+
 func TestLoadDefaultsWithStructuredDevelopmentDatabase(t *testing.T) {
 	clearConfigEnv(t)
 	setValidDatabaseEnv(t, "development")
@@ -29,6 +34,48 @@ func TestLoadDefaultsWithStructuredDevelopmentDatabase(t *testing.T) {
 	}
 	if cfg.Database.Host != "127.0.0.1" || cfg.Database.Port != 3306 || cfg.Database.Database != "order_test" || cfg.Database.User != "order_test" || cfg.Database.Password != configCanarySecret || cfg.Database.TLSMode != "disabled" {
 		t.Fatalf("structured database config was not preserved")
+	}
+}
+
+func TestLoadMiniProgramCredentials(t *testing.T) {
+	clearConfigEnv(t)
+	setValidDatabaseEnv(t, "test")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.MiniProgram.AppID != configMiniProgramAppID || cfg.MiniProgram.AppSecret != configMiniProgramAppSecret {
+		t.Fatal("structured Mini Program credentials were not preserved")
+	}
+}
+
+func TestLoadMiniProgramRejectsInvalidValuesWithoutLeakage(t *testing.T) {
+	tests := []struct {
+		name     string
+		variable string
+		value    string
+	}{
+		{name: "missing app id", variable: "ORDER_WECHAT_MINIPROGRAM_APP_ID", value: ""},
+		{name: "missing app secret", variable: "ORDER_WECHAT_MINIPROGRAM_APP_SECRET", value: ""},
+		{name: "app id space", variable: "ORDER_WECHAT_MINIPROGRAM_APP_ID", value: "wx invalid " + configCanarySecret},
+		{name: "app secret unicode", variable: "ORDER_WECHAT_MINIPROGRAM_APP_SECRET", value: "secret-微信-" + configCanarySecret},
+		{name: "app id too long", variable: "ORDER_WECHAT_MINIPROGRAM_APP_ID", value: strings.Repeat("a", 129) + configCanarySecret},
+		{name: "app secret too long", variable: "ORDER_WECHAT_MINIPROGRAM_APP_SECRET", value: strings.Repeat("b", 257) + configCanarySecret},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			clearConfigEnv(t)
+			setValidDatabaseEnv(t, "development")
+			t.Setenv(test.variable, test.value)
+
+			_, err := Load()
+			assertConfigReason(t, err, "invalid_miniprogram_field")
+			if !strings.Contains(err.Error(), test.variable) {
+				t.Fatalf("error = %q, want field name %s", err, test.variable)
+			}
+			assertNotContains(t, err.Error(), configCanarySecret, test.variable)
+		})
 	}
 }
 
@@ -59,7 +106,7 @@ func TestLoadRejectsRawDSNWithoutLeakingIt(t *testing.T) {
 }
 
 func TestLoadRejectsProductionEnvironmentSecrets(t *testing.T) {
-	for _, variable := range []string{"ORDER_DB_PASSWORD", "ORDER_DB_DSN"} {
+	for _, variable := range []string{"ORDER_DB_PASSWORD", "ORDER_DB_DSN", "ORDER_WECHAT_MINIPROGRAM_APP_SECRET"} {
 		t.Run(variable, func(t *testing.T) {
 			clearConfigEnv(t)
 			t.Setenv("ORDER_ENV", "production")
@@ -156,6 +203,8 @@ func setValidDatabaseEnv(t *testing.T, environment string) {
 	t.Setenv("ORDER_DB_USER", "order_test")
 	t.Setenv("ORDER_DB_PASSWORD", configCanarySecret)
 	t.Setenv("ORDER_DB_TLS_MODE", "disabled")
+	t.Setenv("ORDER_WECHAT_MINIPROGRAM_APP_ID", configMiniProgramAppID)
+	t.Setenv("ORDER_WECHAT_MINIPROGRAM_APP_SECRET", configMiniProgramAppSecret)
 }
 
 func clearConfigEnv(t *testing.T) {
@@ -171,6 +220,8 @@ func clearConfigEnv(t *testing.T) {
 		"ORDER_DB_DSN",
 		"ORDER_API_HTTP_ADDR",
 		"ORDER_API_SHUTDOWN_TIMEOUT",
+		"ORDER_WECHAT_MINIPROGRAM_APP_ID",
+		"ORDER_WECHAT_MINIPROGRAM_APP_SECRET",
 	} {
 		unsetEnv(t, key)
 	}

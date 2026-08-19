@@ -20,13 +20,15 @@ func TestEmbeddedMigrationChainIsExactAndRecoverable(t *testing.T) {
 		{name: "000005_create_meal_periods.sql", prefix: "CREATE TABLE "},
 		{name: "000006_initialize_meal_periods.sql", prefix: "INSERT INTO "},
 		{name: "000007_create_product_sold_out_dates.sql", prefix: "CREATE TABLE "},
+		{name: "000008_create_miniprogram_users.sql", prefix: "CREATE TABLE "},
+		{name: "000009_create_miniprogram_sessions.sql", prefix: "CREATE TABLE "},
 	}
 	entries, err := fs.ReadDir(FS, ".")
 	if err != nil {
 		t.Fatalf("ReadDir() error = %v", err)
 	}
 	if len(entries) != len(want) {
-		t.Fatalf("embedded migrations = %d, want exact v1-v7 chain", len(entries))
+		t.Fatalf("embedded migrations = %d, want exact v1-v9 chain", len(entries))
 	}
 	for index, expected := range want {
 		if entries[index].IsDir() || entries[index].Name() != expected.name {

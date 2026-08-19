@@ -25,8 +25,8 @@ var menuOwnedSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 func TestMenuMySQLIntegration(t *testing.T) {
 	withMenuSchema(t, func(db *sql.DB) {
 		set, err := migrate.Load(migrations.FS)
-		if err != nil || len(set) != 7 {
-			t.Fatalf("load v1-v7 migrations: count=%d err=%v", len(set), err)
+		if err != nil || len(set) != 9 {
+			t.Fatalf("load v1-v9 migrations: count=%d err=%v", len(set), err)
 		}
 		if first, err := migrate.Run(context.Background(), db, set[:3]); err != nil || first.ToVersion != 3 || first.AppliedCount != 3 {
 			t.Fatal("establish v3 menu baseline failed")
@@ -37,8 +37,8 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents) VALUES (99,99,'Legacy Product',900)"); err != nil {
 			t.Fatal("insert legacy product before v4 failed")
 		}
-		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 7 || upgrade.AppliedCount != 4 {
-			t.Fatal("upgrade v3 to v7 failed")
+		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 9 || upgrade.AppliedCount != 6 {
+			t.Fatal("upgrade v3 to v9 failed")
 		}
 		var legacyMeal string
 		if err := db.QueryRowContext(context.Background(), "SELECT meal_period FROM products WHERE id=99").Scan(&legacyMeal); err != nil || legacyMeal != "all" {
@@ -50,8 +50,8 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "DELETE FROM categories WHERE id=99"); err != nil {
 			t.Fatal("remove legacy category fixture failed")
 		}
-		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 7 || repeat.ToVersion != 7 || repeat.AppliedCount != 0 {
-			t.Fatal("repeat v7 migration was not zero-write")
+		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 9 || repeat.ToVersion != 9 || repeat.AppliedCount != 0 {
+			t.Fatal("repeat v9 migration was not zero-write")
 		}
 
 		insertMenuFixture(t, db)

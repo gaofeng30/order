@@ -298,6 +298,8 @@ func loadEmbeddedMigrations(t *testing.T) []migrate.Migration {
 		"000005_create_meal_periods.sql",
 		"000006_initialize_meal_periods.sql",
 		"000007_create_product_sold_out_dates.sql",
+		"000008_create_miniprogram_users.sql",
+		"000009_create_miniprogram_sessions.sql",
 	}
 	if len(set) != len(wantNames) {
 		t.Fatalf("embedded migration count = %d, want %d", len(set), len(wantNames))
@@ -518,6 +520,8 @@ func processEnvironment(configuration database.ConnectionConfig, address string)
 		"ORDER_DB_USER="+configuration.User,
 		"ORDER_DB_PASSWORD="+configuration.Password,
 		"ORDER_DB_TLS_MODE="+configuration.TLSMode,
+		"ORDER_WECHAT_MINIPROGRAM_APP_ID=wx-migrate-process-canary",
+		"ORDER_WECHAT_MINIPROGRAM_APP_SECRET=migrate-process-secret-canary",
 	)
 }
 

@@ -14,8 +14,10 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
+	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
+	"github.com/gaofeng30/order/services/api/internal/wechat"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
 
@@ -49,11 +51,15 @@ func run() int {
 	}
 	catalogHandler := catalog.NewHandler(catalog.NewRepository(db))
 	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now)
+	identityHandler := identity.NewHandler(identity.NewService(
+		wechat.NewCode2SessionClient(cfg.MiniProgram),
+		identity.NewRepository(db),
+	))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

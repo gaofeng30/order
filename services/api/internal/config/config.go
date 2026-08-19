@@ -8,11 +8,14 @@ import (
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/wechat"
 )
 
 const (
 	defaultHTTPAddr        = ":8080"
 	defaultShutdownTimeout = 10 * time.Second
+	maxMiniProgramAppID    = 128
+	maxMiniProgramSecret   = 256
 )
 
 type Environment string
@@ -29,6 +32,7 @@ type Config struct {
 	ShutdownTimeout time.Duration
 	Environment     Environment
 	Database        database.ConnectionConfig
+	MiniProgram     wechat.Credentials
 }
 
 type loadError struct {
@@ -69,7 +73,8 @@ func Load() (Config, error) {
 	if cfg.Environment == Production {
 		_, passwordPresent := os.LookupEnv("ORDER_DB_PASSWORD")
 		_, dsnPresent := os.LookupEnv("ORDER_DB_DSN")
-		if passwordPresent || dsnPresent {
+		_, miniProgramSecretPresent := os.LookupEnv("ORDER_WECHAT_MINIPROGRAM_APP_SECRET")
+		if passwordPresent || dsnPresent || miniProgramSecretPresent {
 			return Config{}, loadError{reason: "production_secret_environment_forbidden"}
 		}
 		return Config{}, loadError{reason: "production_secret_source_unavailable"}
@@ -111,8 +116,30 @@ func Load() (Config, error) {
 	if err := validateDatabase(cfg.Database); err != nil {
 		return Config{}, err
 	}
+	cfg.MiniProgram = wechat.Credentials{
+		AppID:     os.Getenv("ORDER_WECHAT_MINIPROGRAM_APP_ID"),
+		AppSecret: os.Getenv("ORDER_WECHAT_MINIPROGRAM_APP_SECRET"),
+	}
+	if err := validateMiniProgramField("ORDER_WECHAT_MINIPROGRAM_APP_ID", cfg.MiniProgram.AppID, maxMiniProgramAppID); err != nil {
+		return Config{}, err
+	}
+	if err := validateMiniProgramField("ORDER_WECHAT_MINIPROGRAM_APP_SECRET", cfg.MiniProgram.AppSecret, maxMiniProgramSecret); err != nil {
+		return Config{}, err
+	}
 
 	return cfg, nil
+}
+
+func validateMiniProgramField(field, value string, maximum int) error {
+	if value == "" || len(value) > maximum {
+		return loadError{reason: "invalid_miniprogram_field", field: field}
+	}
+	for index := 0; index < len(value); index++ {
+		if value[index] < '!' || value[index] > '~' {
+			return loadError{reason: "invalid_miniprogram_field", field: field}
+		}
+	}
+	return nil
 }
 
 func parsePort(value string) (uint16, error) {

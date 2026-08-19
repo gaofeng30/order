@@ -23,6 +23,8 @@ func TestCatalogMigrationSet(t *testing.T) {
 		"000005_create_meal_periods.sql",
 		"000006_initialize_meal_periods.sql",
 		"000007_create_product_sold_out_dates.sql",
+		"000008_create_miniprogram_users.sql",
+		"000009_create_miniprogram_sessions.sql",
 	}
 	if len(loaded) != len(wantNames) {
 		t.Fatalf("migration count = %d, want %d", len(loaded), len(wantNames))
@@ -56,6 +58,37 @@ func TestCatalogMigrationSet(t *testing.T) {
 		for _, forbidden := range []string{" SEED", " DOWN", " REPAIR", " FORCE", "DELIMITER", "SOURCE ", "LOAD DATA"} {
 			if strings.Contains(upper, forbidden) {
 				t.Fatalf("%s contains forbidden token %q", name, forbidden)
+			}
+		}
+	}
+}
+
+func TestIdentityMigrationContracts(t *testing.T) {
+	checks := map[string][]string{
+		"000008_create_miniprogram_users.sql": {
+			"CREATE TABLE miniprogram_users", "id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT", "openid VARBINARY(128) NOT NULL", "created_at TIMESTAMP(6) NOT NULL", "last_login_at TIMESTAMP(6) NOT NULL", "UNIQUE KEY uq_miniprogram_users_openid (openid)",
+		},
+		"000009_create_miniprogram_sessions.sql": {
+			"CREATE TABLE miniprogram_sessions", "token_hash BINARY(32) NOT NULL", "user_id BIGINT UNSIGNED NOT NULL", "issued_at TIMESTAMP(6) NOT NULL", "expires_at TIMESTAMP(6) NOT NULL", "PRIMARY KEY (token_hash)", "KEY idx_miniprogram_sessions_user_expiry (user_id, expires_at)", "CONSTRAINT fk_miniprogram_sessions_user", "ON UPDATE RESTRICT ON DELETE RESTRICT", "CONSTRAINT chk_miniprogram_sessions_expiry CHECK (expires_at > issued_at)",
+		},
+	}
+	for name, required := range checks {
+		data, err := fs.ReadFile(migrations.FS, name)
+		if err != nil {
+			t.Fatalf("read %s: %v", name, err)
+		}
+		text := string(data)
+		if strings.Count(strings.TrimSpace(text), ";") != 1 || !strings.HasSuffix(text, "\n") {
+			t.Fatalf("%s must remain one LF-terminated statement", name)
+		}
+		for _, fragment := range required {
+			if !strings.Contains(text, fragment) {
+				t.Fatalf("%s missing %q", name, fragment)
+			}
+		}
+		for _, forbidden := range []string{"phone", "merchant", "role", "unionid", "session_key", " raw_token", " code "} {
+			if strings.Contains(strings.ToLower(text), forbidden) {
+				t.Fatalf("%s contains forbidden identity field %q", name, forbidden)
 			}
 		}
 	}

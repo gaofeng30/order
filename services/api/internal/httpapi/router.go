@@ -5,15 +5,17 @@ import (
 	"net/http"
 
 	"github.com/gaofeng30/order/services/api/internal/catalog"
+	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gin-gonic/gin"
 )
 
 // NewRouter builds the complete bootstrap HTTP handler.
-func NewRouter(logger *slog.Logger, readiness ReadinessFunc, catalogHandler *catalog.Handler, menuHandler *menu.Handler) *gin.Engine {
+func NewRouter(logger *slog.Logger, readiness ReadinessFunc, catalogHandler *catalog.Handler, menuHandler *menu.Handler, identityHandler *identity.Handler) *gin.Engine {
 	return newRouter(logger, readiness, func(engine *gin.Engine) {
 		catalogHandler.RegisterRoutes(engine)
 		menuHandler.RegisterRoutes(engine)
+		identityHandler.RegisterRoutes(engine)
 	})
 }
 
