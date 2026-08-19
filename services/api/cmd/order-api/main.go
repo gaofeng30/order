@@ -51,15 +51,21 @@ func run() int {
 	}
 	catalogHandler := catalog.NewHandler(catalog.NewRepository(db))
 	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now)
-	identityHandler := identity.NewHandler(identity.NewService(
+	identityRepository := identity.NewRepository(db)
+	sessionService := identity.NewService(
 		wechat.NewCode2SessionClient(cfg.MiniProgram),
-		identity.NewRepository(db),
-	))
+		identityRepository,
+	)
+	identityHandler := identity.NewHandler(sessionService)
+	phoneHandler := identity.NewPhoneHandler(
+		sessionService,
+		identity.NewPhoneService(wechat.NewPhoneNumberClient(cfg.MiniProgram), identityRepository),
+	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler, phoneHandler), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

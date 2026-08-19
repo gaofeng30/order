@@ -25,6 +25,7 @@ func TestCatalogMigrationSet(t *testing.T) {
 		"000007_create_product_sold_out_dates.sql",
 		"000008_create_miniprogram_users.sql",
 		"000009_create_miniprogram_sessions.sql",
+		"000010_add_miniprogram_primary_phone.sql",
 	}
 	if len(loaded) != len(wantNames) {
 		t.Fatalf("migration count = %d, want %d", len(loaded), len(wantNames))
@@ -90,6 +91,31 @@ func TestIdentityMigrationContracts(t *testing.T) {
 			if strings.Contains(strings.ToLower(text), forbidden) {
 				t.Fatalf("%s contains forbidden identity field %q", name, forbidden)
 			}
+		}
+	}
+}
+
+func TestPrimaryPhoneMigrationContract(t *testing.T) {
+	const name = "000010_add_miniprogram_primary_phone.sql"
+	data, err := fs.ReadFile(migrations.FS, name)
+	if err != nil {
+		t.Fatalf("read %s: %v", name, err)
+	}
+	text := string(data)
+	if strings.Count(strings.TrimSpace(text), ";") != 1 || !strings.HasSuffix(text, "\n") {
+		t.Fatalf("%s must remain one LF-terminated statement", name)
+	}
+	for _, fragment := range []string{
+		"ALTER TABLE miniprogram_users",
+		"ADD COLUMN primary_phone VARBINARY(16) NULL",
+		"ADD COLUMN primary_phone_bound_at TIMESTAMP(6) NULL",
+		"ADD UNIQUE KEY uq_miniprogram_users_primary_phone (primary_phone)",
+		"ADD CONSTRAINT chk_miniprogram_users_primary_phone_pair CHECK",
+		"primary_phone IS NULL AND primary_phone_bound_at IS NULL",
+		"primary_phone IS NOT NULL AND primary_phone_bound_at IS NOT NULL",
+	} {
+		if !strings.Contains(text, fragment) {
+			t.Fatalf("%s missing %q", name, fragment)
 		}
 	}
 }

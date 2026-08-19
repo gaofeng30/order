@@ -12,7 +12,8 @@ cleanup() {
     wait "${server_pid}" 2>/dev/null || true
   fi
   rm -f "${binary_path}" "${log_path}" "${temporary_directory}/ready.json" \
-    "${temporary_directory}/session.json" "${temporary_directory}/route.json" \
+    "${temporary_directory}/session.json" "${temporary_directory}/phone.json" \
+    "${temporary_directory}/route.json" \
     "${temporary_directory}/catalog.json" "${temporary_directory}/menu.json"
   rmdir "${temporary_directory}" 2>/dev/null || true
 }
@@ -67,6 +68,13 @@ session_status="$(curl --silent --show-error --output "${session_file}" --write-
 [[ "${session_status}" == "400" ]]
 [[ "$(<"${session_file}")" == '{"error":{"code":"INVALID_REQUEST","message":"invalid request"}}' ]]
 
+phone_file="${temporary_directory}/phone.json"
+phone_status="$(curl --silent --show-error --output "${phone_file}" --write-out '%{http_code}' \
+  -H 'Content-Type: application/json' --data '{"code":"smoke-phone-code-canary"}' \
+  "http://${server_address}/api/v1/me/bind-phone")"
+[[ "${phone_status}" == "401" ]]
+[[ "$(<"${phone_file}")" == '{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}' ]]
+
 route_file="${temporary_directory}/route.json"
 route_status="$(curl --silent --show-error --output "${route_file}" --write-out '%{http_code}' \
   "http://${server_address}/api/v1/auth/miniprogram/session")"
@@ -74,6 +82,16 @@ route_status="$(curl --silent --show-error --output "${route_file}" --write-out 
 [[ ! -s "${route_file}" ]]
 route_status="$(curl --silent --show-error --output "${route_file}" --write-out '%{http_code}' \
   -H 'Content-Type: application/json' --data '{}' "http://${server_address}/auth/miniprogram/session")"
+[[ "${route_status}" == "404" ]]
+[[ ! -s "${route_file}" ]]
+route_status="$(curl --silent --show-error --output "${route_file}" --write-out '%{http_code}' \
+  -H 'Content-Type: application/json' --data '{"code":"smoke-phone-code-canary"}' \
+  "http://${server_address}/me/bind-phone")"
+[[ "${route_status}" == "404" ]]
+[[ ! -s "${route_file}" ]]
+route_status="$(curl --silent --show-error --output "${route_file}" --write-out '%{http_code}' \
+  -H 'Content-Type: application/json' --data '{}' \
+  "http://${server_address}/api/v1/me/profile")"
 [[ "${route_status}" == "404" ]]
 [[ ! -s "${route_file}" ]]
 
@@ -112,7 +130,7 @@ if ORDER_ENV="development" \
 fi
 
 grep -q 'configuration error' "${log_path}"
-if grep -Eq 'smoke-canary-secret|wx-smoke-app-id-canary|smoke-miniprogram-secret-canary' "${log_path}"; then
+if grep -Eq 'smoke-canary-secret|wx-smoke-app-id-canary|smoke-miniprogram-secret-canary|smoke-phone-code-canary' "${log_path}"; then
   echo "order-api leaked the smoke canary" >&2
   exit 1
 fi

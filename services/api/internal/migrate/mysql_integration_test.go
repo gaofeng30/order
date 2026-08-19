@@ -300,6 +300,7 @@ func loadEmbeddedMigrations(t *testing.T) []migrate.Migration {
 		"000007_create_product_sold_out_dates.sql",
 		"000008_create_miniprogram_users.sql",
 		"000009_create_miniprogram_sessions.sql",
+		"000010_add_miniprogram_primary_phone.sql",
 	}
 	if len(set) != len(wantNames) {
 		t.Fatalf("embedded migration count = %d, want %d", len(set), len(wantNames))

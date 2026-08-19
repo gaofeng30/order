@@ -11,11 +11,12 @@ import (
 )
 
 // NewRouter builds the complete bootstrap HTTP handler.
-func NewRouter(logger *slog.Logger, readiness ReadinessFunc, catalogHandler *catalog.Handler, menuHandler *menu.Handler, identityHandler *identity.Handler) *gin.Engine {
+func NewRouter(logger *slog.Logger, readiness ReadinessFunc, catalogHandler *catalog.Handler, menuHandler *menu.Handler, identityHandler *identity.Handler, phoneHandler *identity.PhoneHandler) *gin.Engine {
 	return newRouter(logger, readiness, func(engine *gin.Engine) {
 		catalogHandler.RegisterRoutes(engine)
 		menuHandler.RegisterRoutes(engine)
 		identityHandler.RegisterRoutes(engine)
+		phoneHandler.RegisterRoutes(engine)
 	})
 }
 

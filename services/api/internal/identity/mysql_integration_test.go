@@ -19,6 +19,7 @@ import (
 
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
+	"github.com/gaofeng30/order/services/api/internal/wechat"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
 
@@ -30,8 +31,8 @@ func TestMiniprogramSessionMySQLIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal("load migrations failed")
 		}
-		if len(migrationSet) != 9 {
-			t.Fatalf("migration count = %d, want 9", len(migrationSet))
+		if len(migrationSet) != 10 {
+			t.Fatalf("migration count = %d, want 10", len(migrationSet))
 		}
 
 		foundation, err := migrate.Run(context.Background(), db, migrationSet[:1])
@@ -39,11 +40,11 @@ func TestMiniprogramSessionMySQLIntegration(t *testing.T) {
 			t.Fatal("foundation migration did not establish version 1")
 		}
 		identityResult, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || identityResult.FromVersion != 1 || identityResult.ToVersion != 9 || identityResult.AppliedCount != 8 {
-			t.Fatal("identity migrations did not advance version 1 to version 9")
+		if err != nil || identityResult.FromVersion != 1 || identityResult.ToVersion != 10 || identityResult.AppliedCount != 9 {
+			t.Fatal("identity migrations did not advance version 1 to version 10")
 		}
 		repeat, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || repeat.FromVersion != 9 || repeat.ToVersion != 9 || repeat.AppliedCount != 0 {
+		if err != nil || repeat.FromVersion != 10 || repeat.ToVersion != 10 || repeat.AppliedCount != 0 {
 			t.Fatal("repeated identity migration was not a zero-write success")
 		}
 
@@ -58,6 +59,249 @@ func TestMiniprogramSessionMySQLIntegration(t *testing.T) {
 			assertTransactionRollback(t, db)
 		})
 	})
+}
+
+func TestMiniprogramPhoneMySQLIntegration(t *testing.T) {
+	withIdentitySchema(t, func(db *sql.DB) {
+		migrationSet, err := migrate.Load(migrations.FS)
+		if err != nil {
+			t.Fatal("load migrations failed")
+		}
+		if len(migrationSet) != 10 {
+			t.Fatalf("migration count = %d, want 10", len(migrationSet))
+		}
+		if result, err := migrate.Run(context.Background(), db, migrationSet[:9]); err != nil || result.ToVersion != 9 || result.AppliedCount != 9 {
+			t.Fatal("establish v9 identity baseline failed")
+		}
+		createdAt := time.Date(2026, time.August, 20, 7, 0, 0, 123456000, time.UTC)
+		if _, err := db.ExecContext(context.Background(), "INSERT INTO miniprogram_users(openid,created_at,last_login_at) VALUES (?,?,?)", "pre-v10-openid", createdAt, createdAt); err != nil {
+			t.Fatal("insert pre-v10 identity row failed")
+		}
+		if result, err := migrate.Run(context.Background(), db, migrationSet); err != nil || result.FromVersion != 9 || result.ToVersion != 10 || result.AppliedCount != 1 {
+			t.Fatal("advance identity v9 to v10 failed")
+		}
+		assertIdentitySchema(t, db)
+		var phone, boundAt sql.NullString
+		if err := db.QueryRowContext(context.Background(), "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE openid=?", "pre-v10-openid").Scan(&phone, &boundAt); err != nil {
+			t.Fatal("read pre-v10 identity row failed")
+		}
+		if phone.Valid || boundAt.Valid {
+			t.Fatal("v10 changed existing identity phone state")
+		}
+		if _, err := db.ExecContext(context.Background(), "UPDATE miniprogram_users SET primary_phone=? WHERE openid=?", "+8613800001234", "pre-v10-openid"); err == nil {
+			t.Fatal("phone pair check accepted a partial binding")
+		}
+
+		t.Run("first bind and same phone idempotency", func(t *testing.T) {
+			assertFirstPhoneBind(t, db)
+		})
+		t.Run("different phone same user concurrency", func(t *testing.T) {
+			assertConcurrentDifferentPhoneSameUser(t, db)
+		})
+		t.Run("same phone cross user concurrency", func(t *testing.T) {
+			assertConcurrentSamePhoneCrossUser(t, db)
+		})
+		t.Run("statement and commit rollback", func(t *testing.T) {
+			assertPhoneTransactionRollback(t, db)
+		})
+		t.Run("same code rejection recovery", func(t *testing.T) {
+			assertSameCodePhoneRecovery(t, db)
+		})
+	})
+}
+
+func assertFirstPhoneBind(t *testing.T, db *sql.DB) {
+	t.Helper()
+	userID := insertPhoneUser(t, db, "phone-first-openid")
+	repository := NewRepository(db)
+	boundAt := time.Date(2026, time.August, 20, 8, 0, 0, 123456000, time.UTC)
+	const phone = "+8613712345678"
+
+	user, err := repository.FindPhoneUser(context.Background(), userID)
+	if err != nil || user.OpenID != "phone-first-openid" || user.PrimaryPhone != "" {
+		t.Fatal("unbound phone user read mismatch")
+	}
+	if got, err := repository.BindPrimaryPhone(context.Background(), userID, phone, boundAt); err != nil || got != phone {
+		t.Fatal("first primary phone bind failed")
+	}
+	later := boundAt.Add(time.Hour)
+	if got, err := repository.BindPrimaryPhone(context.Background(), userID, phone, later); err != nil || got != phone {
+		t.Fatal("same primary phone bind was not idempotent")
+	}
+	var storedPhone string
+	var storedAt time.Time
+	if err := db.QueryRowContext(context.Background(), "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&storedPhone, &storedAt); err != nil {
+		t.Fatal("read first primary phone bind failed")
+	}
+	if storedPhone != phone || !storedAt.Equal(boundAt) {
+		t.Fatal("same-phone retry changed primary phone or bound-at")
+	}
+}
+
+func assertConcurrentDifferentPhoneSameUser(t *testing.T, db *sql.DB) {
+	t.Helper()
+	userID := insertPhoneUser(t, db, "phone-same-user-openid")
+	repository := NewRepository(db)
+	phones := []string{"+8613800001001", "+8613800001002"}
+	times := []time.Time{
+		time.Date(2026, time.August, 20, 9, 0, 0, 100000000, time.UTC),
+		time.Date(2026, time.August, 20, 9, 0, 0, 200000000, time.UTC),
+	}
+	start := make(chan struct{})
+	errorsFound := make(chan error, 2)
+	for index := range phones {
+		index := index
+		go func() {
+			<-start
+			_, err := repository.BindPrimaryPhone(context.Background(), userID, phones[index], times[index])
+			errorsFound <- err
+		}()
+	}
+	close(start)
+	results := []error{<-errorsFound, <-errorsFound}
+	successes, conflicts := 0, 0
+	for _, err := range results {
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrPrimaryPhoneAlreadyBound):
+			conflicts++
+		default:
+			t.Fatal("same-user concurrent bind returned unstable error")
+		}
+	}
+	if successes != 1 || conflicts != 1 {
+		t.Fatalf("same-user concurrent results = success %d, conflict %d", successes, conflicts)
+	}
+	var storedPhone string
+	var storedAt time.Time
+	if err := db.QueryRowContext(context.Background(), "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&storedPhone, &storedAt); err != nil {
+		t.Fatal("read same-user concurrent bind failed")
+	}
+	winner := -1
+	for index := range phones {
+		if storedPhone == phones[index] {
+			winner = index
+		}
+	}
+	if winner < 0 || !storedAt.Equal(times[winner]) {
+		t.Fatal("same-user concurrent bind did not preserve winner state")
+	}
+}
+
+func assertConcurrentSamePhoneCrossUser(t *testing.T, db *sql.DB) {
+	t.Helper()
+	userIDs := []uint64{
+		insertPhoneUser(t, db, "phone-cross-user-one-openid"),
+		insertPhoneUser(t, db, "phone-cross-user-two-openid"),
+	}
+	repository := NewRepository(db)
+	const phone = "+8613800002001"
+	boundAt := time.Date(2026, time.August, 20, 10, 0, 0, 0, time.UTC)
+	start := make(chan struct{})
+	errorsFound := make(chan error, 2)
+	for _, userID := range userIDs {
+		userID := userID
+		go func() {
+			<-start
+			_, err := repository.BindPrimaryPhone(context.Background(), userID, phone, boundAt)
+			errorsFound <- err
+		}()
+	}
+	close(start)
+	results := []error{<-errorsFound, <-errorsFound}
+	successes, conflicts := 0, 0
+	for _, err := range results {
+		switch {
+		case err == nil:
+			successes++
+		case errors.Is(err, ErrPhoneInUse):
+			conflicts++
+		default:
+			t.Fatal("cross-user concurrent bind returned unstable error")
+		}
+	}
+	if successes != 1 || conflicts != 1 {
+		t.Fatalf("cross-user concurrent results = success %d, conflict %d", successes, conflicts)
+	}
+	var owners int
+	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM miniprogram_users WHERE primary_phone=?", phone).Scan(&owners); err != nil || owners != 1 {
+		t.Fatal("cross-user primary phone uniqueness mismatch")
+	}
+}
+
+func assertPhoneTransactionRollback(t *testing.T, db *sql.DB) {
+	t.Helper()
+	boundAt := time.Date(2026, time.August, 20, 11, 0, 0, 0, time.UTC)
+	statementUserID := insertPhoneUser(t, db, "phone-statement-rollback-openid")
+	repository := NewRepository(db)
+	if _, err := repository.BindPrimaryPhone(context.Background(), statementUserID, "+1234567890123456", boundAt); err == nil {
+		t.Fatal("oversized phone statement unexpectedly succeeded")
+	}
+	assertPhoneUnbound(t, db, statementUserID)
+
+	commitUserID := insertPhoneUser(t, db, "phone-commit-rollback-openid")
+	commitRepository := newRepository(db, func(transaction *sql.Tx) { _ = transaction.Rollback() })
+	if _, err := commitRepository.BindPrimaryPhone(context.Background(), commitUserID, "+8613800003001", boundAt); err == nil {
+		t.Fatal("forced phone commit failure unexpectedly succeeded")
+	}
+	assertPhoneUnbound(t, db, commitUserID)
+}
+
+func assertSameCodePhoneRecovery(t *testing.T, db *sql.DB) {
+	t.Helper()
+	userID := insertPhoneUser(t, db, "phone-recovery-openid")
+	repository := NewRepository(db)
+	boundAt := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
+	provider := mysqlRejectAfterBindProvider{repository: repository, userID: userID, phone: "+8613800004001", boundAt: boundAt}
+	service := newPhoneService(provider, repository, func() time.Time { return boundAt.Add(time.Hour) })
+
+	result, err := service.Bind(context.Background(), userID, "single-use-code")
+	if err != nil || result.MaskedPhone != "+*********4001" {
+		t.Fatal("real repository same-code recovery failed")
+	}
+}
+
+type mysqlRejectAfterBindProvider struct {
+	repository *Repository
+	userID     uint64
+	phone      string
+	boundAt    time.Time
+}
+
+func (provider mysqlRejectAfterBindProvider) Exchange(ctx context.Context, _ string, openID string) (string, error) {
+	if openID == "" {
+		return "", errors.New("missing provider identity")
+	}
+	if _, err := provider.repository.BindPrimaryPhone(ctx, provider.userID, provider.phone, provider.boundAt); err != nil {
+		return "", err
+	}
+	return "", wechat.ErrPhoneCodeRejected
+}
+
+func insertPhoneUser(t *testing.T, db *sql.DB, openID string) uint64 {
+	t.Helper()
+	at := time.Date(2026, time.August, 20, 7, 30, 0, 0, time.UTC)
+	result, err := db.ExecContext(context.Background(), "INSERT INTO miniprogram_users(openid,created_at,last_login_at) VALUES (?,?,?)", openID, at, at)
+	if err != nil {
+		t.Fatal("insert phone user failed")
+	}
+	userID, err := result.LastInsertId()
+	if err != nil || userID <= 0 {
+		t.Fatal("read inserted phone user id failed")
+	}
+	return uint64(userID)
+}
+
+func assertPhoneUnbound(t *testing.T, db *sql.DB, userID uint64) {
+	t.Helper()
+	var phone, boundAt sql.NullString
+	if err := db.QueryRowContext(context.Background(), "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&phone, &boundAt); err != nil {
+		t.Fatal("read rolled-back phone user failed")
+	}
+	if phone.Valid || boundAt.Valid {
+		t.Fatal("failed phone transaction changed persistent state")
+	}
 }
 
 func assertFirstLoginAndExpiry(t *testing.T, db *sql.DB) {
@@ -235,6 +479,8 @@ func assertIdentitySchema(t *testing.T, db *sql.DB) {
 			{Name: "openid", Type: "varbinary(128)", Nullable: "NO"},
 			{Name: "created_at", Type: "timestamp(6)", Nullable: "NO"},
 			{Name: "last_login_at", Type: "timestamp(6)", Nullable: "NO"},
+			{Name: "primary_phone", Type: "varbinary(16)", Nullable: "YES"},
+			{Name: "primary_phone_bound_at", Type: "timestamp(6)", Nullable: "YES"},
 		},
 		"miniprogram_sessions": {
 			{Name: "token_hash", Type: "binary(32)", Nullable: "NO"},
@@ -266,6 +512,7 @@ func assertIdentitySchema(t *testing.T, db *sql.DB) {
 		"miniprogram_users": {
 			{Name: "PRIMARY", Sequence: 1, Column: "id"},
 			{Name: "uq_miniprogram_users_openid", Sequence: 1, Column: "openid"},
+			{Name: "uq_miniprogram_users_primary_phone", Sequence: 1, Column: "primary_phone"},
 		},
 		"miniprogram_sessions": {
 			{Name: "idx_miniprogram_sessions_user_expiry", NonUnique: true, Sequence: 1, Column: "user_id"},
@@ -312,6 +559,13 @@ func assertIdentitySchema(t *testing.T, db *sql.DB) {
 	}
 	if checkClause != "(`expires_at` > `issued_at`)" {
 		t.Fatalf("session expiry check = %q", checkClause)
+	}
+
+	if err := db.QueryRowContext(context.Background(), "SELECT check_clause FROM information_schema.check_constraints WHERE constraint_schema=DATABASE() AND constraint_name='chk_miniprogram_users_primary_phone_pair'").Scan(&checkClause); err != nil {
+		t.Fatal("inspect primary phone pair check failed")
+	}
+	if checkClause != "(((`primary_phone` is null) and (`primary_phone_bound_at` is null)) or ((`primary_phone` is not null) and (`primary_phone_bound_at` is not null)))" {
+		t.Fatalf("primary phone pair check = %q", checkClause)
 	}
 }
 

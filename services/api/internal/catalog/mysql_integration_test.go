@@ -28,8 +28,8 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal("load migration set failed")
 		}
-		if len(migrationSet) != 9 {
-			t.Fatalf("migration count = %d, want 9", len(migrationSet))
+		if len(migrationSet) != 10 {
+			t.Fatalf("migration count = %d, want 10", len(migrationSet))
 		}
 
 		baseResult, err := migrate.Run(context.Background(), db, migrationSet[:1])
@@ -37,8 +37,8 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 			t.Fatal("foundation migration did not establish version 1")
 		}
 		catalogResult, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || catalogResult.FromVersion != 1 || catalogResult.ToVersion != 9 || catalogResult.AppliedCount != 8 {
-			t.Fatal("catalog migrations did not advance version 1 to version 9")
+		if err != nil || catalogResult.FromVersion != 1 || catalogResult.ToVersion != 10 || catalogResult.AppliedCount != 9 {
+			t.Fatal("catalog migrations did not advance version 1 to version 10")
 		}
 
 		assertCatalogSchema(t, db)
@@ -55,7 +55,7 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 			}
 		}
 		repeat, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || repeat.FromVersion != 9 || repeat.ToVersion != 9 || repeat.AppliedCount != 0 {
+		if err != nil || repeat.FromVersion != 10 || repeat.ToVersion != 10 || repeat.AppliedCount != 0 {
 			t.Fatal("repeated catalog migration was not a zero-write success")
 		}
 		after := readCatalogHistory(t, db)
