@@ -161,6 +161,141 @@ func TestPhoneHandlerMapsAuthenticationAndBindingErrors(t *testing.T) {
 	}
 }
 
+func TestPhoneHandlerStatusReturnsExactBoundAndUnboundResponses(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		status PhoneStatus
+		body   string
+	}{
+		{name: "bound", status: PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: "+*********5678"}, body: `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`},
+		{name: "unbound", status: PhoneStatus{}, body: `{"primary_phone_bound":false,"masked_phone":null}`},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			authenticator := &phoneAuthenticatorStub{userID: 42}
+			binder := &phoneBinderStub{status: test.status}
+			router, logs := phoneHandlerTestRouter(authenticator, binder)
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+			request.Header.Set("Authorization", "Bearer opaque-status-token")
+			response := httptest.NewRecorder()
+
+			router.ServeHTTP(response, request)
+
+			if response.Code != http.StatusOK || strings.TrimSpace(response.Body.String()) != test.body {
+				t.Fatal("primary-phone status success response mismatch")
+			}
+			if response.Header().Get("Cache-Control") != "no-store" {
+				t.Fatal("primary-phone status response is cacheable")
+			}
+			if authenticator.calls != 1 || authenticator.token != "opaque-status-token" || binder.statusCalls != 1 || binder.statusUserID != 42 || binder.calls != 0 {
+				t.Fatal("primary-phone status invocation mismatch")
+			}
+			for _, forbidden := range []string{"opaque-status-token", "+8613712345678"} {
+				if strings.Contains(response.Body.String(), forbidden) || strings.Contains(logs.String(), forbidden) {
+					t.Fatal("primary-phone status output contains sensitive canary")
+				}
+			}
+		})
+	}
+}
+
+func TestPhoneHandlerStatusRejectsNonEmptyBodyBeforeAuthentication(t *testing.T) {
+	t.Parallel()
+	authenticator := &phoneAuthenticatorStub{userID: 42}
+	binder := &phoneBinderStub{}
+	router, _ := phoneHandlerTestRouter(authenticator, binder)
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", strings.NewReader(" "))
+	request.Header.Set("Authorization", "Bearer opaque-status-token")
+	response := httptest.NewRecorder()
+
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusBadRequest || strings.TrimSpace(response.Body.String()) != `{"error":{"code":"INVALID_REQUEST","message":"invalid request"}}` {
+		t.Fatal("non-empty status body response mismatch")
+	}
+	if response.Header().Get("Cache-Control") != "no-store" || authenticator.calls != 0 || binder.statusCalls != 0 || binder.calls != 0 {
+		t.Fatal("non-empty status body reached authentication/service or was cacheable")
+	}
+}
+
+func TestPhoneHandlerStatusRequiresOneExactBearer(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		header []string
+	}{
+		{name: "missing"},
+		{name: "wrong scheme", header: []string{"Basic token"}},
+		{name: "empty", header: []string{"Bearer "}},
+		{name: "spaces", header: []string{"Bearer token extra"}},
+		{name: "duplicate", header: []string{"Bearer first", "Bearer second"}},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			authenticator := &phoneAuthenticatorStub{userID: 42}
+			binder := &phoneBinderStub{}
+			router, _ := phoneHandlerTestRouter(authenticator, binder)
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+			for _, header := range test.header {
+				request.Header.Add("Authorization", header)
+			}
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			if response.Code != http.StatusUnauthorized || strings.TrimSpace(response.Body.String()) != `{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}` {
+				t.Fatal("status Bearer rejection response mismatch")
+			}
+			if response.Header().Get("Cache-Control") != "no-store" || authenticator.calls != 0 || binder.statusCalls != 0 || binder.calls != 0 {
+				t.Fatal("malformed status Bearer reached authentication/service or was cacheable")
+			}
+		})
+	}
+}
+
+func TestPhoneHandlerStatusMapsAuthenticationAndReadErrors(t *testing.T) {
+	t.Parallel()
+	const failureCanary = "status-failure-secret-canary"
+	tests := []struct {
+		name        string
+		authError   error
+		statusError error
+		statusCode  int
+		body        string
+	}{
+		{name: "unknown or expired session", authError: fmt.Errorf("%w: %s", ErrUnauthenticated, failureCanary), statusCode: http.StatusUnauthorized, body: `{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}`},
+		{name: "auth database unavailable", authError: fmt.Errorf("%w: %s", ErrUnavailable, failureCanary), statusCode: http.StatusServiceUnavailable, body: `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}`},
+		{name: "phone database unavailable", statusError: errors.New(failureCanary), statusCode: http.StatusServiceUnavailable, body: `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}`},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			authenticator := &phoneAuthenticatorStub{userID: 42, err: test.authError}
+			binder := &phoneBinderStub{statusErr: test.statusError}
+			router, logs := phoneHandlerTestRouter(authenticator, binder)
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+			request.Header.Set("Authorization", "Bearer request-status-token-canary")
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			if response.Code != test.statusCode || strings.TrimSpace(response.Body.String()) != test.body {
+				t.Fatal("primary-phone status error response mismatch")
+			}
+			if response.Header().Get("Cache-Control") != "no-store" {
+				t.Fatal("primary-phone status error is cacheable")
+			}
+			for _, forbidden := range []string{failureCanary, "request-status-token-canary"} {
+				if strings.Contains(response.Body.String(), forbidden) || strings.Contains(logs.String(), forbidden) {
+					t.Fatal("primary-phone status failure output contains canary")
+				}
+			}
+		})
+	}
+}
+
 func phoneHandlerTestRouter(authenticator SessionAuthenticator, binder PhoneBinder) (*gin.Engine, *bytes.Buffer) {
 	gin.SetMode(gin.ReleaseMode)
 	output := &bytes.Buffer{}
@@ -188,11 +323,15 @@ func (authenticator *phoneAuthenticatorStub) Authenticate(_ context.Context, tok
 }
 
 type phoneBinderStub struct {
-	result PhoneBinding
-	err    error
-	calls  int
-	userID uint64
-	code   string
+	result       PhoneBinding
+	err          error
+	calls        int
+	userID       uint64
+	code         string
+	status       PhoneStatus
+	statusErr    error
+	statusCalls  int
+	statusUserID uint64
 }
 
 func (binder *phoneBinderStub) Bind(_ context.Context, userID uint64, code string) (PhoneBinding, error) {
@@ -200,4 +339,10 @@ func (binder *phoneBinderStub) Bind(_ context.Context, userID uint64, code strin
 	binder.userID = userID
 	binder.code = code
 	return binder.result, binder.err
+}
+
+func (binder *phoneBinderStub) Status(_ context.Context, userID uint64) (PhoneStatus, error) {
+	binder.statusCalls++
+	binder.statusUserID = userID
+	return binder.status, binder.statusErr
 }

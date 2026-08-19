@@ -520,6 +520,49 @@ func TestRouterPhoneBindingIsRouteSpecificAndVersioned(t *testing.T) {
 	}
 }
 
+func TestRouterPrimaryPhoneStatusIsRouteSpecificAndVersioned(t *testing.T) {
+	authenticator := &routerPhoneAuthenticator{userID: 42}
+	binder := &routerPhoneBinder{
+		result: identity.PhoneBinding{MaskedPhone: "+*********5678"},
+		status: identity.PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: "+*********5678"},
+	}
+	router := NewRouter(
+		discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(),
+		identity.NewPhoneHandler(authenticator, binder),
+	)
+
+	statusResponse := httptest.NewRecorder()
+	statusRequest := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+	statusRequest.Header.Set("Authorization", "Bearer router-status-token")
+	router.ServeHTTP(statusResponse, statusRequest)
+	assertJSONResponse(t, statusResponse, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+	if statusResponse.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("primary-phone status route is cacheable")
+	}
+
+	bindResponse := httptest.NewRecorder()
+	bindRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/bind-phone", strings.NewReader(`{"code":"router-phone-code"}`))
+	bindRequest.Header.Set("Content-Type", "application/json")
+	bindRequest.Header.Set("Authorization", "Bearer router-bind-token")
+	router.ServeHTTP(bindResponse, bindRequest)
+	assertJSONResponse(t, bindResponse, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+
+	for _, path := range []string{"/api/v1/me", "/me/primary-phone", "/api/v1/me/profile"} {
+		missing := httptest.NewRecorder()
+		router.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, path, nil))
+		if missing.Code != http.StatusNotFound || missing.Body.Len() != 0 {
+			t.Fatalf("broad/compatibility/profile GET %q was registered", path)
+		}
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+	if authenticator.calls != 2 || binder.statusCalls != 1 || binder.calls != 1 {
+		t.Fatal("primary-phone routes did not remain route-specific")
+	}
+}
+
 type routerPhoneAuthenticator struct {
 	userID uint64
 	calls  int
@@ -531,14 +574,22 @@ func (authenticator *routerPhoneAuthenticator) Authenticate(context.Context, str
 }
 
 type routerPhoneBinder struct {
-	result identity.PhoneBinding
-	err    error
-	calls  int
+	result      identity.PhoneBinding
+	err         error
+	calls       int
+	status      identity.PhoneStatus
+	statusErr   error
+	statusCalls int
 }
 
 func (binder *routerPhoneBinder) Bind(context.Context, uint64, string) (identity.PhoneBinding, error) {
 	binder.calls++
 	return binder.result, binder.err
+}
+
+func (binder *routerPhoneBinder) Status(context.Context, uint64) (identity.PhoneStatus, error) {
+	binder.statusCalls++
+	return binder.status, binder.statusErr
 }
 
 func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {

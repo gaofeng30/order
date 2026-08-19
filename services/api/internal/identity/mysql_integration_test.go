@@ -6,13 +6,17 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -108,6 +112,198 @@ func TestMiniprogramPhoneMySQLIntegration(t *testing.T) {
 			assertSameCodePhoneRecovery(t, db)
 		})
 	})
+}
+
+func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
+	withIdentitySchema(t, func(db *sql.DB) {
+		migrationSet, err := migrate.Load(migrations.FS)
+		if err != nil {
+			t.Fatal("load migrations failed")
+		}
+		if result, err := migrate.Run(context.Background(), db, migrationSet); err != nil || result.ToVersion != 10 || result.AppliedCount != 10 {
+			t.Fatal("establish phone-status schema failed")
+		}
+
+		repository := NewRepository(db)
+		now := time.Date(2026, time.August, 20, 13, 0, 0, 123456000, time.UTC)
+		boundSessionService := newService(
+			mysqlStaticExchanger{openid: "status-bound-openid"}, repository,
+			func() time.Time { return now }, bytes.NewReader(bytes.Repeat([]byte{0x55}, tokenEntropyBytes)),
+		)
+		boundSession, err := boundSessionService.Issue(context.Background(), "bound-login-code")
+		if err != nil {
+			t.Fatal("create bound status session failed")
+		}
+		unboundSessionService := newService(
+			mysqlStaticExchanger{openid: "status-unbound-openid"}, repository,
+			func() time.Time { return now }, bytes.NewReader(bytes.Repeat([]byte{0x66}, tokenEntropyBytes)),
+		)
+		unboundSession, err := unboundSessionService.Issue(context.Background(), "unbound-login-code")
+		if err != nil {
+			t.Fatal("create unbound status session failed")
+		}
+
+		var boundUserID uint64
+		if err := db.QueryRowContext(context.Background(), "SELECT id FROM miniprogram_users WHERE openid=?", "status-bound-openid").Scan(&boundUserID); err != nil {
+			t.Fatal("read bound status user failed")
+		}
+		boundAt := now.Add(time.Minute)
+		if _, err := repository.BindPrimaryPhone(context.Background(), boundUserID, "+8613712345678", boundAt); err != nil {
+			t.Fatal("seed bound status phone failed")
+		}
+
+		before := readPhoneStatusDatabaseSnapshot(t, db)
+		provider := &phoneStatusProviderSpy{}
+		store := &phoneStatusStoreSpy{repository: repository}
+		phoneService := newPhoneService(provider, store, func() time.Time { return now })
+		router, _ := phoneHandlerTestRouter(boundSessionService, phoneService)
+
+		assertMySQLPhoneStatusHTTP(t, router, boundSession.AccessToken, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+		assertMySQLPhoneStatusHTTP(t, router, unboundSession.AccessToken, http.StatusOK, `{"primary_phone_bound":false,"masked_phone":null}`)
+
+		unknownToken := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{0x77}, tokenEntropyBytes))
+		assertMySQLPhoneStatusHTTP(t, router, unknownToken, http.StatusUnauthorized, `{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}`)
+		now = boundSession.ExpiresAt
+		assertMySQLPhoneStatusHTTP(t, router, boundSession.AccessToken, http.StatusUnauthorized, `{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}`)
+		now = boundSession.ExpiresAt.Add(-time.Hour)
+
+		var schemaName string
+		if err := db.QueryRowContext(context.Background(), "SELECT DATABASE()").Scan(&schemaName); err != nil {
+			t.Fatal("read phone-status schema name failed")
+		}
+		closedConfig, ok := identityIntegrationConfig(t, schemaName)
+		if !ok {
+			t.Fatal("phone-status database environment disappeared")
+		}
+		closedDB, err := database.Open(closedConfig)
+		if err != nil {
+			t.Fatal("open phone-status failure database failed")
+		}
+		if err := closedDB.Close(); err != nil {
+			t.Fatal("close phone-status failure database failed")
+		}
+		closedRepository := NewRepository(closedDB)
+		closedProvider := &phoneStatusProviderSpy{}
+		closedStore := &phoneStatusStoreSpy{repository: closedRepository}
+		closedPhoneService := newPhoneService(closedProvider, closedStore, func() time.Time { return now })
+		phoneUnavailableRouter, _ := phoneHandlerTestRouter(boundSessionService, closedPhoneService)
+		assertMySQLPhoneStatusHTTP(t, phoneUnavailableRouter, boundSession.AccessToken, http.StatusServiceUnavailable, `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}`)
+
+		closedSessionService := newService(mysqlStaticExchanger{}, closedRepository, func() time.Time { return now }, bytes.NewReader(bytes.Repeat([]byte{0x88}, tokenEntropyBytes)))
+		authUnavailableRouter, _ := phoneHandlerTestRouter(closedSessionService, phoneService)
+		assertMySQLPhoneStatusHTTP(t, authUnavailableRouter, boundSession.AccessToken, http.StatusServiceUnavailable, `{"error":{"code":"PRIMARY_PHONE_STATUS_UNAVAILABLE","message":"primary phone status temporarily unavailable"}}`)
+
+		after := readPhoneStatusDatabaseSnapshot(t, db)
+		if !reflect.DeepEqual(after, before) {
+			t.Fatal("primary-phone status reads changed user or session data")
+		}
+		if provider.calls != 0 || store.bindCalls != 0 || closedProvider.calls != 0 || closedStore.bindCalls != 0 {
+			t.Fatal("primary-phone status reached provider or binding write")
+		}
+	})
+}
+
+type phoneStatusProviderSpy struct{ calls int }
+
+func (provider *phoneStatusProviderSpy) Exchange(context.Context, string, string) (string, error) {
+	provider.calls++
+	return "", errors.New("phone-status provider must not be called")
+}
+
+type phoneStatusStoreSpy struct {
+	repository *Repository
+	bindCalls  int
+}
+
+func (store *phoneStatusStoreSpy) FindPhoneUser(ctx context.Context, userID uint64) (PhoneUser, error) {
+	return store.repository.FindPhoneUser(ctx, userID)
+}
+
+func (store *phoneStatusStoreSpy) BindPrimaryPhone(context.Context, uint64, string, time.Time) (string, error) {
+	store.bindCalls++
+	return "", errors.New("phone-status bind must not be called")
+}
+
+type phoneStatusUserSnapshot struct {
+	ID           uint64
+	OpenID       string
+	CreatedAt    time.Time
+	LastLoginAt  time.Time
+	PrimaryPhone sql.NullString
+	BoundAt      sql.NullTime
+}
+
+type phoneStatusSessionSnapshot struct {
+	TokenHash []byte
+	UserID    uint64
+	IssuedAt  time.Time
+	ExpiresAt time.Time
+}
+
+type phoneStatusDatabaseSnapshot struct {
+	Users    []phoneStatusUserSnapshot
+	Sessions []phoneStatusSessionSnapshot
+}
+
+func readPhoneStatusDatabaseSnapshot(t *testing.T, db *sql.DB) phoneStatusDatabaseSnapshot {
+	t.Helper()
+	var snapshot phoneStatusDatabaseSnapshot
+	userRows, err := db.QueryContext(context.Background(), "SELECT id,openid,created_at,last_login_at,primary_phone,primary_phone_bound_at FROM miniprogram_users ORDER BY id")
+	if err != nil {
+		t.Fatal("read phone-status user snapshot failed")
+	}
+	for userRows.Next() {
+		var row phoneStatusUserSnapshot
+		if err := userRows.Scan(&row.ID, &row.OpenID, &row.CreatedAt, &row.LastLoginAt, &row.PrimaryPhone, &row.BoundAt); err != nil {
+			userRows.Close()
+			t.Fatal("scan phone-status user snapshot failed")
+		}
+		snapshot.Users = append(snapshot.Users, row)
+	}
+	if err := userRows.Err(); err != nil {
+		userRows.Close()
+		t.Fatal("iterate phone-status user snapshot failed")
+	}
+	if err := userRows.Close(); err != nil {
+		t.Fatal("close phone-status user snapshot failed")
+	}
+	sessionRows, err := db.QueryContext(context.Background(), "SELECT token_hash,user_id,issued_at,expires_at FROM miniprogram_sessions ORDER BY token_hash")
+	if err != nil {
+		t.Fatal("read phone-status session snapshot failed")
+	}
+	for sessionRows.Next() {
+		var row phoneStatusSessionSnapshot
+		if err := sessionRows.Scan(&row.TokenHash, &row.UserID, &row.IssuedAt, &row.ExpiresAt); err != nil {
+			sessionRows.Close()
+			t.Fatal("scan phone-status session snapshot failed")
+		}
+		snapshot.Sessions = append(snapshot.Sessions, row)
+	}
+	if err := sessionRows.Err(); err != nil {
+		sessionRows.Close()
+		t.Fatal("iterate phone-status session snapshot failed")
+	}
+	if err := sessionRows.Close(); err != nil {
+		t.Fatal("close phone-status session snapshot failed")
+	}
+	return snapshot
+}
+
+func assertMySQLPhoneStatusHTTP(t *testing.T, handler http.Handler, token string, wantStatus int, wantBody string) {
+	t.Helper()
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+	request.Header.Set("Authorization", "Bearer "+token)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != wantStatus {
+		t.Fatalf("real MySQL primary-phone status code = %d, want %d", response.Code, wantStatus)
+	}
+	if strings.TrimSpace(response.Body.String()) != wantBody {
+		t.Fatal("real MySQL primary-phone status body mismatch")
+	}
+	if response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("real MySQL primary-phone status response is cacheable")
+	}
 }
 
 func assertFirstPhoneBind(t *testing.T, db *sql.DB) {

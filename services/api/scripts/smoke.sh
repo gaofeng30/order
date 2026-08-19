@@ -13,6 +13,7 @@ cleanup() {
   fi
   rm -f "${binary_path}" "${log_path}" "${temporary_directory}/ready.json" \
     "${temporary_directory}/session.json" "${temporary_directory}/phone.json" \
+    "${temporary_directory}/primary-phone.json" "${temporary_directory}/primary-phone.headers" \
     "${temporary_directory}/route.json" \
     "${temporary_directory}/catalog.json" "${temporary_directory}/menu.json"
   rmdir "${temporary_directory}" 2>/dev/null || true
@@ -74,6 +75,17 @@ phone_status="$(curl --silent --show-error --output "${phone_file}" --write-out 
   "http://${server_address}/api/v1/me/bind-phone")"
 [[ "${phone_status}" == "401" ]]
 [[ "$(<"${phone_file}")" == '{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}' ]]
+
+primary_phone_file="${temporary_directory}/primary-phone.json"
+primary_phone_headers="${temporary_directory}/primary-phone.headers"
+primary_phone_status="$(curl --silent --show-error --dump-header "${primary_phone_headers}" --output "${primary_phone_file}" --write-out '%{http_code}' \
+  "http://${server_address}/api/v1/me/primary-phone")"
+if [[ "${primary_phone_status}" != "401" ]]; then
+  echo "primary-phone status route returned ${primary_phone_status}, want 401" >&2
+  exit 1
+fi
+[[ "$(<"${primary_phone_file}")" == '{"error":{"code":"UNAUTHENTICATED","message":"authentication required"}}' ]]
+grep -Eiq '^Cache-Control: no-store\r?$' "${primary_phone_headers}"
 
 route_file="${temporary_directory}/route.json"
 route_status="$(curl --silent --show-error --output "${route_file}" --write-out '%{http_code}' \

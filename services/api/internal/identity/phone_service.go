@@ -29,6 +29,12 @@ type PhoneBinding struct {
 	MaskedPhone string
 }
 
+// PhoneStatus is the current user's minimal primary-phone representation.
+type PhoneStatus struct {
+	PrimaryPhoneBound bool
+	MaskedPhone       string
+}
+
 // PhoneProvider resolves one phone code for the authenticated provider identity.
 type PhoneProvider interface {
 	Exchange(context.Context, string, string) (string, error)
@@ -90,6 +96,22 @@ func (service *PhoneService) Bind(ctx context.Context, userID uint64, code strin
 		return PhoneBinding{}, ErrUnavailable
 	}
 	return maskedBinding(boundPhone)
+}
+
+// Status reads only the authenticated user's current primary-phone state.
+func (service *PhoneService) Status(ctx context.Context, userID uint64) (PhoneStatus, error) {
+	user, err := service.store.FindPhoneUser(ctx, userID)
+	if err != nil || userID == 0 || user.OpenID == "" {
+		return PhoneStatus{}, ErrUnavailable
+	}
+	if user.PrimaryPhone == "" {
+		return PhoneStatus{}, nil
+	}
+	binding, err := maskedBinding(user.PrimaryPhone)
+	if err != nil {
+		return PhoneStatus{}, ErrUnavailable
+	}
+	return PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: binding.MaskedPhone}, nil
 }
 
 func maskedBinding(phone string) (PhoneBinding, error) {

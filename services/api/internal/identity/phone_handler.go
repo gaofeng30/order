@@ -19,9 +19,10 @@ type SessionAuthenticator interface {
 // PhoneBinder is the application operation exposed by the phone route.
 type PhoneBinder interface {
 	Bind(context.Context, uint64, string) (PhoneBinding, error)
+	Status(context.Context, uint64) (PhoneStatus, error)
 }
 
-// PhoneHandler serves only route-specific primary-phone binding.
+// PhoneHandler serves only route-specific primary-phone operations.
 type PhoneHandler struct {
 	authenticator SessionAuthenticator
 	binder        PhoneBinder
@@ -32,14 +33,20 @@ func NewPhoneHandler(authenticator SessionAuthenticator, binder PhoneBinder) *Ph
 	return &PhoneHandler{authenticator: authenticator, binder: binder}
 }
 
-// RegisterRoutes adds only the versioned primary-phone route.
+// RegisterRoutes adds only the versioned primary-phone routes.
 func (handler *PhoneHandler) RegisterRoutes(engine *gin.Engine) {
 	engine.POST("/api/v1/me/bind-phone", handler.bind)
+	engine.GET("/api/v1/me/primary-phone", handler.status)
 }
 
 type phoneBindingResponse struct {
 	PrimaryPhoneBound bool   `json:"primary_phone_bound"`
 	MaskedPhone       string `json:"masked_phone"`
+}
+
+type phoneStatusResponse struct {
+	PrimaryPhoneBound bool    `json:"primary_phone_bound"`
+	MaskedPhone       *string `json:"masked_phone"`
 }
 
 func (handler *PhoneHandler) bind(ctx *gin.Context) {
@@ -87,6 +94,39 @@ func (handler *PhoneHandler) bind(ctx *gin.Context) {
 	}
 }
 
+func (handler *PhoneHandler) status(ctx *gin.Context) {
+	ctx.Header("Cache-Control", "no-store")
+	body, err := io.ReadAll(io.LimitReader(ctx.Request.Body, 1))
+	if err != nil || len(body) != 0 {
+		writeInvalidRequest(ctx)
+		return
+	}
+	token, ok := exactBearer(ctx.Request.Header.Values("Authorization"))
+	if !ok {
+		writePhoneError(ctx, http.StatusUnauthorized, "UNAUTHENTICATED", "authentication required")
+		return
+	}
+	userID, err := handler.authenticator.Authenticate(ctx.Request.Context(), token)
+	if errors.Is(err, ErrUnauthenticated) || (err == nil && userID == 0) {
+		writePhoneError(ctx, http.StatusUnauthorized, "UNAUTHENTICATED", "authentication required")
+		return
+	}
+	if err != nil {
+		writePhoneStatusUnavailable(ctx)
+		return
+	}
+	status, err := handler.binder.Status(ctx.Request.Context(), userID)
+	if err != nil || status.PrimaryPhoneBound != (status.MaskedPhone != "") {
+		writePhoneStatusUnavailable(ctx)
+		return
+	}
+	response := phoneStatusResponse{PrimaryPhoneBound: status.PrimaryPhoneBound}
+	if status.PrimaryPhoneBound {
+		response.MaskedPhone = &status.MaskedPhone
+	}
+	ctx.JSON(http.StatusOK, response)
+}
+
 func exactBearer(values []string) (string, bool) {
 	if len(values) != 1 || !strings.HasPrefix(values[0], "Bearer ") {
 		return "", false
@@ -100,6 +140,10 @@ func exactBearer(values []string) (string, bool) {
 
 func writePhoneUnavailable(ctx *gin.Context) {
 	writePhoneError(ctx, http.StatusServiceUnavailable, "PHONE_BINDING_UNAVAILABLE", "phone binding temporarily unavailable")
+}
+
+func writePhoneStatusUnavailable(ctx *gin.Context) {
+	writePhoneError(ctx, http.StatusServiceUnavailable, "PRIMARY_PHONE_STATUS_UNAVAILABLE", "primary phone status temporarily unavailable")
 }
 
 func writePhoneError(ctx *gin.Context, status int, code, message string) {

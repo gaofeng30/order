@@ -25,4 +25,4 @@ fi
 
 GOTOOLCHAIN="${GOTOOLCHAIN:-go1.26.5}" GOPROXY="${GOPROXY:-off}" \
   go test -race ./services/api/internal/identity \
-  -run '^TestMiniprogram(Session|Phone)MySQLIntegration$' -count=1 -timeout=3m
+  -run '^TestMiniprogram(Session|Phone|PhoneStatus)MySQLIntegration$' -count=1 -timeout=3m

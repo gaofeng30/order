@@ -111,6 +111,67 @@ func TestPhoneServiceMapsStoreAndProviderFailures(t *testing.T) {
 	}
 }
 
+func TestPhoneStatusReadsBoundAndUnboundWithoutWrites(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		user       PhoneUser
+		wantBound  bool
+		wantMasked string
+	}{
+		{name: "bound", user: PhoneUser{OpenID: "bound-user", PrimaryPhone: "+8613712345678"}, wantBound: true, wantMasked: "+*********5678"},
+		{name: "unbound", user: PhoneUser{OpenID: "unbound-user"}},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			provider := &phoneProviderStub{err: errors.New("provider must not be called")}
+			store := &phoneStoreStub{reads: []PhoneUser{test.user}, bindErr: errors.New("bind must not be called")}
+			service := newPhoneService(provider, store, func() time.Time { return testNow })
+
+			status, err := service.Status(context.Background(), 42)
+			if err != nil || status.PrimaryPhoneBound != test.wantBound || status.MaskedPhone != test.wantMasked {
+				t.Fatal("primary-phone status result mismatch")
+			}
+			if provider.calls != 0 || store.readCalls != 1 || store.bindCalls != 0 {
+				t.Fatal("primary-phone status reached provider or write path")
+			}
+		})
+	}
+}
+
+func TestPhoneStatusFailsClosedOnInvalidOrUnavailableState(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		userID    uint64
+		user      PhoneUser
+		readError error
+	}{
+		{name: "zero user", user: PhoneUser{OpenID: "unexpected"}},
+		{name: "read unavailable", userID: 42, readError: errors.New("store canary")},
+		{name: "missing identity", userID: 42, user: PhoneUser{}},
+		{name: "invalid stored phone", userID: 42, user: PhoneUser{OpenID: "opaque-user", PrimaryPhone: "not-e164"}},
+	}
+	for _, test := range tests {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			provider := &phoneProviderStub{err: errors.New("provider must not be called")}
+			store := &phoneStoreStub{reads: []PhoneUser{test.user}, readErr: test.readError, bindErr: errors.New("bind must not be called")}
+			service := newPhoneService(provider, store, func() time.Time { return testNow })
+
+			if _, err := service.Status(context.Background(), test.userID); !errors.Is(err, ErrUnavailable) {
+				t.Fatal("invalid primary-phone status did not fail closed")
+			}
+			if provider.calls != 0 || store.bindCalls != 0 {
+				t.Fatal("failed primary-phone status reached provider or write path")
+			}
+		})
+	}
+}
+
 type phoneProviderStub struct {
 	phone  string
 	err    error
