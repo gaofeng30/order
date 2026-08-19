@@ -14,7 +14,7 @@
 | owner | branch `codex/adopt-0818-prd-baseline`, worktree `/Users/vivix/.codex/worktrees/order-adopt-0818-prd-baseline.Writer` |
 | dependency | none |
 | blocker | none active; verifier FAIL is repaired locally but requires a replacement candidate and fresh independent verification |
-| candidate_sha | replacement exact SHA is external post-commit evidence; prior `f716348280c08df0f9bbb71d029f5dfd6a28c13e` remains `INVALIDATED` |
+| candidate_sha | replacement exact SHA is external post-commit evidence; prior `f716348280c08df0f9bbb71d029f5dfd6a28c13e` remains `INVALIDATED`; intermediate `bc28379` was not handed off because Harness caught a completed-task pointer |
 | integrated_sha | none |
 | archive_sha | none |
 | error_fingerprint | `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2` |

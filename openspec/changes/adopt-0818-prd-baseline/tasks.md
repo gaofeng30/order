@@ -27,10 +27,10 @@
 
 ## 5. Independent exact-SHA verification
 
-- [x] 5.1 verifier 在另一 clean detached worktree 检出完整 `candidate_sha`，确认 HEAD 精确匹配、worktree clean、只读共享契约相对 base 未变，并从头重跑 2.1/3.2 的 focused check、strict、diff check 和 owned-path audit。
-  - Verifier result：exact SHA `f716348280c08df0f9bbb71d029f5dfd6a28c13e` 返回 `FAIL`；唯一高危 fingerprint 为 `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2`。
-- [x] 5.2 verifier 只记录 exact-SHA `PASS` 或首个真实 `FAIL` 与未验证边界，不修改 candidate bytes；proposal/design/spec/tasks、验收命令、base 或 SHA 任一变化使旧验证立即失效并返回 writer。
-  - Failure routing：旧 candidate 与全部 verification 结论已失效，Harness 返回 `IMPLEMENTING`；`repeat_count=1`，修复仅限 I16 规范标记唯一性。
+- [ ] 5.1 verifier 在另一 clean detached worktree 检出完整 `candidate_sha`，确认 HEAD 精确匹配、worktree clean、只读共享契约相对 base 未变，并从头重跑 2.1/3.2 的 focused check、strict、diff check和 owned-path audit。
+  - Previous invalid attempt：exact SHA `f716348280c08df0f9bbb71d029f5dfd6a28c13e` 返回 `FAIL`；唯一高危 fingerprint 为 `INVARIANT_UNIQUENESS_FAIL:I16_COUNT_2`。replacement candidate 必须从头重跑，本任务保持未完成。
+- [ ] 5.2 verifier 只记录 replacement exact-SHA `PASS` 或首个真实 `FAIL` 与未验证边界，不修改 candidate bytes；proposal/design/spec/tasks、验收命令、base 或 SHA 任一变化使旧验证立即失效并返回 writer。
+  - Previous failure routing：旧 candidate 与全部 verification 结论已失效；`repeat_count=1`，I16 唯一性修复完成但 fresh independent result 尚未产生。
 
 ## 6. Authorized integration boundary
 
