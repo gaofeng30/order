@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,6 +71,58 @@ func TestCode2SessionRuntimeClientIsFixedAndBounded(t *testing.T) {
 	}
 	if client.httpClient.CheckRedirect == nil {
 		t.Fatal("redirect policy is absent")
+	}
+}
+
+func TestCode2SessionRuntimeTransportUsesFreshHTTP1Connections(t *testing.T) {
+	t.Parallel()
+	runtimeClient := NewCode2SessionClient(Credentials{AppID: testAppID, AppSecret: testAppSecret})
+	transport, ok := runtimeClient.httpClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("runtime transport = %T, want dedicated *http.Transport instead of reusable default", runtimeClient.httpClient.Transport)
+	}
+	if !transport.DisableKeepAlives {
+		t.Fatal("runtime transport allows connection reuse")
+	}
+	if transport.ForceAttemptHTTP2 || transport.TLSNextProto == nil || len(transport.TLSNextProto) != 0 {
+		t.Fatal("runtime transport allows HTTP/2 negotiation")
+	}
+
+	var connections atomic.Int32
+	var requests atomic.Int32
+	var wrongProtocol atomic.Bool
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		requests.Add(1)
+		if request.ProtoMajor != 1 {
+			wrongProtocol.Store(true)
+		}
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprintf(writer, `{"openid":%q,"session_key":%q}`, testOpenID, testSessionKey)
+	}))
+	server.EnableHTTP2 = true
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	testTransport := transport.Clone()
+	serverTransport := server.Client().Transport.(*http.Transport)
+	testTransport.TLSClientConfig = serverTransport.TLSClientConfig.Clone()
+	client := newCode2SessionClient(
+		Credentials{AppID: testAppID, AppSecret: testAppSecret},
+		&http.Client{Transport: testTransport, Timeout: runtimeClient.httpClient.Timeout},
+		server.URL,
+	)
+	for range 2 {
+		if _, err := client.Exchange(context.Background(), testLoginCode); err != nil {
+			t.Fatal("controlled runtime exchange failed")
+		}
+	}
+	if requests.Load() != 2 || connections.Load() != 2 || wrongProtocol.Load() {
+		t.Fatalf("runtime wire attempts/connections/protocol = %d/%d/%t, want 2/2/false", requests.Load(), connections.Load(), wrongProtocol.Load())
 	}
 }
 

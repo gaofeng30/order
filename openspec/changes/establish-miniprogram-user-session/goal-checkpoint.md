@@ -16,10 +16,12 @@
 | required_local_external_assets | `none`; writer-managed isolated MySQL 8 W3 is a required local Gate and is PASS |
 | writer_runtime | Colima profile `order-mysql-w3`; MySQL `8.0.46` container `order-session-w3`, loopback-only random port, tmpfs data |
 | delivery_external_blocker | real Mini Program credentials/account/network and a fresh login value are `BLOCKED_EXTERNAL/NOT_RUN` |
-| candidate_sha | `external-post-commit`; bind the exact full SHA from Git after the immutable commit |
+| previous_candidate_sha | `dbc334a5edfde8f28bf599f86e2d49bdac3327fe` (`INVALIDATED`: `PROVIDER_GET_TRANSPARENT_REPLAY`) |
+| candidate_sha | `external-post-commit`; bind replacement full SHA from Git after the immutable repair commit |
 | score | `C9/T10/V8/R9=36`; every dimension at least 8; writer V capped at 8 |
-| hard_blockers | `0` inside writer scope |
-| next | hand the exact clean candidate SHA to a different verifier; do not push, integrate, archive, deploy or call real WeChat |
+| error_fingerprint | `PROVIDER_GET_TRANSPARENT_REPLAY`; fresh verifier high-risk P1; repeat_count `1` |
+| hard_blockers | `0` inside replacement writer scope |
+| next | commit only the six owned repair files, bind the exact clean replacement SHA, then hand it to a different detached verifier |
 
 ## Frozen boundary
 
@@ -35,13 +37,13 @@
 
 | gate | state | decisive condition |
 | --- | --- | --- |
-| Approval/lifecycle | `PASS` | main session explicitly approved; lifecycle completed `DRAFT → APPROVED → IMPLEMENTING → CANDIDATE` |
-| Provider local wire/error | `PASS` | exact focused provider command passes; fixed one-attempt client, strict response and canary secrecy covered |
+| Approval/lifecycle | `PASS` | approved scope remains unchanged; failed candidate returned `CANDIDATE → IMPLEMENTING` |
+| Provider local wire/error | `REPAIR GREEN/REFACTOR PASS` | dedicated non-reusing HTTP/1.1 transport; HTTP/2-capable TLS regression proves two requests use two distinct connections |
 | Service/API/config/main | `PASS` | exact service and handler/router commands pass; config package and binary smoke pass |
 | MySQL W3 | `PASS` | real MySQL 8.0.46 race suite proves v1→v9/repeat, exact schema, concurrency, rollback, lookup and expiry |
 | Anonymous regressions | `PASS` | mysql/catalog/menu integration scripts pass with exact anonymous catalog/menu behavior |
-| Writer repository Gate | `PASS` | gofmt, all test/race, vet, build, smoke, strict, diff and owned-path checks pass on final precommit bytes |
-| Independent exact SHA | `NOT_RUN` | different clean detached verifier has not yet received the post-commit SHA |
+| Writer repository Gate | `REPLACEMENT PASS` | focused RGR, four MySQL scripts, gofmt, all test/race, vet, build, smoke, strict, Harness, diff and owned-path pass |
+| Independent exact SHA | `REPLACEMENT NOT_RUN` | fresh verifier rejected old SHA; no independent result exists for the post-commit replacement |
 | Real WeChat delivery | `BLOCKED_EXTERNAL/NOT_RUN` | real customer/platform assets and separately authorized non-sensitive acceptance are absent |
 
 ## Sanitized RGR and writer verdict
@@ -53,7 +55,7 @@
 - Repository Red: W3 compile failed because the repository was absent. The minimal MySQL transaction made the unchanged race-enabled command pass for concurrency, multi-session, rollback, hash lookup and expiry.
 - Config Red: focused compile failed because structured Mini Program credentials were absent. Minimal development/test config and production fail-closed checks made the same command pass twice.
 - Main/smoke Red: binary build failed because identity was not wired into the extended router. Minimal fixed-client/repository/service/handler wiring made smoke pass twice without any provider request.
-- Writer score is `C9/T10/V8/R9=36`; hard blockers are `0`. This permits only CANDIDATE. It does not claim independent verification, integration, deployment or real-platform PASS.
+- Old writer PASS remains invalidated. Replacement writer score is `C9/T10/V8/R9=36` with hard blockers `0`; V stays capped at 8 until a different clean detached verifier checks the exact post-commit SHA.
 
 ## External boundary
 

@@ -38,7 +38,7 @@ The raw token appears only here. Request shape failures are HTTP 400 `INVALID_RE
 
 `internal/wechat` owns `Credentials`, a `CodeExchanger` interface and the fixed `https://api.weixin.qq.com/sns/jscode2session` client. Runtime construction accepts credentials and an HTTP client with a three-second timeout/no redirects, but no endpoint. A package-local test constructor may inject an `httptest.Server` endpoint; that injection is not reachable through config or main.
 
-The client builds one GET, performs no retry, reads at most 16 KiB, and decodes exactly one documented JSON object. It requires a success `errcode` and nonempty openid/`session_key`, returns only openid, and drops every other field immediately. It converts all failures to typed categories without wrapping the request URL or provider body, preventing AppSecret/code/body leakage through Go error strings. Following redirects, accepting partial/oversize JSON, returning `session_key`, and a configurable origin were rejected as unnecessary credential-exposure surfaces.
+The client builds one GET, performs no retry, reads at most 16 KiB, and decodes exactly one documented JSON object. Runtime owns a dedicated clone of Go's production transport with HTTP keep-alives disabled and HTTP/2 negotiation explicitly disabled. Therefore each accepted exchange starts on a fresh HTTP/1.1 connection: Go's transparent replay path for an idempotent GET on a reused HTTP/1.x connection is unreachable, and HTTP/2's internal retry loop cannot reintroduce replay. Package-local tests prove both transport flags and two sequential exchanges using two distinct connections while an HTTP/2-capable TLS server observes only HTTP/1.1. The client requires a success `errcode` and nonempty openid/`session_key`, returns only openid, and drops every other field immediately. It converts all failures to typed categories without wrapping the request URL or provider body, preventing AppSecret/code/body leakage through Go error strings. Following redirects, accepting partial/oversize JSON, returning `session_key`, a reusable runtime connection, HTTP/2, and a configurable origin were rejected as unnecessary credential-exposure or replay surfaces.
 
 ### Add minimal v8/v9 tables
 
@@ -76,7 +76,7 @@ The clock value is normalized to UTC and truncated to microseconds, and expiry i
 
 ### Gate local and real-platform evidence separately
 
-The local provider suite uses `httptest.Server` and covers exact method/path/query, redirect refusal, timeout, body cap, strict JSON, error mapping and canary secrecy. The local W3 script uses the existing isolated `order-mysql-w3` contract and runs migrations plus identity/catalog/menu/router integrations; it is a required PASS, not an external asset.
+The local provider suite uses controlled HTTP/TLS test servers and covers exact method/path/query, fresh-connection HTTP/1.1 runtime transport, HTTP/2 exclusion, redirect refusal, timeout, body cap, strict JSON, error mapping and canary secrecy. The local W3 script uses the existing isolated `order-mysql-w3` contract and runs migrations plus identity/catalog/menu/router integrations; it is a required PASS, not an external asset.
 
 Real code2Session proof stays `BLOCKED_EXTERNAL/NOT_RUN` until the customer Mini Program administrator and developer provide a real AppID/AppSecret, authenticated account, network and fresh code. That future run must capture only non-sensitive request/result references; a local stub can never promote this status.
 

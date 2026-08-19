@@ -28,7 +28,7 @@ Every successful exchange MUST create a new session and return HTTP 201 with exa
 
 ### Requirement: WeChat code exchange follows the official fixed wire contract
 
-The backend MUST call `GET https://api.weixin.qq.com/sns/jscode2session` exactly once per accepted request with URL-encoded `appid`, `secret`, submitted `js_code`, and `grant_type=authorization_code`. Production wiring MUST use that fixed HTTPS endpoint, a three-second whole-request timeout, no redirect following, and a response-body limit of 16 KiB; runtime configuration MUST NOT accept an alternate base URL.
+The backend MUST call `GET https://api.weixin.qq.com/sns/jscode2session` exactly once per accepted request with URL-encoded `appid`, `secret`, submitted `js_code`, and `grant_type=authorization_code`. Production wiring MUST use that fixed HTTPS endpoint, a three-second whole-request timeout, no redirect following, and a response-body limit of 16 KiB; runtime configuration MUST NOT accept an alternate base URL. The runtime client MUST own a non-reusing transport with HTTP keep-alives disabled and HTTP/2 negotiation disabled, so every exchange uses a fresh HTTP/1.1 connection and neither Go's reused-connection GET replay nor its HTTP/2 retry loop can issue a second wire attempt.
 
 The client MUST accept only one complete JSON object matching the documented field types. A success MUST have `errcode` absent or zero and non-empty openid and `session_key`; the client MUST return only the opaque openid to the identity service and MUST immediately discard `session_key`, optional UnionID, and provider message. HTTP failure, timeout, redirect, oversize/malformed/trailing JSON, missing success fields, or an unknown/non-transient provider error MUST fail closed.
 
@@ -51,6 +51,12 @@ Official provider errors `40029` (invalid code) and `40226` (blocked code) MUST 
 - **WHEN** WeChat times out, redirects, exceeds the body limit, returns non-success HTTP, malformed/trailing JSON, missing success fields, `-1`, `45011`, or another nonzero error
 - **THEN** the API returns the stable HTTP 503 `SESSION_UNAVAILABLE` envelope without retry
 - **AND** no provider body, query credential, submitted code, openid, or `session_key` is exposed
+
+#### Scenario: Runtime transport cannot transparently replay a GET
+
+- **WHEN** two accepted exchanges run sequentially against an HTTP/2-capable controlled TLS server
+- **THEN** the server observes two distinct connections and exactly two total requests
+- **AND** both requests use HTTP/1.1 because production transport excludes HTTP/2 and connection reuse
 
 ### Requirement: User find-or-create and session persistence are one MySQL transaction
 

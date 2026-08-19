@@ -3,6 +3,7 @@ package wechat
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -41,9 +42,17 @@ type Code2SessionClient struct {
 func NewCode2SessionClient(credentials Credentials) *Code2SessionClient {
 	return newCode2SessionClient(
 		credentials,
-		&http.Client{Timeout: code2SessionTimeout},
+		&http.Client{Transport: newCode2SessionTransport(), Timeout: code2SessionTimeout},
 		code2SessionEndpoint,
 	)
+}
+
+func newCode2SessionTransport() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DisableKeepAlives = true
+	transport.ForceAttemptHTTP2 = false
+	transport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	return transport
 }
 
 func newCode2SessionClient(credentials Credentials, source *http.Client, endpoint string) *Code2SessionClient {
