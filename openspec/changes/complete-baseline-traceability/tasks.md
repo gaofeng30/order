@@ -62,8 +62,12 @@ python3 openspec/changes/complete-baseline-traceability/checks/check_residue.py 
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=9a86306e4f00594ba47c6c62e503f73064932a48`，验证树 `git status --porcelain` 为空。残留门禁对候选树 `RESIDUE_GATE=PASS`（`residue_hits=0`）、对 `base_sha` 树 `RESIDUE_GATE=FAIL`（`residue_hits=1`，点名 `The baseline is traceable and has no behavioral TODO`）；`check_realign.py` 对候选树仍 `REALIGN_GATE=PASS`。diff 为 6 files / 246 insertions / 0 deletions，全部位于 owned paths 内。验证结束时验证树仍为 clean。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS**（W0 / UI0）。
+  - 剩余外部边界：① 仓库未安装 `openspec` CLI，`openspec validate --strict` 未执行，记 `BLOCKED_EXTERNAL`；② 2026-08-19 客户评审记录尚未取得书面签认（0818 PRD §16.4 C1）；③ 与 `online-ordering-system-prd.md` 维护方的同步尚未完成（§16.4 C2）；④ 本 change 不产生运行行为，无 UI1 及以上证据。
+  - 残留门禁的覆盖边界：只作用于 `mvp-product-baseline`，且词表按当前已删除概念枚举，不保证发现未来新增的废止概念。
 
 ## 6. 集成前置
 
