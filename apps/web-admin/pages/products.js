@@ -283,14 +283,14 @@
         if (del) del.onclick = () => {
           window.Modal.confirm({
             title: '删除菜品',
-            body: `确认删除「${T.esc(p.name)}」？该菜品会同时从优惠券的「指定菜品」范围中摘除，摘空的券将自动停用。`,
+            body: `确认删除「${T.esc(p.name)}」？删除后不可恢复。`,
             okText: '删除', danger: true,
           }).then(yes => {
             if (!yes) return;
-            Api.deleteProduct(p.id).then(r => {
+            Api.deleteProduct(p.id).then(() => {
               close();
               paint(el);
-              window.Toast.show(r.disabledCoupons ? `已删除 · ${r.disabledCoupons} 张券因范围摘空已停用` : '已删除', { icon: 'check' });
+              window.Toast.show('已删除', { icon: 'check' });
             }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
           });
         };
