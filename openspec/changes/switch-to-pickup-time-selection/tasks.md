@@ -76,8 +76,12 @@ node openspec/changes/switch-to-pickup-time-selection/checks/check_pickup_settin
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=ddd041b2b83ced5e7a3336d7caacc726c9dbb06b`，验证树 clean。小程序 `npm test` → `tests 58 / pass 58 / fail 0`；PC 四个门禁全部 PASS（`PICKUP_SETTINGS_GATE` / `ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE`）；本 change 的门禁对 `base_sha` 树 `exit=1`，红线成立。diff 相对 base 为 23 files / 836 insertions / 96 deletions，`OWNED=PASS`（`files=23 outside=0`）。
+  - 残留扫描两处命中均为误报，已核实：`admin-layer.js` 的 `info.type` 是上传文件类型；`orders.wxml` 的 `item.typeIcon` 是 `orders.js` 派生的展示字段（孤儿绑定断言已覆盖其被设置）。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① **按餐段过滤商品受后端契约阻塞** —— `catalogStore` 的商品契约无餐段字段，需后端扩展 schema 后另开 change；② 服务端定时截单与取餐前 30 分钟自动排产无实现可验；③ `NOW_MINS` 为演示时钟常量，真实截单判定由服务端按门店时区计算；④ 小程序 UI1 来自 Node harness、PC UI1 为人工浏览器操作，均未覆盖微信开发者工具与真机；⑤ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`。
 
 ## 6. 集成与后续
 
