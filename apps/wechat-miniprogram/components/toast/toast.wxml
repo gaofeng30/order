@@ -1,5 +1,4 @@
 <view wx:if="{{visible}}" class="toast">
   <icon name="{{icon}}" size="18" color="#8fd06a" />
   <text class="toast-msg">{{msg}}</text>
-  <text wx:if="{{undoable}}" class="toast-undo" catchtap="onUndo">撤销</text>
 </view>

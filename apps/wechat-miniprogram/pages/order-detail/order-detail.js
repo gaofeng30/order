@@ -12,18 +12,18 @@ Page({
     this.build(o);
   },
   build(o) {
-    const reserve = o.type === 'reserve';
     const rows = o.items.map(([id, q, p, flavors, note]) => {
       const m = data.itemById(id);
       return { id, m, name: m.name, q, p, sub: p * q, flavors: flavors || [], note: note || '' };
     });
     const pt = data.PICKUP_POINTS.find(x => x.name === o.pickupPoint);
     this.setData({
-      o, reserve, rows,
+      o, rows,
+      showQr: o.status === '待取餐',
       flavorsStr: (o.flavors || []).join(' / '),
       canCancel: data.canCancelReserve(o),
       ptAddr: pt ? pt.addr : data.STORE.addr,
-      navTitle: reserve ? '预约详情' : '取餐码',
+      navTitle: o.status === '待取餐' ? '取餐码' : '预约详情',
     });
   },
   copy() {

@@ -5,5 +5,4 @@
   max-width: 80%; animation: toastIn .25s ease;
 }
 .toast-msg { line-height: 1.4; }
-.toast-undo { color: #9ec8ff; margin-left: 8rpx; font-weight: 700; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20rpx); } to { opacity: 1; transform: translate(-50%, 0); } }

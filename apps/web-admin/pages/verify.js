@@ -47,7 +47,8 @@
     }
     let err = '';
     if (o.status === '已完成') err = '该订单已核销';
-    else if (o.status !== '待取餐') err = o.status === '待制作' ? '订单尚未备好' : '订单状态异常';
+    else if (o.status === '已退款') err = '该订单已退款，不可核销';
+    else if (o.status !== '待取餐') err = '订单尚未备好';
 
     const rows = o.items.map(([id, q, p]) => {
       const m = window.Seed.itemById(id);

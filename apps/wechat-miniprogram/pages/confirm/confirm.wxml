@@ -5,23 +5,7 @@
     <!-- 取餐方式 -->
     <view class="hero-dark mode-card">
       <view class="ring r2"></view>
-      <view class="mode-tabs">
-        <view class="mode-tab {{mode === 'now' ? 'on' : ''}}" data-m="now" bindtap="setMode">
-          <icon name="flame" size="15" color="{{mode === 'now' ? '#0b2f63' : 'rgba(255,255,255,.7)'}}" /><text>尽快取餐</text>
-        </view>
-        <view class="mode-tab {{mode === 'reserve' ? 'on' : ''}}" data-m="reserve" bindtap="setMode">
-          <icon name="calendarClock" size="15" color="{{mode === 'reserve' ? '#0b2f63' : 'rgba(255,255,255,.7)'}}" /><text>预约取餐</text>
-        </view>
-      </view>
-
-      <view wx:if="{{mode === 'now'}}" class="mode-now">
-        <icon name="clock" size="15" color="#9fd3ff" />
-        <text class="now-txt">下单后立即制作，</text>
-        <text class="now-hl">预计 17:10 可取</text>
-        <view class="pill pill--ondark now-cut">{{store.cutoff}}</view>
-      </view>
-
-      <view wx:else class="mode-reserve">
+      <view class="mode-reserve">
         <view class="rsv-label">取餐日期</view>
         <view class="rsv-dates">
           <view wx:for="{{dates}}" wx:key="k" class="rsv-date {{dateIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="pickDate">{{item.k}}</view>

@@ -3,7 +3,7 @@
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
-  let lane = '待制作';
+  let lane = '已预约';
   let selId = '';
 
   function render(el) {
@@ -65,10 +65,7 @@
       T.bind(host, {
         adv(id) {
           Api.advanceOrder(id).then(r => {
-            window.Toast.show(`已${r.act}「${r.code}」`, {
-              icon: 'check',
-              onUndo: () => { Api.revertOrder(id, r.prev); paint(el); },
-            });
+            window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' });
             paint(el);
           }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         },
@@ -125,7 +122,7 @@
        <div class="dt-foot">
          <button class="btn btn--line" data-print>${I.svg('printer', 16)}打印小票</button>
          <span class="grow"></span>
-         ${m.isView ? `<span class="faint" style="font-size:12.5px">该订单已${o.status}</span>`
+         ${m.isView ? `<span class="faint" style="font-size:12.5px">该订单${o.status}</span>`
                     : `<button class="btn ${m.cls}" data-adv>${m.label}</button>`}
        </div>`;
 
@@ -135,15 +132,12 @@
     const advBtn = host.querySelector('[data-adv]');
     if (advBtn) advBtn.onclick = () => {
       Api.advanceOrder(o.id).then(r => {
-        window.Toast.show(`已${r.act}「${r.code}」`, {
-          icon: 'check',
-          onUndo: () => { Api.revertOrder(o.id, r.prev); paint(el); },
-        });
+        window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' });
         paint(el);
       }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
     };
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['orders'] = { sub: '履约流转：待制作 → 待取餐 → 已完成', flush: true, render };
+  window.Pages['orders'] = { sub: '履约流转：已预约 → 制作中 → 待取餐 → 已完成', flush: true, render };
 })();

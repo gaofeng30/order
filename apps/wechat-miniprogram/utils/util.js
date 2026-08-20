@@ -4,10 +4,10 @@ const catalogStore = require('./catalogStore.js');
 
 // ---- 状态 → 胶囊语义 (颜色统一来源) ----
 const STATUS_MAP = {
-  待取餐: 'info', 待制作: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info', 已预约: 'info',
-  已完成: 'ok', 成功: 'ok', 已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
-  待支付: 'warn',
-  已取消: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute', 未开放: 'mute',
+  已预约: 'info', 制作中: 'info', 待取餐: 'info',
+  已完成: 'ok', 成功: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
+  退款中: 'warn',
+  已退款: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute',
 };
 const statusTone = s => STATUS_MAP[s] || 'mute';
 
@@ -47,11 +47,6 @@ const nav = {
 };
 
 // ---- 下单模式 (尽快 now / 预约 reserve, 跨页共享) ----
-const orderMode = {
-  get: () => getApp().globalData.orderMode || 'now',
-  set: (m) => { getApp().globalData.orderMode = m; },
-};
-
 // ---- 购物车 (操作 globalData.cart) ----
 // cart: { [id]: { product, qty, flavors:[], note:'' } }，product 是首次选择时的目录快照
 function cartRaw() { return getApp().globalData.cart; }
@@ -149,38 +144,37 @@ const cart = {
   },
 };
 
-// ---- 订单状态机 (商户端履约推进, 单向) ----
-// 待制作 ──备好──▶ 待取餐 ──核销──▶ 已完成
-const NEXT = { 待制作: '待取餐', 待取餐: '已完成' };
-const ACT = { 待制作: '备好', 待取餐: '核销', 已完成: '查看', 已取消: '查看' };
+/* ---- 六态订单状态机 (生效 spec: Orders use one six-state production state machine) ----
+   已预约 ──取餐前 30 分钟，服务端定时推进──▶ 制作中 ──备好──▶ 待取餐 ──核销──▶ 已完成
+   旁路：  任一已支付态 ──退款──▶ 退款中 ──微信确认──▶ 已退款
+
+   NEXT 只包含商户可执行的转换。`已预约 → 制作中` 由服务端定时任务驱动，
+   前端不得提供该转换；退款由 PC 后台发起，不在商户端推进链路上。
+   生产禁止撤销或回退已完成的转换，因此不提供任何回退入口。 */
+const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
+const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
 
 // 菜品摘要串
 function itemsSummary(items) {
   return items.map(([id, q]) => data.itemById(id).name + '×' + q).join('，');
 }
 
-// 商户端单向推进订单状态 + Toast 撤销
+// 商户端单向推进订单状态。不可回退：生效 spec 禁止生产撤销。
 function advanceOrder(id, toastComp, refresh) {
   const g = getApp().globalData;
   const o = g.aOrders.find(x => x.id === id);
   if (!o) return;
   const nx = NEXT[o.status];
   if (!nx) return;
-  const prev = o.status;
-  const act = ACT[prev];
+  const act = ACT[o.status];
   o.status = nx;
   if (refresh) refresh();
-  if (toastComp) {
-    toastComp.show(`已${act}「${o.code}」`, {
-      icon: 'check',
-      onUndo: () => { o.status = prev; if (refresh) refresh(); },
-    });
-  }
+  if (toastComp) toastComp.show(`已${act}「${o.code}」`, { icon: 'check' });
 }
 
 // 推进按钮的展示元信息
 function advanceMeta(status) {
-  const isView = status === '已完成' || status === '已取消';
+  const isView = !NEXT[status];
   return {
     label: ACT[status],
     isView,
@@ -190,5 +184,5 @@ function advanceMeta(status) {
 }
 
 module.exports = {
-  STATUS_MAP, statusTone, nav, buildUrl, orderMode, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
+  STATUS_MAP, statusTone, nav, buildUrl, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
 };
