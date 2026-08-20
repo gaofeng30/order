@@ -2,7 +2,6 @@
   "navigationStyle": "custom",
   "navigationBarTextStyle": "black",
   "usingComponents": {
-    "customize": "/components/customize/customize",
-    "coupon-card": "/components/coupon-card/coupon-card"
+    "customize": "/components/customize/customize"
   }
 }
