@@ -15,7 +15,7 @@ Component({
     attached() { this.build(); },
   },
   // 页面实例被复用（navigateBack 回到 Tab 页）时不会重新 attached，
-  // 通过宿主页 show 重算角标，避免「待支付/待制作」数字陈旧
+  // 通过宿主页 show 重算角标，避免「制作中 / 进行中」数字陈旧
   pageLifetimes: {
     show() { this.build(); },
   },
@@ -24,7 +24,7 @@ Component({
       const g = getApp().globalData;
       let items, activeColor;
       if (this.data.variant === 'admin') {
-        const pend = g.aOrders.filter(o => o.status === '待制作').length;
+        const pend = g.aOrders.filter(o => o.status === '制作中').length;
         items = [
           { id: 'admin-orders', icon: 'layers', label: '订单', badge: pend },
           { id: 'admin-verify', icon: 'scan', label: '核销' },
@@ -32,7 +32,7 @@ Component({
         ];
         activeColor = '#2a5fa6';
       } else {
-        const pend = g.orders.filter(o => o.status === '待支付').length;
+        const pend = g.orders.filter(o => ['已预约', '制作中', '待取餐'].includes(o.status)).length;
         items = [
           { id: 'home', icon: 'home', label: '首页' },
           { id: 'menu', icon: 'list', label: '菜单' },

@@ -3,7 +3,7 @@ const data = require('../../utils/data.js');
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    o: null, store: data.STORE, reserve: false, rows: [], flavorsStr: '',
+    o: null, store: data.STORE, rows: [], flavorsStr: '', showQr: false,
     canCancel: false, ptAddr: '', cancelMin: data.CANCEL_LIMIT_MIN, cancelSheet: false,
   },
   onLoad(opts) {
@@ -37,9 +37,10 @@ Page({
   doCancel() {
     const g = getApp().globalData;
     const id = this.data.o.id;
-    g.orders = g.orders.map(o => (o.id === id ? Object.assign({}, o, { status: '已取消' }) : o));
+    // 一期没有 已取消：已支付订单取消后直接进 退款中，微信确认退款成功才是 已退款
+    g.orders = g.orders.map(o => (o.id === id ? Object.assign({}, o, { status: '退款中' }) : o));
     this.setData({ cancelSheet: false });
-    this.build(Object.assign({}, this.data.o, { status: '已取消' }));
-    this.selectComponent('#toast').show('预约已取消，款项原路退回', { icon: 'check' });
+    this.build(Object.assign({}, this.data.o, { status: '退款中' }));
+    this.selectComponent('#toast').show('已发起退款，微信确认后到账', { icon: 'check' });
   },
 });

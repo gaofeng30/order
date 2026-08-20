@@ -46,7 +46,6 @@ const nav = {
   back: () => wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) }),
 };
 
-// ---- 下单模式 (尽快 now / 预约 reserve, 跨页共享) ----
 // ---- 购物车 (操作 globalData.cart) ----
 // cart: { [id]: { product, qty, flavors:[], note:'' } }，product 是首次选择时的目录快照
 function cartRaw() { return getApp().globalData.cart; }

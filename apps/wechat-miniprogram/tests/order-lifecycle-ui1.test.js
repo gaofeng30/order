@@ -93,6 +93,62 @@ test('user order filters expose only first-phase states', () => {
   assert.equal(tabs.includes('已退款'), true, 'order filter lost 已退款');
 });
 
+test('every surface that names a state uses the six-state vocabulary', () => {
+  // 独立验证发现首轮断言只覆盖了 util/种子/结算/订单筛选，漏掉了商户端泳道、
+  // TabBar 角标、核销判定与取消流程。此处按「凡是出现状态名的地方」逐一覆盖。
+  const SURFACES = [
+    'pages/admin-orders/admin-orders.js',
+    'pages/admin-verify/admin-verify.js',
+    'pages/order-detail/order-detail.js',
+    'pages/orders/orders.wxml',
+    'components/tabbar/tabbar.js',
+    'utils/util.js',
+    'utils/data.js',
+  ];
+  for (const rel of SURFACES) {
+    for (const retired of RETIRED_STATES) {
+      assert.doesNotMatch(read(rel), new RegExp(`'${retired}'|「${retired}」|status === '${retired}'`),
+        `${rel} still names ${retired}`);
+    }
+  }
+});
+
+test('merchant lanes and tab badges follow the six states', () => {
+  const harness = createHarness();
+  const app = harness.loadApp();
+  const page = harness.loadPage('pages/admin-orders/admin-orders.js');
+  harness.invoke(page, 'onLoad', {});
+  assert.deepEqual(page.data.lanes, ['已预约', '制作中', '待取餐', '已完成', '已退款', '全部']);
+  assert.equal(page.data.lane, '已预约');
+  const src = read('components/tabbar/tabbar.js');
+  assert.doesNotMatch(src, /'待制作'|'待支付'/, 'tab badge still counts a retired state');
+  assert.match(src, /'制作中'/, 'merchant badge lost 制作中');
+});
+
+test('cancelling a paid order moves it to refunding, never to a deleted state', () => {
+  const harness = createHarness();
+  const app = harness.loadApp();
+  const target = app.globalData.orders.find(o => o.status === '已预约');
+  assert.ok(target, 'seed has no 已预约 order');
+  const page = harness.loadPage('pages/order-detail/order-detail.js');
+  harness.invoke(page, 'onLoad', { id: target.id });
+  page.doCancel();
+  const after = app.globalData.orders.find(o => o.id === target.id);
+  assert.equal(after.status, '退款中');
+  // 断言的是「写入」，不是「词出现」——注释里说明一期没有该状态是正当的
+  assert.doesNotMatch(read('pages/order-detail/order-detail.js'), /status: '已取消'/,
+    'cancel still writes a deleted state');
+});
+
+test('no template calls a handler its page no longer defines', () => {
+  const wxml = read('pages/orders/orders.wxml');
+  const js = read('pages/orders/orders.js');
+  const handlers = [...wxml.matchAll(/(?:bind|catch)tap="(\w+)"/g)].map(m => m[1]);
+  for (const h of handlers) {
+    assert.match(js, new RegExp(`\\b${h}\\s*\\(`), `orders.wxml calls ${h} but orders.js does not define it`);
+  }
+});
+
 test('the pickup QR code is bound to the ready state only', () => {
   const wxml = read('pages/order-detail/order-detail.wxml');
   assert.match(wxml, /status === '待取餐'/, 'order detail no longer gates the QR code on 待取餐');

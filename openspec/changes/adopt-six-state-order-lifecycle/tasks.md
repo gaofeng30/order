@@ -69,8 +69,17 @@ node openspec/changes/adopt-six-state-order-lifecycle/checks/check_order_lifecyc
   - UI1 无撤销：推进后的 Toast DOM 中不含撤销动作，全页 `/撤销/` 匹配为 false。
   - UI1 运行态：`window.Api.NEXT` 为两条转换、`LANES` 为六态口径、`Object.hasOwn(Api, 'revertOrder')` 为 false、`advanceMeta('已预约')` 为 `{ label: '待开做', isView: true }`。
   - 控制台：`runtimeErrors` 为空数组。
-- [x] 4.5 owned-path 审计与 `git diff --check`。
-  - 见 5.1 的验证记录。
+- [x] 4.5 独立验证发现首轮候选残留，回实现 worktree 修复并补齐断言。
+  - **首轮候选 `f9c8055` 未通过独立验证。** 验证在候选树上扫到 7 处已废止状态残留，全部是我的 Red 断言没有覆盖的面：
+    - `pages/orders/orders.wxml` 仍有 `待支付` 的「去支付」按钮，而其处理器 `goPay` 已被本 change 删除 —— **点击即报错**；
+    - `pages/order-detail/order-detail.js` 的取消预约写入 `已取消` —— **写了一个已删除的状态**，应按 §7.6/§7.7 进 `退款中`；
+    - `pages/admin-orders/admin-orders.js` 的泳道仍是 `['待制作','待取餐','已完成','全部']`，默认泳道 `待制作`；
+    - `pages/admin-verify/admin-verify.js` 的状态判定仍引用 `待制作`；
+    - `components/tabbar/tabbar.js` 商户角标数 `待制作`、用户角标数 `待支付`；
+    - `utils/util.js` 与 `utils/data.js` 各有一处孤立注释，`utils/layer.js` 引用已删除的 `orderMode`。
+  - 根因是首轮断言只覆盖了工具层、种子、结算与用户订单筛选，没有覆盖「凡是出现状态名的地方」。修复后**补了四条断言**：全表面状态词汇扫描、商户泳道与 TabBar 角标、取消进 `退款中`、以及「模板调用的处理器必须在页面中存在」（后者能直接抓住 `goPay` 那类断链）。
+  - 另修正一处同类断言缺陷：`doesNotMatch(/已取消/)` 命中了我自己写的「一期没有 已取消」注释，改为断言 `status: '已取消'` 的实际写入。
+  - 修复后：小程序新用例 12/12、全量 `npm test` 46/46、PC `ORDER_LIFECYCLE_GATE=PASS`、全端已废止状态零残留。
 - [x] 4.6 记录门禁证据与 candidate SHA。
   - Writer verdict: `{ gate_type: W2, ui_level_target: UI1, ui_level_actual: UI1, base_sha: d0e17d6417817f48833b82081173eb411dbccba0, candidate_sha: external-post-commit（见 5.1）, hard_blockers: 0, unverified_boundary: 服务端定时排产与退款触发无实现可验；小程序 UI1 来自 Node harness、PC UI1 为人工浏览器操作；openspec CLI 缺失 }`。
 

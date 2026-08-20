@@ -1,12 +1,12 @@
 const { nav, itemsSummary, advanceOrder, advanceMeta } = require('../../utils/util.js');
 
-const LANES = ['待制作', '待取餐', '已完成', '全部'];
+const LANES = ['已预约', '制作中', '待取餐', '已完成', '已退款', '全部'];
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     lanes: LANES,
-    lane: '待制作',
+    lane: '已预约',
     counts: {},
     list: [],
   },

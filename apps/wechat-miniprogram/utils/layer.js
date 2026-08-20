@@ -1,4 +1,4 @@
-// 开屏装饰图层 — 本机持久化访问模块（模拟后端，风格参照 util.js 的 orderMode 访问器）
+// 开屏装饰图层 — 本机持久化访问模块（模拟后端，风格参照 util.js 的访问器）
 // 配置与图片仅存于本机：wx.setStorageSync + USER_DATA_PATH 文件，跨设备下发需后端（超出当前范围）
 const KEY = 'layerOverlay.v1';
 const DEFAULTS = {
