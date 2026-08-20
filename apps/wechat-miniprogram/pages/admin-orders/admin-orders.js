@@ -10,6 +10,7 @@ Page({
     counts: {},
     list: [],
   },
+  toProfile() { nav.go('admin-profile'); },
   onLoad(opts) {
     if (opts.lane && LANES.includes(opts.lane)) this.setData({ lane: opts.lane });
   },

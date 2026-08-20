@@ -1,6 +1,5 @@
 {
   "pages": [
-    "pages/brand/brand",
     "pages/launch/launch",
     "pages/home/home",
     "pages/menu/menu",
@@ -10,7 +9,6 @@
     "pages/order-detail/order-detail",
     "pages/orders/orders",
     "pages/profile/profile",
-    "pages/admin-dashboard/admin-dashboard",
     "pages/admin-orders/admin-orders",
     "pages/admin-order-detail/admin-order-detail",
     "pages/admin-verify/admin-verify",

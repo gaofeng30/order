@@ -43,7 +43,6 @@ const nav = {
     return wx.redirectTo({ url, fail: () => wx.reLaunch({ url }) });
   },
   reset: () => wx.reLaunch({ url: '/pages/launch/launch' }),             // 回启动选择
-  toBrand: () => wx.reLaunch({ url: '/pages/brand/brand' }),            // 回品牌选择
   back: () => wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) }),
 };
 

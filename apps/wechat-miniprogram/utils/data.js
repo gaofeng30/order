@@ -112,10 +112,6 @@ const ADMIN_ORDERS = [
     items: [['p004', 1, 26]] },
 ];
 
-// 单品销量排行
-const RANK = [
-  { id: 'p003', sold: 320 }, { id: 'p001', sold: 286 }, { id: 'p004', sold: 254 }, { id: 'p002', sold: 198 }, { id: 'p005', sold: 142 },
-];
 
 // 分类管理
 const ADMIN_CATS = [
@@ -147,7 +143,7 @@ function canCancelReserve(o) { return !!(o && o.type === 'reserve' && o.status =
 const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
 
 module.exports = {
-  STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, RANK, ADMIN_CATS, FLAVORS,
+  STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, ADMIN_CATS, FLAVORS,
   NOW_MINS, PICKUP_POINTS, RESERVE_DATES, RESERVE_SLOTS, CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
   ME,
 };

@@ -26,11 +26,9 @@ Component({
       if (this.data.variant === 'admin') {
         const pend = g.aOrders.filter(o => o.status === '待制作').length;
         items = [
-          { id: 'admin-dashboard', icon: 'dash', label: '工作台' },
           { id: 'admin-orders', icon: 'layers', label: '订单', badge: pend },
           { id: 'admin-verify', icon: 'scan', label: '核销' },
           { id: 'admin-products', icon: 'box', label: '菜品' },
-          { id: 'admin-profile', icon: 'store', label: '我的' },
         ];
         activeColor = '#2a5fa6';
       } else {

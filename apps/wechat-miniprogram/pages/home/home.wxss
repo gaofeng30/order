@@ -12,34 +12,6 @@
 
 .body { padding: 0 32rpx; margin-top: -88rpx; position: relative; z-index: 3; }
 
-/* Banner */
-.banner-sw { height: 256rpx; border-radius: var(--r-card); box-shadow: var(--sh-card); overflow: hidden; }
-.camp { display: flex; height: 256rpx; background: var(--card); }
-.camp-text { flex: 1; padding: 36rpx 36rpx 32rpx; display: flex; flex-direction: column; }
-.camp-pill { align-self: flex-start; margin-bottom: 18rpx; }
-.camp-title { font-size: 42rpx; font-weight: 700; color: var(--ink); letter-spacing: 1rpx; }
-.camp-sub { font-size: 23rpx; color: var(--ink-2); margin-top: 10rpx; line-height: 1.55; flex: 1; }
-.camp-cta { align-self: flex-start; margin-top: 8rpx; }
-.camp-media { width: 240rpx; position: relative; display: flex; align-items: center; justify-content: center; }
-.camp-img { width: 100%; height: 100%; }
-.camp-emblem-wrap { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-.camp-dash { position: absolute; left: 16rpx; right: 16rpx; top: 16rpx; bottom: 16rpx; border: 3rpx dashed rgba(255, 255, 255, .25); border-radius: 28rpx; }
-.camp-emblem { width: 148rpx; height: 148rpx; opacity: .95; }
-.dots { display: flex; justify-content: center; gap: 12rpx; padding: 20rpx 0 4rpx; }
-.dot { width: 12rpx; height: 12rpx; border-radius: 6rpx; background: var(--line); transition: .2s; }
-.dot.on { width: 32rpx; background: var(--green); }
-
-/* 会员面板 */
-.member { padding: 32rpx; margin-top: 12rpx; display: flex; align-items: center; gap: 28rpx; }
-.member-l { flex: 1; }
-.member-head { display: flex; align-items: center; gap: 14rpx; }
-.member-title { font-size: 32rpx; font-weight: 700; color: var(--ink); }
-.member-desc { font-size: 24rpx; color: var(--ink-2); margin-top: 12rpx; line-height: 1.6; }
-.member-btn { margin-top: 22rpx; }
-.member-r { text-align: center; }
-.qr-box { padding: 12rpx; background: #fff; border-radius: 24rpx; box-shadow: var(--sh-soft); }
-.qr-cap { font-size: 20rpx; color: var(--ink-3); margin-top: 10rpx; }
-
 /* 服务宫格 */
 .grid { padding: 36rpx 16rpx; display: flex; flex-wrap: wrap; }
 .grid-item { width: 33.33%; display: flex; flex-direction: column; align-items: center; gap: 14rpx; padding: 18rpx 0; }
@@ -54,13 +26,3 @@
   padding: 2rpx 10rpx; border-radius: 12rpx;
 }
 .grid-cn { font-size: 25rpx; color: var(--ink); font-weight: 500; }
-
-/* 今日招牌 */
-.signature { white-space: nowrap; padding-bottom: 36rpx; }
-.sig-track { display: inline-flex; gap: 24rpx; padding-right: 16rpx; }
-.sig-card { width: 264rpx; min-height: 184rpx; padding: 28rpx; }
-.sig-name { font-size: 26rpx; font-weight: 600; color: var(--ink); }
-.sig-desc { min-height: 64rpx; margin-top: 14rpx; font-size: 22rpx; color: var(--ink-3); line-height: 1.5; white-space: normal; }
-.sig-foot { display: flex; align-items: baseline; justify-content: space-between; margin-top: 8rpx; }
-.sig-local { font-size: 21rpx; color: var(--ink-3); }
-.catalog-state { min-height: 184rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }

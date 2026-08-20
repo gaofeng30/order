@@ -24,54 +24,6 @@
     </view>
 
     <view class="body">
-      <!-- 营销 Banner -->
-      <view class="banner fade-up">
-        <swiper class="banner-sw" autoplay circular interval="4200" duration="400" bindchange="onBanner">
-          <swiper-item wx:for="{{campaigns}}" wx:key="title">
-            <view class="camp" data-i="{{index}}" bindtap="openBanner">
-              <view class="camp-text">
-                <view class="pill pill--{{item.tone}} camp-pill">{{item.pill}}</view>
-                <view class="camp-title serif">{{item.title}}</view>
-                <view class="camp-sub">
-                  <view wx:for="{{item.sub}}" wx:for-item="line" wx:key="*this">{{line}}</view>
-                </view>
-                <view class="btn btn--primary btn--sm camp-cta">{{item.cta}}</view>
-              </view>
-              <view class="camp-media" style="background:{{item.bg}}">
-                <view class="camp-emblem-wrap">
-                  <view class="camp-dash"></view>
-                  <image src="/assets/emblem.png" class="camp-emblem" mode="aspectFit" />
-                </view>
-              </view>
-            </view>
-          </swiper-item>
-        </swiper>
-        <view class="dots">
-          <view
-            wx:for="{{campaigns}}"
-            wx:key="index"
-            class="dot {{bannerIdx === index ? 'on' : ''}}"
-            data-i="{{index}}"
-            bindtap="dotTap"
-          ></view>
-        </view>
-      </view>
-
-      <!-- 会员面板 -->
-      <view class="card member">
-        <view class="member-l">
-          <view class="member-head">
-            <text class="member-title serif">入群享新人礼</text>
-            <view class="pill pill--ok">+8 元券</view>
-          </view>
-          <view class="member-desc">扫码进群，第一时间获取当日现做与活动。</view>
-        </view>
-        <view class="member-r">
-          <view class="qr-box"><qrcode size="140" dark="#0b2f63" /></view>
-          <view class="qr-cap">入群二维码</view>
-        </view>
-      </view>
-
       <!-- 服务宫格 -->
       <view class="sec-h"><text class="t">服务功能</text></view>
       <view class="card grid">
@@ -90,38 +42,6 @@
         </view>
       </view>
 
-      <!-- 今日招牌 -->
-      <view class="sec-h"><text class="t">今日招牌</text><text class="more" bindtap="toMenu">全部 ›</text></view>
-      <view wx:if="{{listState === 'loading'}}" class="catalog-state">目录加载中…</view>
-      <view wx:elif="{{listState === 'empty'}}" class="catalog-state">
-        <text>当前目录为空</text>
-        <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载</view>
-      </view>
-      <view wx:elif="{{listState === 'error'}}" class="catalog-state">
-        <text>目录加载失败</text>
-        <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">重试</view>
-      </view>
-      <block wx:elif="{{listState === 'ready'}}">
-        <view wx:if="{{signature.length === 0}}" class="catalog-state">暂无招牌商品</view>
-        <scroll-view wx:else class="signature" scroll-x enhanced show-scrollbar="{{false}}">
-          <view class="sig-track">
-            <view
-              wx:for="{{signature}}"
-              wx:key="id"
-              class="card sig-card"
-              data-id="{{item.id}}"
-              bindtap="toDetail"
-            >
-              <view class="sig-name">{{item.name}}</view>
-              <view class="sig-desc ellipsis-2">{{item.description}}</view>
-              <view class="sig-foot">
-                <money v="{{item.price_text}}" />
-                <text class="sig-local">本地选择</text>
-              </view>
-            </view>
-          </view>
-        </scroll-view>
-      </block>
       <view style="height:{{safeBottom + 24}}px"></view>
     </view>
   </scroll-view>

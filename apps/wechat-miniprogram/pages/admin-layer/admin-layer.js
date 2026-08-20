@@ -1,6 +1,6 @@
 // 开屏图层 — 商户端编辑页
 // 上传透明 PNG → 在等比缩放的页面预览上拖拽定位、滑杆调大小 → 保存后展示在
-// 「业务选择页 brand」与「身份选择页 launch」（两页共用一套配置，见 utils/layer.js）
+// 身份选择页（见 utils/layer.js）
 const layer = require('../../utils/layer.js');
 
 const D = layer.DEFAULTS; // 默认位置/大小与用户端渲染共用一份定义
@@ -9,7 +9,7 @@ const PREVIEW_SCALE = 0.6;
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    mock: 'brand',       // 预览背景 'brand'业务选择页 | 'launch'身份选择页
+    mock: 'launch',      // 预览背景：身份选择页
     src: '',             // 预览图片路径（临时或已持久化）
     enabled: false,
     sizePct: 35,         // 大小滑杆值 = size * 100（屏宽百分比）
@@ -65,7 +65,6 @@ Page({
     this._cy = (this._y + imgH / 2) / previewH;
   },
 
-  switchMock(e) { this.setData({ mock: e.currentTarget.dataset.m }); },
 
   // 拖拽期间 movable-view 自驱动，只记录位置不 setData（避免回环）；
   // 只认触摸来源——程序 setData 与阻尼动画也会触发 bindchange，若混入会把滞后的动画位置折算进坐标
