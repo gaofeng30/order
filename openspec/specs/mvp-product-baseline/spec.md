@@ -1,19 +1,27 @@
 # mvp-product-baseline Specification
 
 ## Purpose
-定义一期正式研发必须共同遵守、可追踪并可验收的唯一产品行为与外部依赖基线，统一一期范围、订单履约、身份价格、预约库存、权限责任和外部 Gate，避免后续 change 依据 P0 mock 或简化状态产生冲突契约。
+定义一期正式研发必须共同遵守、可追踪并可验收的唯一产品行为与外部依赖基线，统一一期范围、预约取餐、订单履约、身份与定价、权限责任和外部 Gate，避免后续 change 依据 P0 mock 或简化状态产生冲突契约。基线依据 2026-08-19 客户正式确认记录 `docs/product/online-ordering-system-prd-0818-review.md` 与 `docs/product/online-ordering-system-prd-0818.md`。
 ## Requirements
 ### Requirement: Product sources have one explicit authority order
 
 一期产品基线 MUST 声明并执行以下优先级：真实适用合同与客户正式确认记录高于 PRD §1–§14，PRD §1–§14 高于 PRD §15、小程序源码和 PC 原型；mock 数据、内存状态及原型简化状态机不得作为生产契约。
 
+当前生效的客户正式确认记录 MUST 为 `docs/product/online-ordering-system-prd-0818-review.md`；当前生效的 PRD §1–§14 MUST 为 `docs/product/online-ordering-system-prd-0818.md`。`docs/product/online-ordering-system-prd.md` 中与前两者冲突的条款 MUST 视为失效，不得作为实现或验收依据。
+
 仓库内合同证据 MUST 只表述为“仓库范围内未发现已签署证据，现实签署状态未知”。合同适用性 MUST 作为商业与上线外部依赖记录，但不得阻塞本地技术 OpenSpec 的规划、校验或提交。
 
 #### Scenario: Conflicting sources are reviewed
 
-- **WHEN** 同一业务规则在合同/客户正式确认、PRD §1–§14 与 §15/原型中出现不同表述
+- **WHEN** 同一业务规则在客户正式确认记录、PRD §1–§14 与 §15/原型中出现不同表述
 - **THEN** reviewer 按既定优先级保留唯一正式研发规则
 - **AND** 较低优先级内容只能保留为原型说明，不得与正式规则并列生效
+
+#### Scenario: Superseded baseline clause is cited
+
+- **WHEN** 任一 change 引用 `online-ordering-system-prd.md` 中被客户评审记录推翻的条款作为实现或验收依据
+- **THEN** 该引用被判定为无效依据
+- **AND** reviewer 要求改用当前生效的评审记录与 0818 PRD
 
 #### Scenario: Contract evidence is described
 
@@ -29,15 +37,15 @@
 
 ### Requirement: First-phase scope is closed and singular
 
-一期 MUST 仅包含单门店到店预约自提、员工与访客、逐商品固定员工价、按日按餐段商品库存、微信支付、商户接单/制作/待取餐/核销、原路全额退款和基础后台。
+一期 MUST 仅包含单门店单取餐点到店自提、仅预约取餐、员工与访客身份、全局单一折扣率的员工优惠、按取餐日期的商品售罄开关、微信支付、自动排产与制作、备好、扫码或手工核销、原路全额退款和基础后台。
 
-一期 MUST 排除会员等级、优惠券、积分、储值、部分退款、配送、多门店、POS、打印机和叫号屏，且不得为这些排除项预留并行生效的产品规则。
+一期 MUST 排除数量库存与库存预占、即时取餐、接单、会员等级、优惠券、积分、储值、部分退款、配送、多门店、POS、打印机、叫号屏和跨业务主入口，且不得为这些排除项预留并行生效的产品规则、UI 占位或兼容分支。
 
 #### Scenario: Included scope is traced
 
 - **WHEN** reviewer 检查一期范围、业务规则、页面与验收矩阵
 - **THEN** 每个包含项都有唯一规则和至少一个验收落点
-- **AND** 简单员工价不得被归入会员等级或优惠券能力
+- **AND** 全局折扣率不得被归入会员等级或优惠券能力
 
 #### Scenario: Excluded capability is proposed
 
@@ -45,108 +53,175 @@
 - **THEN** owned-path 和范围检查失败
 - **AND** 该能力必须独立立项并获得新的正式范围授权
 
-### Requirement: Inventory is keyed by service date, meal period, and product
+#### Scenario: Excluded capability is proposed as a UI placeholder
 
-正式库存唯一键 MUST 为 `营业日期 × 餐段 × 商品`。午餐与晚餐 MUST 使用独立库存池；同一餐段内的全部取餐时段 MUST 共享该餐段商品库存，不得增加时段库存维度。
+- **WHEN** 任一 change 以“置灰提示”“即将上线”或预留入口的形式引入排除项
+- **THEN** 范围检查失败
+- **AND** 一期不接受任何排除项的 UI 占位例外
 
-库存剩余量、软预占量和已售量 MUST 以后端为唯一事实源；客户端展示或 mock 数值不得决定是否可售。
+### Requirement: Product availability uses a per-service-date sellout switch
 
-#### Scenario: Two meal periods sell the same product
+一期 MUST NOT 实现数量库存、库存预占、自动扣减、可售量或超卖控制。商品可售性 MUST 只由两个独立维度决定：上下架（长期，仅 PC 后台）与售罄（按取餐日期，两端均可切换）。
 
-- **WHEN** 同一商品在同一营业日期同时配置午餐和晚餐库存
-- **THEN** 午餐下单只消耗午餐库存池
-- **AND** 晚餐库存不受该笔午餐订单影响
+售罄标记 MUST 按取餐日期生效且只影响该营业日期的下单，MUST NOT 影响其他可预约日期；次日 MUST 自然回到可售，不需要人工恢复。售罄 MUST 可自由开关。
 
-#### Scenario: Two slots share one meal period
+售罄商品在用户端 MUST 可见、带蒙层且不可加入购物车；下架商品在用户端 MUST 不展示。
 
-- **WHEN** 两个固定取餐时段都归属午餐
-- **THEN** 两个时段的订单共同竞争同一 `营业日期 × 午餐 × 商品` 库存
-- **AND** 系统不得为两个时段分别维护商品库存
+一期 MUST NOT 提供任何自动的产能或超卖保护，该风险 MUST 由商户手工标记售罄承担。
 
-#### Scenario: Client inventory conflicts with the server
+#### Scenario: Sellout is marked during service
 
-- **WHEN** 客户端展示库存大于服务端可售库存
-- **THEN** 服务端拒绝超出剩余库存的预占
-- **AND** 客户端刷新后端事实，不得本地补单
+- **WHEN** 商户在营业日 D 把某商品标记为售罄
+- **THEN** 该商品在 D 当日不可下单
+- **AND** 该商品在 D+1 的预约不受影响
 
-### Requirement: Order submission uses a bounded atomic soft hold
+#### Scenario: Next service date begins
 
-提交订单 MUST 原子创建 15 分钟库存软预占并生成 `待支付`订单。软预占不得计为已售库存或有效预约；服务端确认微信支付成功后 MUST 将软预占原子转为实扣和有效预约，未支付超时 MUST 关闭订单并释放软预占。
+- **WHEN** 进入下一个营业日期
+- **THEN** 前一日的售罄标记不再生效
+- **AND** 商户无需手工恢复即可售出
 
-迟到支付成功 MUST 先幂等确认支付事实并原子重占相同营业日期、餐段和商品库存；重占成功进入`已支付待接单`，重占失败 MUST 自动发起原路全额退款并进入`异常`。该异常自动退款成功后 MUST 转为`已退款`，退款未成功前保持`异常`并可被人工追踪。支付通知、超时释放、重占和退款触发 MUST 可重入且不重复扣减、释放或退款。
+#### Scenario: Quantity inventory is proposed
 
-#### Scenario: Payment succeeds within the hold window
+- **WHEN** 任一 change 引入份数、剩余量、预占或自动扣减
+- **THEN** 范围检查失败
+- **AND** 该能力必须独立立项并获得新的范围授权
 
-- **WHEN** 有效支付成功通知在 15 分钟软预占内到达
-- **THEN** 系统只执行一次实扣并把订单转为`已支付待接单`
-- **AND** 该订单成为有效预约
+### Requirement: Orders exist only after confirmed WeChat payment
 
-#### Scenario: Payment does not complete in time
+服务端 MUST 只在确认微信支付成功后创建订单并分配取餐号。调起微信支付前创建的预支付记录 MUST NOT 被视为订单：它不得进入任何订单列表、不得占用取餐号、不得对用户可见。
 
-- **WHEN** 15 分钟内没有可确认的支付成功事实
-- **THEN** 系统把订单转为`已取消`
-- **AND** 完整释放该订单的软预占
+提交订单前 MUST 重新校验身份、商品上下架与当日售罄、服务端价格、取餐日期，以及目标取餐时间所属餐段是否仍在截单前；任一校验不通过 MUST 拦截支付。目标餐段已截单时 MUST 提示已截单并把用户送回取餐时间选择，且 MUST 保留购物车内容。
 
-#### Scenario: Late payment can reacquire stock
+前端支付成功回调 MUST NOT 作为支付成功事实。支付回调与订单创建 MUST 幂等：同一 `out_trade_no` 的重复通知 MUST NOT 重复建单或重复占号。
 
-- **WHEN** 已超时订单收到可验证的迟到支付成功通知且库存仍可原子重占
-- **THEN** 系统重占并实扣库存
-- **AND** 订单转为`已支付待接单`
+支付结果未确认期间，用户端 MUST 只显示临时加载提示，MUST NOT 生成订单，也 MUST NOT 展示异常状态。
 
-#### Scenario: Late payment cannot reacquire stock
+#### Scenario: Payment succeeds
 
-- **WHEN** 已超时订单收到可验证的迟到支付成功通知但库存无法完整重占
-- **THEN** 系统不得形成有效预约
-- **AND** 只发起一次原路全额退款并把订单置为`异常`
-- **AND** 退款成功后订单转为`已退款`，否则保持可追踪的`异常`
+- **WHEN** 服务端确认微信支付成功
+- **THEN** 系统创建订单并分配该取餐日期的取餐号
+- **AND** 订单固化商品、价格、折扣率、身份、取餐日期与时间和取餐点快照
 
-### Requirement: Orders use one nine-state production state machine
+#### Scenario: Payment is cancelled or fails
 
-生产订单状态 MUST 且仅能为：`待支付`、`已支付待接单`、`制作中`、`待取餐`、`已完成`、`已取消`、`退款中`、`已退款`、`异常`。
+- **WHEN** 用户取消支付或支付失败
+- **THEN** 系统不创建订单
+- **AND** 预支付记录作废且不占用取餐号
 
-标准履约 MUST 为`待支付 → 已支付待接单 → 制作中 → 待取餐 → 已完成`。取消、退款和无法自动确定的钱单/库存结果 MUST 分别进入对应终态或异常态。所有转换 MUST 由服务端校验前置状态、操作者权限和幂等键并留下审计记录；生产环境 MUST 禁止撤销或回退已完成的状态转换。
+#### Scenario: Cutoff passes while the user is at checkout
+
+- **WHEN** 用户提交订单时目标取餐时间所属餐段已过截单时刻
+- **THEN** 服务端拦截支付并提示该餐段已截单
+- **AND** 用户被送回取餐时间选择且购物车内容保留
+
+#### Scenario: Payment notification is repeated
+
+- **WHEN** 同一 `out_trade_no` 的支付成功通知被重复投递
+- **THEN** 服务端返回第一次结果
+- **AND** 不重复创建订单、不重复分配取餐号
+
+### Requirement: Unmatched payments are reconciled into orders or manual handling
+
+服务端 MUST 提供定时对账任务，扫描已发起支付但超过约定时长仍未生成订单的预支付记录，并调用微信支付结果查询接口核对真实支付结果。
+
+查得未支付 MUST 作废该预支付记录。查得已支付 MUST 幂等补建订单并分配取餐号。补建失败 MUST 把该条目转入后台待处理列表交由主账号处理，MUST NOT 静默丢弃，也 MUST NOT 引入异常订单状态。
+
+该链路 MUST 对用户端不可见；补建成功后订单 MUST 出现在用户订单列表中。
+
+#### Scenario: Payment callback is lost
+
+- **WHEN** 用户已支付成功但服务端未收到回调、订单未生成
+- **THEN** 对账任务查得已支付并补建订单
+- **AND** 用户在订单列表中看到该单
+
+#### Scenario: Reconciliation cannot rebuild the order
+
+- **WHEN** 对账查得已支付但补建订单失败
+- **THEN** 该条目进入后台待处理列表
+- **AND** 主账号可对其发起退款或人工建单
+
+#### Scenario: Reconciliation runs repeatedly
+
+- **WHEN** 对账任务对同一预支付记录重复执行
+- **THEN** 已补建的订单不被重复创建
+- **AND** 取餐号不被重复分配
+
+### Requirement: Orders use one six-state production state machine
+
+生产订单状态 MUST 且只能为 `已预约`、`制作中`、`待取餐`、`已完成`、`退款中`、`已退款`。一期 MUST NOT 存在 `待支付`、`已支付待接单`、`已取消` 或任何异常状态。
+
+主链路 MUST 为：微信确认支付成功后进入 `已预约`，取餐时间前 30 分钟由服务端自动进入 `制作中`，商户标记备好进入 `待取餐`，核销成功进入 `已完成`。支付成功时若距取餐时间已不足 30 分钟，订单 MUST 在创建时直接进入 `制作中`。
+
+一期 MUST NOT 提供接单动作，也 MUST NOT 提供商户手动提前开做。排产定时任务 MUST 幂等并具备重试与补偿，任务漏跑 MUST NOT 导致订单卡在 `已预约`。
+
+一期 MUST NOT 设置待取超时状态。备好后订单 MUST 保持 `待取餐` 直至核销完成或发起退款；营业日结束后仍未核销的订单 MUST 通过查询口径可筛选，且该口径 MUST NOT 是订单状态。
+
+每次状态转换 MUST 由服务端校验前置状态、资源权限和幂等键并记录审计。相同幂等键的重复请求 MUST 返回第一次最终结果。生产 MUST NOT 提供撤销或回退已完成转换的入口。
 
 #### Scenario: Merchant fulfills a paid order
 
-- **WHEN** 支付已确认、后厨依次接单并标记备好、核销员完成核销
-- **THEN** 订单严格依次经过`已支付待接单`、`制作中`、`待取餐`和`已完成`
-- **AND** 任一步不得跳过前置状态
+- **WHEN** 订单在取餐时间前 30 分钟自动进入 `制作中` 且商户标记备好
+- **THEN** 订单进入 `待取餐`
+- **AND** 核销成功后进入 `已完成`
+
+#### Scenario: Payment succeeds inside the 30-minute window
+
+- **WHEN** 支付成功时距取餐时间已不足 30 分钟
+- **THEN** 订单创建即为 `制作中`
+- **AND** 用户端不提供自助取消入口
 
 #### Scenario: A transition is repeated
 
-- **WHEN** 相同幂等键重复提交同一状态转换
-- **THEN** 系统返回第一次转换的最终结果
-- **AND** 不得重复产生库存、营收、退款或核销副作用
+- **WHEN** 同一幂等键的状态推进请求被重复提交
+- **THEN** 服务端返回第一次最终结果
+- **AND** 不重复产生支付、退款、营收或核销副作用
 
 #### Scenario: An operator attempts undo
 
-- **WHEN** 任一客户端请求把生产订单回退到旧状态
+- **WHEN** 任一角色尝试撤销或回退已完成的状态转换
 - **THEN** 服务端拒绝该请求
-- **AND** 原订单状态和审计记录保持不变
+- **AND** 客户端不提供生产撤销入口
+
+#### Scenario: Order is never collected
+
+- **WHEN** 营业日结束时订单仍处于 `待取餐`
+- **THEN** 订单保持该状态且不自动流转
+- **AND** 该订单可通过未取餐查询口径筛出，主账号可对其退款或事后核销
 
 ### Requirement: Cancellation and refund rules are deterministic
 
-`待支付`订单 MUST 允许用户直接取消。`已支付待接单`且尚未到该取餐时段截单时间的订单 MUST 允许用户自助取消并立即发起原路全额退款；商户接单或到达截单时间任一先发生后，用户自助取消 MUST 关闭，只能由商户处理。
+支付成功前 MUST 不存在订单，因此一期 MUST 不提供“取消未支付订单”这一行为；用户取消支付或支付失败 MUST 只作废预支付记录。
 
-店管角色有权按业务处理结果发起原路全额退款；一期 MUST 不支持部分退款。除迟到支付重占失败的异常自动退款外，用户或店管发起退款后订单进入`退款中`，只有微信确认退款成功后才进入`已退款`。商户接单前退款成功 MUST 返还对应实扣库存；接单后商户处理的退款 MUST 不自动恢复可售库存。
+处于 `已预约` 且距取餐时间大于 30 分钟的订单 MUST 允许用户自助取消并立即发起一次原路全额退款。订单进入 `制作中` 后，用户自助取消 MUST 关闭，只能由具有退款权限的商户人员处理。
 
-#### Scenario: User cancels an unpaid order
+主账号 MUST 有权对任一已生成订单发起原路全额退款；一期 MUST 不支持部分退款。发起退款后订单进入 `退款中`，只有微信确认退款成功后才进入 `已退款`。退款结果无法确定或退款失败时，订单 MUST 保持 `退款中` 并在后台标记为待处理，MUST NOT 进入任何异常状态。
 
-- **WHEN** 用户取消`待支付`订单
-- **THEN** 订单转为`已取消`
-- **AND** 软预占被完整释放且不发起退款
+一期没有数量库存，退款 MUST NOT 触发任何库存返还或可售量调整。
 
-#### Scenario: User cancels before acceptance and cutoff
+#### Scenario: User cancels before payment completes
 
-- **WHEN** 订单处于`已支付待接单`且商户未接单、时段未截单
+- **WHEN** 用户在微信支付页取消支付或支付失败
+- **THEN** 系统不生成订单，也不占用取餐号
+- **AND** 对应预支付记录作废且用户订单列表无该笔记录
+
+#### Scenario: User cancels more than 30 minutes before pickup
+
+- **WHEN** 订单处于 `已预约` 且距取餐时间大于 30 分钟
 - **THEN** 系统接受用户取消并发起一次原路全额退款
-- **AND** 退款成功后订单为`已退款`并返还实扣库存
+- **AND** 订单进入 `退款中`，微信确认退款成功后为 `已退款`
 
-#### Scenario: User cancels after acceptance or cutoff
+#### Scenario: User cancels within 30 minutes of pickup
 
-- **WHEN** 商户已经接单或预约时段已经截单
-- **THEN** 用户端不得提供自助取消
-- **AND** 订单只能交由具有退款权限的商户人员处理
+- **WHEN** 订单已进入 `制作中`
+- **THEN** 用户端不得提供自助取消入口
+- **AND** 订单只能交由主账号处理
+
+#### Scenario: Refund result cannot be confirmed
+
+- **WHEN** 退款已受理但微信未返回可确认的成功结果
+- **THEN** 订单保持 `退款中` 并在后台标记为待处理
+- **AND** 系统不把订单置为 `已退款`，也不引入异常状态
 
 #### Scenario: Partial refund is requested
 
@@ -156,93 +231,145 @@
 
 ### Requirement: Employee identity is decided by an active phone list
 
-用户浏览 MUST 不要求手机号。首次结算 MUST 完成微信会话、手机号授权并提供姓名；服务端标准化手机号后，只有命中启用员工名单的用户才是员工，未命中者统一为访客，客户端不得自行选择身份。
+用户浏览 MUST 不要求手机号，小程序启动时 MUST NOT 强制手机号授权。首次提交订单前 MUST 完成微信会话与手机号授权；服务端标准化手机号后，只有命中启用员工折扣白名单的用户才是员工，未命中或记录停用者统一为访客，客户端不得自行选择身份。
 
-订单创建 MUST 固化用户身份、标准化手机号对应的内部用户引用和员工名单版本快照；面向页面、日志和追踪台账 MUST 不保存或展示未脱敏手机号及名单个人数据。
+用户 MAY 在个人中心手工填写附加手机号用于员工匹配。手工填写的手机号 MUST 只有在“手机号 + 姓名”同时命中同一条启用白名单记录时才授予员工身份；姓名 MUST 在去空格与全半角归一后精确匹配。微信授权取得的主手机号 MUST 命中即生效，其姓名只作记录。
+
+员工折扣白名单与商户账号名单 MUST 分开维护，互不影响。
+
+订单创建 MUST 固化用户身份、标准化手机号对应的内部用户引用、折扣率快照和白名单版本快照；面向页面、日志和追踪台账 MUST 不保存或展示未脱敏手机号及名单个人数据。
 
 #### Scenario: Visitor browses without identification
 
 - **WHEN** 未登录用户浏览门店、分类和商品
 - **THEN** 系统允许浏览
-- **AND** 不提前强制手机号授权
+- **AND** 启动与浏览阶段都不索取手机号授权
 
-#### Scenario: Active employee checks out
+#### Scenario: Active employee is identified by the authorized phone
 
-- **WHEN** 用户完成微信会话和手机号授权、提供姓名且手机号命中启用名单
+- **WHEN** 用户完成微信手机号授权且该手机号命中启用白名单
 - **THEN** 服务端把该笔报价和订单识别为员工
-- **AND** 订单固化命中的名单版本快照
+- **AND** 订单固化命中的白名单版本快照与折扣率快照
+
+#### Scenario: Extra phone matches only the phone number
+
+- **WHEN** 用户手工填写的附加手机号命中白名单但姓名不一致
+- **THEN** 系统不授予员工身份
+- **AND** 该用户按访客原价结算
+
+#### Scenario: Extra phone matches both factors
+
+- **WHEN** 用户手工填写的附加手机号与姓名同时命中同一条启用白名单记录
+- **THEN** 系统授予员工身份
+- **AND** 后续报价按员工折扣计算
 
 #### Scenario: Phone is absent or list entry is disabled
 
-- **WHEN** 首次结算没有有效手机号与姓名，或手机号未命中启用员工名单
-- **THEN** 缺少手机号或姓名时禁止结算
-- **AND** 未命中或名单已停用时按访客身份结算
+- **WHEN** 用户未完成手机号授权，或手机号未命中启用白名单
+- **THEN** 未授权手机号时禁止提交订单
+- **AND** 未命中或白名单已停用时按访客身份结算
 
-### Requirement: Employee price is an optional fixed per-product amount
+### Requirement: Employee pricing uses one global discount rate applied per product
 
-商品 MUST 使用整数分保存正常价，并可选保存一个整数分 `employee_price`。服务端 MUST 只对已识别员工使用已配置的逐商品员工价；未配置员工价的商品和所有访客 MUST 使用正常价。
+商品 MUST 使用整数分保存原价，且 MUST NOT 保存逐商品员工价。员工优惠 MUST 由一个全局单一折扣率承担，对所有命中白名单的用户和所有商品统一生效；一期 MUST NOT 引入会员等级、优惠券、积分、叠加算价或“不参与折扣”的商品开关。
 
-报价与订单明细 MUST 固化正常价、适用员工价、实际成交价、身份和价格版本；一期不得引入百分比折扣、会员等级、优惠券、积分或叠加算价。
+算价链 MUST 固定为：原价小计 → 员工折扣 → 应付。折扣 MUST 逐商品计算：先用单价乘以折扣率并四舍五入到分，再乘数量求和，使菜单与详情页展示的员工价逐项等于结算明细中的成交价。
 
-#### Scenario: Employee-priced product is quoted
+折扣率修改 MUST 只影响新报价，MUST NOT 回算历史订单。访客 MUST 按原价结算。未完成手机号绑定前，用户端 MUST 只展示原价且不展示划线价。
 
-- **WHEN** 已识别员工购买配置了 `employee_price` 的商品
-- **THEN** 服务端使用该固定员工价计算应付金额
-- **AND** 订单明细同时固化正常价、员工价和成交价
+#### Scenario: Employee is quoted
 
-#### Scenario: Visitor or unpriced product is quoted
+- **WHEN** 已识别员工购买任意商品
+- **THEN** 服务端按全局折扣率逐商品计算成交价
+- **AND** 订单明细同时固化原价、折扣率和成交价
 
-- **WHEN** 访客购买任意商品，或员工购买未配置员工价的商品
-- **THEN** 服务端使用正常价
+#### Scenario: Displayed employee price equals the charged price
+
+- **WHEN** 员工把若干商品加入购物车并进入结算
+- **THEN** 结算明细中每一项的成交价等于菜单与详情页展示的员工价
+- **AND** 逐项成交价之和等于应付金额
+
+#### Scenario: Visitor is quoted
+
+- **WHEN** 访客购买任意商品
+- **THEN** 服务端使用原价
 - **AND** 客户端传入价格不得覆盖服务端报价
 
-### Requirement: Every first-phase order uses one fixed pickup slot
+#### Scenario: Identity is not yet known
 
-一期 MUST 使用单门店、单取餐点和 `Asia/Shanghai` 门店时区。订单 MUST 选择今天或明天的午餐/晚餐固定取餐时段，不得提供“尽快取餐”；每个时段 MUST 归属一个餐段并拥有独立截单时间。
+- **WHEN** 用户尚未完成手机号绑定
+- **THEN** 菜单与详情页只展示原价
+- **AND** 不展示划线价，也不先按员工价展示再在结算时打回原价
 
-用户 MUST 可全天浏览；只有目标时段尚未截单且商品可售时才允许下单。订单 MUST 固化营业日期、餐段、时段、截单时间和取餐点快照。实际商品、库存值、时段、截单、取餐点、员工名单和价格值 MUST 作为 UAT 前生产配置，不得改变上述模型。
+### Requirement: Every first-phase order uses one discrete pickup time
 
-#### Scenario: User chooses an available slot
+一期 MUST 只提供预约取餐，MUST NOT 提供即时取餐或“尽快”模式。可预约营业日期 MUST 只有今天与明天。门店时区 MUST 固定为 `Asia/Shanghai`。
 
-- **WHEN** 用户选择今天或明天、尚未截单的午餐或晚餐固定时段
-- **THEN** 系统按该营业日期、餐段和时段校验并创建订单
-- **AND** 订单固化完整预约与取餐点快照
+餐段 MUST 只有午餐与晚餐，每个餐段 MUST 有一个固定截单时刻，该餐段内全部取餐时间共用该截单时刻，MUST NOT 随取餐时间滚动。
 
-#### Scenario: User requests immediate or out-of-range pickup
+取餐时间 MUST 为餐段范围内的离散时间点，粒度 MUST 可由商户配置。取餐时间 MUST 定义为约定时刻而非必须到场的窗口：商品备好后由订阅消息通知，用户凭通知取餐。
 
-- **WHEN** 用户请求“尽快取餐”、后天及以后、非午晚餐或已截单时段
-- **THEN** 服务端拒绝创建订单
-- **AND** 不产生库存软预占
+用户 MUST 可全天浏览，但只有目标取餐时间所属餐段尚未截单且商品当日可售时才能提交订单。一期 MUST 为单门店单取餐点，MUST NOT 提供多点选择或分单路由。
+
+#### Scenario: User chooses an available pickup time
+
+- **WHEN** 用户在今天或明天选择一个未截单餐段内的取餐时间点
+- **THEN** 系统接受该取餐时间
+- **AND** 菜单按该取餐时间所属餐段过滤可售商品
+
+#### Scenario: Meal period is past its cutoff
+
+- **WHEN** 用户查看已过截单时刻的餐段
+- **THEN** 该餐段的全部取餐时间不可选并标注截止时刻
+- **AND** 当日两个餐段均已截单时，该日期整体不可选
+
+#### Scenario: Immediate pickup is requested
+
+- **WHEN** 任一调用方请求即时取餐或不带取餐时间的订单
+- **THEN** 服务端拒绝该请求
+- **AND** 一期不提供即时单路径
 
 #### Scenario: Production values are not yet supplied
 
-- **WHEN** 本地技术 OpenSpec 正在规划但真实商品、库存值、时段、截单、取餐点、名单或价格尚未配置
-- **THEN** OpenSpec 仍可按固定模型完成和校验
-- **AND** 对应能力进入 UAT 前必须补齐生产配置
+- **WHEN** 真实截单时刻、取餐时间范围与粒度尚未配置
+- **THEN** 这些值作为 UAT 前配置记录
+- **AND** 不得改变单取餐点、午晚两餐段、仅预约取餐与可预约今天明天的模型
 
-### Requirement: Merchant permissions use four server-enforced roles
+### Requirement: Merchant permissions use two server-enforced roles
 
-一期后台 MUST 且仅能使用`店管`、`后厨`、`核销`和`财务只读`四个业务角色。店管管理商品、员工名单、员工价、营业预约设置、订单、全额退款和基础看板；后厨只查看履约必要信息并执行接单、制作和备好；核销角色只查看待取餐必要信息并执行扫码或手工核销；财务只读角色只能查看支付、退款、结算和导出。
+商户后台 MUST 且只能使用主账号与子账号两个角色，且 MUST 由服务端执行资源权限；客户端菜单隐藏 MUST NOT 代替鉴权。
 
-角色和资源权限 MUST 由服务端执行。用户不得自行进入商户端或选择后台角色；开发人员不得默认获得常驻业务角色，生产排障访问必须由客户进行限时外部授权并保留审计。
+主账号 MUST 可配置多个。主账号 MUST 拥有小程序端全部能力，以及 PC 后台的商品与分类配置、上下架、价格、全局折扣率、员工折扣白名单、商户账号名单、退款、财务与对账、营业设置、开屏图层和看板。
 
-#### Scenario: Kitchen operator fulfills an order
+子账号 MUST 只能使用小程序端，能力 MUST 限于查看订单、标记备好、扫码或手工核销、切换商品可售与售罄；MUST NOT 进入 PC 后台，MUST NOT 改价、上下架、退款、修改配置或查看财务。
 
-- **WHEN** 后厨角色处理`已支付待接单`或`制作中`订单
-- **THEN** 服务端只允许接单、制作和备好相关读取与转换
-- **AND** 拒绝商品定价、员工名单、退款和角色管理操作
+商户身份来源 MUST 为 PC 后台维护的商户账号名单。小程序端 MUST 按 openid 是否已绑定商户手机号决定启动落地页；PC 后台 MUST 使用微信扫码登录并只允许主账号通过，MUST NOT 建设独立密码体系。
 
-#### Scenario: Finance viewer attempts a mutation
+普通用户 MUST NOT 进入商户端。开发人员 MUST NOT 默认持有常驻业务角色，生产排障只能使用客户明确授权、限时且有审计的访问。
 
-- **WHEN** 财务只读角色请求修改订单、商品、配置或退款
-- **THEN** 服务端拒绝请求
+#### Scenario: Sub-account fulfills an order
+
+- **WHEN** 子账号在小程序端查看订单并标记备好
+- **THEN** 操作成功且订单进入 `待取餐`
+- **AND** 同一子账号发起退款、改价或上下架的请求被服务端拒绝
+
+#### Scenario: Sub-account attempts PC login
+
+- **WHEN** 子账号手机号用于 PC 后台微信扫码登录
+- **THEN** 登录被拒绝
 - **AND** 不产生任何业务副作用
 
 #### Scenario: Unassigned user enters a merchant route
 
-- **WHEN** 没有后台角色的用户访问商户页面或接口
-- **THEN** 服务端拒绝访问
-- **AND** 客户端身份选择不得提升权限
+- **WHEN** 不在商户账号名单中的用户请求商户端路由或接口
+- **THEN** 服务端拒绝该请求
+- **AND** 该用户的启动落地页仍为用户端首页
+
+#### Scenario: Merchant binds on first use
+
+- **WHEN** 商户首次在个人中心触发商户登录并完成手机号授权
+- **THEN** 命中商户账号名单时绑定该 openid
+- **AND** 之后启动直接进入身份选择页
 
 ### Requirement: External readiness follows one twelve-gate chain
 
@@ -288,11 +415,19 @@
 
 PRD 正式基线 MUST 不存在会改变产品行为、公共契约、数据结果、授权边界或验收方式的 TODO、待定项或 A/B 方案。尚未提供的真实经营值只能列为 UAT 前配置，不得形成第二套行为模型。
 
+追踪矩阵引用的状态集合 MUST 为六态，角色集合 MUST 为主账号与子账号两角色；矩阵 MUST NOT 引用任何已被客户评审删除的概念作为待覆盖维度。
+
 #### Scenario: Traceability matrix is checked
 
 - **WHEN** reviewer 逐条对照本 spec 与 PRD 追踪矩阵
 - **THEN** 每条 requirement 至少有一个 PRD 目标位置和验收方法
-- **AND** 页面、九态、四角色及 12 个外部 Gate 均无孤立项
+- **AND** 页面、六态、两角色及 12 个外部 Gate 均无孤立项
+
+#### Scenario: Matrix cites a retired dimension
+
+- **WHEN** 追踪矩阵把九态、四角色、数量库存、软预占、固定取餐时段或优惠券列为待覆盖维度
+- **THEN** PRD 实施验收失败
+- **AND** 该维度必须先按当前生效 spec 重新表述
 
 #### Scenario: Behavioral ambiguity remains
 
