@@ -85,8 +85,12 @@ node openspec/changes/adopt-six-state-order-lifecycle/checks/check_order_lifecyc
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证（第二轮）。
+  - 第一轮：候选 `f9c8055` **FAIL**，扫到 7 处已废止状态残留，详见 4.5。旧验证随修复失效。
+  - 第二轮：`candidate_sha=a1769569c7d488dfb818612b9572b7ce13d0894c`，验证树 clean。小程序 `npm test` → `tests 46 / pass 46 / fail 0`；PC 三个门禁全部 PASS（`ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE`）；对 `待制作`/`已取消`/`待支付`/`revertOrder`/`onUndo`/`orderMode`/`尽快` 的全端扫描零命中；模板处理器完整性扫描 `broken handlers: none`。diff 相对 base 为 32 files / 685 insertions / 165 deletions，`OWNED=PASS`（`files=32 outside=0`）。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**，第二轮候选。
+  - 剩余外部边界：① `已预约 → 制作中` 的服务端定时排产无实现可验，原型只体现为「种子中存在该状态」与「客户端不可推进」；② `退款中 → 已退款` 无触发路径，退款发起属 PC 后台独立 change；③ `minsToPickup` 仍是种子静态值，真实值应由服务端按取餐时间计算；④ 小程序 UI1 来自 Node harness、PC UI1 为人工浏览器操作，均未覆盖微信开发者工具与真机；⑤ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`。
 
 ## 6. 集成与后续
 
