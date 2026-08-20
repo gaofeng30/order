@@ -33,7 +33,7 @@
       <view class="id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
     </view>
 
-    <view class="id-card fade-up" data-to="admin-dashboard" bindtap="go">
+    <view class="id-card fade-up" data-to="admin-orders" bindtap="go">
       <view class="id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
       <view class="id-body">
         <view class="id-name serif">商户端</view>

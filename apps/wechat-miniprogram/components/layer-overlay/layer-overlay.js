@@ -1,4 +1,4 @@
-// 开屏装饰图层 — 用户端展示组件（brand / launch 两页共用）
+// 开屏装饰图层 — 用户端展示组件（身份选择页）
 // pageLifetimes.show 在宿主页面每次显示时重读配置：商户端改完设置返回即生效，页面 js 零改动
 const layer = require('../../utils/layer.js');
 

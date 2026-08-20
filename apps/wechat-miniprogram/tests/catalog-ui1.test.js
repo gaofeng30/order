@@ -59,7 +59,7 @@ function catalogFixture() {
 test('legacy behavior boundary: list lifecycle sends a catalog request', () => {
   const harness = createHarness({ requests: [{ statusCode: 200, data: { categories: [] } }] });
   harness.loadApp();
-  const page = harness.loadPage('pages/home/home.js');
+  const page = harness.loadPage('pages/menu/menu.js');
   harness.invoke(page, 'onShow');
   assert.equal(
     harness.requestCalls.length,
@@ -73,7 +73,7 @@ test('legacy behavior boundary: network failure is retryable without mock fallba
     requests: [{ networkError: true }, { statusCode: 200, data: catalogFixture() }],
   });
   harness.loadApp();
-  const page = harness.loadPage('pages/home/home.js');
+  const page = harness.loadPage('pages/menu/menu.js');
 
   const first = harness.invoke(page, 'onShow');
   assert.equal(
@@ -84,13 +84,13 @@ test('legacy behavior boundary: network failure is retryable without mock fallba
   assert.equal(page.data.listState, 'loading');
   await first;
   assert.equal(page.data.listState, 'error');
-  assert.deepEqual(page.data.signature, []);
+  assert.deepEqual(page.data.groups, []);
 
   const retry = page.retryCatalog();
   assert.equal(page.data.listState, 'loading');
   await retry;
   assert.equal(page.data.listState, 'ready');
-  assert.equal(page.data.signature[0].id, HUGE_PRODUCT_ID);
+  assert.equal(page.data.groups[0].products[0].id, HUGE_PRODUCT_ID);
   assert.equal(harness.requestCalls.length, 2);
 });
 
@@ -149,37 +149,48 @@ test('catalog transport and catalog store preserve URL, types, cents, order and 
   await assert.rejects(store.loadCatalog(), error => error && error.code === 'CATALOG_UNAVAILABLE');
 });
 
-test('home list lifecycle covers loading, error, retry, ready and stable first four', async () => {
+test('menu list lifecycle covers loading, error, retry, ready and server order', async () => {
   const harness = createHarness({
     requests: [{ networkError: true }, { statusCode: 200, data: catalogFixture() }],
   });
   harness.loadApp();
-  const page = harness.loadPage('pages/home/home.js');
+  const page = harness.loadPage('pages/menu/menu.js');
 
   const first = harness.invoke(page, 'onShow');
   assert.equal(page.data.listState, 'loading');
   await first;
   assert.equal(page.data.listState, 'error');
-  assert.deepEqual(page.data.signature, []);
+  assert.deepEqual(page.data.groups, []);
 
   const retry = page.retryCatalog();
   assert.equal(page.data.listState, 'loading');
   await retry;
   assert.equal(page.data.listState, 'ready');
-  assert.deepEqual(page.data.signature.map(item => item.id), [HUGE_PRODUCT_ID, '2', '3', '4']);
-  assertUnsupportedProductFieldsAbsent(page.data.signature[0], 'home product view');
-  assert.equal(Object.hasOwn(page.data.signature[0], 'price'), false, 'home product view.price');
+  const ids = page.data.groups.flatMap(group => group.products.map(product => product.id));
+  assert.deepEqual(ids, [HUGE_PRODUCT_ID, '2', '3', '4', '5']);
+  assertUnsupportedProductFieldsAbsent(page.data.groups[0].products[0], 'menu product view');
+  assert.equal(Object.hasOwn(page.data.groups[0].products[0], 'price'), false, 'menu product view.price');
   assert.equal(harness.requestCalls.length, 2);
 });
 
+test('home performs no catalog work at all', async () => {
+  const harness = createHarness({ requests: [{ statusCode: 200, data: catalogFixture() }] });
+  harness.loadApp();
+  const home = harness.loadPage('pages/home/home.js');
+  await harness.invoke(home, 'onShow');
+  assert.equal(harness.requestCalls.length, 0, 'home still requests the catalog');
+  assert.equal(Object.hasOwn(home.data, 'listState'), false);
+  assert.equal(Object.hasOwn(home.data, 'signature'), false);
+});
+
 test('non-200 2xx list and detail responses remain unavailable without fallback or retry', async () => {
-  const homeHarness = createHarness({ requests: [{ statusCode: 201, data: catalogFixture() }] });
-  homeHarness.loadApp();
-  const home = homeHarness.loadPage('pages/home/home.js');
-  await homeHarness.invoke(home, 'onShow');
-  assert.equal(home.data.listState, 'error');
-  assert.deepEqual(home.data.signature, []);
-  assert.equal(homeHarness.requestCalls.length, 1);
+  const altHarness = createHarness({ requests: [{ statusCode: 201, data: catalogFixture() }] });
+  altHarness.loadApp();
+  const altMenu = altHarness.loadPage('pages/menu/menu.js');
+  await altHarness.invoke(altMenu, 'onShow');
+  assert.equal(altMenu.data.listState, 'error');
+  assert.deepEqual(altMenu.data.groups, []);
+  assert.equal(altHarness.requestCalls.length, 1);
 
   const detailProduct = product(HUGE_PRODUCT_ID, HUGE_CATEGORY_ID, 'Unexpected 204 Product', 12345);
   const detailHarness = createHarness({ requests: [{ statusCode: 204, data: { product: detailProduct } }] });
@@ -192,24 +203,6 @@ test('non-200 2xx list and detail responses remain unavailable without fallback 
 });
 
 test('list empty is only categories empty and enabled empty category remains ready', async () => {
-  const homeHarness = createHarness({
-    requests: [
-      { statusCode: 200, data: { categories: [] } },
-      { statusCode: 200, data: catalogFixture() },
-    ],
-  });
-  homeHarness.loadApp();
-  const home = homeHarness.loadPage('pages/home/home.js');
-  await homeHarness.invoke(home, 'onShow');
-  assert.equal(home.data.listState, 'empty');
-  assert.deepEqual(home.data.signature, []);
-  const homeRetry = home.retryCatalog();
-  assert.equal(home.data.listState, 'loading');
-  await homeRetry;
-  assert.equal(home.data.listState, 'ready');
-  assert.equal(home.data.signature[0].id, HUGE_PRODUCT_ID);
-  assert.equal(homeHarness.requestCalls.length, 2);
-
   const menuHarness = createHarness({
     requests: [
       { statusCode: 200, data: { categories: [] } },
@@ -238,15 +231,6 @@ test('list empty is only categories empty and enabled empty category remains rea
   assert.equal(menu.data.groups[0].id, '8');
   assert.deepEqual(menu.data.groups[0].products, []);
   assert.equal(menu.data.active, '8');
-
-  const homeGroupHarness = createHarness({
-    requests: [{ statusCode: 200, data: { categories: [{ id: '8', name: 'Empty Server Group', products: [] }] } }],
-  });
-  homeGroupHarness.loadApp();
-  const groupedHome = homeGroupHarness.loadPage('pages/home/home.js');
-  await homeGroupHarness.invoke(groupedHome, 'onShow');
-  assert.equal(groupedHome.data.listState, 'ready');
-  assert.deepEqual(groupedHome.data.signature, []);
 
   const viewHarness = createHarness({ requests: [{ statusCode: 200, data: catalogFixture() }] });
   viewHarness.loadApp();
@@ -503,18 +487,13 @@ test('WXML exposes exact recoverable states and public product files contain no 
   const detailWXML = read('pages/detail/detail.wxml');
   const confirmWXML = read('pages/confirm/confirm.wxml');
 
-  for (const source of [homeWXML, menuWXML]) {
-    for (const state of ['loading', 'empty', 'error', 'ready']) assert.match(source, new RegExp(`listState === '${state}'`));
-    assert.match(source, /bindtap="retryCatalog"/);
-    assert.match(
-      source,
-      /<view wx:elif="\{\{listState === 'empty'\}\}" class="catalog-state">\s*<text>当前目录为空<\/text>\s*<view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载<\/view>\s*<\/view>/,
-    );
-  }
+  for (const state of ['loading', 'empty', 'error', 'ready']) assert.match(menuWXML, new RegExp(`listState === '${state}'`));
+  assert.match(menuWXML, /bindtap="retryCatalog"/);
   assert.match(
-    homeWXML,
-    /<block wx:elif="\{\{listState === 'ready'\}\}">\s*<view wx:if="\{\{signature\.length === 0\}\}" class="catalog-state">暂无招牌商品<\/view>\s*<scroll-view wx:else class="signature"/,
+    menuWXML,
+    /<view wx:elif="\{\{listState === 'empty'\}\}" class="catalog-state">\s*<text>当前目录为空<\/text>\s*<view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载<\/view>\s*<\/view>/,
   );
+  assert.doesNotMatch(homeWXML, /listState|retryCatalog|signature/);
   for (const state of ['loading', 'not_found', 'error', 'ready']) {
     assert.match(detailWXML, new RegExp(`detailState === '${state}'`));
   }
@@ -532,14 +511,14 @@ test('WXML exposes exact recoverable states and public product files contain no 
   );
 
   const publicScripts = [
-    'pages/home/home.js', 'pages/menu/menu.js', 'pages/detail/detail.js', 'pages/confirm/confirm.js',
+    'pages/menu/menu.js', 'pages/detail/detail.js', 'pages/confirm/confirm.js',
   ].map(read).join('\n');
   for (const forbidden of [/menuList\s*\(/, /itemById\s*\(/, /data\.CATS/]) {
     assert.doesNotMatch(publicScripts, forbidden);
   }
 
   const productMarkup = [
-    'pages/home/home.wxml', 'pages/menu/menu.wxml', 'pages/detail/detail.wxml', 'pages/confirm/confirm.wxml',
+    'pages/menu/menu.wxml', 'pages/detail/detail.wxml', 'pages/confirm/confirm.wxml',
   ].map(read).join('\n');
   for (const field of UNSUPPORTED_PRODUCT_FIELDS) {
     assert.doesNotMatch(
