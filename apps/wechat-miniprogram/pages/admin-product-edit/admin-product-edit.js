@@ -82,13 +82,13 @@ Page({
   askDelete() {
     wx.showModal({
       title: '删除菜品',
-      content: `删除「${this.data.f.name}」后，把它列为适用范围的优惠券会自动摘除该菜品；若某张券因此没有任何适用菜品，将被自动停用。`,
+      content: `删除「${this.data.f.name}」后不可恢复。`,
       confirmText: '删除',
       confirmColor: '#b4483c',
       success: res => {
         if (!res.confirm) return;
         api.deleteProduct(this.data.f.id).then(r => {
-          this.toast(r.disabledCoupons ? `已删除 · ${r.disabledCoupons} 张券被停用` : '已删除', 'box');
+          this.toast('已删除', 'box');
           setTimeout(() => this.cancel(), 700);
         }).catch(err => this.toast(err.message, 'warn'));
       },

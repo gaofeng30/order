@@ -72,48 +72,11 @@
 }
 .pay-amount { flex: 1; }
 .pay-lbl { font-size: 24rpx; color: var(--ink-3); display: block; margin-bottom: 2rpx; }
-.pay-cut { display: block; font-size: 21rpx; color: var(--gold-2); margin-top: 4rpx; }
 .pay-btn { min-width: 300rpx; }
 
-/* ---------- 优惠明细 ---------- */
-.promo-card { padding-bottom: 10rpx; }
+/* ---------- 金额明细 ---------- */
+.amount-card { padding-bottom: 10rpx; }
 .pm-row { display: flex; align-items: center; gap: 14rpx; padding: 22rpx 0; border-bottom: 1rpx solid var(--line-2); }
 .pm-row:last-child { border-bottom: none; }
 .pm-k { font-size: 26rpx; color: var(--ink-2); }
 .pm-v { margin-left: auto; font-size: 27rpx; color: var(--ink); font-weight: 600; }
-.pm-v.cut { color: var(--gold-2); }
-.pm-cp { margin-left: auto; font-size: 25rpx; color: var(--gold-2); font-weight: 600; }
-.pm-cp.none { color: var(--ink-3); font-weight: 400; }
-.cp-row .pm-v { margin-left: 0; }
-.pm-note { font-size: 22rpx; color: var(--ink-3); line-height: 1.6; padding: 18rpx 0 22rpx; }
-
-/* ---------- 选券弹层 ---------- */
-.cp-head {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 36rpx 36rpx 22rpx; border-bottom: 1rpx solid var(--line-2);
-}
-.cp-title { flex: 0 0 auto; font-size: 34rpx; font-weight: 700; color: var(--ink); letter-spacing: 1rpx; }
-.cp-rule { flex: 1; font-size: 22rpx; color: var(--ink-3); }
-.cp-close { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; }
-.cp-body { padding: 20rpx 36rpx 10rpx; max-height: 58vh; }
-.cp-sec { font-size: 23rpx; color: var(--ink-3); padding: 6rpx 0 18rpx; }
-.cp-sec.mt { padding-top: 20rpx; }
-.cp-item { margin-bottom: 22rpx; }
-
-.cp-none {
-  display: flex; align-items: center; gap: 16rpx; padding: 26rpx 30rpx;
-  background: var(--card-2); border-radius: var(--r-card); box-shadow: inset 0 0 0 2rpx var(--line-2);
-  margin-bottom: 22rpx;
-}
-.cp-none.on { box-shadow: inset 0 0 0 4rpx var(--gold); background: var(--gold-bg); }
-.cn-main { flex: 1; }
-.cn-t { font-size: 28rpx; color: var(--ink); font-weight: 600; display: block; }
-.cn-s { font-size: 22rpx; color: var(--ink-3); margin-top: 6rpx; display: block; }
-.cn-box {
-  flex: 0 0 44rpx; width: 44rpx; height: 44rpx; border-radius: 50%;
-  box-shadow: inset 0 0 0 3rpx var(--line); background: #fff;
-  display: flex; align-items: center; justify-content: center;
-}
-.cn-box.on { background: var(--gold); box-shadow: none; }
-
-.cp-foot { padding: 20rpx 36rpx 0; border-top: 1rpx solid var(--line); }

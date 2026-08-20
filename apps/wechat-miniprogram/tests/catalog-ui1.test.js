@@ -366,7 +366,7 @@ test('detail selection handler carries the API snapshot through cart and confirm
   assert.equal(confirm.data.items[0].note, 'from page handler');
 });
 
-test('cart snapshot drives confirm, existing all-scope promo and mock pay without menu or catalog reads', async () => {
+test('cart snapshot drives confirm, subtotal-only pricing and mock pay without menu or catalog reads', async () => {
   const original = Object.assign(product(HUGE_PRODUCT_ID, HUGE_CATEGORY_ID, 'Snapshot Product', 12345), {
     stock: 99,
     sold: 88,
@@ -397,7 +397,7 @@ test('cart snapshot drives confirm, existing all-scope promo and mock pay withou
   assert.equal(Object.hasOwn(app.globalData.cart[HUGE_PRODUCT_ID].product, 'price_text'), false);
   assertUnsupportedProductFieldsAbsent(app.globalData.cart[HUGE_PRODUCT_ID].product, 'cart product snapshot');
 
-  app.globalData.coupons = app.globalData.coupons.filter(coupon => coupon.scope === 'all' && coupon.enabled);
+  assert.equal(Object.hasOwn(app.globalData, 'coupons'), false);
   let menuReads = 0;
   Object.defineProperty(app.globalData, 'menu', {
     configurable: true,
@@ -414,16 +414,19 @@ test('cart snapshot drives confirm, existing all-scope promo and mock pay withou
   assert.equal(confirm.data.items[0].item.price_cents, 12345);
   assert.equal(confirm.data.items[0].line_total_cents, 24690);
   assert.equal(confirm.data.items[0].line_total_text, '246.90');
-  assert.equal(confirm.data.isMember, true);
-  assert.ok(confirm.data.calc.usable.length > 0);
-  confirm.openCoupon();
-  assert.equal(confirm.data.cpVisible, true);
+  assert.equal(confirm.data.subtotal_cents, 24690);
+  assert.equal(confirm.data.subtotal_text, '246.90');
+  assert.equal(confirm.data.payable_cents, confirm.data.subtotal_cents);
+  assert.equal(confirm.data.payable_text, '246.90');
+  assert.equal(typeof confirm.openCoupon, 'undefined');
 
   confirm.pay();
   assert.equal(menuReads, 0);
   assert.equal(harness.requestCalls.length, 0);
   assert.equal(app.globalData.orders[0].items[0][0], HUGE_PRODUCT_ID);
   assert.equal(app.globalData.orders[0].items[0][2], 123.45);
+  assert.equal(app.globalData.orders[0].total, '246.90');
+  assert.equal(app.globalData.orders[0].subtotal, '246.90');
   assert.equal(harness.navigationCalls.at(-1).type, 'redirectTo');
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/result/result');
 });
@@ -519,7 +522,9 @@ test('WXML exposes exact recoverable states and public product files contain no 
   assert.match(detailWXML, /<stepper wx:if="\{\{qty > 0\}\}" value="\{\{qty\}\}" bind:sub="sub" bind:add="add" \/>/);
   assert.match(detailWXML, /<view wx:else class="have-qty">尚未选择<\/view>/);
   assert.doesNotMatch(detailWXML, /购物车已有[\s\S]*\{\{qty\}\}[\s\S]*份/);
-  assert.match(confirmWXML, /bindtap="openCoupon"/);
+  assert.doesNotMatch(confirmWXML, /bindtap="openCoupon"/);
+  assert.match(confirmWXML, /\{\{subtotal_text\}\}/);
+  assert.match(confirmWXML, /<money v="\{\{payable_text\}\}"/);
   assert.match(confirmWXML, /bindtap="pay"/);
   assert.match(
     confirmWXML,
