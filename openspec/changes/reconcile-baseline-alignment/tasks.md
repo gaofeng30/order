@@ -59,8 +59,11 @@ python3 openspec/changes/reconcile-baseline-alignment/checks/check_baseline_sing
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=4168d74fc78f850efecf7cae46fb56f83fccfa8a`，验证树 clean。`BASELINE_SINGLE_SOURCE=PASS`（`live_requirements=15 un_archived_baseline_deltas=0 pointer_lines=11`）；小程序 `npm test` 59/59；四个前端门禁全部 PASS；`go build ./...` 通过、`go test ./services/api/...` 无 FAIL。diff 相对 base 为 16 files / 345 insertions / 6 deletions。验证结束时验证树仍为 clean。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W0 / UI0）**。
+  - 剩余外部边界：① 取代判定为用户裁决，远端线维护方尚未确认，`SUPERSEDED.md` 已完整记录判据与回滚路径；② 归档后的 `verify_baseline.py` 因路径深度失效，归档产物不修改，其约束已由新门禁继承；③ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；④ 本 change 不产生运行行为，无 UI1 及以上证据。
 
 ## 6. 后续
 
