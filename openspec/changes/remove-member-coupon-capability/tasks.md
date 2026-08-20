@@ -71,8 +71,11 @@ cd apps/wechat-miniprogram && npm test
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=8ea91e630e455d734b95fe7debc612ab1a086d32`，验证树 `git status --porcelain` 为空。`npm test` → `tests 19 / pass 19 / fail 0`；排除能力全端零残留（对 promo/coupon/LEVELS/MEMBERS/COUPONS/isMember/levelName/优惠券/会员等级 的全目录扫描无命中）；全部 JS `node --check` 通过；`app.json` 20 条路由与 10 个全局组件、20 个页面级组件引用均有效。diff 相对 base 为 54 files / 415 insertions / 2819 deletions，`OWNED_PATH=PASS`（`files=54 in_owned=54 outside=0`）。验证结束时验证树仍为 clean。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS**（W2 / UI1）。
+  - 剩余外部边界：① 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；② UI1 证据来自 Node 测试 harness，不构成微信开发者工具、体验版或真机证据，不声称 UI2/UI3；③ `apps/web-admin` 仍保留同类会员券页面，由 `remove-member-coupon-admin-pages` 处理，其 UI1 受 runner 缺失阻塞；④ 全局折扣率尚未实现，结算页当前不展示任何优惠。
 
 ## 6. 后续动作
 
