@@ -209,7 +209,7 @@
 
   /* ---------------- 营业设置 / 开屏图层 ---------------- */
 
-  // GET /admin/settings → { status, openTime, closeTime, cutoff, pickupPoint, notice }
+  // GET /admin/settings → { status, pickupStepMin, mealPeriods[], pickupPoint, notice }
   function getSettings() {
     return ok(Object.assign({ status: g().store.status }, clone(g().settings)));
   }
@@ -218,9 +218,18 @@
   function saveSettings(s) {
     const st = g();
     if (!s.notice && s.notice !== '') return fail('公告不能为空对象');
+    const step = Number(s.pickupStepMin);
+    if (!(step > 0)) return fail('取餐时间粒度需大于 0');
+    const periods = s.mealPeriods || [];
+    if (!periods.length) return fail('至少需要一个餐段');
+    for (const p of periods) {
+      if (!p.cutoff || !p.from || !p.to) return fail(`${p.name || p.key} 的截单与取餐时间必填`);
+      if (p.from > p.to) return fail(`${p.name || p.key} 的取餐结束时间不能早于开始时间`);
+    }
     st.store.status = s.status;
     st.settings = Object.assign({}, st.settings, {
-      openTime: s.openTime, closeTime: s.closeTime, cutoff: s.cutoff,
+      pickupStepMin: step,
+      mealPeriods: periods.map(p => Object.assign({}, p)),
       pickupPoint: s.pickupPoint, notice: s.notice,
     });
     return ok(clone(st.settings));

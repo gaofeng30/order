@@ -61,15 +61,20 @@ test('immediate ordering is gone from every surface', () => {
   const util = require('../utils/util.js');
   assert.equal(Object.hasOwn(util, 'orderMode'), false, 'util still exports orderMode');
   for (const rel of ['pages/home/home.js', 'pages/confirm/confirm.js', 'pages/confirm/confirm.wxml',
-                     'pages/result/result.js', 'pages/orders/orders.js']) {
+                     'pages/result/result.js', 'pages/result/result.wxml',
+                     'pages/orders/orders.js', 'pages/order-detail/order-detail.js']) {
     assert.doesNotMatch(read(rel), /orderMode|'now'|尽快|到店点单/, `${rel} still offers immediate ordering`);
+    // 订单类型字段随即时单删除，任何页面都不得再读它
+    assert.doesNotMatch(read(rel), /o\.type|item\.type|order\.type/, `${rel} still reads the deleted order type`);
   }
 });
 
 test('checkout creates a reserved order with a pickup time', () => {
   const harness = createHarness();
   const app = harness.loadApp();
-  const { cart } = require('../utils/util.js');
+  const { cart, pickup } = require('../utils/util.js');
+  // 显式选定取餐时间：不依赖默认值，否则该用例会随默认规则变化而漂移
+  pickup.set({ off: 1, period: 'lunch', time: '12:00' });
   cart.setPrefs({ id: '9007199254740993', category_id: '9007199254740995', name: 'X', description: 'd', specification: 's', price_cents: 1000 },
     { qty: 1, flavors: [], note: '' });
   const confirm = harness.loadPage('pages/confirm/confirm.js');
@@ -79,6 +84,22 @@ test('checkout creates a reserved order with a pickup time', () => {
   assert.equal(order.status, '已预约');
   assert.equal(Object.hasOwn(order, 'type'), false);
   assert.ok(order.pickupLabel && !/尽快/.test(order.pickupLabel), 'order has no reserved pickup label');
+});
+
+test('checkout inside the 30-minute window creates a producing order', () => {
+  const harness = createHarness();
+  const app = harness.loadApp();
+  const { cart, pickup } = require('../utils/util.js');
+  const data = require('../utils/data.js');
+  // 演示时钟 16:48，今天晚餐 17:00 距取餐 12 分钟 —— 按 §7.4 支付成功即进 制作中
+  pickup.set({ off: 0, period: 'dinner', time: '17:00' });
+  assert.ok(data.slotMins(0, '17:00') <= data.CANCEL_LIMIT_MIN);
+  cart.setPrefs({ id: '9007199254740993', category_id: '9007199254740995', name: 'X', description: 'd', specification: 's', price_cents: 1000 },
+    { qty: 1, flavors: [], note: '' });
+  const confirm = harness.loadPage('pages/confirm/confirm.js');
+  harness.invoke(confirm, 'onLoad');
+  confirm.pay();
+  assert.equal(app.globalData.orders[0].status, '制作中');
 });
 
 test('user order filters expose only first-phase states', () => {

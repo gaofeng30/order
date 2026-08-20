@@ -10,20 +10,12 @@
 
 .mode-reserve { position: relative; z-index: 2; margin-top: 26rpx; }
 .rsv-label { font-size: 24rpx; color: var(--ink-on-dark-2); margin-bottom: 16rpx; }
-.rsv-label-2 { margin-top: 28rpx; }
-.rsv-dates { display: flex; gap: 16rpx; }
-.rsv-date {
   flex: 1; text-align: center; padding: 18rpx 0; border-radius: 20rpx; font-size: 27rpx; font-weight: 600; color: #fff;
   background: rgba(255, 255, 255, .10); box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, .16);
 }
-.rsv-date.on { background: var(--green); box-shadow: none; }
-.rsv-slots-scroll { white-space: nowrap; }
-.rsv-slots { display: inline-flex; gap: 16rpx; padding-bottom: 4rpx; }
-.rsv-slot {
   flex: 0 0 auto; padding: 16rpx 32rpx; border-radius: 999rpx; font-size: 28rpx; font-weight: 700; color: #fff;
   background: rgba(255, 255, 255, .10); box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, .16);
 }
-.rsv-slot.on { background: #fff; color: var(--blue); box-shadow: none; }
 .rsv-warn { display: flex; align-items: center; gap: 12rpx; font-size: 23rpx; color: #9fd3ff; margin-top: 22rpx; }
 
 /* 取餐窗口 */
@@ -73,3 +65,9 @@
 .pm-row:last-child { border-bottom: none; }
 .pm-k { font-size: 26rpx; color: var(--ink-2); }
 .pm-v { margin-left: auto; font-size: 27rpx; color: var(--ink); font-weight: 600; }
+.rsv-picked {
+  display: flex; align-items: center; gap: 14rpx; margin-top: 14rpx;
+  padding: 22rpx 24rpx; border-radius: 16rpx; background: rgba(255, 255, 255, .1);
+}
+.rsv-picked-t { flex: 1; font-size: 30rpx; color: #fff; font-weight: 600; letter-spacing: 1rpx; }
+.rsv-picked-edit { font-size: 24rpx; color: #9fd3ff; }

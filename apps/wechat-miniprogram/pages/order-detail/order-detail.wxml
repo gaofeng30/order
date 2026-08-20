@@ -37,9 +37,9 @@
       </view>
 
       <view class="card sec-card">
-        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">取餐信息</text><view wx:if="{{reserve}}" class="pill pill--info">预约单</view></view>
+        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">取餐信息</text><view class="pill pill--info">预约单</view></view>
         <view class="info-row"><view class="ir-l"><view class="ir-label">取餐地点</view><view class="ir-sub">{{ptAddr}}</view></view><text class="ir-val">{{o.pickupPoint || store.branch}}</text></view>
-        <view class="info-row"><view class="ir-label">{{reserve ? '预约取餐' : '预计取餐'}}</view><text class="ir-val">{{reserve ? o.pickupLabel : store.pickup}}</text></view>
+        <view class="info-row"><view class="ir-label">预约取餐</view><text class="ir-val">{{o.pickupLabel}}</text></view>
         <view class="info-row {{!flavorsStr && !o.note ? 'last' : ''}}"><view class="ir-label">联系人</view><text class="ir-val">{{o.contact}} · {{o.phone}}</text></view>
         <view wx:if="{{flavorsStr}}" class="info-row {{!o.note ? 'last' : ''}}"><view class="ir-label">口味偏好</view><text class="ir-val">{{flavorsStr}}</text></view>
         <view wx:if="{{o.note}}" class="info-row last"><view class="ir-label">备注</view><text class="ir-val">{{o.note}}</text></view>

@@ -116,11 +116,14 @@ const PICKUP_POINTS = [
   { id: 'pp3', name: '青云镇综合市场点', addr: '绥芬河市青云镇市场街', tag: '合作点', hours: '08:00–18:30' },
 ];
 
-// 营业设置（小程序端 admin-settings 里为写死展示值，PC 端收敛为可编辑状态）
+/* 营业设置。每个餐段一个固定截单时刻，餐段内全部取餐时间共用；
+   取餐时间由 from/to 与 pickupStepMin 推导为离散时间点（生效 spec §5.5、§6.9）。 */
 const SETTINGS = {
-  openTime: '09:00',
-  closeTime: '17:00',
-  cutoff: '16:30',
+  pickupStepMin: 30,
+  mealPeriods: [
+    { key: 'lunch', name: '午餐', cutoff: '11:30', from: '11:30', to: '13:30' },
+    { key: 'dinner', name: '晚餐', cutoff: '17:00', from: '17:00', to: '19:00' },
+  ],
   pickupPoint: '县前直营店',
   notice: '今日卤味新鲜出锅，欢迎到店自提～',
 };

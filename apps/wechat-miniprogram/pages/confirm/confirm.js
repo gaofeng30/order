@@ -1,19 +1,15 @@
 const data = require('../../utils/data.js');
-const { nav, cart } = require('../../utils/util.js');
+const { nav, cart, pickup } = require('../../utils/util.js');
 const catalogStore = require('../../utils/catalogStore.js');
 
-// 可选时段: 今天需在当前时间 +40 分钟之后
-function slotsFor(off) { return data.RESERVE_SLOTS.filter(t => (off > 0 ? true : data.slotMins(0, t) >= 40)); }
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     store: data.STORE,
     cancelMin: data.CANCEL_LIMIT_MIN,
-    dates: data.RESERVE_DATES,
-    dateIdx: 0,
-    slots: [],
-    slot: '',
+    // 取餐时间在菜单顶部选定，结算页只读展示（生效 spec §5.5）
+    pickup: {},
     items: [],
     count: 0,
     form: { contact: '', phone: '' },
@@ -29,12 +25,21 @@ Page({
     payable_cents: 0,
     payable_text: '0.00',
   },
-  onLoad() {
-    const slots = slotsFor(data.RESERVE_DATES[0].off);
-    this.setData({ slots, slot: slots[0] });
-    this.refreshItems();
-    this.syncPayLabel();
+  onLoad() { this.syncPickup(); this.refreshItems(); },
+  onShow() { this.syncPickup(); },
+  syncPickup() {
+    const pk = pickup.get();
+    this.setData({
+      pickup: Object.assign({}, pk, {
+        label: data.pickupLabel(pk),
+        cutOff: data.isPeriodCutOff(pk.off, pk.period),
+      }),
+      payLabel: `预约 ${data.pickupLabel(pk)} 取`,
+      payBtn: '提交预约',
+    });
   },
+  // 改取餐时间回菜单顶部条选择，结算页不重复提供选择器
+  editPickup() { nav.tabTo('menu'); },
   refreshItems() {
     const items = cart.list();
     const subtotal = cart.totalCents();
@@ -48,19 +53,7 @@ Page({
     });
   },
 
-  setMode(e) { this.setData({ mode: e.currentTarget.dataset.m }, () => this.syncPayLabel()); },
-  pickDate(e) {
-    const idx = +e.currentTarget.dataset.idx;
-    const slots = slotsFor(data.RESERVE_DATES[idx].off);
-    let slot = this.data.slot;
-    if (slots.indexOf(slot) === -1) slot = slots[0];
-    this.setData({ dateIdx: idx, slots, slot }, () => this.syncPayLabel());
-  },
-  pickSlot(e) { this.setData({ slot: e.currentTarget.dataset.t }, () => this.syncPayLabel()); },
-  syncPayLabel() {
-    const d = this.data.dates[this.data.dateIdx];
-    this.setData({ payLabel: `预约 ${d.k} ${this.data.slot} 取`, payBtn: '提交预约' });
-  },
+  setMode(e) { this.setData({ mode: e.currentTarget.dataset.m }); },
   onInput(e) { this.setData({ ['form.' + e.currentTarget.dataset.k]: e.detail.value }); },
   editItem(e) {
     const id = e.currentTarget.dataset.id;
@@ -81,8 +74,14 @@ Page({
     const g = getApp().globalData;
     const list = cart.list();
     if (!list.length) return;
-    const d = this.data.dates[this.data.dateIdx];
-    const minsToPickup = data.slotMins(d.off, this.data.slot);
+    const pk = pickup.get();
+    // 提交时重新校验目标取餐时间所属餐段是否仍在截单前；已截则拦截支付并保留购物车
+    if (data.isPeriodCutOff(pk.off, pk.period)) {
+      this.syncPickup();
+      this.selectComponent('#toast').show('该餐段已截单，请重选取餐时间', { icon: 'warn' });
+      return;
+    }
+    const minsToPickup = data.slotMins(pk.off, pk.time);
     // 取餐号为 4 位数字，按取餐日期累计；即时单已删除，不再有前缀
     const code = String(130 + Math.floor(Math.random() * 60)).padStart(4, '0');
     const order = {
@@ -101,7 +100,8 @@ Page({
       flavors: [],
       items: list.map(({ item, q, flavors, note }) => [item.id, q, item.price, flavors, note]),
     };
-    order.pickupLabel = `${d.k} ${this.data.slot}`;
+    order.pickupLabel = data.pickupLabel(pk);
+    order.mealPeriod = pk.period;
     order.minsToPickup = minsToPickup;
     g.orders = [order, ...g.orders];
     g.lastOrder = order;

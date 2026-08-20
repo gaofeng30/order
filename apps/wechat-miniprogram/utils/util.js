@@ -46,6 +46,17 @@ const nav = {
   back: () => wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) }),
 };
 
+// ---- 取餐时间 (跨页共享；菜单顶部条选择，结算页只读) ----
+const pickup = {
+  get() {
+    const g = getApp().globalData;
+    if (!g.pickup) g.pickup = data.defaultPickup();
+    return g.pickup;
+  },
+  set(pk) { getApp().globalData.pickup = pk; },
+  label() { return data.pickupLabel(this.get()); },
+};
+
 // ---- 购物车 (操作 globalData.cart) ----
 // cart: { [id]: { product, qty, flavors:[], note:'' } }，product 是首次选择时的目录快照
 function cartRaw() { return getApp().globalData.cart; }
@@ -183,5 +194,5 @@ function advanceMeta(status) {
 }
 
 module.exports = {
-  STATUS_MAP, statusTone, nav, buildUrl, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
+  STATUS_MAP, statusTone, nav, buildUrl, pickup, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
 };
