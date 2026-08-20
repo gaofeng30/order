@@ -4,7 +4,13 @@
   <view class="store-row">
     <icon name="pin" size="13" color="#467a32" />
     <text>{{store.branch}} · 到店自提</text>
-    <view class="pill pill--info store-cut">{{store.cutoff}}</view>
+  </view>
+
+  <!-- 取餐时间条：进入菜单即有默认值，点击展开选择弹层 -->
+  <view class="pickup-bar" bindtap="openPicker">
+    <icon name="calendarClock" size="15" color="#467a32" />
+    <text class="pickup-txt">{{pickup.label}} 取餐</text>
+    <icon name="chevron" size="14" color="#8f9384" />
   </view>
 
   <view wx:if="{{listState === 'loading'}}" class="catalog-state">目录加载中…</view>
@@ -117,6 +123,47 @@
     </view>
   </view>
 
+  <!-- 取餐时间选择：日期两段 + 按餐段分组的时间点，已截餐段整组折叠 -->
+  <view wx:if="{{pickerVisible}}">
+    <view class="sheet-mask" catchtap="closePicker"></view>
+    <view class="sheet pk-sheet">
+      <view class="pk-head">
+        <text class="serif pk-title">选择取餐时间</text>
+        <text class="pk-rule">备好后会推送提醒，凭提醒随时来取</text>
+        <view class="pk-close" catchtap="closePicker"><icon name="close" size="19" color="#8f9384" /></view>
+      </view>
+      <view class="pk-dates">
+        <view
+          wx:for="{{pickerDates}}"
+          wx:key="off"
+          class="pk-date {{pickerOff === item.off ? 'on' : ''}} {{item.allCutOff ? 'off' : ''}}"
+          data-off="{{item.off}}"
+          catchtap="pickPickerDate"
+        >{{item.k}}<text wx:if="{{item.allCutOff}}" class="pk-date-sub">今日已截单</text></view>
+      </view>
+      <scroll-view scroll-y class="pk-body">
+        <block wx:for="{{pickerGroups}}" wx:key="key">
+          <view class="pk-grp">
+            <text class="pk-grp-name">{{item.name}}</text>
+            <text wx:if="{{item.cutOff}}" class="pk-grp-cut">{{item.cutoffLabel}}</text>
+          </view>
+          <view wx:if="{{!item.cutOff}}" class="pk-times">
+            <view
+              wx:for="{{item.times}}"
+              wx:for-item="t"
+              wx:key="*this"
+              class="pk-time tnum {{pickup.time === t && pickup.off === pickerOff ? 'on' : ''}}"
+              data-period="{{item.key}}"
+              data-t="{{t}}"
+              catchtap="pickPickerTime"
+            >{{t}}</view>
+          </view>
+        </block>
+      </scroll-view>
+    </view>
+  </view>
+
   <tabbar variant="user" active="menu" />
+  <toast id="toast" />
   <customize visible="{{czVisible}}" item="{{czItem}}" init="{{czInit}}" confirm-label="{{czLabel}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
 </view>

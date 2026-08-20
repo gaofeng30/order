@@ -1,6 +1,6 @@
 const data = require('../../utils/data.js');
 const catalogStore = require('../../utils/catalogStore.js');
-const { nav, cart } = require('../../utils/util.js');
+const { nav, cart, pickup } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
@@ -21,10 +21,56 @@ Page({
     czItem: null,
     czInit: null,
     czLabel: '加入购物车',
+    // 取餐时间（生效 spec: 离散时间点，按餐段分组，已截餐段整组折叠）
+    pickup: {},
+    pickerVisible: false,
+    pickerDates: [],
+    pickerGroups: [],
+    pickerOff: 0,
   },
-  onLoad() { this.refresh(); },
-  onShow() { this.refresh(); return this.loadCatalog(); },
+  onLoad() { this.refresh(); this.syncPickup(); },
+  onShow() { this.refresh(); this.syncPickup(); return this.loadCatalog(); },
+
+  // ---- 取餐时间 ----
+  syncPickup() {
+    const pk = pickup.get();
+    this.setData({ pickup: Object.assign({}, pk, { label: data.pickupLabel(pk) }) });
+  },
+  buildPicker(off) {
+    const dates = data.RESERVE_DATES.map(d => ({
+      k: d.k, off: d.off, allCutOff: data.isDateCutOff(d.off),
+    }));
+    const groups = data.MEAL_PERIODS.map(p => {
+      const cutOff = data.isPeriodCutOff(off, p.key);
+      return {
+        key: p.key,
+        name: p.name,
+        cutOff,
+        // 已截餐段整组折叠：只标注截止时刻，不逐条渲染灰项
+        cutoffLabel: cutOff ? `已截单 · ${p.cutoff} 截止` : '',
+        times: cutOff ? [] : data.pickupTimes(p.key),
+      };
+    });
+    this.setData({ pickerOff: off, pickerDates: dates, pickerGroups: groups });
+  },
+  openPicker() {
+    this.buildPicker(this.data.pickup.off);
+    this.setData({ pickerVisible: true });
+  },
+  closePicker() { this.setData({ pickerVisible: false }); },
+  pickPickerDate(e) {
+    const off = +e.currentTarget.dataset.off;
+    if (data.isDateCutOff(off)) return this.toast('该日期已截单', 'warn');
+    this.buildPicker(off);
+  },
+  pickPickerTime(e) {
+    const { period, t } = e.currentTarget.dataset;
+    pickup.set({ off: this.data.pickerOff, period, time: t });
+    this.setData({ pickerVisible: false });
+    this.syncPickup();
+  },
   retryCatalog() { return this.loadCatalog(); },
+  toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
   async loadCatalog() {
     this.setData({ listState: 'loading', cats: [], groups: [], active: '' });
     try {

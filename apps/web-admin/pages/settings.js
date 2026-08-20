@@ -21,12 +21,18 @@
                <div class="fld-hint" style="margin-top:10px">切换后用户端首页与点单页会同步显示当前状态，「已截单」时不再接受新订单。</div>
              </div>
 
-             <div class="sec-h" style="margin-top:8px"><span class="t">营业时间</span></div>
+             <div class="sec-h" style="margin-top:8px"><span class="t">餐段与取餐时间</span></div>
              <div class="card card-pad">
-               <div class="fld-row">
-                 <div class="fld"><div class="fld-lb">开始</div><input class="inp tnum" type="time" id="f-open" value="${s.openTime}"></div>
-                 <div class="fld"><div class="fld-lb">结束</div><input class="inp tnum" type="time" id="f-close" value="${s.closeTime}"></div>
-                 <div class="fld"><div class="fld-lb">截单时间</div><input class="inp tnum" type="time" id="f-cut" value="${s.cutoff}"></div>
+               ${s.mealPeriods.map(p => `
+                 <div class="fld-row">
+                   <div class="fld"><div class="fld-lb">${T.esc(p.name)} 截单</div><input class="inp tnum" type="time" data-mp="${p.key}" data-k="cutoff" value="${p.cutoff}"></div>
+                   <div class="fld"><div class="fld-lb">取餐自</div><input class="inp tnum" type="time" data-mp="${p.key}" data-k="from" value="${p.from}"></div>
+                   <div class="fld"><div class="fld-lb">至</div><input class="inp tnum" type="time" data-mp="${p.key}" data-k="to" value="${p.to}"></div>
+                 </div>`).join('')}
+               <div class="fld">
+                 <div class="fld-lb">取餐时间粒度（分钟）</div>
+                 <input class="inp tnum" type="number" id="f-step" min="5" step="5" value="${s.pickupStepMin}">
+                 <div class="fld-hint">取餐时间点由「取餐自 / 至」与该粒度推导。取餐时间是约定时刻，不是必须到场的窗口——商品备好后推送提醒。</div>
                </div>
                <div class="fld" style="margin-bottom:0">
                  <div class="fld-lb">取餐地点</div>
@@ -47,7 +53,7 @@
 
              <div class="card card-pad set-note">
                ${I.svg('warn', 16, '#a4873f')}
-               <div>营业时间与截单时间目前仅作展示与提示，自动停止接单的定时任务属一期后端范围。</div>
+               <div>截单时刻按餐段固定，餐段内全部取餐时间共用，不随取餐时间滚动。自动停止接单与取餐前 30 分钟自动开做的定时任务属一期后端范围。</div>
              </div>
            </div>
          </div>
@@ -69,11 +75,15 @@
       });
 
       el.querySelector('#save').onclick = () => {
+        const mealPeriods = s.mealPeriods.map(p => Object.assign({}, p));
+        el.querySelectorAll('[data-mp]').forEach(n => {
+          const mp = mealPeriods.find(x => x.key === n.dataset.mp);
+          if (mp) mp[n.dataset.k] = n.value;
+        });
         Api.saveSettings({
           status,
-          openTime: el.querySelector('#f-open').value,
-          closeTime: el.querySelector('#f-close').value,
-          cutoff: el.querySelector('#f-cut').value,
+          pickupStepMin: Number(el.querySelector('#f-step').value),
+          mealPeriods,
           pickupPoint: el.querySelector('#f-pt').value,
           notice: el.querySelector('#f-notice').value,
         }).then(() => {
@@ -85,5 +95,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['settings'] = { sub: '状态、时间、截单、取餐点与门店公告', render };
+  window.Pages['settings'] = { sub: '状态、餐段截单、取餐时间、取餐点与门店公告', render };
 })();

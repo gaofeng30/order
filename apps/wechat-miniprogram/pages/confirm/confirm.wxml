@@ -6,17 +6,14 @@
     <view class="hero-dark mode-card">
       <view class="ring r2"></view>
       <view class="mode-reserve">
-        <view class="rsv-label">取餐日期</view>
-        <view class="rsv-dates">
-          <view wx:for="{{dates}}" wx:key="k" class="rsv-date {{dateIdx === index ? 'on' : ''}}" data-idx="{{index}}" bindtap="pickDate">{{item.k}}</view>
+        <view class="rsv-label">取餐时间</view>
+        <view class="rsv-picked" bindtap="editPickup">
+          <icon name="calendarClock" size="16" color="#9fd3ff" />
+          <text class="rsv-picked-t">{{pickup.label}}</text>
+          <text class="rsv-picked-edit">修改</text>
         </view>
-        <view class="rsv-label rsv-label-2">取餐时段</view>
-        <scroll-view scroll-x enhanced show-scrollbar="{{false}}" class="rsv-slots-scroll">
-          <view class="rsv-slots">
-            <view wx:for="{{slots}}" wx:key="*this" class="rsv-slot tnum {{slot === item ? 'on' : ''}}" data-t="{{item}}" bindtap="pickSlot">{{item}}</view>
-          </view>
-        </scroll-view>
-        <view class="rsv-warn"><icon name="warn" size="13" color="#9fd3ff" /><text>预约成功后，取餐前 {{cancelMin}} 分钟外可随时取消</text></view>
+        <view wx:if="{{pickup.cutOff}}" class="rsv-warn"><icon name="warn" size="13" color="#f0c674" /><text>该餐段已截单，请重选取餐时间</text></view>
+        <view wx:else class="rsv-warn"><icon name="warn" size="13" color="#9fd3ff" /><text>备好后推送提醒，取餐前 {{cancelMin}} 分钟外可随时取消</text></view>
       </view>
     </view>
 
@@ -86,6 +83,7 @@
   </view>
 
   <!-- 口味/备注 编辑弹层 -->
+  <toast id="toast" />
   <customize
     visible="{{czVisible}}"
     item="{{czItem}}"

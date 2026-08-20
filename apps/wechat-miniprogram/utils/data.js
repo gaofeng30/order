@@ -122,25 +122,84 @@ const ADMIN_CATS = [
 // 口味选项 (菜品级, 可多选)
 const FLAVORS = ['少饭', '加饭', '少盐', '加辣', '酱汁分装', '免葱蒜', '打包分装', '多双餐具'];
 
-// 预约点餐: 取餐点 / 日期 / 时段 (NOW_MINS = 当前模拟时刻 16:48)
+/* 预约取餐（生效 spec: Every first-phase order uses one discrete pickup time）
+   - 仅预约取餐，可预约今天与明天
+   - 每个餐段一个固定截单时刻，餐段内全部取餐时间共用，不随取餐时间滚动
+   - 取餐时间为餐段范围内的离散时间点，粒度由 PICKUP_STEP_MIN 决定（商户可配）
+   - 取餐时间是约定时刻，不是必须到场的窗口：备好后推送提醒，凭提醒随时取
+   NOW_MINS 为演示时钟（16:48），真实实现由服务端按门店时区计算。 */
 const NOW_MINS = 16 * 60 + 48;
+
 const PICKUP_POINTS = [
-  { id: 'pp1', name: '县前直营店', addr: '绥芬河市青云镇通商路', tag: '直营', hours: '09:00–19:00' },
-  { id: 'pp2', name: '绥芬河北站取餐点', addr: '绥芬河市站前广场东侧', tag: '取餐点', hours: '07:00–20:00' },
-  { id: 'pp3', name: '青云镇综合市场点', addr: '绥芬河市青云镇市场街', tag: '合作点', hours: '08:00–18:30' },
+  { name: '县前直营店', addr: '县前大厦 1F · 2 号取餐窗口' },
 ];
-const RESERVE_DATES = [{ k: '今天', off: 0 }, { k: '明天', off: 1 }, { k: '后天', off: 2 }];
-const RESERVE_SLOTS = ['11:30', '12:00', '12:30', '13:00', '17:00', '17:30', '18:00', '18:30', '19:00'];
+
+const RESERVE_DATES = [{ k: '今天', off: 0 }, { k: '明天', off: 1 }];
+
+// 商户在 PC 后台配置：截单时刻、取餐时间范围、粒度
+const PICKUP_STEP_MIN = 30;
+const MEAL_PERIODS = [
+  { key: 'lunch', name: '午餐', cutoff: '11:30', from: '11:30', to: '13:30' },
+  { key: 'dinner', name: '晚餐', cutoff: '17:00', from: '17:00', to: '19:00' },
+];
+
+const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const toText = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const periodBy = key => MEAL_PERIODS.find(p => p.key === key);
+
+// 取餐时间点：由范围与粒度推导，不写死
+function pickupTimes(periodKey) {
+  const p = periodBy(periodKey);
+  if (!p) return [];
+  const out = [];
+  for (let m = toMins(p.from); m <= toMins(p.to); m += PICKUP_STEP_MIN) out.push(toText(m));
+  return out;
+}
+
+// 该营业日期的该餐段是否已截单。只有「今天」会被当前时刻截掉。
+function isPeriodCutOff(off, periodKey) {
+  const p = periodBy(periodKey);
+  if (!p) return true;
+  return off === 0 && NOW_MINS >= toMins(p.cutoff);
+}
+
+// 某营业日期是否两个餐段都已截单
+function isDateCutOff(off) { return MEAL_PERIODS.every(p => isPeriodCutOff(off, p.key)); }
+
+// 默认选中：当前时刻之后第一个未截单的取餐时间点
+function defaultPickup() {
+  for (const d of RESERVE_DATES) {
+    for (const p of MEAL_PERIODS) {
+      if (isPeriodCutOff(d.off, p.key)) continue;
+      const times = pickupTimes(p.key);
+      const pick = d.off === 0 ? times.find(t => toMins(t) >= NOW_MINS) || times[0] : times[0];
+      return { off: d.off, period: p.key, time: pick };
+    }
+  }
+  const last = RESERVE_DATES[RESERVE_DATES.length - 1];
+  return { off: last.off, period: MEAL_PERIODS[0].key, time: pickupTimes(MEAL_PERIODS[0].key)[0] };
+}
+
+const dateLabel = off => (RESERVE_DATES.find(d => d.off === off) || RESERVE_DATES[0]).k;
+const pickupLabel = pk => `${dateLabel(pk.off)} ${pk.time}`;
+
+// 距取餐分钟数
+function slotMins(off, t) { return off * 1440 + toMins(t) - NOW_MINS; }
+
 // 取餐前可取消的最短分钟数
 const CANCEL_LIMIT_MIN = 30;
-function slotMins(off, t) { const [h, m] = t.split(':').map(Number); return off * 1440 + h * 60 + m - NOW_MINS; }
-function canCancelReserve(o) { return !!(o && o.type === 'reserve' && o.status === '已预约' && (o.minsToPickup > CANCEL_LIMIT_MIN)); }
+
+// 可自助取消：`已预约` 且距取餐大于 30 分钟（生效 spec §7.6）。
+// 订单类型字段已随即时单删除，不再参与判定。
+function canCancelReserve(o) { return !!(o && o.status === '已预约' && o.minsToPickup > CANCEL_LIMIT_MIN); }
 
 // 当前登录用户（微信授权手机号；真实实现由服务端用 code 换取，前端拿不到明文）
 const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
 
 module.exports = {
   STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, ADMIN_CATS, FLAVORS,
-  NOW_MINS, PICKUP_POINTS, RESERVE_DATES, RESERVE_SLOTS, CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
+  NOW_MINS, PICKUP_POINTS, RESERVE_DATES, MEAL_PERIODS, PICKUP_STEP_MIN,
+  pickupTimes, isPeriodCutOff, isDateCutOff, defaultPickup, dateLabel, pickupLabel,
+  CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
   ME,
 };
