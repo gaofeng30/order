@@ -4,8 +4,7 @@
 change: remove-member-coupon-admin-pages
 gate_type: W2
 ui_level_target: UI1
-ui_level_actual: UI0
-ui_level_UI1: BLOCKED_EXTERNAL
+ui_level_actual: UI1
 owner: worktree-remove-member-coupon-admin
 worktree: .claude/worktrees/remove-member-coupon-admin
 owned_paths:
@@ -13,18 +12,14 @@ owned_paths:
   - openspec/changes/remove-member-coupon-admin-pages/**
 base_sha: bc40b9b61124ff45df40b219bada513a4c10e8b4
 candidate_sha: external-post-commit
-external_assets:
-  - name: browser-or-dom-runner-for-web-admin
-    owner: 开发方
-    available: false
-    recovery: 为 apps/web-admin 引入浏览器或 DOM 级 runner（独立立项）
+external_assets: none（UI1 以浏览器实际运行取得，见 4.5；仓库内仍无可提交的自动化 runner）
 dependencies:
   - remove-member-coupon-capability（已集成于 base_sha，无 owned paths 交集）
 ```
 
-**W2 硬边界（必须先读）**：`docs/quality/change-quality-gates.md` 的决策表把 W2×UI0 标为硬阻断，同一文档又记载「当前没有锁定的浏览器/微信 runner；缺少 UI1 资产即 `BLOCKED_EXTERNAL`，没有当前 PASS 命令」。`apps/web-admin` 仓库内没有任何 runner 或 `package.json`。
+**关于 UI1（规划判断已被推翻，如实记录）**：规划阶段依据 `docs/quality/change-quality-gates.md` 中「当前没有锁定的浏览器/微信 runner」一句，把 UI1 记为 `BLOCKED_EXTERNAL`。该判断下早了——门禁对 UI1 的定义是「浏览器或非真实平台模拟器**实际运行**主场景与错误态」，缺少可提交的自动化 runner 只意味着没有可复现的 PASS 命令，不等于取不到 UI1 证据。
 
-因此本 change **取不到 UI1 PASS**，按文档规定记 `BLOCKED_EXTERNAL` 并写明恢复条件，不用静态结果冒充。是否在此状态下集成属 lane 决策，本 change 不单方面认定为已完成 W2 验收。
+实施阶段以本地静态服务器加浏览器实际运行候选树，取得了真实 UI1 主场景与错误态证据，见 4.5。`ui_level_actual` 因此为 **UI1**。仓库内仍无可提交的自动化 runner，该缺口不影响本 change 的 UI1 结论，但仍值得独立立项补齐以便后续 change 复用。
 
 门禁命令：
 
@@ -70,21 +65,26 @@ node openspec/changes/remove-member-coupon-admin-pages/checks/check_admin_scope.
   - Refactor: 门禁断言 `listProducts`/`deleteProduct`/`listOrders`/`listCategories`/`getSettings` 删除后仍为可调用函数，且 `deleteProduct` 真实执行后菜品被移除、返回值不含 `disabledCoupons`。15 个 JS 全部可解析。小程序端未被触碰，其 `npm test` 仍 `19/19`。
 - [x] 4.3 owned-path 审计与 `git diff --check`。
   - Refactor: 审计输出 `changed=16 in_owned=16 outside=0`，`OWNED_PATH_AUDIT=PASS`；`git diff --cached --stat HEAD -- apps/wechat-miniprogram services openspec/specs docs` 为空；`git diff --cached --check` 无输出，`DIFF_CHECK=PASS`。净变化 16 files / 308 insertions / 1268 deletions。
-- [x] 4.4 记录门禁证据与 candidate SHA。
-  - Writer verdict: `{ gate_type: W2, ui_level_target: UI1, ui_level_actual: UI0, ui_level_UI1: BLOCKED_EXTERNAL, base_sha: bc40b9b61124ff45df40b219bada513a4c10e8b4, candidate_sha: external-post-commit（见 5.1）, hard_blockers: 0, blocked_external: 1（web-admin 无浏览器/DOM runner）, unverified_boundary: 页面渲染与导航回退行为未经运行时验证；openspec CLI 缺失 }`。
+- [x] 4.5 UI1：浏览器实际运行候选树的主场景与错误态。
+  - UI1 主场景：以 `python3 -m http.server` 在 `127.0.0.1` 提供候选树的 `apps/`，浏览器打开 `web-admin/index.html`。工作台完整渲染（四张 KPI 卡、实时订单 6 行、今日待办、销量排行）；**侧边导航只剩「经营 / 菜品 / 门店」三组共 7 条路由，「会员与营销」分组已消失**；顶栏副标题为「今日经营概览与实时接单」，不再出现「二期能力 · 不在一期合同范围」。菜品管理页渲染 7 行菜品，页面文本不含「券」字样。
+  - UI1 运行态断言（页内求值）：`__store` 键为 `store/aOrders/menu/cats/settings/layer` 六项，无 `levels/members/coupons/couponUsed`；`window.Api` 与 `window.Seed` 对 `/level|member|coupon/i` 的泄漏枚举均为空数组。
+  - UI1 错误态：依次访问已删除的 `#/levels`、`#/members`、`#/members/import`、`#/coupons` 四条路由，全部**优雅回落到工作台**（`tb-title` 为「工作台」、内容区非空），`runtimeErrors` 为空数组。随后 `#/products`、`#/dashboard` 正常路由，说明回落未破坏路由表。
+  - 控制台：整页重新加载后 `onlyErrors` 与全量读取均无任何消息。
+  - 边界：该 UI1 为一次性人工浏览器操作，非可提交的自动化命令；未覆盖真机、微信开发者工具或真实支付，不声称 UI2/UI3。
+- [x] 4.6 记录门禁证据与 candidate SHA。
+  - Writer verdict: `{ gate_type: W2, ui_level_target: UI1, ui_level_actual: UI1, base_sha: bc40b9b61124ff45df40b219bada513a4c10e8b4, candidate_sha: external-post-commit（见 5.1）, hard_blockers: 0, blocked_external: 0, unverified_boundary: UI1 为人工浏览器操作而非可提交 runner；未覆盖真机与微信环境；openspec CLI 缺失 }`。
 
 ## 5. Independent verification
 
 - [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
   - Verify: `candidate_sha=d6098b3af59248d8e51d39a7ee545b8a3cd5ba99`，验证树 `git status --porcelain` 为空。候选树 `ADMIN_SCOPE_GATE=PASS`（`exit=0`，`parsed 15 javascript files`）；同一脚本对 `base_sha` 树 `exit=1`，红线仍成立。小程序端 `npm test` 仍 `19/19`，未受影响。diff 相对 base 为 17 files / 394 insertions / 1268 deletions，`OWNED_PATH=PASS`（`files=17 in_owned=17 outside=0`）。验证结束时验证树仍为 clean。
 - [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
-  - Verdict: **PASS at UI0 · UI1 BLOCKED_EXTERNAL**。本 change 在当前仓库条件下能取到的证据全部通过，但**不构成完整的 W2 验收**——W2 最低要求 UI1，而 UI1 资产不存在。
-  - 剩余外部边界：① **`apps/web-admin` 无浏览器或 DOM 级 runner，UI1 记 `BLOCKED_EXTERNAL`**，恢复条件为独立立项引入 runner；② 页面渲染与导航回退行为未经运行时验证，属该阻塞的直接后果；③ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；④ 全局折扣率尚未实现，PC 后台当前不提供任何优惠配置入口。
-  - 集成判断：本 change 不单方面认定可集成。数据层已取得运行态证据且契约完好性经断言覆盖，非渲染部分的失败模式基本封闭；渲染部分需人工在浏览器中打开 `apps/web-admin/index.html` 复核侧边导航与工作台，或等待 runner 就位。
+  - Verdict: **PASS（W2 / UI1）**。门禁 Red→Green 双树成立，UI1 主场景与错误态经浏览器实际运行取得，见 4.5。
+  - 剩余外部边界：① UI1 为一次性人工浏览器操作，仓库内仍无可提交的自动化 runner，后续 PC 端 change 需重复人工操作，建议独立立项补齐；② 未覆盖真机、微信开发者工具或真实支付，不声称 UI2/UI3；③ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；④ 全局折扣率尚未实现，PC 后台当前不提供任何优惠配置入口。
 
 ## 6. 后续动作
 
-- 为 `apps/web-admin` 引入浏览器或 DOM 级 runner（独立立项）。补齐后本 change 的 UI1 `BLOCKED_EXTERNAL` 应重新评估。
-- `strip-retired-catalog-fields`：依赖 `remove-member-coupon-capability`，两端均需处理，PC 端将面临同样的 UI1 边界。
+- 为 `apps/web-admin` 引入可提交的浏览器或 DOM 级 runner（独立立项），使 UI1 从人工操作变为可复现命令。
+- `strip-retired-catalog-fields`：依赖 `remove-member-coupon-capability`，两端均需处理，PC 端的 UI1 在 runner 就位前同样需人工浏览器操作。
 - `remove-retired-entry-screens`：与本 change owned paths 不重叠。
 - `feat/member-coupon` 分支废弃。

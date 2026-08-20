@@ -32,7 +32,7 @@
 - Read-only evidence：`openspec/specs/mvp-product-baseline/spec.md`、`docs/product/online-ordering-system-prd-0818-review.md`、`docs/quality/change-quality-gates.md`。
 - Dependency：`remove-member-coupon-capability`，已集成于 `base_sha`。本 change 不共享其 owned paths。
 - Non-goals：不动 `apps/wechat-miniprogram/**`、`services/**`、生效 spec 或产品文档；不实现全局折扣率；不删除标签、过敏原、月售、库存位；不为 `apps/web-admin` 建设浏览器 runner（属独立立项）。
-- Gate：`gate_type=W2`（删除商户可见页面与导航入口，属用户可见 UI 行为变更）；`ui_level_target=UI1`；`ui_level_actual=UI0`；**UI1 = `BLOCKED_EXTERNAL`**。
-- **已知硬边界**：`docs/quality/change-quality-gates.md` 的决策表把 W2×UI0 标为硬阻断，而 `apps/web-admin` 仓库内没有任何浏览器或等价 runner，该文档自身亦记载「当前没有锁定的浏览器/微信 runner；缺少 UI1 资产即 `BLOCKED_EXTERNAL`，没有当前 PASS 命令」。因此本 change 无法取得 UI1 PASS。恢复条件：为 `apps/web-admin` 引入浏览器或 DOM 级 runner（独立 change）。本 change 取到的最强证据为数据层的**运行态**断言加页面/导航/文案的静态断言，不冒充 UI1。
+- Gate：`gate_type=W2`（删除商户可见页面与导航入口，属用户可见 UI 行为变更）；`ui_level_target=UI1`；`ui_level_actual=UI1`。
+- **UI1 取得方式**：`apps/web-admin` 仓库内没有可提交的自动化 runner，但门禁对 UI1 的定义是「浏览器或非真实平台模拟器**实际运行**主场景与错误态」。实施阶段以本地静态服务器加浏览器实际运行候选树，取得主场景、页内运行态断言与错误态证据（见 `tasks.md` 4.5）。规划阶段曾把 UI1 记为 `BLOCKED_EXTERNAL`，该判断下早了，已在 `tasks.md` 中如实更正。缺少可提交 runner 的问题仍然存在，建议独立立项补齐以便后续 change 复用。
 - 最小成功标准：会员券在 PC 后台无任何页面模块、脚本标签、导航分组、内存态、种子数据、契约方法与文案残留；菜品、订单、分类与营业设置契约在删除后仍可调用；全部 JS 可解析；diff 只包含 owned paths。
 - 工具边界：仓库未安装 `openspec` CLI，`openspec validate --strict` 无法执行，记 `BLOCKED_EXTERNAL`。
