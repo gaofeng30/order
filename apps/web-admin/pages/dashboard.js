@@ -13,12 +13,12 @@
 
   function build() {
     const orders = window.__store.aOrders;
-    const pend = orders.filter(o => o.status === '待制作').length;
+    const pend = orders.filter(o => o.status === '制作中').length;
 
     const todos = [];
-    if (pend) todos.push({ n: pend, label: '单待制作', dot: '#d2483a', to: '待制作' });
+    if (pend) todos.push({ n: pend, label: '单待制作', dot: '#d2483a', to: '制作中' });
 
-    const live = orders.filter(o => ['待制作', '待取餐'].includes(o.status));
+    const live = orders.filter(o => ['已预约', '制作中', '待取餐'].includes(o.status));
 
     const max = window.Seed.RANK[0].sold;
     const rank = window.Seed.RANK.map(r => {
@@ -110,10 +110,7 @@
         // 用本次渲染的容器，不要去抓 #content：切页后那已是另一棵树（见 app.js go()）
         Api.advanceOrder(id).then(r => {
           render(el);
-          window.Toast.show(`已${r.act}「${r.code}」`, {
-            icon: 'check',
-            onUndo: () => { Api.revertOrder(id, r.prev); render(el); },
-          });
+          window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' });
         }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
       },
       row(id) { window.__orderSel = id; window.App.go('orders'); },

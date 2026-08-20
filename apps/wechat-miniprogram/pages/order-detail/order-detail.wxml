@@ -7,12 +7,13 @@
       <view class="ring r1"></view>
       <view class="ring r3"></view>
       <view class="ticket-inner">
-        <view class="ticket-lbl">{{reserve ? '预约取餐号' : '取餐号'}}</view>
+        <view class="ticket-lbl">取餐号</view>
         <view class="ticket-code serif">{{o.code}}</view>
-        <view wx:if="{{reserve}}" class="ticket-rsv"><icon name="calendarClock" size="15" color="#9fd3ff" /><text>{{o.pickupLabel}} 取餐</text></view>
-        <view class="qr-white"><qrcode size="300" dark="#0b2f63" /></view>
+        <view class="ticket-rsv"><icon name="calendarClock" size="15" color="#9fd3ff" /><text>{{o.pickupLabel}} 取餐</text></view>
+        <!-- 核销二维码只在订单进入 待取餐 后展示（生效 spec §5.8） -->
+        <view wx:if="{{o.status === '待取餐'}}" class="qr-white"><qrcode size="300" dark="#0b2f63" /></view>
         <view class="ticket-pill"><pill s="{{o.status}}" ondark /></view>
-        <view class="ticket-hint">{{reserve ? '请于预约时段内出示二维码或报取餐号领取' : '出示二维码或报取餐号，到窗口即可取餐'}}</view>
+        <view class="ticket-hint">{{o.status === '待取餐' ? '出示二维码或报取餐号，到窗口即可取餐' : '备好后将推送提醒，届时凭二维码或取餐号领取'}}</view>
         <view class="ticket-copy" bindtap="copy"><icon name="copy" size="16" color="#ffffff" /><text>复制取餐号</text></view>
       </view>
     </view>
@@ -45,7 +46,7 @@
       </view>
 
       <!-- 取消预约 -->
-      <view wx:if="{{reserve && o.status === '已预约'}}" class="card cancel-card">
+      <view wx:if="{{o.status === '已预约'}}" class="card cancel-card">
         <view class="cancel-top">
           <icon name="{{canCancel ? 'calendar' : 'warn'}}" size="18" color="{{canCancel ? '#2a5fa6' : '#a4873f'}}" />
           <view class="cancel-text">

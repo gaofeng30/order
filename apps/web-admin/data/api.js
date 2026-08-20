@@ -141,16 +141,19 @@
 
   /* ---------------- 订单（对应小程序 utils/util.js 的订单状态机） ---------------- */
 
-  // 待制作 ──备好──▶ 待取餐 ──核销──▶ 已完成
-  const NEXT = { 待制作: '待取餐', 待取餐: '已完成' };
-  const ACT = { 待制作: '备好', 待取餐: '核销', 已完成: '查看', 已取消: '查看' };
-  const LANES = ['待制作', '待取餐', '已完成', '全部'];
+  /* 六态状态机（生效 spec: Orders use one six-state production state machine）
+     已预约 ──取餐前 30 分钟，服务端定时推进──▶ 制作中 ──备好──▶ 待取餐 ──核销──▶ 已完成
+     NEXT 只含商户可执行的转换；`已预约 → 制作中` 由服务端定时任务驱动。
+     生产禁止撤销或回退已完成的转换。 */
+  const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
+  const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
+  const LANES = ['已预约', '制作中', '待取餐', '已完成', '已退款', '全部'];
 
   const STATUS_MAP = {
-    待取餐: 'info', 待制作: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info', 已预约: 'info',
+    已预约: 'info', 制作中: 'info', 待取餐: 'info',
     已完成: 'ok', 成功: 'ok', 已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
-    待支付: 'warn',
-    已取消: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute', 未开放: 'mute',
+    退款中: 'warn',
+    已退款: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute',
   };
   const statusTone = s => STATUS_MAP[s] || 'mute';
 
@@ -187,20 +190,15 @@
     if (!o) return fail('订单不存在');
     const nx = NEXT[o.status];
     if (!nx) return fail('该订单已是终态');
-    const prev = o.status;
+    const act = ACT[o.status];
     o.status = nx;
-    return ok({ prev, next: nx, act: ACT[prev], code: o.code });
+    return ok({ next: nx, act, code: o.code });
   }
 
-  // 回退一步（供 Toast 撤销用，对应小程序 onUndo 直接改 o.status）
-  function revertOrder(id, prev) {
-    const o = findOrder(id);
-    if (o) o.status = prev;
-  }
 
   // 推进按钮的展示元信息
   function advanceMeta(status) {
-    const isView = status === '已完成' || status === '已取消';
+    const isView = !NEXT[status];
     return {
       label: ACT[status],
       isView,
@@ -262,7 +260,7 @@
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary,
-    advanceOrder, revertOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
+    advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,
     getLayer, saveLayer, clearLayer,
     imgUrl,

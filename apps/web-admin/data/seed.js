@@ -64,18 +64,21 @@ function menuList() {
 }
 const itemById = id => menuList().find(m => m.id === id);
 
-// 商户端 订单 (履约模型: 待制作 → 待取餐 → 已完成 / 已取消)
+// 商户端 订单 (六态履约模型: 已预约 → 制作中 → 待取餐 → 已完成；旁路 退款中 → 已退款)
 const ADMIN_ORDERS = [
-  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '待制作', time: '16:51', mins: 1, total: 60, count: 2,
+  { id: 'a0', no: 'SA2406100145', code: '0145', status: '已预约', time: '16:55', mins: 0, total: 58, count: 2,
+    contact: '孙女士', phone: '150****3322', flavor: '少盐', note: '预约 18:00 取',
+    items: [['p002', 1, 28], ['p005', 1, 30]] },
+  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '制作中', time: '16:51', mins: 1, total: 60, count: 2,
     contact: '陈女士', phone: '159****2031', flavor: '双拼饭加辣 ×1', note: '打包分开装',
     items: [['p001', 1, 32], ['p002', 1, 28]] },
-  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '待制作', time: '16:49', mins: 3, total: 26, count: 1,
+  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '制作中', time: '16:49', mins: 3, total: 26, count: 1,
     contact: '吴先生', phone: '137****7788', flavor: '—', note: '',
     items: [['p004', 1, 26]] },
-  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '待制作', time: '16:42', mins: 10, total: 76, count: 3,
+  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
     contact: '林先生', phone: '138****6620', flavor: '加饭 · 加辣', note: '双拼饭加饭',
     items: [['p001', 2, 32], ['p006', 1, 12]] },
-  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '待制作', time: '16:35', mins: 17, total: 58, count: 2,
+  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
     contact: '黄小姐', phone: '135****9012', flavor: '酱汁分装', note: '能量碗酱汁分装',
     items: [['p005', 1, 30], ['p004', 1, 26], ['p006', 1, 12]] },
   { id: 'a5', no: 'SA2406100118', code: 'A118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
@@ -87,7 +90,7 @@ const ADMIN_ORDERS = [
   { id: 'a7', no: 'SA2406100090', code: 'A090', status: '已完成', time: '15:40', mins: 0, total: 62, count: 2,
     contact: '刘先生', phone: '130****5567', flavor: '加饭', note: '',
     items: [['p001', 1, 32], ['p005', 1, 30]] },
-  { id: 'a8', no: 'SA2406100071', code: 'A071', status: '已取消', time: '14:55', mins: 0, total: 26, count: 1,
+  { id: 'a8', no: 'SA2406100071', code: 'A071', status: '已退款', time: '14:55', mins: 0, total: 26, count: 1,
     contact: '孙女士', phone: '150****3322', flavor: '—', note: '用户取消',
     items: [['p004', 1, 26]] },
 ];

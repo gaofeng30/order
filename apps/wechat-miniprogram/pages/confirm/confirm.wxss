@@ -1,19 +1,12 @@
 /* 取餐方式 */
 .mode-card { padding: 28rpx 32rpx 32rpx; color: #fff; margin-top: 8rpx; }
-.mode-tabs {
   display: flex; gap: 12rpx; background: rgba(0, 0, 0, .20); padding: 8rpx; border-radius: 24rpx;
   position: relative; z-index: 2;
 }
-.mode-tab {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 12rpx;
   padding: 18rpx 0; border-radius: 18rpx; font-size: 27rpx; font-weight: 600; color: rgba(255, 255, 255, .7);
 }
-.mode-tab.on { background: #fff; color: var(--blue); }
 
-.mode-now { display: flex; align-items: center; gap: 12rpx; margin-top: 26rpx; position: relative; z-index: 2; }
-.now-txt { font-size: 27rpx; color: #fff; }
-.now-hl { font-size: 27rpx; color: #9fd3ff; font-weight: 600; }
-.now-cut { margin-left: auto; }
 
 .mode-reserve { position: relative; z-index: 2; margin-top: 26rpx; }
 .rsv-label { font-size: 24rpx; color: var(--ink-on-dark-2); margin-bottom: 16rpx; }

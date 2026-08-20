@@ -1,5 +1,5 @@
 const data = require('../../utils/data.js');
-const { nav, cart, orderMode } = require('../../utils/util.js');
+const { nav, cart } = require('../../utils/util.js');
 const catalogStore = require('../../utils/catalogStore.js');
 
 // 可选时段: 今天需在当前时间 +40 分钟之后
@@ -10,7 +10,6 @@ Page({
   data: {
     store: data.STORE,
     cancelMin: data.CANCEL_LIMIT_MIN,
-    mode: 'now',                 // now | reserve
     dates: data.RESERVE_DATES,
     dateIdx: 0,
     slots: [],
@@ -31,9 +30,8 @@ Page({
     payable_text: '0.00',
   },
   onLoad() {
-    const mode = orderMode.get();
     const slots = slotsFor(data.RESERVE_DATES[0].off);
-    this.setData({ mode, slots, slot: slots[0] });
+    this.setData({ slots, slot: slots[0] });
     this.refreshItems();
     this.syncPayLabel();
   },
@@ -60,12 +58,8 @@ Page({
   },
   pickSlot(e) { this.setData({ slot: e.currentTarget.dataset.t }, () => this.syncPayLabel()); },
   syncPayLabel() {
-    if (this.data.mode === 'reserve') {
-      const d = this.data.dates[this.data.dateIdx];
-      this.setData({ payLabel: `预约 ${d.k} ${this.data.slot} 取`, payBtn: '提交预约' });
-    } else {
-      this.setData({ payLabel: '应付金额', payBtn: '确认支付' });
-    }
+    const d = this.data.dates[this.data.dateIdx];
+    this.setData({ payLabel: `预约 ${d.k} ${this.data.slot} 取`, payBtn: '提交预约' });
   },
   onInput(e) { this.setData({ ['form.' + e.currentTarget.dataset.k]: e.detail.value }); },
   editItem(e) {
@@ -87,17 +81,19 @@ Page({
     const g = getApp().globalData;
     const list = cart.list();
     if (!list.length) return;
-    const reserve = this.data.mode === 'reserve';
-    const code = (reserve ? 'B' : 'A') + (130 + Math.floor(Math.random() * 60));
+    const d = this.data.dates[this.data.dateIdx];
+    const minsToPickup = data.slotMins(d.off, this.data.slot);
+    // 取餐号为 4 位数字，按取餐日期累计；即时单已删除，不再有前缀
+    const code = String(130 + Math.floor(Math.random() * 60)).padStart(4, '0');
     const order = {
       id: 'o' + Date.now(),
       no: 'SA24061001' + (40 + Math.floor(Math.random() * 50)),
       code,
-      status: reserve ? '已预约' : '待取餐',
+      // 支付成功即建单。距取餐不足 30 分钟时直接进 制作中（生效 spec §7.4）
+      status: minsToPickup <= data.CANCEL_LIMIT_MIN ? '制作中' : '已预约',
       time: '06-10 16:48',
       total: this.data.payable_text,
       subtotal: this.data.subtotal_text,
-      type: reserve ? 'reserve' : 'now',
       pickupPoint: data.STORE.pickupWindow,
       contact: this.data.form.contact || '林先生',
       phone: this.data.form.phone || '138****6620',
@@ -105,13 +101,8 @@ Page({
       flavors: [],
       items: list.map(({ item, q, flavors, note }) => [item.id, q, item.price, flavors, note]),
     };
-    if (reserve) {
-      const d = this.data.dates[this.data.dateIdx];
-      order.pickupLabel = `${d.k} ${this.data.slot}`;
-      order.minsToPickup = data.slotMins(d.off, this.data.slot);
-    } else {
-      order.pickupLabel = '尽快 · 约 17:10';
-    }
+    order.pickupLabel = `${d.k} ${this.data.slot}`;
+    order.minsToPickup = minsToPickup;
     g.orders = [order, ...g.orders];
     g.lastOrder = order;
     cart.clear();

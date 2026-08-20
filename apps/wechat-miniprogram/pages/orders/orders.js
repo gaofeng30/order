@@ -4,7 +4,7 @@ const { nav, itemsSummary } = require('../../utils/util.js');
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    tabs: ['全部', '待支付', '已预约', '待取餐', '已完成', '已取消'],
+    tabs: ['全部', '已预约', '制作中', '待取餐', '已完成', '已退款'],
     tab: '全部',
     counts: {},
     list: [],
@@ -19,14 +19,13 @@ Page({
       ...o,
       summary: itemsSummary(o.items),
       itemCount: o.items.reduce((a, b) => a + b[1], 0),
-      typeIcon: o.type === 'reserve' ? 'calendarClock' : 'clock',
-      timeText: o.type === 'reserve' ? ('预约 ' + o.pickupLabel + ' · ' + o.pickupPoint) : (o.time + ' · 自提'),
+      typeIcon: 'calendarClock',
+      timeText: '预约 ' + o.pickupLabel + ' · ' + o.pickupPoint,
       canCancel: data.canCancelReserve(o),
     }));
     this.setData({ counts, list });
   },
   switchTab(e) { this.setData({ tab: e.currentTarget.dataset.t }, () => this.build()); },
   goDetail(e) { nav.go('order-detail', { id: e.currentTarget.dataset.id }); },
-  goPay() { nav.go('confirm'); },
   goMenu() { nav.tabTo('menu'); },
 });
