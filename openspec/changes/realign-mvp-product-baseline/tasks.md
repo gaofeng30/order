@@ -64,8 +64,12 @@ python3 openspec/changes/realign-mvp-product-baseline/checks/check_realign.py <t
 
 ## 5. Independent verification
 
-- [ ] 5.1 在另一个干净的 detached worktree 对精确 candidate SHA 只读验证；内容、base 或 SHA 任一变化即失效。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界（`openspec` CLI 缺失、客户书面签认未取得），不修改候选字节。
+- [x] 5.1 在另一个干净的 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=cf22b2f85d217a9ca31ae065c359be571635acd7`；`git worktree add --detach <verify> cf22b2f`，`git status --porcelain` 为空（clean=0）。候选树门禁 `REALIGN_GATE=PASS`（`exit=0`）；同一脚本对 `base_sha` 树 `exit=1`，红线仍成立。候选相对 base 的 diff 为 6 files / 710 insertions / 0 deletions，全部位于 `openspec/changes/realign-mvp-product-baseline/**`。验证结束时验证树仍为 clean，未修改候选字节。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS**（W0 / UI0）。
+  - 剩余外部边界（均非本 change 可关闭）：① 仓库未安装 `openspec` CLI，`openspec validate --strict` 未执行，记 `BLOCKED_EXTERNAL`；② 2026-08-19 客户评审记录尚未取得书面签认（0818 PRD §16.4 C1）；③ 与 `online-ordering-system-prd.md` 维护方的同步尚未完成（§16.4 C2）；④ 本 change 不产生运行行为，无 UI1 及以上证据，也不声称任何真实 MySQL、微信开发者工具、真机、支付、UAT 或生产已验证。
+  - 集成前置：delta 在 archive 时才应用到 `openspec/specs/mvp-product-baseline/spec.md`；在本 change 集成 `main` 前，任何按新 PRD 修改 `apps/**` 或 `services/**` 的 change 都缺少可用于验收的生效 spec。
 
 ## 6. 未纳入本 change 的后续动作
 
