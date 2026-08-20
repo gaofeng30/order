@@ -82,8 +82,11 @@ node openspec/changes/strip-retired-catalog-fields/checks/check_catalog_fields.j
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=ff9a31e294181fd7df7243b41a26951ef3f9de2c`，验证树 `git status --porcelain` 为空。小程序 `npm test` → `tests 34 / pass 34 / fail 0`；PC 门禁候选树 `CATALOG_FIELDS_GATE=PASS`、`base_sha` 树 `exit=1`（红线仍成立）；前一 change 的 `ADMIN_SCOPE_GATE` 仍 `PASS`，无回归。全端对 `stock`/`allergens`/`月售`/`过敏原`/`库存告急`/`待取超时` 的扫描零命中。diff 相对 base 为 21 files / 451 insertions / 70 deletions，`OWNED=PASS`（`files=21 outside=0`）。验证结束时验证树仍为 clean。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① 小程序 UI1 来自 Node 测试 harness，PC 后台 UI1 为一次性人工浏览器操作，均未覆盖微信开发者工具、体验版或真机，不声称 UI2/UI3；② 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；③ 按取餐日期的售罄开关尚未实现，当前 `status` 仍是不带日期维度的全局开关；④ PC 销量排行仍读 `Seed.RANK` 静态数据，改接真实订单数据属 PRD §6.12 的独立待改造项。
 
 ## 6. 集成与后续
 
