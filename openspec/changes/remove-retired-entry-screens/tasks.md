@@ -73,8 +73,12 @@ cd apps/wechat-miniprogram && npm test
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=91bb8d9f7e533a3be5663830908a7a00c7fdaa6d`，验证树 `git status --porcelain` 为空。`npm test` → `tests 29 / pass 29 / fail 0`；对 `pages/brand`、`admin-dashboard`、`入群`、`今日招牌`、`CAMPAIGNS`、`signature`、`RANK` 的全目录扫描零命中；`app.json` 18 条路由对应页面全部存在，页面级组件引用无失效。diff 相对 base 为 30 files / 406 insertions / 628 deletions，`OWNED_PATH=PASS`（`files=30 outside=0`）。验证结束时验证树仍为 clean。
+  - 交叉复核：`mvp-product-baseline` 的残留门禁仍只有那一处已记录的良性误判（`Matrix cites a retired dimension` 的 WHEN 子句枚举被禁术语），本 change 未新增残留。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① UI1 来自 `apps/wechat-miniprogram` 的 Node 测试 harness，未覆盖微信开发者工具、体验版或真机，不声称 UI2/UI3；② 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；③ 首页「到店点单」入口仍在，即时单能力尚未删除（声明为非目标）；④ 商户端营业设置、开屏图层与分类管理仍在小程序端，迁 PC 受 0818 PRD §16.3 P1 阻塞。
 
 ## 6. 集成与后续
 
