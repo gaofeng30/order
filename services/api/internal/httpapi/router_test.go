@@ -20,6 +20,8 @@ import (
 
 	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/identity"
+	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/migrations"
 	"github.com/gin-gonic/gin"
@@ -27,12 +29,59 @@ import (
 
 var catalogSmokeSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
+func TestRouterMiniProgramSessionIsVersionedAndCatalogMenuRemainAnonymous(t *testing.T) {
+	issuer := &routerIdentityIssuer{issued: identity.IssuedSession{AccessToken: "router-token", ExpiresAt: time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC)}}
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), identity.NewHandler(issuer), testPhoneHandler())
+
+	session := httptest.NewRecorder()
+	sessionRequest := httptest.NewRequest(http.MethodPost, "/api/v1/auth/miniprogram/session", strings.NewReader(`{"code":"router-code"}`))
+	sessionRequest.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(session, sessionRequest)
+	if session.Code != http.StatusCreated || strings.TrimSpace(session.Body.String()) != `{"access_token":"router-token","token_type":"Bearer","expires_at":"2026-08-21T00:00:00Z"}` {
+		t.Fatalf("session response mismatch: status=%d", session.Code)
+	}
+
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodGet, "/api/v1/auth/miniprogram/session", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
+		t.Fatalf("wrong method = %d/%q", wrongMethod.Code, wrongMethod.Body.String())
+	}
+	unversioned := httptest.NewRecorder()
+	router.ServeHTTP(unversioned, httptest.NewRequest(http.MethodPost, "/auth/miniprogram/session", nil))
+	if unversioned.Code != http.StatusNotFound || unversioned.Body.Len() != 0 {
+		t.Fatalf("unversioned route = %d/%q", unversioned.Code, unversioned.Body.String())
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+	menuResponse := httptest.NewRecorder()
+	router.ServeHTTP(menuResponse, httptest.NewRequest(http.MethodGet, "/api/v1/menu?date=2026-08-20&time=12:00", nil))
+	if menuResponse.Code != http.StatusBadRequest && menuResponse.Code != http.StatusOK {
+		t.Fatalf("anonymous menu status = %d", menuResponse.Code)
+	}
+	if issuer.calls != 1 {
+		t.Fatalf("session issuer calls = %d", issuer.calls)
+	}
+}
+
+type routerIdentityIssuer struct {
+	issued identity.IssuedSession
+	err    error
+	calls  int
+}
+
+func (issuer *routerIdentityIssuer) Issue(context.Context, string) (identity.IssuedSession, error) {
+	issuer.calls++
+	return issuer.issued, issuer.err
+}
+
 func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 	calls := 0
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		calls++
 		return ReadinessResult{Ready: false, Reason: "database_unreachable"}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/live", nil))
@@ -46,7 +95,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 func TestHealthReadinessReturnsCurrent(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Ready: true}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -67,7 +116,7 @@ func TestHealthReadinessReturnsStableFailureReasons(t *testing.T) {
 		t.Run(reason, func(t *testing.T) {
 			router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 				return ReadinessResult{Reason: reason}
-			}, testCatalogHandler())
+			}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 			recorder := httptest.NewRecorder()
 
 			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -81,7 +130,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 	const canary = "health-canary-secret-must-not-leak"
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Reason: canary}
-	}, testCatalogHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -93,7 +142,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 }
 
 func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
-	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler())
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		recorder := httptest.NewRecorder()
@@ -118,7 +167,7 @@ func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
 
 func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
 	reader := &catalogReaderStub{categories: []catalog.Category{}}
-	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader))
+	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 
 	list := httptest.NewRecorder()
 	router.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -140,12 +189,58 @@ func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
 	}
 }
 
+func TestMenuRoutesAreVersionedAndPreserveCatalogContract(t *testing.T) {
+	menuReader := &routerMenuReader{
+		periods: []menu.MealPeriodRecord{
+			{Code: "lunch", CutoffTime: "11:30:00", PickupStartTime: "11:30:00", PickupEndTime: "13:30:00", IntervalMinutes: 30},
+			{Code: "dinner", CutoffTime: "17:00:00", PickupStartTime: "17:00:00", PickupEndTime: "19:00:00", IntervalMinutes: 30},
+		},
+	}
+	now := time.Date(2026, 8, 20, 10, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	router := NewRouter(
+		discardLogger(), alwaysReady,
+		catalog.NewHandler(&catalogReaderStub{categories: []catalog.Category{}}),
+		menu.NewHandler(menuReader, func() time.Time { return now }),
+		testIdentityHandler(),
+		testPhoneHandler(),
+	)
+
+	valid := httptest.NewRecorder()
+	router.ServeHTTP(valid, httptest.NewRequest(http.MethodGet, "/api/v1/menu?date=2026-08-20&time=12:00", nil))
+	if valid.Code != http.StatusOK || !strings.Contains(valid.Body.String(), `"categories":[]`) {
+		t.Fatalf("versioned menu = %d %q", valid.Code, valid.Body.String())
+	}
+	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+		t.Fatalf("versioned menu reader calls = %d/%d", menuReader.periodCalls, menuReader.listCalls)
+	}
+
+	for _, path := range []string{"/menu?date=2026-08-20&time=12:00", "/api/v1/menu/anything?date=2026-08-20&time=12:00"} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
+		if response.Code != http.StatusNotFound || response.Body.Len() != 0 {
+			t.Fatalf("unknown menu path %q = %d/%q", path, response.Code, response.Body.String())
+		}
+	}
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodPost, "/api/v1/menu?date=2026-08-20&time=12:00", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
+		t.Fatalf("menu wrong method = %d/%q", wrongMethod.Code, wrongMethod.Body.String())
+	}
+	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+		t.Fatal("unknown or wrong-method menu request reached repository")
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+}
+
 func TestCatalogUnavailableDoesNotLeakRepositoryErrorToBodyOrAccessLog(t *testing.T) {
 	const canary = "catalog-log-canary-dsn-sql-password"
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	reader := &catalogReaderStub{listErr: errors.New(canary)}
-	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader))
+	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -203,7 +298,7 @@ func TestFoundationAndCatalogIntegration(t *testing.T) {
 		state := migrate.Check(ctx, db, migrationSet)
 		return ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
-	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)))
+	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
 	assertSmokeResponse(t, router, "/health/ready", http.StatusOK, `{"status":"ok"}`)
 	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[]}`)
 
@@ -357,6 +452,144 @@ func (*catalogReaderStub) GetProduct(context.Context, uint64) (catalog.Product, 
 
 func testCatalogHandler() *catalog.Handler {
 	return catalog.NewHandler(&catalogReaderStub{categories: []catalog.Category{}})
+}
+
+type routerMenuReader struct {
+	periods     []menu.MealPeriodRecord
+	periodCalls int
+	listCalls   int
+}
+
+func (reader *routerMenuReader) MealPeriods(context.Context) ([]menu.MealPeriodRecord, error) {
+	reader.periodCalls++
+	return reader.periods, nil
+}
+
+func (reader *routerMenuReader) List(context.Context, string, menu.MealCode) ([]menu.Category, error) {
+	reader.listCalls++
+	return []menu.Category{}, nil
+}
+
+func testMenuHandler() *menu.Handler {
+	now := time.Date(2026, 8, 20, 10, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	return menu.NewHandler(&routerMenuReader{periods: []menu.MealPeriodRecord{
+		{Code: "lunch", CutoffTime: "11:30:00", PickupStartTime: "11:30:00", PickupEndTime: "13:30:00", IntervalMinutes: 30},
+		{Code: "dinner", CutoffTime: "17:00:00", PickupStartTime: "17:00:00", PickupEndTime: "19:00:00", IntervalMinutes: 30},
+	}}, func() time.Time { return now })
+}
+
+func testIdentityHandler() *identity.Handler {
+	return identity.NewHandler(&routerIdentityIssuer{err: identity.ErrUnavailable})
+}
+
+func testPhoneHandler() *identity.PhoneHandler {
+	return identity.NewPhoneHandler(&routerPhoneAuthenticator{userID: 42}, &routerPhoneBinder{err: identity.ErrUnavailable})
+}
+
+func TestRouterPhoneBindingIsRouteSpecificAndVersioned(t *testing.T) {
+	authenticator := &routerPhoneAuthenticator{userID: 42}
+	binder := &routerPhoneBinder{result: identity.PhoneBinding{MaskedPhone: "+*********5678"}}
+	phoneHandler := identity.NewPhoneHandler(authenticator, binder)
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), phoneHandler)
+
+	phone := httptest.NewRecorder()
+	phoneRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/bind-phone", strings.NewReader(`{"code":"router-phone-code"}`))
+	phoneRequest.Header.Set("Content-Type", "application/json")
+	phoneRequest.Header.Set("Authorization", "Bearer router-session-token")
+	router.ServeHTTP(phone, phoneRequest)
+	assertJSONResponse(t, phone, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodGet, "/api/v1/me/bind-phone", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
+		t.Fatal("phone wrong-method contract mismatch")
+	}
+	for _, path := range []string{"/me/bind-phone", "/api/v1/me/profile"} {
+		missing := httptest.NewRecorder()
+		router.ServeHTTP(missing, httptest.NewRequest(http.MethodPost, path, nil))
+		if missing.Code != http.StatusNotFound || missing.Body.Len() != 0 {
+			t.Fatal("phone compatibility/profile route was registered")
+		}
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+	if authenticator.calls != 1 || binder.calls != 1 {
+		t.Fatal("route-specific authentication call count mismatch")
+	}
+}
+
+func TestRouterPrimaryPhoneStatusIsRouteSpecificAndVersioned(t *testing.T) {
+	authenticator := &routerPhoneAuthenticator{userID: 42}
+	binder := &routerPhoneBinder{
+		result: identity.PhoneBinding{MaskedPhone: "+*********5678"},
+		status: identity.PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: "+*********5678"},
+	}
+	router := NewRouter(
+		discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(),
+		identity.NewPhoneHandler(authenticator, binder),
+	)
+
+	statusResponse := httptest.NewRecorder()
+	statusRequest := httptest.NewRequest(http.MethodGet, "/api/v1/me/primary-phone", nil)
+	statusRequest.Header.Set("Authorization", "Bearer router-status-token")
+	router.ServeHTTP(statusResponse, statusRequest)
+	assertJSONResponse(t, statusResponse, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+	if statusResponse.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("primary-phone status route is cacheable")
+	}
+
+	bindResponse := httptest.NewRecorder()
+	bindRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/bind-phone", strings.NewReader(`{"code":"router-phone-code"}`))
+	bindRequest.Header.Set("Content-Type", "application/json")
+	bindRequest.Header.Set("Authorization", "Bearer router-bind-token")
+	router.ServeHTTP(bindResponse, bindRequest)
+	assertJSONResponse(t, bindResponse, http.StatusOK, `{"primary_phone_bound":true,"masked_phone":"+*********5678"}`)
+
+	for _, path := range []string{"/api/v1/me", "/me/primary-phone", "/api/v1/me/profile"} {
+		missing := httptest.NewRecorder()
+		router.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, path, nil))
+		if missing.Code != http.StatusNotFound || missing.Body.Len() != 0 {
+			t.Fatalf("broad/compatibility/profile GET %q was registered", path)
+		}
+	}
+
+	catalogResponse := httptest.NewRecorder()
+	router.ServeHTTP(catalogResponse, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
+	assertJSONResponse(t, catalogResponse, http.StatusOK, `{"categories":[]}`)
+	if authenticator.calls != 2 || binder.statusCalls != 1 || binder.calls != 1 {
+		t.Fatal("primary-phone routes did not remain route-specific")
+	}
+}
+
+type routerPhoneAuthenticator struct {
+	userID uint64
+	calls  int
+}
+
+func (authenticator *routerPhoneAuthenticator) Authenticate(context.Context, string) (uint64, error) {
+	authenticator.calls++
+	return authenticator.userID, nil
+}
+
+type routerPhoneBinder struct {
+	result      identity.PhoneBinding
+	err         error
+	calls       int
+	status      identity.PhoneStatus
+	statusErr   error
+	statusCalls int
+}
+
+func (binder *routerPhoneBinder) Bind(context.Context, uint64, string) (identity.PhoneBinding, error) {
+	binder.calls++
+	return binder.result, binder.err
+}
+
+func (binder *routerPhoneBinder) Status(context.Context, uint64) (identity.PhoneStatus, error) {
+	binder.statusCalls++
+	return binder.status, binder.statusErr
 }
 
 func assertJSONResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {

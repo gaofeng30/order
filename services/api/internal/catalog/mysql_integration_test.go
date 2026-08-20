@@ -28,8 +28,8 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal("load migration set failed")
 		}
-		if len(migrationSet) != 3 {
-			t.Fatalf("migration count = %d, want 3", len(migrationSet))
+		if len(migrationSet) != 10 {
+			t.Fatalf("migration count = %d, want 10", len(migrationSet))
 		}
 
 		baseResult, err := migrate.Run(context.Background(), db, migrationSet[:1])
@@ -37,11 +37,12 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 			t.Fatal("foundation migration did not establish version 1")
 		}
 		catalogResult, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || catalogResult.FromVersion != 1 || catalogResult.ToVersion != 3 || catalogResult.AppliedCount != 2 {
-			t.Fatal("catalog migrations did not advance version 1 to version 3")
+		if err != nil || catalogResult.FromVersion != 1 || catalogResult.ToVersion != 10 || catalogResult.AppliedCount != 9 {
+			t.Fatal("catalog migrations did not advance version 1 to version 10")
 		}
 
 		assertCatalogSchema(t, db)
+		assertMenuSchema(t, db)
 		assertRestrictForeignKey(t, db)
 		before := readCatalogHistory(t, db)
 		if len(before) != len(migrationSet) {
@@ -54,7 +55,7 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 			}
 		}
 		repeat, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || repeat.FromVersion != 3 || repeat.ToVersion != 3 || repeat.AppliedCount != 0 {
+		if err != nil || repeat.FromVersion != 10 || repeat.ToVersion != 10 || repeat.AppliedCount != 0 {
 			t.Fatal("repeated catalog migration was not a zero-write success")
 		}
 		after := readCatalogHistory(t, db)
@@ -83,6 +84,7 @@ func TestCatalogRepositoryAndHTTPIntegration(t *testing.T) {
 	withCatalogSchema(t, func(db *sql.DB) {
 		applyCatalogMigrations(t, db)
 		insertCatalogVisibilityFixture(t, db)
+		insertAvailabilityCatalogRegressionFixture(t, db)
 
 		repository := NewRepository(db)
 		categories, err := repository.List(context.Background())
@@ -149,6 +151,20 @@ func TestCatalogRepositoryAndHTTPIntegration(t *testing.T) {
 			t.Fatalf("catalog recovery status = %d, want 200", response.Code)
 		}
 	})
+}
+
+func insertAvailabilityCatalogRegressionFixture(t *testing.T, db *sql.DB) {
+	t.Helper()
+	statements := []string{
+		"UPDATE meal_periods SET cutoff_time='10:45:00',pickup_start_time='11:00:00',pickup_end_time='12:00:00',interval_minutes=20 WHERE code='lunch'",
+		"UPDATE products SET meal_period=CASE id WHEN 1 THEN 'lunch' WHEN 3 THEN 'dinner' ELSE 'all' END",
+		"INSERT INTO product_sold_out_dates(service_date,product_id) VALUES ('2026-08-20',1)",
+	}
+	for _, statement := range statements {
+		if _, err := db.ExecContext(context.Background(), statement); err != nil {
+			t.Fatal("insert availability catalog regression fixture failed")
+		}
+	}
 }
 
 func TestCatalogSingleStatementSnapshotIntegration(t *testing.T) {
@@ -247,6 +263,7 @@ func assertCatalogSchema(t *testing.T, db *sql.DB) {
 		{Name: "price_cents", Type: "int unsigned", Nullable: "NO"},
 		{Name: "sort_order", Type: "int unsigned", Nullable: "NO", Default: sql.NullString{String: "0", Valid: true}},
 		{Name: "is_listed", Type: "tinyint(1)", Nullable: "NO", Default: sql.NullString{String: "1", Valid: true}},
+		{Name: "meal_period", Type: "enum('all','lunch','dinner')", Nullable: "NO", Default: sql.NullString{String: "all", Valid: true}},
 	}
 	assertColumns(t, db, "categories", wantCategories)
 	assertColumns(t, db, "products", wantProducts)
@@ -254,6 +271,7 @@ func assertCatalogSchema(t *testing.T, db *sql.DB) {
 	assertIndex(t, db, "categories", "idx_categories_visibility", []string{"is_active", "sort_order", "id"}, true)
 	assertIndex(t, db, "products", "PRIMARY", []string{"id"}, false)
 	assertIndex(t, db, "products", "idx_products_catalog", []string{"category_id", "is_listed", "sort_order", "id"}, true)
+	assertIndex(t, db, "products", "idx_products_menu", []string{"category_id", "is_listed", "meal_period", "sort_order", "id"}, true)
 
 	var updateRule, deleteRule, columnName, referencedTable, referencedColumn string
 	if err := db.QueryRowContext(context.Background(), `SELECT rc.update_rule,rc.delete_rule,kcu.column_name,kcu.referenced_table_name,kcu.referenced_column_name
@@ -265,6 +283,69 @@ func assertCatalogSchema(t *testing.T, db *sql.DB) {
 	}
 	if updateRule != "RESTRICT" || deleteRule != "RESTRICT" || columnName != "category_id" || referencedTable != "categories" || referencedColumn != "id" {
 		t.Fatalf("catalog foreign key shape = %s/%s %s -> %s.%s", updateRule, deleteRule, columnName, referencedTable, referencedColumn)
+	}
+}
+
+func assertMenuSchema(t *testing.T, db *sql.DB) {
+	t.Helper()
+	wantMealPeriods := []schemaColumn{
+		{Name: "code", Type: "enum('lunch','dinner')", Nullable: "NO"},
+		{Name: "cutoff_time", Type: "time", Nullable: "NO"},
+		{Name: "pickup_start_time", Type: "time", Nullable: "NO"},
+		{Name: "pickup_end_time", Type: "time", Nullable: "NO"},
+		{Name: "interval_minutes", Type: "smallint unsigned", Nullable: "NO"},
+	}
+	wantSoldOut := []schemaColumn{
+		{Name: "service_date", Type: "date", Nullable: "NO"},
+		{Name: "product_id", Type: "bigint unsigned", Nullable: "NO"},
+	}
+	assertColumns(t, db, "meal_periods", wantMealPeriods)
+	assertColumns(t, db, "product_sold_out_dates", wantSoldOut)
+	assertIndex(t, db, "meal_periods", "PRIMARY", []string{"code"}, false)
+	assertIndex(t, db, "product_sold_out_dates", "PRIMARY", []string{"service_date", "product_id"}, false)
+	var updateRule, deleteRule, columnName, referencedTable, referencedColumn string
+	if err := db.QueryRowContext(context.Background(), `SELECT rc.update_rule,rc.delete_rule,kcu.column_name,kcu.referenced_table_name,kcu.referenced_column_name
+		FROM information_schema.referential_constraints rc
+		JOIN information_schema.key_column_usage kcu
+		  ON kcu.constraint_schema=rc.constraint_schema AND kcu.constraint_name=rc.constraint_name AND kcu.table_name=rc.table_name
+		WHERE rc.constraint_schema=DATABASE() AND rc.table_name='product_sold_out_dates'`).Scan(&updateRule, &deleteRule, &columnName, &referencedTable, &referencedColumn); err != nil {
+		t.Fatal("inspect sold-out foreign key failed")
+	}
+	if updateRule != "RESTRICT" || deleteRule != "RESTRICT" || columnName != "product_id" || referencedTable != "products" || referencedColumn != "id" {
+		t.Fatalf("sold-out foreign key shape = %s/%s %s -> %s.%s", updateRule, deleteRule, columnName, referencedTable, referencedColumn)
+	}
+
+	rows, err := db.QueryContext(context.Background(), "SELECT code,cutoff_time,pickup_start_time,pickup_end_time,interval_minutes FROM meal_periods ORDER BY code")
+	if err != nil {
+		t.Fatal("read initial meal periods failed")
+	}
+	defer rows.Close()
+	got := make([]string, 0, 2)
+	for rows.Next() {
+		var code, cutoff, start, end string
+		var interval int
+		if err := rows.Scan(&code, &cutoff, &start, &end, &interval); err != nil {
+			t.Fatal("scan initial meal period failed")
+		}
+		got = append(got, fmt.Sprintf("%s|%s|%s|%s|%d", code, cutoff, start, end, interval))
+	}
+	want := []string{"lunch|11:30:00|11:30:00|13:30:00|30", "dinner|17:00:00|17:00:00|19:00:00|30"}
+	if rows.Err() != nil || !reflect.DeepEqual(got, want) {
+		t.Fatalf("initial meal periods = %v, want %v", got, want)
+	}
+
+	invalidUpdates := []string{
+		"UPDATE meal_periods SET cutoff_time='-01:00:00' WHERE code='lunch'",
+		"UPDATE meal_periods SET pickup_end_time='24:00:00' WHERE code='dinner'",
+		"UPDATE meal_periods SET cutoff_time='11:30:01' WHERE code='lunch'",
+		"UPDATE meal_periods SET interval_minutes=0 WHERE code='lunch'",
+		"UPDATE meal_periods SET cutoff_time='12:00:00',pickup_start_time='11:30:00' WHERE code='lunch'",
+		"UPDATE meal_periods SET pickup_start_time='19:30:00',pickup_end_time='19:00:00' WHERE code='dinner'",
+	}
+	for _, statement := range invalidUpdates {
+		if _, err := db.ExecContext(context.Background(), statement); err == nil {
+			t.Fatalf("meal_periods CHECK accepted invalid update")
+		}
 	}
 }
 
@@ -319,6 +400,22 @@ func assertRestrictForeignKey(t *testing.T, db *sql.DB) {
 	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(category_id,name,price_cents) VALUES (?, 'fixture-product', 100)", categoryID); err != nil {
 		t.Fatal("insert product fixture failed")
 	}
+	var productID uint64
+	if err := db.QueryRowContext(context.Background(), "SELECT id FROM products WHERE category_id=?", categoryID).Scan(&productID); err != nil {
+		t.Fatal("read product fixture failed")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO product_sold_out_dates(service_date,product_id) VALUES ('2026-08-20',?)", productID); err != nil {
+		t.Fatal("insert sold-out fixture failed")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO product_sold_out_dates(service_date,product_id) VALUES ('2026-08-20',?)", productID); err == nil {
+		t.Fatal("sold-out date primary key allowed duplicate")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO product_sold_out_dates(service_date,product_id) VALUES ('2026-08-21',?)", productID+1000000); err == nil {
+		t.Fatal("sold-out foreign key allowed orphan")
+	}
+	if _, err := db.ExecContext(context.Background(), "DELETE FROM products WHERE id=?", productID); err == nil {
+		t.Fatal("sold-out foreign key allowed referenced product delete")
+	}
 	if _, err := db.ExecContext(context.Background(), "DELETE FROM categories WHERE id=?", categoryID); err == nil {
 		t.Fatal("foreign key allowed referenced category delete")
 	}
@@ -352,7 +449,7 @@ func readCatalogHistory(t *testing.T, db *sql.DB) []historySnapshot {
 		t.Fatal("read migration history failed")
 	}
 	defer rows.Close()
-	result := make([]historySnapshot, 0, 3)
+	result := make([]historySnapshot, 0, 7)
 	for rows.Next() {
 		var snapshot historySnapshot
 		if err := rows.Scan(&snapshot.Version, &snapshot.Name, &snapshot.Checksum, &snapshot.Dirty, &snapshot.AppliedAt); err != nil {
