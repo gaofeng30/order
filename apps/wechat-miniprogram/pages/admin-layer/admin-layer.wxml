@@ -15,7 +15,6 @@
 
         <!-- 身份选择页 mock -->
         <view
-          wx:else
           class="mock mock-dark"
           style="width:{{screenW}}px;height:{{screenH}}px;transform:scale({{scale}});padding:{{statusBarH}}px 44rpx {{safeBottom + 30}}px"
         >

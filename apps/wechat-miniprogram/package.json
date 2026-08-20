@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/catalog-ui1.test.js tests/scope-conformance-ui1.test.js tests/entry-screens-ui1.test.js tests/catalog-fields-ui1.test.js tests/order-lifecycle-ui1.test.js tests/pickup-time-ui1.test.js"
+    "test": "node --test tests/catalog-ui1.test.js tests/scope-conformance-ui1.test.js tests/entry-screens-ui1.test.js tests/catalog-fields-ui1.test.js tests/order-lifecycle-ui1.test.js tests/pickup-time-ui1.test.js tests/wx-compile-ui1.test.js"
   }
 }
