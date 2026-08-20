@@ -63,7 +63,4 @@
     </view>
   </view>
 
-  <!-- 商户配置的开屏装饰图层（z-100 在授权弹窗 z160/170 之下，不挡点击）
-       注意：本页布局若调整，需同步 pages/admin-layer 中的预览 mock -->
-  <layer-overlay />
 </view>

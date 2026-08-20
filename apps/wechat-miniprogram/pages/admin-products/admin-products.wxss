@@ -5,16 +5,6 @@
 }
 .search-ph { font-size: 26rpx; color: var(--ink-3); }
 
-.new-banner {
-  margin-top: 20rpx; height: 104rpx; border-radius: 28rpx; position: relative; overflow: hidden;
-  background: linear-gradient(135deg, #123f7e, #0b2f63); display: flex; align-items: center; gap: 24rpx; padding: 0 32rpx;
-  box-shadow: 0 16rpx 40rpx rgba(11, 47, 99, .22);
-}
-.nb-ring { position: absolute; right: -36rpx; top: -36rpx; width: 160rpx; height: 160rpx; border-radius: 50%; border: 3rpx solid rgba(255, 255, 255, .12); }
-.nb-ico { width: 68rpx; height: 68rpx; border-radius: 20rpx; background: rgba(255, 255, 255, .16); display: flex; align-items: center; justify-content: center; flex: 0 0 68rpx; }
-.nb-body { flex: 1; position: relative; z-index: 2; }
-.nb-title { font-size: 30rpx; font-weight: 600; color: #fff; letter-spacing: 1rpx; }
-.nb-sub { font-size: 22rpx; color: rgba(255, 255, 255, .7); margin-top: 4rpx; }
 
 .cat-nav { padding: 0 24rpx 16rpx; border-bottom: 1rpx solid var(--line); }
 

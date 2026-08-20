@@ -103,8 +103,7 @@ test('templates drop excluded capability entries', () => {
   const profileWXML = read('pages/profile/profile.wxml');
   assert.doesNotMatch(profileWXML, /我的优惠券|levelName|levelLabel|couponCount/);
 
-  const adminProfileWXML = read('pages/admin-profile/admin-profile.wxml');
-  assert.doesNotMatch(adminProfileWXML, /会员与营销|会员等级|会员名单|优惠券/);
-
-  assert.doesNotMatch(read('pages/admin-product-edit/admin-product-edit.js'), /coupon/i);
+  // 商户中心与菜品编辑页均已迁往 PC，排除能力的缺席由页面本身不存在保证
+  assert.equal(fs.existsSync(path.join(miniprogramRoot, 'pages/admin-profile')), false);
+  assert.equal(fs.existsSync(path.join(miniprogramRoot, 'pages/admin-product-edit')), false);
 });

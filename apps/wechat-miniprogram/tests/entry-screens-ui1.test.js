@@ -52,10 +52,12 @@ test('merchant tab bar collapses to three tabs', () => {
   }
 });
 
-test('merchant center stays reachable after the tab bar shrinks', () => {
+test('the identity screen stays reachable after the merchant centre is removed', () => {
+  // 商户中心随 collapse-merchant-scope 迁往 PC；其唯一仍需保留的能力「切换身份」
+  // 已移到订单页导航栏右侧（0818 PRD §6.10）。
   const wxml = read('pages/admin-orders/admin-orders.wxml');
-  assert.match(wxml, /admin-profile|toProfile/, 'admin-profile became unreachable');
-  assert.equal(fs.existsSync(path.join(miniprogramRoot, 'pages/admin-profile')), true);
+  assert.equal(fs.existsSync(path.join(miniprogramRoot, 'pages/admin-profile')), false);
+  assert.match(wxml, /bindtap="reset"/, 'merchant cannot return to the identity screen');
 });
 
 test('seed drops data owned only by the removed dashboard', () => {
@@ -81,9 +83,13 @@ test('the identity screen routes merchants to a page that exists', () => {
   assert.match(wxml, /data-to="admin-orders"/, 'identity screen lost the merchant entry');
 });
 
-test('the launch-layer editor previews only screens that exist', () => {
-  const js = read('pages/admin-layer/admin-layer.js');
-  const wxml = read('pages/admin-layer/admin-layer.wxml');
-  assert.doesNotMatch(js, /'brand'|switchMock/, 'layer editor still targets the removed brand screen');
-  assert.doesNotMatch(wxml, /mock === 'brand'|业务选择页/, 'layer editor still previews the removed brand screen');
+test('the local-storage launch layer is gone from the mini program', () => {
+  // 开屏图层配置按生效 spec 必须由服务端下发；编辑页迁 PC 后，
+  // 小程序侧的本机存储实现失去写入方，只会渲染无法清除的陈旧图片，故一并移除。
+  for (const rel of ['utils/layer.js', 'components/layer-overlay', 'pages/admin-layer']) {
+    assert.equal(fs.existsSync(path.join(miniprogramRoot, rel)), false, `${rel} still exists`);
+  }
+  assert.doesNotMatch(read('pages/launch/launch.wxml'), /layer-overlay/);
+  const app = JSON.parse(read('app.json'));
+  assert.equal(Object.hasOwn(app.usingComponents || {}, 'layer-overlay'), false);
 });

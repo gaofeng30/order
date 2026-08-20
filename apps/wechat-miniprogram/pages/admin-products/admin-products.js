@@ -35,15 +35,4 @@ Page({
       this.selectComponent('#toast').show(nx === 'soldout' ? '已置售罄' : '已恢复售卖', { icon: 'tag' });
     });
   },
-  toggleShelf(e) {
-    const id = e.currentTarget.dataset.id;
-    const cur = data.itemById(id);
-    const nx = cur.status === 'off' ? 'on' : 'off';
-    api.setProductStatus(id, nx).then(() => {
-      this.build();
-      this.selectComponent('#toast').show(nx === 'on' ? '已上架' : '已下架', { icon: nx === 'on' ? 'check' : 'box' });
-    });
-  },
-  edit(e) { nav.go('admin-product-edit', { id: e.currentTarget.dataset.id }); },
-  newProduct() { nav.go('admin-product-edit'); },
 });

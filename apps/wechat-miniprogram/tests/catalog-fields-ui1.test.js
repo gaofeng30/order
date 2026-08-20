@@ -45,11 +45,12 @@ test('merchant product list drops quantity and monthly sales', () => {
   assert.match(wxml, /toggleSoldout/, 'admin list lost the sale-status control');
 });
 
-test('merchant product editor has no quantity field', () => {
-  const js = read('pages/admin-product-edit/admin-product-edit.js');
-  const wxml = read('pages/admin-product-edit/admin-product-edit.wxml');
-  assert.doesNotMatch(js, /\bstock\b/, 'editor script still holds a quantity');
-  assert.doesNotMatch(wxml, /库存|f\.stock/, 'editor template still renders a quantity');
+test('the mini program has no product editor at all', () => {
+  // 菜品编辑随 collapse-merchant-scope 迁往 PC 后台（评审 §26、§38）。
+  // 数量库存的缺席由 PC 侧门禁 check_catalog_fields.js 覆盖。
+  assert.equal(fs.existsSync(path.join(miniprogramRoot, 'pages/admin-product-edit')), false);
+  const wxml = read('pages/admin-products/admin-products.wxml');
+  assert.doesNotMatch(wxml, /库存|月售/, 'product screen still renders a retired field');
 });
 
 test('sale status still works end to end after the fields are gone', async () => {

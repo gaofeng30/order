@@ -1,7 +1,0 @@
-/* 铺满 .page（position:relative）视口；z-100 盖住页面内容(z2-3)、压在授权弹窗(z160/170)之下 */
-.wrap {
-  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
-  z-index: 100; pointer-events: none;
-}
-/* 中心点锚定：left/top 为存储的中心比例，translate 回移自身一半 */
-.img { position: absolute; transform: translate(-50%, -50%); pointer-events: none; }
