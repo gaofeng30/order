@@ -43,12 +43,6 @@
         </view>
       </view>
 
-      <view class="card group">
-        <view class="prow last" bindtap="settings">
-          <view class="prow-ico" style="background:var(--bg2)"><icon name="settings" size="19" color="#5e6354" /></view>
-          <view class="prow-main"><view class="prow-label">设置</view></view>
-          <icon name="chevron" size="17" color="#8f9384" />
-        </view>
       </view>
 
       <view class="switch-id" bindtap="reset">切换身份入口 ›</view>

@@ -1,7 +1,18 @@
 <view class="page">
   <navbar tone="light" title="订单管理">
-    <view slot="right" class="nav-more" bindtap="toProfile">商户中心</view>
+    <view slot="right" class="nav-more" bindtap="reset">切换身份</view>
   </navbar>
+
+  <!-- 营业状态：现场临时休息需要手机可操作 -->
+  <view class="pad biz-row">
+    <view
+      wx:for="{{biz}}"
+      wx:key="*this"
+      class="biz-seg {{storeStatus === item ? 'on' : ''}}"
+      data-b="{{item}}"
+      bindtap="setBiz"
+    >{{item}}</view>
+  </view>
 
   <!-- 搜索 -->
   <view class="pad search-wrap">

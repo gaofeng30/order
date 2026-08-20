@@ -5,16 +5,6 @@
     <view class="search-box">
       <icon name="search" size="16" color="#8f9384" /><text class="search-ph">搜索菜品名称</text>
     </view>
-    <!-- 上架新菜 -->
-    <view class="new-banner" bindtap="newProduct">
-      <view class="nb-ring"></view>
-      <view class="nb-ico"><icon name="plus" size="20" color="#ffffff" /></view>
-      <view class="nb-body">
-        <view class="serif nb-title">上架新菜</view>
-        <view class="nb-sub">添加菜品图片、价格与规格</view>
-      </view>
-      <icon name="arrowRight" size="18" color="rgba(255,255,255,0.85)" />
-    </view>
   </view>
 
   <view class="cat-nav">
@@ -27,7 +17,7 @@
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
     <view wx:for="{{list}}" wx:key="id" class="card prod {{item.s === 'off' ? 'off' : ''}}">
-      <view class="prod-pic" data-id="{{item.id}}" bindtap="edit">
+      <view class="prod-pic">
         <imageph item="{{item}}" h="136" w="136" radius="24" tag="{{false}}" />
         <view wx:if="{{item.s === 'soldout'}}" class="prod-mask">售罄</view>
       </view>
@@ -42,12 +32,8 @@
         </view>
         <view class="prod-actions">
           <text class="pa-soldout {{item.s === 'soldout' ? 'green' : ''}}" data-id="{{item.id}}" catchtap="toggleSoldout">{{item.soldoutLabel}}</text>
-          <text class="pa-edit" data-id="{{item.id}}" catchtap="edit">编辑</text>
           <view class="pa-shelf">
             <text class="pa-shelf-lbl">上架</text>
-            <view class="toggle {{item.on ? 'on' : ''}}" data-id="{{item.id}}" catchtap="toggleShelf">
-              <view class="toggle-knob"></view>
-            </view>
           </view>
         </view>
       </view>
