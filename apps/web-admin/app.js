@@ -17,11 +17,6 @@
       cats: clone(Seed.ADMIN_CATS),
       settings: clone(Seed.SETTINGS),
       layer: clone(Seed.LAYER_DEFAULTS),
-      // 二期能力
-      levels: clone(Seed.LEVELS),
-      members: clone(Seed.MEMBERS),
-      coupons: clone(Seed.COUPONS),
-      couponUsed: clone(Seed.MY_COUPON_USED),
     };
   }
 
@@ -40,13 +35,6 @@
       { r: 'settings', t: '营业设置', ic: 'settings' },
       { r: 'layer', t: '开屏图层', ic: 'layers' },
     ] },
-    // p2：二期能力分组。侧边栏不挂标签，范围提示统一由顶栏副标题承担
-    { g: '会员与营销', p2: true, items: [
-      { r: 'levels', t: '会员等级', ic: 'layers' },
-      { r: 'members', t: '会员名单', ic: 'user' },
-      { r: 'members/import', t: '批量导入名单', ic: 'box' },
-      { r: 'coupons', t: '优惠券', ic: 'ticket' },
-    ] },
   ];
 
   function renderNav() {
@@ -62,9 +50,9 @@
   function navMeta(route) {
     for (const grp of NAV) {
       const it = grp.items.find(x => x.r === route);
-      if (it) return { title: it.t, group: grp.g, p2: !!grp.p2 };
+      if (it) return { title: it.t, group: grp.g };
     }
-    return { title: '工作台', group: '经营', p2: false };
+    return { title: '工作台', group: '经营' };
   }
 
   /* ---------------- 顶栏：营业状态 + 账号下拉（原 admin-profile 商户中心） ---------------- */
@@ -158,7 +146,7 @@
     document.getElementById('tb-title').textContent = meta.title;
     // 页面标题只在顶栏出现一次；页内不再重复标题，只留操作按钮
     document.getElementById('tb-sub').textContent =
-      meta.p2 ? '二期能力 · 不在一期合同范围' : (page.sub || '');
+      page.sub || '';
 
     const el = document.getElementById('content');
     el.className = 'content' + (page.flush ? ' flush' : '');
@@ -186,7 +174,7 @@
   if (!location.hash) location.hash = '#/dashboard';
   go(parseHash(), true);
 
-  // 页面间跳转与外壳刷新（会员导入完成后回名单页等）
+  // 页面间跳转与外壳刷新
   window.App = {
     go(route) { location.hash = '#/' + route; },
     reload() { go(current, true); },

@@ -1,6 +1,6 @@
 /* Drawer —— 右侧抽屉。
    PC 上「列表 + 编辑」是一体的：小程序里的 admin-product-edit /
-   admin-member-edit / admin-coupon-edit 三个独立页在这里都是抽屉。 */
+   小程序端的独立编辑页在这里都是抽屉。 */
 (function () {
   const host = () => document.getElementById('overlay-host');
   let closer = null;

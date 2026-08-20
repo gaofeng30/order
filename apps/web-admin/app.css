@@ -468,7 +468,6 @@ img { display: block; max-width: 100%; }
 .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .toolbar .sp { flex: 1; }
 
-/* 二期能力标签 */
 .tag-p2 {
   display: inline-flex; align-items: center; height: 20px; padding: 0 8px;
   border-radius: var(--r-pill); background: var(--gold-bg); color: var(--gold-2);
