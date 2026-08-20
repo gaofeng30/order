@@ -75,8 +75,12 @@ node openspec/changes/remove-member-coupon-admin-pages/checks/check_admin_scope.
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=d6098b3af59248d8e51d39a7ee545b8a3cd5ba99`，验证树 `git status --porcelain` 为空。候选树 `ADMIN_SCOPE_GATE=PASS`（`exit=0`，`parsed 15 javascript files`）；同一脚本对 `base_sha` 树 `exit=1`，红线仍成立。小程序端 `npm test` 仍 `19/19`，未受影响。diff 相对 base 为 17 files / 394 insertions / 1268 deletions，`OWNED_PATH=PASS`（`files=17 in_owned=17 outside=0`）。验证结束时验证树仍为 clean。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS at UI0 · UI1 BLOCKED_EXTERNAL**。本 change 在当前仓库条件下能取到的证据全部通过，但**不构成完整的 W2 验收**——W2 最低要求 UI1，而 UI1 资产不存在。
+  - 剩余外部边界：① **`apps/web-admin` 无浏览器或 DOM 级 runner，UI1 记 `BLOCKED_EXTERNAL`**，恢复条件为独立立项引入 runner；② 页面渲染与导航回退行为未经运行时验证，属该阻塞的直接后果；③ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`；④ 全局折扣率尚未实现，PC 后台当前不提供任何优惠配置入口。
+  - 集成判断：本 change 不单方面认定可集成。数据层已取得运行态证据且契约完好性经断言覆盖，非渲染部分的失败模式基本封闭；渲染部分需人工在浏览器中打开 `apps/web-admin/index.html` 复核侧边导航与工作台，或等待 runner 就位。
 
 ## 6. 后续动作
 
