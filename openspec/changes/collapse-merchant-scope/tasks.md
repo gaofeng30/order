@@ -62,8 +62,12 @@ dependencies:
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=8b6118cb804cda73402526d59fbf09f7b8a4d459`，验证树 clean。小程序 `npm test` 65/65；商户端路由恰为 `admin-orders` / `admin-order-detail` / `admin-verify` / `admin-products` 四屏，总屏数 13 且无缺失文件、无失效组件引用；五个门禁全部 PASS（`BASELINE_SINGLE_SOURCE` / `PICKUP_SETTINGS_GATE` / `ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE`）；`go build ./...` 通过。diff 相对 base 为 46 files / 370 insertions / 1108 deletions，`OWNED=PASS`。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① 用户端暂无开屏图层展示，待服务端下发接口就位后重新接入；② 已有设备上的陈旧图层文件不会被自动清理，但小程序不再读取该 storage key，图片不再渲染；③ PC 侧员工折扣白名单与商户账号名单均未建，是当前最大功能缺口；④ UI1 来自 Node harness 与 WXSS/WXML 结构 lint，未覆盖微信开发者工具与真机；⑤ 仓库未安装 `openspec` CLI，strict 校验记 `BLOCKED_EXTERNAL`。
+  - **待与客户确认（不在已确认范围内）**：批量导入的格式与范围。PRD §6.4 的 CSV 导入继承自已删除的会员名单，客户从未就此表态；商户账号名单与菜品批量导入 PRD 中根本没有。用户已表示明日讨论。
 
 ## 6. 后续
 
