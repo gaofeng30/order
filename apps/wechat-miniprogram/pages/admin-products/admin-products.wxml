@@ -38,8 +38,6 @@
         </view>
         <view class="prod-meta">
           <money v="{{item.price}}" blue size="30" />
-          <text class="prod-stock {{item.low ? 'low' : ''}}">库存 {{item.stock}}{{item.low ? ' ·告急' : ''}}</text>
-          <text class="prod-sold">月售 {{item.sold}}</text>
           <text wx:if="{{item.imgCount > 1}}" class="prod-imgs">{{item.imgCount}} 图</text>
         </view>
         <view class="prod-actions">

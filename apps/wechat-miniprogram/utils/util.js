@@ -6,7 +6,7 @@ const catalogStore = require('./catalogStore.js');
 const STATUS_MAP = {
   待取餐: 'info', 待制作: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info', 已预约: 'info',
   已完成: 'ok', 成功: 'ok', 已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
-  待支付: 'warn', 待取超时: 'warn', 库存告急: 'warn',
+  待支付: 'warn',
   已取消: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute', 未开放: 'mute',
 };
 const statusTone = s => STATUS_MAP[s] || 'mute';

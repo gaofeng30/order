@@ -38,19 +38,17 @@ function getProduct(id) {
 
 // POST /admin/products      新增（无 id）
 // PUT  /admin/products/:id  修改
-// body: { name, price, stock, cat, desc, imgs }
+// body: { name, price, cat, desc, imgs }
 function saveProduct(p) {
   const s = g();
   const name = (p.name || '').trim();
   if (!name) return fail('菜品名称必填');
   const price = Number(p.price);
   if (!(price > 0)) return fail('价格需大于 0');
-  const stock = Number(p.stock);
-  if (!(stock >= 0)) return fail('库存不能为负');
   if (!p.cat) return fail('请选择分类');
   const imgs = (p.imgs || []).slice(0, 3);
 
-  const patch = { name, price, stock, cat: p.cat, desc: p.desc || '', imgs, img: imgs[0] || '' };
+  const patch = { name, price, cat: p.cat, desc: p.desc || '', imgs, img: imgs[0] || '' };
   if (p.id) {
     const i = s.menu.findIndex(x => x.id === p.id);
     if (i < 0) return fail('菜品不存在');
@@ -58,14 +56,13 @@ function saveProduct(p) {
     return ok(clone(s.menu[i]));
   }
   const created = Object.assign({
-    id: uid('p'), sold: 0, status: 'on', tags: [], allergens: ['无'], specs: [],
+    id: uid('p'), status: 'on', specs: [],
   }, patch);
   s.menu.push(created);
   return ok(clone(created));
 }
 
 // DELETE /admin/products/:id
-// 菜品删除后，从券的「指定菜品」范围中自动摘除；摘空则该券自动停用。
 function deleteProduct(id) {
   const s = g();
   const i = s.menu.findIndex(x => x.id === id);

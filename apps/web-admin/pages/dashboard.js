@@ -14,13 +14,9 @@
   function build() {
     const orders = window.__store.aOrders;
     const pend = orders.filter(o => o.status === '待制作').length;
-    const overtime = orders.filter(o => o.status === '待取餐' && o.mins >= 22).length;
-    const lowStock = window.__store.menu.filter(m => m.stock > 0 && m.stock <= 8).length;
 
     const todos = [];
     if (pend) todos.push({ n: pend, label: '单待制作', dot: '#d2483a', to: '待制作' });
-    if (overtime) todos.push({ n: overtime, label: '单待取超时', dot: '#2a5fa6', to: '待取餐' });
-    if (lowStock) todos.push({ n: lowStock, label: '个库存告急', dot: '#bcbfa8', to: '' });
 
     const live = orders.filter(o => ['待制作', '待取餐'].includes(o.status));
 
