@@ -32,11 +32,6 @@
         <input class="erow-in" type="digit" placeholder="0.00" placeholder-class="ph" value="{{f.price}}" data-k="price" bindinput="onInput" />
         <text class="erow-tag">价格键盘</text>
       </view>
-      <view class="erow">
-        <text class="erow-lbl">库存</text>
-        <input class="erow-in" type="number" placeholder="数量" placeholder-class="ph" value="{{f.stock}}" data-k="stock" bindinput="onInput" />
-        <text class="erow-tag">数字键盘</text>
-      </view>
       <view class="erow cat-row">
         <text class="erow-lbl">分类</text>
         <view class="cat-chips">

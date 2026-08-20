@@ -67,9 +67,6 @@
             </div>` },
           { t: '分类', w: '92px', render: r => T.esc(r.cat) },
           { t: '售价', w: '76px', cls: 'num', render: r => T.money(r.price) },
-          { t: '库存', w: '72px', cls: 'num', render: r =>
-            `<span class="tnum${r.stock > 0 && r.stock <= 8 ? ' low-stock' : ''}">${r.stock}</span>` },
-          { t: '销量', w: '64px', cls: 'num', render: r => `<span class="faint tnum">${r.sold}</span>` },
           { t: '状态', w: '82px', render: r => T.pill(LABEL[r.status], TONE[r.status]) },
           { t: '操作', w: '234px', cls: 'act', render: r => `
             <button class="btn btn--sm btn--line" data-act="sold" data-id="${r.id}">${r.status === 'soldout' ? '恢复售卖' : '标记售罄'}</button>
@@ -190,7 +187,7 @@
             let np = m === 'set' ? v : (m === 'pct' ? p.price * (1 + v / 100) : p.price + v);
             np = Math.round(np * 10) / 10;
             if (!(np > 0)) return Promise.reject(new Error(`「${p.name}」调整后价格为 ${np}，必须大于 0`));
-            return Api.saveProduct({ id: p.id, name: p.name, price: np, stock: p.stock, cat: p.cat, desc: p.desc, imgs: p.imgs });
+            return Api.saveProduct({ id: p.id, name: p.name, price: np, cat: p.cat, desc: p.desc, imgs: p.imgs });
           });
           Promise.all(jobs).then(() => {
             close();
@@ -224,10 +221,6 @@
            <div class="fld">
              <div class="fld-lb">售价（元）<span class="req">*</span></div>
              <input class="inp tnum" id="f-price" type="number" step="0.5" value="${p ? p.price : ''}">
-           </div>
-           <div class="fld">
-             <div class="fld-lb">库存 <span class="req">*</span></div>
-             <input class="inp tnum" id="f-stock" type="number" value="${p ? p.stock : 0}">
            </div>
          </div>
          <div class="fld">
@@ -300,7 +293,6 @@
             id: p ? p.id : '',
             name: root.querySelector('#f-name').value,
             price: root.querySelector('#f-price').value,
-            stock: root.querySelector('#f-stock').value,
             cat: root.querySelector('#f-cat').value,
             desc: root.querySelector('#f-desc').value,
             imgs,
@@ -315,5 +307,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['products'] = { sub: '上下架、售罄、价格与库存', render };
+  window.Pages['products'] = { sub: '上下架、售罄与价格', render };
 })();

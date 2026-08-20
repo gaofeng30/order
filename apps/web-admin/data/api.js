@@ -42,19 +42,17 @@
 
   // POST /admin/products      新增（无 id）
   // PUT  /admin/products/:id  修改
-  // body: { name, price, stock, cat, desc, imgs }
+  // body: { name, price, cat, desc, imgs }
   function saveProduct(p) {
     const s = g();
     const name = (p.name || '').trim();
     if (!name) return fail('菜品名称必填');
     const price = Number(p.price);
     if (!(price > 0)) return fail('价格需大于 0');
-    const stock = Number(p.stock);
-    if (!(stock >= 0)) return fail('库存不能为负');
     if (!p.cat) return fail('请选择分类');
     const imgs = (p.imgs || []).slice(0, 3);
 
-    const patch = { name, price, stock, cat: p.cat, desc: p.desc || '', imgs, img: imgs[0] || '' };
+    const patch = { name, price, cat: p.cat, desc: p.desc || '', imgs, img: imgs[0] || '' };
     if (p.id) {
       const i = s.menu.findIndex(x => x.id === p.id);
       if (i < 0) return fail('菜品不存在');
@@ -62,7 +60,7 @@
       return ok(clone(s.menu[i]));
     }
     const created = Object.assign({
-      id: uid('p'), sold: 0, status: 'on', tags: [], allergens: ['无'], specs: [],
+      id: uid('p'), status: 'on', specs: [],
     }, patch);
     s.menu.push(created);
     return ok(clone(created));
@@ -151,7 +149,7 @@
   const STATUS_MAP = {
     待取餐: 'info', 待制作: 'info', 制作中: 'info', 进行中: 'info', 配送中: 'info', 已预约: 'info',
     已完成: 'ok', 成功: 'ok', 已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
-    待支付: 'warn', 待取超时: 'warn', 库存告急: 'warn',
+    待支付: 'warn',
     已取消: 'mute', 售罄: 'mute', 已下架: 'mute', 休息中: 'mute', 已截单: 'mute', 未开放: 'mute',
   };
   const statusTone = s => STATUS_MAP[s] || 'mute';

@@ -13,11 +13,10 @@ Page({
   build() {
     const list = data.menuList().filter(m => this.data.cat === '全部' || m.cat === this.data.cat).map(m => {
       const s = m.status;
-      const low = m.stock <= 8;
       return {
-        id: m.id, name: m.name, price: m.price, stock: m.stock, sold: m.sold, cat: m.cat, img: m.img,
+        id: m.id, name: m.name, price: m.price, cat: m.cat, img: m.img,
         imgCount: (m.imgs || []).length,
-        s, low,
+        s,
         pillLabel: s === 'on' ? '可购' : (s === 'soldout' ? '售罄' : '已下架'),
         pillTone: s === 'on' ? 'ok' : 'mute',
         soldoutLabel: s === 'soldout' ? '恢复售卖' : '标记售罄',

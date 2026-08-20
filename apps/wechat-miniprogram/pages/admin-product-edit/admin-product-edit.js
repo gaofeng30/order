@@ -11,7 +11,7 @@ Page({
     cats: data.CATS,
     maxImgs: MAX_IMGS,
     isEdit: false,
-    f: { id: '', name: '', price: '', stock: '', cat: data.CATS[0], desc: '', imgs: [] },
+    f: { id: '', name: '', price: '', cat: data.CATS[0], desc: '', imgs: [] },
   },
 
   onLoad(opts) {
@@ -20,7 +20,7 @@ Page({
       this.setData({
         isEdit: true,
         f: {
-          id: m.id, name: m.name, price: String(m.price), stock: String(m.stock),
+          id: m.id, name: m.name, price: String(m.price),
           cat: m.cat, desc: m.desc || '',
           imgs: (m.imgs && m.imgs.length) ? m.imgs.slice() : (m.img ? [m.img] : []),
         },
@@ -34,7 +34,6 @@ Page({
     const k = e.currentTarget.dataset.k;
     let v = e.detail.value;
     if (k === 'price') v = v.replace(/[^0-9.]/g, '');
-    if (k === 'stock') v = v.replace(/[^0-9]/g, '');
     this.setData({ ['f.' + k]: v });
   },
   pickCat(e) { this.setData({ 'f.cat': e.currentTarget.dataset.c }); },
