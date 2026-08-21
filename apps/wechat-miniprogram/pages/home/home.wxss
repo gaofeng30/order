@@ -15,14 +15,30 @@
 /* 服务宫格 */
 .grid { padding: 36rpx 16rpx; display: flex; flex-wrap: wrap; }
 .grid-item { width: 33.33%; display: flex; flex-direction: column; align-items: center; gap: 14rpx; padding: 18rpx 0; }
-.grid-item.off { opacity: .42; }
 .grid-ico {
   width: 96rpx; height: 96rpx; border-radius: 30rpx; background: var(--bg2);
   display: flex; align-items: center; justify-content: center; position: relative;
 }
-.grid-ico.off { background: #edece3; }
-.grid-tag {
-  position: absolute; top: -12rpx; right: -20rpx; font-size: 17rpx; background: #cfcebf; color: #fff;
-  padding: 2rpx 10rpx; border-radius: 12rpx;
-}
 .grid-cn { font-size: 25rpx; color: var(--ink); font-weight: 500; }
+
+/* 进行中订单提示条（§5.1） */
+.ob {
+  display: flex; align-items: center; gap: 14rpx;
+  padding: 22rpx 26rpx; margin-bottom: 20rpx; border-radius: 18rpx;
+  background: #fff; box-shadow: inset 0 0 0 2rpx var(--line);
+}
+.ob-txt { flex: 1; font-size: 26rpx; color: var(--ink-1); }
+.ob--ready { background: #467a32; box-shadow: none; }
+.ob--ready .ob-txt { color: #fff; font-weight: 600; }
+
+/* 门店公告 */
+.notice {
+  display: flex; align-items: flex-start; gap: 12rpx;
+  padding: 20rpx 26rpx; margin-bottom: 20rpx; border-radius: 18rpx;
+  background: rgba(183, 154, 85, 0.10);
+}
+.notice-txt { flex: 1; font-size: 24rpx; line-height: 1.6; color: #7a6432; }
+
+/* 营业状态 */
+.biz--open { color: #b79a55; }
+.biz--closed { color: #d08a6a; }
