@@ -63,6 +63,31 @@ check('the product form and table expose the meal period', () => {
   assert.match(src, /meal: root\.querySelector\('#f-meal'\)\.value/, 'form does not submit the meal period');
 });
 
+/* 接管 specify-bulk-import 的 PRD 断言。
+   那份归档门禁断言 §6.13 标着「开发方提出的范围新增，待客户确认」，
+   而本 change 按项目负责人裁决把该标注改为「已确认纳入一期」——
+   归档产物不修改，其断言集合由此处按新状态接管并补齐。 */
+check('bulk-import PRD assertions, superseding the archived gate', () => {
+  const prd = fs.readFileSync(path.join(root, 'docs/product/online-ordering-system-prd-0818.md'), 'utf8');
+  const need = t => { if (!prd.includes(t)) throw new Error(`PRD 缺少 ${JSON.stringify(t)}`); };
+  const forbid = t => { if (prd.includes(t)) throw new Error(`PRD 不应出现 ${JSON.stringify(t)}`); };
+  // 结构与格式决定（承自旧门禁）
+  for (const t of ['### 6.13 批量导入（PC 后台）', '#### 6.13.1 通用流程', '#### 6.13.2 菜品批量导入',
+                   '#### 6.13.3 员工白名单批量导入', '#### 6.13.4 不做批量导入的对象',
+                   '`.xlsx`', '**不接受 CSV**', '**去重规则：只新增，不更新。**',
+                   '**去重规则：按手机号覆盖更新。**', '**图片 MUST NOT 进入模板。**',
+                   '**分类自动新建**', '**商户账号名单不提供批量导入**',
+                   '解析 MUST 在服务端完成', '**PC 网页后台（12 页）**']) need(t);
+  for (const t of ['CSV 批量导入', '导入页做显式检测并提示', '| CSV 为 GBK 编码 |']) forbid(t);
+  // 新状态：范围已确认，且必须标明确认来自项目方而非客户
+  forbid('开发方提出的范围新增，待客户确认');
+  need('项目负责人于 2026-08-21 确认纳入一期范围');
+  need('整份评审记录仍待客户书面签认');
+  // P0 例外必须明确不构成生产契约
+  need('**P0 原型例外**');
+  need('不构成生产契约');
+});
+
 check('all javascript parses', () => {
   const files = [];
   (function walk(d) {

@@ -56,7 +56,11 @@ external_assets: none
   - UI1 保存：改选晚餐后保存，`__store.menu[0].meal` 变为 `dinner`，Toast「已保存」。
   - UI1 校验：缺餐段与传 `中午` 均被拒，错误信息「请选择餐段可售」。
   - 控制台：`runtimeErrors` 为空数组。
-- [x] 4.4 记录门禁证据与 candidate SHA。
+- [x] 4.4 接管归档门禁中因本 change 而失效的断言。
+  - Refactor: 独立验证发现 `specify-bulk-import` 的归档门禁 `check_bulk_import_prd.py` 报 FAIL —— 它断言 §6.13 标着「开发方提出的范围新增，待客户确认」，而本 change 按项目负责人裁决把该标注改成了「已确认纳入一期」。这不是误判，是**它断言的事实被本 change 故意改变了**。
+  - 归档产物不修改。改由本 change 的门禁**接管其全部 PRD 断言**（结构四子节、`.xlsx` 受理、两套去重规则、图片不进模板、分类自动新建、商户账号不导入、解析在服务端、12 页清单、三条 CSV 受理表述的禁止），并按新状态补三条：禁止旧的「待客户确认」表述、要求标明「项目负责人于 2026-08-21 确认纳入一期范围」与「整份评审记录仍待客户书面签认」、要求 P0 例外明写「不构成生产契约」。
+  - 归档门禁 `check_bulk_import_prd.py` 自此为**已被取代**状态，其单条失败为预期结果，不应再单独运行。
+- [x] 4.5 记录门禁证据与 candidate SHA。
   - Writer verdict: `{ gate_type: W2, ui_level_target: UI1, ui_level_actual: UI1, base_sha: 27b09bb, candidate_sha: external-post-commit（见 5.1）, hard_blockers: 0, unverified_boundary: 用户端菜单按餐段过滤未实现（需后端在 catalog 响应下发该字段）；PC 仍为 mock 未接后端 }`。
 
 ## 5. Independent verification
