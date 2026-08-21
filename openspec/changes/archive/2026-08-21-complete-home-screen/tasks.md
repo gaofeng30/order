@@ -39,5 +39,6 @@
 
 ## 独立验证
 
-- [ ] 16. 提交产生候选 SHA。
-- [ ] 17. 在干净 detached worktree 对该精确 SHA 只读重跑 11–15。
+- [x] 16. 候选 SHA `9b00eef`（一次通过，未误纳构建产物）。
+- [x] 17. 在干净 detached worktree 对 `9b00eef` 只读验证。
+  - `DIRTY=0`；`HOME_SCREEN_GATE=PASS`；`node --test tests/*.test.js` → 102 pass / 0 fail；`WX_LINT=PASS`；归档门禁 32 项与 base 逐行一致。
