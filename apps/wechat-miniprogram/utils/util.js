@@ -164,6 +164,52 @@ const cart = {
 const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
 const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
 
+/* ---- 取餐号解析与订单检索（PRD §7.8、§6.6）----
+   §7.8：取餐号按取餐日期从 0001 累计，跨营业日可能重复，因此按号定位
+   必须限定当前营业日。这条规则只实现一次 —— 搜索与手工核销共用 findByCode，
+   分开实现两处必然漂移。 */
+const CODE_RE = /^\d{4}$/;
+
+// 按取餐号定位当前营业日的订单；不在本营业日的号一律不解析。
+function findByCode(code) {
+  const key = String(code == null ? '' : code).trim();
+  if (!CODE_RE.test(key)) return null;
+  const list = getApp().globalData.aOrders;
+  return list.find(o => o.code === key && o.pickupDate === data.BUSINESS_DAY) || null;
+}
+
+/* 该号在当前营业日无果、却存在于别的营业日时，报出这个事实和替代定位方式。
+   空列表是最差的反馈：它和「这个号不存在」不可区分，而两者处置完全不同。 */
+function codeHint(code) {
+  const key = String(code == null ? '' : code).trim();
+  if (!CODE_RE.test(key) || findByCode(key)) return '';
+  const others = getApp().globalData.aOrders.filter(o => o.code === key);
+  if (!others.length) return '';
+  const days = [...new Set(others.map(o => o.pickupDate))].sort().join('、');
+  return `取餐号「${key}」属于 ${days} 的订单，不在当前营业日 ${data.BUSINESS_DAY}。请改用订单号或手机号定位该单。`;
+}
+
+/* 商户端订单检索：取餐号 / 订单号 / 手机号 / 联系人，跨全部状态泳道。
+   4 位纯数字同时按手机号片段匹配 —— 跨营业日歧义只是取餐号的属性，
+   手机尾号没有这个问题；只按取餐号解释会让输入手机尾号的商户得到空列表。 */
+function searchOrders(keyword) {
+  const key = String(keyword == null ? '' : keyword).trim();
+  if (!key) return [];
+  const list = getApp().globalData.aOrders;
+  if (CODE_RE.test(key)) {
+    const byPhone = list.filter(o => String(o.phone).includes(key));
+    const hit = findByCode(key);
+    if (hit && !byPhone.some(o => o.id === hit.id)) return [hit].concat(byPhone);
+    return byPhone;
+  }
+  const up = key.toUpperCase();
+  return list.filter(o =>
+    String(o.no).toUpperCase().includes(up) ||
+    String(o.phone).includes(key) ||
+    String(o.contact).includes(key) ||
+    String(o.code).includes(key));
+}
+
 // 菜品摘要串
 function itemsSummary(items) {
   return items.map(([id, q]) => data.itemById(id).name + '×' + q).join('，');
@@ -195,4 +241,5 @@ function advanceMeta(status) {
 
 module.exports = {
   STATUS_MAP, statusTone, nav, buildUrl, pickup, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
+  findByCode, codeHint, searchOrders,
 };
