@@ -5,6 +5,9 @@
 
   let lane = '已预约';
   let selId = '';
+  /* §6.7 的「未取餐」是查询口径不是状态：营业日已过仍在 待取餐 的单。
+     因此它做成一个可叠加在 待取餐 泳道上的开关，不进 LANES。 */
+  let uncollected = false;
 
   function render(el) {
     // 由工作台带过来的泳道 / 选中项
@@ -16,7 +19,7 @@
          <div class="toolbar">
            <div class="segs" id="lanes"></div>
            <span class="sp"></span>
-           <span class="faint" style="font-size:12.5px">选中左侧订单，右侧显示完整单据</span>
+           <span id="unc-host"></span>
          </div>
          <div id="tbl-host"></div>
        </div>
@@ -27,14 +30,15 @@
 
   function paint(el) {
     const counts = Api.laneCounts();
+    paintUncollected(el);
     el.querySelector('#lanes').innerHTML = Api.LANES.map(l =>
       `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts[l]}</span></span>`
     ).join('');
     el.querySelectorAll('[data-lane]').forEach(n => {
-      n.onclick = () => { lane = n.dataset.lane; paint(el); };
+      n.onclick = () => { lane = n.dataset.lane; if (lane !== '待取餐') uncollected = false; paint(el); };
     });
 
-    Api.listOrders(lane).then(list => {
+    Api.listOrders(lane, { uncollected }).then(list => {
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 
@@ -75,6 +79,21 @@
 
       detail(el, selId);
     });
+  }
+
+  /* 「未取餐」筛选。只在 待取餐 泳道下有意义 —— 其余状态谈不上"未取"。 */
+  function paintUncollected(el) {
+    const host = el.querySelector('#unc-host');
+    const n = Api.uncollectedCount();
+    if (lane !== '待取餐') {
+      host.innerHTML = `<span class="faint" style="font-size:12.5px">选中左侧订单，右侧显示完整单据</span>`;
+      return;
+    }
+    host.innerHTML =
+      `<span class="seg${uncollected ? ' on' : ''}" data-unc>未取餐<span class="cnt">${n}</span></span>
+       <span class="faint" style="font-size:12.5px;margin-left:10px">营业日已结束仍未核销的单，可事后核销或发起退款</span>`;
+    const btn = host.querySelector('[data-unc]');
+    if (btn) btn.onclick = () => { uncollected = !uncollected; paint(el); };
   }
 
   function detail(el, id) {
@@ -128,12 +147,16 @@
        <div class="dt-foot">
          <button class="btn btn--line" data-print>${I.svg('printer', 16)}打印小票</button>
          <span class="grow"></span>
+         ${Api.canRefund(o.status) ? `<button class="btn btn--line danger" data-refund>发起退款</button>` : ''}
          ${m.isView ? `<span class="faint" style="font-size:12.5px">该订单${o.status}</span>`
                     : `<button class="btn ${m.cls}" data-adv>${m.label}</button>`}
        </div>`;
 
     const printBtn = host.querySelector('[data-print]');
     printBtn.onclick = () => window.Toast.show('打印机对接为后期演进 · 一期不含', { icon: 'warn' });
+
+    const refundBtn = host.querySelector('[data-refund]');
+    if (refundBtn) refundBtn.onclick = () => openRefund(el, o);
 
     const advBtn = host.querySelector('[data-adv]');
     if (advBtn) advBtn.onclick = () => {
@@ -142,6 +165,49 @@
         paint(el);
       }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
     };
+  }
+
+  /* 退款确认层。三件事必须让主账号看见后再点：
+     - 退多少（§7.7 只有全额，金额不可改，所以直接显示而不是给输入框）
+     - 谁在退（操作人会记进财务对账，追责靠它）
+     - 为什么退（必填，同样进对账）
+     以及一句后果：退款发起后不可撤销，且到账要以微信为准。 */
+  function openRefund(el, o) {
+    const me = Api.currentAccount();
+    window.Modal.open({
+      title: '发起退款',
+      width: '460px',
+      bodyHtml:
+        `<div class="kv"><span class="k">订单</span><span class="v tnum">${T.esc(o.no)} · 取餐号 ${T.esc(o.code)}</span></div>
+         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(o.total))} <span class="faint" style="font-size:12px">全额，不可修改</span></span></div>
+         <div class="kv"><span class="k">操作人</span><span class="v">${T.esc(me ? me.name : '—')}</span></div>
+         <div style="margin-top:12px">
+           <div class="fld-lb">退款原因<span class="req">*</span></div>
+           <input class="inp" id="rf-why" placeholder="例如：客户未取餐 / 菜品临时售罄" maxlength="40" style="width:100%">
+         </div>
+         <div class="imp-note warn" style="margin-top:12px">
+           退款发起后<b>不可撤销</b>。订单先进入「退款中」，只有微信确认退款成功才会变为「已退款」；
+           退款失败时订单停在「退款中」，需在财务与对账页跟进。
+         </div>`,
+      footerHtml:
+        `<button class="btn btn--line" data-a="cancel">取消</button>
+         <button class="btn btn--danger" data-a="ok">确认退款</button>`,
+      onMount(root, done) {
+        const why = root.querySelector('#rf-why');
+        why.focus();
+        root.querySelector('[data-a="cancel"]').onclick = done;
+        root.querySelector('[data-a="ok"]').onclick = () => {
+          Api.refundOrder(o.id, why.value).then(r => {
+            done();
+            /* 跳到退款中并选中该单。uncollected 必须一并清掉 ——
+               它是挂在 待取餐 上的筛选，带到别的泳道会把列表筛成空的。 */
+            lane = '退款中'; uncollected = false; selId = r.id;
+            paint(el);
+            window.Toast.show(`已对「${r.code}」发起全额退款，等待微信到账`, { icon: 'check' });
+          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+        };
+      },
+    });
   }
 
   window.Pages = window.Pages || {};
