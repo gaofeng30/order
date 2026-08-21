@@ -12,6 +12,8 @@
     window.__store = {
       store: clone(Seed.STORE),
       aOrders: clone(Seed.ADMIN_ORDERS),
+      pending: clone(Seed.PENDING_PAYMENTS),
+      voidedPending: [],
       // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面
       menu: clone(Seed.MENU).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] })),
       cats: clone(Seed.ADMIN_CATS),
@@ -29,6 +31,7 @@
       { r: 'orders', t: '订单管理', ic: 'receipt' },
       { r: 'verify', t: '扫码核销', ic: 'scan' },
       { r: 'finance', t: '财务与对账', ic: 'receipt' },
+      { r: 'pending', t: '支付待处理', ic: 'bell' },
     ] },
     { g: '菜品', items: [
       { r: 'products', t: '菜品管理', ic: 'bowl' },

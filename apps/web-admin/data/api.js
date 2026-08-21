@@ -316,14 +316,26 @@
   /* GET /admin/finance/refunds?from=&to= → Refund[]（按退款时间倒序）
      每条退款都带回订单号与微信交易号：对账时拿到一条退款要能立刻定位原单。 */
   function _refunds(range) {
-    return g().aOrders
+    /* 被退款作废的待处理条目也要进台账：顾客确实付过钱，这笔退款同样出现在微信账单上。
+       它们没有订单号，用预支付单号顶上，并标出来源 —— 对账时要能看出它不是普通退单。 */
+    const voided = (g().voidedPending || [])
+      .filter(v => inRange(dayOf(v.refund.at), range))
+      .map(v => ({
+        no: v.refund.no, amount: v.refund.amount, status: v.refund.status,
+        operator: v.refund.operator, at: v.refund.at, reason: v.refund.reason,
+        orderId: '', orderNo: v.outTradeNo, orderCode: '—', orderTotal: v.amount,
+        txnId: v.txnId, paidAt: v.paidAt, contact: v.contact,
+        fromPending: true,
+      }));
+    return voided.concat(g().aOrders
       .filter(o => o.refund && inRange(dayOf(o.refund.at), range))
       .map(o => ({
         no: o.refund.no, amount: o.refund.amount, status: o.refund.status,
         operator: o.refund.operator, at: o.refund.at, reason: o.refund.reason,
         orderId: o.id, orderNo: o.no, orderCode: o.code, orderTotal: o.total,
         txnId: o.txnId, paidAt: o.paidAt, contact: o.contact,
-      }))
+        fromPending: false,
+      })))
       .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   }
 
@@ -337,10 +349,123 @@
       refundCount: refunds.length,
       refundAmount,
       net: gross - refundAmount,
-      pendingCount: refunds.filter(r => r.status === '退款中').length,
+      pendingCount: refunds.filter(r => r.status === '退款中').length,   // 未到账的退款笔数
+      /* 已收款但没能建成订单的条目（§7.3）。钱已经在微信账户里，却不在任何订单上 ——
+         不计入实收合计，但必须报出来，否则本页会比微信账单少这么多而没人知道为什么。 */
+      unbuiltCount: _unbuilt(range).length,
+      unbuiltAmount: _unbuilt(range).reduce((s, p) => s + p.amount, 0),
       staffCount: pays.filter(o => o.isStaff).length,
       discountCut: pays.reduce((s, o) => s + o.discountCut, 0),
     };
+  }
+
+  function _unbuilt(range) {
+    return (g().pending || []).filter(p => inRange(dayOf(p.paidAt), range));
+  }
+
+  /* ---------------- 支付待处理（PRD §7.3） ----------------
+
+     这些条目是「用户已付款、系统无订单」的兜底。它们**不是订单**：没有六态状态，
+     也没有取餐号 —— 取餐号在订单生成时才分配（§7.8），而它们正是没能生成订单的那批。
+
+     主账号只有两个出口，对应 §7.3 的「发起退款或人工建单」。 */
+
+  function listPendingPayments() { return ok(clone(g().pending || [])); }
+  function pendingPaymentCount() { return (g().pending || []).length; }
+
+  function findPending(id) { return (g().pending || []).find(p => p.id === id); }
+  function dropPending(id) {
+    const list = g().pending || [];
+    const i = list.findIndex(p => p.id === id);
+    if (i >= 0) list.splice(i, 1);
+  }
+
+  /* 补建时必须重新校验阻塞原因。原因没解除就建单，等于给一道做不出来的菜发取餐号，
+     顾客照样白跑一趟，而且这次是我们主动造成的。 */
+  function blockingReason(p) {
+    for (const [pid] of p.items) {
+      const m = g().menu.find(x => x.id === pid);
+      if (!m) return `「${pid}」已被删除，无法补建。请退款作废。`;
+      if (m.status === 'off') return `「${m.name}」仍处于下架状态。请先在菜品管理重新上架，再补建订单。`;
+      if (m.status === 'soldout') return `「${m.name}」当前售罄。请先恢复可售，再补建订单。`;
+    }
+    if (`${p.pickupDate} ${p.pickupTime}` < `${BUSINESS_DAY} ${nowHm()}`) {
+      return `取餐时间 ${p.pickupDate} ${p.pickupTime} 已过，无法排产。请退款作废。`;
+    }
+    if (p.cause === '数据校验不通过') {
+      return `该笔的${p.causeDetail || '数据校验未通过'}，需人工核对后处理。本期只提供退款作废。`;
+    }
+    return null;
+  }
+
+  /* POST /admin/pending-payments/:id/rebuild  人工建单 */
+  function rebuildOrder(id) {
+    const p = findPending(id);
+    if (!p) return fail('该条目已被处理');
+    const why = blockingReason(p);
+    if (why) return fail(why);
+    const order = {
+      id: uid('o'),
+      no: 'SA' + p.outTradeNo.replace(/\D/g, ''),
+      code: nextPickupCode(p.pickupDate),      // §7.8 按取餐日期累计，当日唯一
+      status: scheduleState(p),                // §7.4 不足 30 分钟直接进制作中
+      pickupDate: p.pickupDate, pickupTime: p.pickupTime,
+      mealPeriod: p.mealPeriod, pickupPoint: p.pickupPoint,
+      paidAt: p.paidAt, txnId: p.txnId,
+      subtotal: p.subtotal, discountRate: p.discountRate, discountCut: p.discountCut,
+      total: p.amount, isStaff: p.isStaff,
+      contact: p.contact, phone: p.phone, orderNote: p.orderNote || '',
+      items: clone(p.items),
+      rebuiltBy: (currentAccount() || {}).name || '',
+      rebuiltAt: stamp(),
+    };
+    g().aOrders.unshift(order);
+    dropPending(id);                            // 条目已了结，不能再被处理第二次
+    return ok(clone(order));
+  }
+
+  // §7.8：4 位数字，按取餐日期从 0001 累计，当日唯一
+  function nextPickupCode(day) {
+    const used = g().aOrders.filter(o => o.pickupDate === day).map(o => Number(o.code));
+    const next = (used.length ? Math.max.apply(null, used) : 0) + 1;
+    return String(next).padStart(4, '0');
+  }
+
+  // §7.4：取餐前 30 分钟自动开做；补建时若已不足 30 分钟，直接进制作中
+  function scheduleState(p) {
+    const mins = t => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+    if (p.pickupDate > BUSINESS_DAY) return '已预约';
+    return mins(p.pickupTime) - mins(nowHm()) <= 30 ? '制作中' : '已预约';
+  }
+  function nowHm() {
+    const d = new Date(), pad = n => String(n).padStart(2, '0');
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  /* POST /admin/pending-payments/:id/refund  退款作废
+     同 §7.7：只有全额，没有金额入参；只到退款中，等微信确认。 */
+  function refundPendingPayment(id, reason) {
+    const p = findPending(id);
+    if (!p) return fail('该条目已被处理');
+    const why = String(reason == null ? '' : reason).trim();
+    if (!why) return fail('请填写作废原因。该笔已收款，退款不可撤销，原因会记入财务对账。');
+    const me = currentAccount();
+    const voided = {
+      ...clone(p),
+      voided: true,
+      refund: {
+        no: refundNo(),
+        amount: p.amount,
+        status: '退款中',
+        operator: me ? me.name : '未知操作人',
+        at: stamp(),
+        reason: why,
+      },
+    };
+    g().voidedPending = g().voidedPending || [];
+    g().voidedPending.push(voided);
+    dropPending(id);
+    return ok(clone(voided));
   }
 
   /* 明细导出。CSV 而非 .xlsx：导出是给人拿去和微信账单比对的，纯文本谁都能开，
@@ -742,6 +867,7 @@
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
     today, currentAccount, refundOrder, canRefund, uncollectedCount,
+    listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport,
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,
