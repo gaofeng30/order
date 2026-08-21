@@ -30,10 +30,12 @@
     ] },
     { g: '菜品', items: [
       { r: 'products', t: '菜品管理', ic: 'bowl' },
+      { r: 'product-import', t: '菜品批量导入', ic: 'box' },
       { r: 'categories', t: '分类管理', ic: 'tag' },
     ] },
     { g: '名单', items: [
       { r: 'staff', t: '员工折扣白名单', ic: 'user' },
+      { r: 'staff-import', t: '员工批量导入', ic: 'box' },
     ] },
     { g: '门店', items: [
       { r: 'settings', t: '营业设置', ic: 'settings' },

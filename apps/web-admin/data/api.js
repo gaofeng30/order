@@ -285,6 +285,156 @@
     return ok(n);
   }
 
+
+  /* ---------------- 批量导入（PRD §6.13） ----------------
+     三步：预览 → 确认 → 提交。预览不写任何数据，只返回计数、异常行与一次性令牌；
+     提交按令牌生效且幂等，重复提交只返回首次结果。
+     解析由 window.Xlsx 承担（P0 原型例外，见 data/xlsx.js 文件头）。 */
+
+  const MAX_IMPORT_ROWS = 500;
+  const _imports = {};                       // token -> { kind, plan, done, result }
+  const MEAL_BY_LABEL = { 全天: 'all', 午餐: 'lunch', 晚餐: 'dinner' };
+
+  const cell = (row, i) => String(row && row[i] != null ? row[i] : '').trim();
+
+  // 按表头名匹配列，不依赖列顺序；返回 { index, ignored }
+  function mapHeader(header, known) {
+    const index = {};
+    const ignored = [];
+    header.forEach((raw, i) => {
+      const name = String(raw == null ? '' : raw).trim();
+      if (!name) return;
+      if (known.includes(name)) index[name] = i;
+      else ignored.push(name);
+    });
+    return { index, ignored };
+  }
+
+  async function readSheet(file, required, known) {
+    const rows = await window.Xlsx.readRows(file);
+    if (!rows.length) throw new Error('文件为空');
+    const { index, ignored } = mapHeader(rows[0], known);
+    const missing = required.filter(c => index[c] === undefined);
+    if (missing.length) throw new Error(`表头缺少必填列：${missing.join('、')}`);
+    const body = rows.slice(1).filter(r => r.some(v => String(v == null ? '' : v).trim() !== ''));
+    if (body.length > MAX_IMPORT_ROWS) throw new Error(`单次最多导入 ${MAX_IMPORT_ROWS} 行，请分批导入`);
+    return { index, ignored, body };
+  }
+
+  function stashPreview(kind, plan, extra) {
+    const token = uid('imp');
+    _imports[token] = { kind, plan, done: false, result: null };
+    return Object.assign({
+      token,
+      added: plan.add.length,
+      updated: plan.update.length,
+      errors: plan.errors,
+    }, extra);
+  }
+
+  function takeCommit(kind, token) {
+    const job = _imports[token];
+    if (!job || job.kind !== kind) return fail('预览已失效，请重新选择文件');
+    if (job.done) return ok(Object.assign({}, job.result, { duplicate: true }));
+    return job;
+  }
+
+  /* ---- 员工白名单：按手机号覆盖更新，保留状态与统计字段 ---- */
+  const STAFF_COLS = ['姓名', '手机号'];
+
+  function previewStaffImport(file) {
+    return readSheet(file, STAFF_COLS, STAFF_COLS).then(({ index, ignored, body }) => {
+      const s = g();
+      const plan = { add: [], update: [], errors: [] };
+      const seen = {};
+      body.forEach((row, i) => {
+        const line = i + 2;                                  // 1-based，含表头
+        const name = cell(row, index['姓名']);
+        const phone = normPhone(cell(row, index['手机号']));
+        if (!phone) return plan.errors.push({ row: line, reason: '手机号必填' });
+        if (!PHONE_RE.test(phone)) return plan.errors.push({ row: line, reason: `手机号「${phone}」格式不正确` });
+        if (!name) return plan.errors.push({ row: line, reason: '姓名必填' });
+        if (seen[phone]) return plan.errors.push({ row: line, reason: `手机号 ${phone} 在本文件中重复（第 ${seen[phone]} 行已出现）` });
+        seen[phone] = line;
+        const hit = s.staff.find(x => x.phone === phone);
+        (hit ? plan.update : plan.add).push({ row: line, phone, name, id: hit ? hit.id : '' });
+      });
+      return stashPreview('staff', plan, { ignoredColumns: ignored });
+    });
+  }
+
+  function commitStaffImport(token) {
+    const job = takeCommit('staff', token);
+    if (job.then || job.catch) return job;                   // fail() 或幂等命中
+    const s = g();
+    job.plan.add.forEach(r => s.staff.push({
+      id: uid('s'), phone: r.phone, name: r.name,
+      enabled: true, joinAt: window.Seed.TODAY, bound: false, spend: 0, orders: 0,
+    }));
+    // 覆盖只动手机号与姓名：状态、加入时间、绑定关系与统计一律保留
+    job.plan.update.forEach(r => {
+      const i = s.staff.findIndex(x => x.id === r.id);
+      if (i >= 0) s.staff[i] = Object.assign({}, s.staff[i], { phone: r.phone, name: r.name });
+    });
+    job.result = { added: job.plan.add.length, updated: job.plan.update.length };
+    job.done = true;
+    return ok(Object.assign({}, job.result, { duplicate: false }));
+  }
+
+  /* ---- 菜品：只新增不更新；分类不存在则自动新建 ---- */
+  const PRODUCT_REQUIRED = ['菜品名称', '售价', '分类', '餐段可售'];
+  const PRODUCT_COLS = PRODUCT_REQUIRED.concat(['描述']);
+
+  function previewProductImport(file) {
+    return readSheet(file, PRODUCT_REQUIRED, PRODUCT_COLS).then(({ index, ignored, body }) => {
+      const s = g();
+      const plan = { add: [], update: [], errors: [] };
+      const seenName = {};
+      const newCats = [];
+      body.forEach((row, i) => {
+        const line = i + 2;
+        const name = cell(row, index['菜品名称']);
+        const priceRaw = cell(row, index['售价']);
+        const cat = cell(row, index['分类']);
+        const mealLabel = cell(row, index['餐段可售']);
+        const desc = index['描述'] === undefined ? '' : cell(row, index['描述']);
+        if (!name) return plan.errors.push({ row: line, reason: '菜品名称必填' });
+        const price = Number(priceRaw);
+        if (!priceRaw || !(price > 0)) return plan.errors.push({ row: line, reason: `售价「${priceRaw}」不是大于 0 的数值` });
+        if (!cat) return plan.errors.push({ row: line, reason: '分类必填' });
+        const meal = MEAL_BY_LABEL[mealLabel];
+        if (!meal) return plan.errors.push({ row: line, reason: `餐段可售「${mealLabel}」不是全天 / 午餐 / 晚餐之一` });
+        if (s.menu.some(m => m.name === name)) {
+          return plan.errors.push({ row: line, reason: `菜品「${name}」已存在，导入只新增不覆盖；改价请用菜品管理的批量调价` });
+        }
+        if (seenName[name]) return plan.errors.push({ row: line, reason: `菜品「${name}」在本文件中重复（第 ${seenName[name]} 行已出现）` });
+        seenName[name] = line;
+        if (!s.cats.some(c => c.name === cat) && newCats.indexOf(cat) < 0) newCats.push(cat);
+        plan.add.push({ row: line, name, price, cat, meal, desc });
+      });
+      return stashPreview('product', plan, { newCategories: newCats });
+    });
+  }
+
+  function commitProductImport(token) {
+    const job = takeCommit('product', token);
+    if (job.then || job.catch) return job;
+    const s = g();
+    job.plan.add.forEach(r => {
+      if (!s.cats.some(c => c.name === r.cat)) {
+        s.cats.push({ id: uid('c'), name: r.cat, sort: s.cats.length + 1, on: true });
+      }
+      // 图片不进模板：导入的商品先无图上架，商户随后在菜品管理中逐个补图
+      s.menu.push({
+        id: uid('p'), name: r.name, price: r.price, cat: r.cat, meal: r.meal,
+        desc: r.desc, img: '', imgs: [], status: 'on', specs: [],
+      });
+    });
+    job.result = { added: job.plan.add.length, updated: 0, categoriesCreated: job.plan.add.length ? undefined : 0 };
+    job.done = true;
+    return ok(Object.assign({}, job.result, { duplicate: false }));
+  }
+
   /* ---------------- 营业设置 / 开屏图层 ---------------- */
 
   // GET /admin/settings → { status, pickupStepMin, mealPeriods[], pickupPoint, notice }
@@ -352,5 +502,6 @@
     getLayer, saveLayer, clearLayer,
     imgUrl, MEALS, MEAL_LABEL,
     listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
+    previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, MAX_IMPORT_ROWS,
   };
 })();
