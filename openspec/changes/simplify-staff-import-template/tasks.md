@@ -49,5 +49,8 @@ dependencies:
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=e3032fa5b622298c568a613dd92f65a987d56bdb`，验证树 clean。`STAFF_TEMPLATE=PASS`（`staff_template_cols=['姓名','手机号']`），同一脚本对 `base_sha` 树 `exit=1`；`BULK_IMPORT_PRD=PASS`；`BASELINE_SINGLE_SOURCE=PASS`；小程序 `npm test` 65/65。diff 相对 base 为 6 files / 181 insertions / 15 deletions，全部在 owned paths 内。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W0 / UI0）**。
+  - 剩余外部边界：① **§6.13 全节仍待客户确认**（§16.4 C4）；② §16.3 P6（单文件最大行数）、P7（导入后占位图策略）待拍板；③ 本 change 只补文档，生效 spec 的对应 requirement 待实现 change 建立；④ 不产生运行行为，无 UI1 及以上证据。
