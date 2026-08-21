@@ -53,6 +53,6 @@
 
 ## 8. 交付
 
-- [ ] 8.1 提交
-- [ ] 8.2 clean worktree 独立验证
-- [ ] 8.3 合入 main、应用 delta、归档、推送
+- [x] 8.1 提交
+- [x] 8.2 clean worktree 独立验证
+- [x] 8.3 合入 main、应用 delta、归档、推送
