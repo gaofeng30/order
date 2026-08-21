@@ -153,7 +153,19 @@ const STAFF_WHITELIST = [
   { id: 's6', phone: '15000003322', name: '孙丽萍', enabled: false, joinAt: '2026-01-22', bound: true,  spend: 214,  orders: 9 },
 ];
 
+/* 商户账号名单（PRD §4.4）—— 决定谁能进商户端与 PC 后台。
+   与员工折扣白名单是两份互不影响的名单：这份管「能不能登录」，那份管「打不打折」。
+   role: 'owner' 主账号（全部权限，可登录 PC）| 'staff' 子账号（仅小程序四屏）
+   boundOpenId 由商户首次在小程序「商户登录」时绑定，PC 侧只读。 */
+const MERCHANT_ACCOUNTS = [
+  { id: 'ma1', phone: '13612340001', name: '高特',   role: 'owner', enabled: true,  boundOpenId: 'o_demo_owner_1' },
+  { id: 'ma2', phone: '13612340002', name: '周敏',   role: 'owner', enabled: true,  boundOpenId: '' },
+  { id: 'ma3', phone: '13612340003', name: '后厨老陈', role: 'staff', enabled: true,  boundOpenId: 'o_demo_staff_3' },
+  { id: 'ma4', phone: '13612340004', name: '窗口小李', role: 'staff', enabled: true,  boundOpenId: '' },
+  { id: 'ma5', phone: '13612340005', name: '临时工小王', role: 'staff', enabled: false, boundOpenId: '' },
+];
+
 window.Seed = {
   STORE, HUES, CATS, MENU, menuList, itemById, ADMIN_ORDERS, RANK, ADMIN_CATS, PICKUP_POINTS,
-  SETTINGS, LAYER_DEFAULTS, STAFF_WHITELIST, ME, TODAY, MANAGER,
+  SETTINGS, LAYER_DEFAULTS, STAFF_WHITELIST, MERCHANT_ACCOUNTS, ME, TODAY, MANAGER,
 };
