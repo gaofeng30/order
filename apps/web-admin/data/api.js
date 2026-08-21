@@ -212,6 +212,79 @@
     };
   }
 
+
+  /* ---------------- 员工折扣白名单 / 全局折扣率（PRD §6.4） ---------------- */
+
+  const PHONE_RE = /^1[3-9]\d{9}$/;
+  const normPhone = v => String(v == null ? '' : v).replace(/[\s-]/g, '');
+
+  // GET /admin/staff-whitelist → { list: StaffWhitelist[] }
+  function listStaff(kw) {
+    const q = (kw || '').trim();
+    const all = clone(g().staff);
+    if (!q) return ok(all);
+    return ok(all.filter(r => r.phone.includes(q) || r.name.includes(q)));
+  }
+
+  // POST /admin/staff-whitelist       新增（无 id）
+  // PUT  /admin/staff-whitelist/:id   修改
+  // body: { phone, name } —— 只有这两个可填字段
+  function saveStaff(r) {
+    const s = g();
+    const phone = normPhone(r.phone);
+    if (!phone) return fail('手机号必填');
+    if (!PHONE_RE.test(phone)) return fail('手机号格式不正确');
+    const name = String(r.name == null ? '' : r.name).trim();
+    if (!name) return fail('姓名必填');
+    const dup = s.staff.find(x => x.phone === phone && x.id !== r.id);
+    if (dup) return fail(`手机号 ${phone} 已在名单中（${dup.name}）`);
+
+    if (r.id) {
+      const i = s.staff.findIndex(x => x.id === r.id);
+      if (i < 0) return fail('记录不存在');
+      // 只覆盖两个可填字段，系统字段原样保留
+      s.staff[i] = Object.assign({}, s.staff[i], { phone, name });
+      return ok(clone(s.staff[i]));
+    }
+    const created = {
+      id: uid('s'), phone, name,
+      enabled: true, joinAt: window.Seed.TODAY, bound: false, spend: 0, orders: 0,
+    };
+    s.staff.push(created);
+    return ok(clone(created));
+  }
+
+  // PUT /admin/staff-whitelist/:id/enabled  body: { enabled }
+  // 停用保留记录但暂停折扣，用于离职人员；系统字段不受影响
+  function setStaffEnabled(id, enabled) {
+    const r = g().staff.find(x => x.id === id);
+    if (!r) return fail('记录不存在');
+    r.enabled = !!enabled;
+    return ok(clone(r));
+  }
+
+  // DELETE /admin/staff-whitelist/:id
+  function deleteStaff(id) {
+    const s = g();
+    const i = s.staff.findIndex(x => x.id === id);
+    if (i < 0) return fail('记录不存在');
+    s.staff.splice(i, 1);
+    return ok({});
+  }
+
+  // GET /admin/discount-rate → number（员工实付百分比，整数 1-100）
+  function getDiscountRate() { return ok(g().settings.discountRate); }
+
+  // PUT /admin/discount-rate  body: { rate }
+  // 只影响新报价，不回算历史订单（PRD §6.4、§9.1）
+  function saveDiscountRate(rate) {
+    const n = Number(rate);
+    if (!Number.isInteger(n)) return fail('折扣率必须是整数百分比');
+    if (n < 1 || n > 100) return fail('折扣率需在 1 到 100 之间');
+    g().settings.discountRate = n;
+    return ok(n);
+  }
+
   /* ---------------- 营业设置 / 开屏图层 ---------------- */
 
   // GET /admin/settings → { status, pickupStepMin, mealPeriods[], pickupPoint, notice }
@@ -278,5 +351,6 @@
     getSettings, saveSettings, setStoreStatus,
     getLayer, saveLayer, clearLayer,
     imgUrl, MEALS, MEAL_LABEL,
+    listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
   };
 })();
