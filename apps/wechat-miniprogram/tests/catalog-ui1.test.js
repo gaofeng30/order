@@ -411,11 +411,11 @@ test('cart snapshot drives confirm, subtotal-only pricing and mock pay without m
   assert.equal(app.globalData.orders[0].items[0][0], HUGE_PRODUCT_ID);
   assert.equal(app.globalData.orders[0].items[0][1], 'Snapshot Product');
   assert.equal(app.globalData.orders[0].items[0][2], 2);
-  assert.equal(app.globalData.orders[0].items[0][3], 123.45);
-  assert.equal(app.globalData.orders[0].items[0][4], 123.45);
-  // 金额与种子订单同为数字，不再是格式化字符串
-  assert.equal(app.globalData.orders[0].total, 246.9);
-  assert.equal(app.globalData.orders[0].subtotal, 246.9);
+  // 金额为整数分（§5.6），直接取目录快照的 price_cents，不经过元的往返
+  assert.equal(app.globalData.orders[0].items[0][3], 12345);
+  assert.equal(app.globalData.orders[0].items[0][4], 12345);
+  assert.equal(app.globalData.orders[0].total, 24690);
+  assert.equal(app.globalData.orders[0].subtotal, 24690);
   assert.equal(harness.navigationCalls.at(-1).type, 'redirectTo');
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/result/result');
 });

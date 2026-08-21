@@ -83,7 +83,10 @@ test('checkout creates a reserved order with a pickup time', () => {
   const order = app.globalData.orders[0];
   assert.equal(order.status, '已预约');
   assert.equal(Object.hasOwn(order, 'type'), false);
-  assert.ok(order.pickupLabel && !/尽快/.test(order.pickupLabel), 'order has no reserved pickup label');
+  // pickupLabel 已按 §15.6.2 删除；取餐文案改由 pickupDate + pickupTime 现算
+  assert.equal(Object.hasOwn(order, 'pickupLabel'), false, 'order still stores a frozen pickup label');
+  const label = require('../utils/data.js').orderPickupLabel(order);
+  assert.ok(label && !/尽快/.test(label), 'order has no reserved pickup label');
 });
 
 test('checkout inside the 30-minute window creates a producing order', () => {

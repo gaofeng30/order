@@ -58,10 +58,10 @@
         <view class="aorder-head">
           <text class="serif aorder-code">{{item.code}}</text>
           <pill s="{{item.status}}" dot />
-          <money v="{{item.total}}" blue size="34" />
+          <money cents="{{item.total}}" blue size="34" />
         </view>
         <view class="aorder-meta">
-          <text>{{item.contact}}</text><text>·</text><text>{{item.count}} 件</text><text>·</text><text>{{item.time}} 下单</text>
+          <text>{{item.contact}}</text><text>·</text><text>{{item.itemCount}} 件</text><text>·</text><text>{{item.paidTime}} 下单</text>
         </view>
         <view wx:if="{{item.showBand}}" class="aorder-band">
           <icon name="flame" size="13" color="#a4873f" /><text>{{item.band}}</text>

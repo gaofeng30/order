@@ -28,8 +28,8 @@ test('checkout snapshots the product name into the order line', () => {
   assert.equal(id, '1');
   assert.equal(name, '目录来的双拼饭');
   assert.equal(qty, 1);
-  assert.equal(price, 32);
-  assert.equal(discounted, 32);
+  assert.equal(price, 3200);
+  assert.equal(discounted, 3200);
 });
 
 test('the order list opens on a product the local seed does not know', () => {
@@ -57,7 +57,7 @@ test('a fresh order and a seeded order agree on field types', () => {
   for (const k of ['total', 'code', 'status']) {
     assert.equal(typeof order[k], typeof seeded[k], `${k} type drifted`);
   }
-  assert.equal(order.total, 32);
+  assert.equal(order.total, 3200);
 });
 
 test('renaming the catalog does not rewrite history', () => {

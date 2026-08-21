@@ -49,14 +49,14 @@
         <view wx:for="{{match.rows}}" wx:key="name" class="vr-item">
           <view class="vr-item-info">
             <view class="vr-item-name">{{item.name}}</view>
-            <view class="vr-item-unit">¥{{item.p}} × {{item.q}}</view>
+            <view class="vr-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
           </view>
-          <money v="{{item.sub}}" blue size="28" />
+          <money cents="{{item.sub}}" blue size="28" />
         </view>
       </view>
       <view class="vr-summary">
         <text class="vr-contact">{{match.o.contact}} · {{match.o.count}} 件</text>
-        <money v="{{match.o.total}}" blue size="36" />
+        <money cents="{{match.o.total}}" blue size="36" />
       </view>
       <view class="vr-actions">
         <view class="btn btn--ghost-blue vr-cancel" bindtap="closeSheet">取消</view>
