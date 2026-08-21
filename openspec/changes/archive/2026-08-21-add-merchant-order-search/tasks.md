@@ -39,5 +39,7 @@
 
 ## 独立验证
 
-- [ ] 16. 提交产生候选 SHA。
-- [ ] 17. 在干净 detached worktree 对该精确 SHA 只读重跑 11–15。
+- [x] 16. 候选 SHA `d38b8a7`。
+  - 首个候选 `b33e28c` 因 `git add -A` 误纳一个 `__pycache__/*.pyc`（owned paths 之外的构建产物）作废；amend 剔除后重新产生候选，旧验证随之失效并已重跑。
+- [x] 17. 在干净 detached worktree 对 `d38b8a7` 只读验证。
+  - `DIRTY=0`；`MERCHANT_SEARCH_GATE=PASS`；`node --test tests/*.test.js` → 73 pass / 0 fail；`WX_LINT=PASS`；归档门禁 29 项与 base 逐行一致。
