@@ -39,6 +39,6 @@
 
 ## 6. 交付
 
-- [ ] 6.1 提交
-- [ ] 6.2 clean worktree 独立验证
-- [ ] 6.3 合入 main、应用 delta、归档、推送
+- [x] 6.1 提交
+- [x] 6.2 clean worktree 独立验证
+- [x] 6.3 合入 main、应用 delta、归档、推送
