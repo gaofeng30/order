@@ -64,49 +64,68 @@ const itemById = id => menuList().find(m => m.id === id);
 // 用户端 我的订单
 // items: [id, qty, price, flavors?, note?]
 const USER_ORDERS = [
-  { id: 'o1', no: 'SA2406100126', code: 'A126', status: '待取餐', time: '06-10 16:42', total: 70, pickupLabel: '今天 17:00', minsToPickup: 12, pickupPoint: '县前直营店',
+  { id: 'o1', no: 'SA2406100126', code: '0126', status: '待取餐', time: '06-10 16:42', total: 70, pickupLabel: '今天 17:00', minsToPickup: 12, pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '双拼饭加饭', flavors: ['加饭', '加辣'],
     items: [['p001', 2, 32, ['加饭', '加辣'], '双拼饭加饭'], ['p006', 1, 12]] },
-  { id: 'r1', no: 'SA2406100140', code: 'B208', status: '已预约', time: '06-10 16:30', total: 60, pickupLabel: '今天 18:30', pickupPoint: '县前直营店', minsToPickup: 102,
+  { id: 'r1', no: 'SA2406100140', code: '0208', status: '已预约', time: '06-10 16:30', total: 60, pickupLabel: '今天 18:30', pickupPoint: '县前直营店', minsToPickup: 102,
     contact: '林先生', phone: '138****6620', note: '会议餐，准点取', flavors: ['少盐'],
     items: [['p001', 1, 32], ['p002', 1, 28, ['少盐'], '会议餐，准点取']] },
-  { id: 'r2', no: 'SA2406100138', code: 'B176', status: '已预约', time: '06-10 16:28', total: 42, pickupLabel: '今天 17:06', pickupPoint: '县前直营店', minsToPickup: 18,
+  { id: 'r2', no: 'SA2406100138', code: '0176', status: '已预约', time: '06-10 16:28', total: 42, pickupLabel: '今天 17:06', pickupPoint: '县前直营店', minsToPickup: 18,
     contact: '林先生', phone: '138****6620', note: '', flavors: ['酱汁分装'],
     items: [['p005', 1, 30, ['酱汁分装']], ['p006', 1, 12]] },
-  { id: 'o3', no: 'SA2406090311', code: 'A311', status: '已完成', time: '06-09 12:08', total: 62, pickupLabel: '昨天 12:30', pickupPoint: '县前直营店',
+  { id: 'o3', no: 'SA2406090311', code: '0311', status: '已完成', time: '06-09 12:08', total: 62, pickupLabel: '昨天 12:30', pickupPoint: '县前直营店',
     contact: '林先生', phone: '138****6620', note: '鸡腿排双拼', flavors: ['双拼', '酱汁分装'],
     items: [['p004', 1, 26, ['双拼']], ['p005', 1, 30, ['酱汁分装']], ['p006', 1, 12]] },
 ];
 
+/* 当前营业日。§7.8：取餐号按取餐日期从 0001 累计，跨营业日可能重复，
+   因此按号定位必须限定营业日。取值与 PC 后台 data/api.js 的 BUSINESS_DAY 一致；
+   后端就位后由服务端下发，替换的是取值来源而非消费方。 */
+const BUSINESS_DAY = '2026-08-21';
+
 // 商户端 订单 (六态履约模型: 已预约 → 制作中 → 待取餐 → 已完成；旁路 退款中 → 已退款)
 const ADMIN_ORDERS = [
-  { id: 'a0', no: 'SA2406100145', code: '0145', status: '已预约', time: '16:55', mins: 0, total: 58, count: 2,
+  { id: 'a0', pickupDate: '2026-08-21', no: 'SA2406100145', code: '0145', status: '已预约', time: '16:55', mins: 0, total: 58, count: 2,
     contact: '孙女士', phone: '150****3322', flavor: '少盐', note: '预约 18:00 取',
     items: [['p002', 1, 28], ['p005', 1, 30]] },
-  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '制作中', time: '16:51', mins: 1, total: 60, count: 2,
+  { id: 'a1', pickupDate: '2026-08-21', no: 'SA2406100131', code: '0131', status: '制作中', time: '16:51', mins: 1, total: 60, count: 2,
     contact: '陈女士', phone: '159****2031', flavor: '双拼饭加辣 ×1', note: '打包分开装',
     items: [['p001', 1, 32], ['p002', 1, 28]] },
-  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '制作中', time: '16:49', mins: 3, total: 26, count: 1,
+  { id: 'a2', pickupDate: '2026-08-21', no: 'SA2406100129', code: '0129', status: '制作中', time: '16:49', mins: 3, total: 26, count: 1,
     contact: '吴先生', phone: '137****7788', flavor: '—', note: '',
     items: [['p004', 1, 26]] },
-  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
+  { id: 'a3', pickupDate: '2026-08-21', no: 'SA2406100126', code: '0126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
     contact: '林先生', phone: '138****6620', flavor: '加饭 · 加辣', note: '双拼饭加饭',
     items: [['p001', 2, 32], ['p006', 1, 12]] },
-  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
+  { id: 'a4', pickupDate: '2026-08-21', no: 'SA2406100120', code: '0120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
     contact: '黄小姐', phone: '135****9012', flavor: '酱汁分装', note: '能量碗酱汁分装',
     items: [['p005', 1, 30], ['p004', 1, 26], ['p006', 1, 12]] },
-  { id: 'a5', no: 'SA2406100118', code: 'A118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
+  { id: 'a5', pickupDate: '2026-08-21', no: 'SA2406100118', code: '0118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
     contact: '郑先生', phone: '133****4456', flavor: '少盐', note: '',
     items: [['p002', 2, 28], ['p006', 1, 12]] },
-  { id: 'a6', no: 'SA2406100112', code: 'A112', status: '待取餐', time: '16:22', mins: 30, total: 38, count: 2,
+  { id: 'a6', pickupDate: '2026-08-21', no: 'SA2406100112', code: '0112', status: '待取餐', time: '16:22', mins: 30, total: 38, count: 2,
     contact: '王女士', phone: '188****0021', flavor: '—', note: '',
     items: [['p004', 1, 26], ['p006', 1, 12]] },
-  { id: 'a7', no: 'SA2406100090', code: 'A090', status: '已完成', time: '15:40', mins: 0, total: 62, count: 2,
+  { id: 'a7', pickupDate: '2026-08-21', no: 'SA2406100090', code: '0090', status: '已完成', time: '15:40', mins: 0, total: 62, count: 2,
     contact: '刘先生', phone: '130****5567', flavor: '加饭', note: '',
     items: [['p001', 1, 32], ['p005', 1, 30]] },
-  { id: 'a8', no: 'SA2406100071', code: 'A071', status: '已退款', time: '14:55', mins: 0, total: 26, count: 1,
+  { id: 'a8', pickupDate: '2026-08-21', no: 'SA2406100071', code: '0071', status: '已退款', time: '14:55', mins: 0, total: 26, count: 1,
     contact: '孙女士', phone: '150****3322', flavor: '—', note: '用户取消',
     items: [['p004', 1, 26]] },
+  /* a9 与 a5 取餐号相同、取餐日期不同 —— 没有这一组，「限定当前营业日」不可证伪。
+     它同时是 §6.7 的「未取餐」样本：营业日结束后仍停在 待取餐。 */
+  { id: 'a9', pickupDate: '2026-08-20', no: 'SA2406090118', code: '0118', status: '待取餐', time: '16:30', mins: 0, total: 32, count: 1,
+    contact: '许先生', phone: '186****7742', flavor: '—', note: '昨日未取',
+    items: [['p001', 1, 32]] },
+  // a10 的取餐号只存在于旧营业日：用于验证跨日提示，而不是空列表。
+  { id: 'a10', pickupDate: '2026-08-20', no: 'SA2406090203', code: '0203', status: '已完成', time: '12:14', mins: 0, total: 42, count: 2,
+    contact: '钱女士', phone: '159****8830', flavor: '少盐', note: '',
+    items: [['p002', 1, 28], ['p006', 1, 12]] },
+  /* §7.1 允许订单长期停在 退款中（退款结果无法确定时即停在此处）。
+     §6.6 的泳道只有五档、不含 退款中，因此该状态只能经「全部」泳道或搜索找到。 */
+  { id: 'a11', pickupDate: '2026-08-21', no: 'SA2406100102', code: '0102', status: '退款中', time: '15:12', mins: 0, total: 30, count: 1,
+    contact: '曹先生', phone: '187****2214', flavor: '—', note: '商户取消，退款处理中',
+    items: [['p005', 1, 30]] },
 ];
 
 
@@ -198,6 +217,7 @@ const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
 
 module.exports = {
   STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, ADMIN_CATS, FLAVORS,
+  BUSINESS_DAY,
   NOW_MINS, PICKUP_POINTS, RESERVE_DATES, MEAL_PERIODS, PICKUP_STEP_MIN,
   pickupTimes, isPeriodCutOff, isDateCutOff, defaultPickup, dateLabel, pickupLabel,
   CANCEL_LIMIT_MIN, slotMins, canCancelReserve,

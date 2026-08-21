@@ -14,14 +14,23 @@
     >{{item}}</view>
   </view>
 
-  <!-- 搜索 -->
+  <!-- 搜索：取餐号 / 订单号 / 手机号，跨泳道（§6.6） -->
   <view class="pad search-wrap">
     <view class="search-box">
       <icon name="search" size="16" color="#8f9384" />
-      <text class="search-ph">搜索 取餐号 / 订单号 / 手机号</text>
-      <icon name="filter" size="16" color="#8f9384" />
+      <input
+        class="search-in"
+        placeholder="搜索 取餐号 / 订单号 / 手机号"
+        placeholder-class="search-ph"
+        value="{{kw}}"
+        bindinput="onKw"
+        confirm-type="search"
+      />
     </view>
   </view>
+
+  <!-- 跨营业日取餐号：报出事实与替代定位方式，而不是给一个空列表 -->
+  <view wx:if="{{hint}}" class="pad code-hint">{{hint}}</view>
 
   <!-- 泳道 -->
   <view class="lane-nav">
