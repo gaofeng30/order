@@ -145,9 +145,18 @@ const ADMIN_ORDERS = [
     contact: '孙女士', phone: '150****3322', orderNote: '',
     items: [['p004', 1, 2600, 2600, '', ''], ['p006', 1, 1200, 1200, '', '']],
     refund: { no: '50000123452026082100002', amount: 1200, status: '已退款',
-              operator: '周敏', at: '2026-08-21 11:20:02', reason: '汤洒了，退单品' } },
+              operator: '周敏', at: '2026-08-22 09:30:11', reason: '汤洒了，退单品' } },
 
-  /* 昨天的单，用于验证财务页按营业日期筛选 */
+  /* 前一天付款、次日取餐。支付日期 08-20、营业日期 08-21 —— 财务页按支付日期
+     归集（微信账单以交易时间为准），营业日期只是展示，两者混用即对不上账 */
+  { id: 'a11', no: 'SA2406090188', code: '0188', status: '已预约',
+    pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 19:20:44', txnId: '4200002318202608200012',
+    subtotal: 6000, discountRate: 100, discountCut: 0, total: 6000, isStaff: false,
+    contact: '钱女士', phone: '137****3390', orderNote: '明天中午取',
+    items: [['p002', 1, 2800, 2800, '', ''], ['p001', 1, 3200, 3200, '', '']] },
+
+  /* 昨天的单 */
   { id: 'a10', no: 'SA2406090210', code: '0210', status: '已完成',
     pickupDate: '2026-08-20', pickupTime: '12:30', mealPeriod: 'lunch', pickupPoint: '县前直营店',
     paidAt: '2026-08-20 11:48:37', txnId: '4200002318202608200011',
