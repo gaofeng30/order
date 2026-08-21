@@ -58,8 +58,11 @@ dependencies:
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=21f86fcc1d610eb047ae3431abf0254856b82813`，验证树 clean。`STAFF_PAGE_GATE=PASS`（`parsed 16 javascript files`），同一脚本对 `base_sha` 树 `exit=1`；`MEAL_PERIOD_GATE` / `PICKUP_SETTINGS_GATE` / `ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE` / `STAFF_TEMPLATE` 全部 PASS；小程序 `npm test` 65/65。diff 相对 base 为 12 files / 578 insertions / 1 deletion，全部在 owned paths 内。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① **折扣率对下单算价的实际作用未实现** —— 算价在服务端，本 change 只提供配置入口；② PC 后台仍为 mock，零网络调用，契约层方法签名即后端接口契约；③ 白名单种子为演示数据，真实名单属 §13.3 的 UAT 前配置；④ §4.4 商户账号名单页、§6.13 两个导入页、§6.11 财务与对账、§7.3 支付待处理四类页面仍未建；⑤ UI1 为人工浏览器操作，未覆盖真机。
 
 ## 6. 后续
 
