@@ -119,6 +119,7 @@ const PICKUP_POINTS = [
 /* 营业设置。每个餐段一个固定截单时刻，餐段内全部取餐时间共用；
    取餐时间由 from/to 与 pickupStepMin 推导为离散时间点（生效 spec §5.5、§6.9）。 */
 const SETTINGS = {
+  discountRate: 85,      // 员工实付百分比，整数 1-100；100 表示无折扣（PRD §6.4）
   pickupStepMin: 30,
   mealPeriods: [
     { key: 'lunch', name: '午餐', cutoff: '11:30', from: '11:30', to: '13:30' },
@@ -140,7 +141,19 @@ const TODAY = '2026-08-07';
 // 店长（PC 端顶栏账号展示；小程序端写在 admin-profile.wxml）
 const MANAGER = { name: '高特', role: '店长' };
 
+/* 员工折扣白名单（PRD §6.4）
+   只有两个可填字段：手机号（唯一识别键）与姓名（附加手机号双要素的第二要素）。
+   enabled 由页面开关切换，joinAt 自动，bound / spend / orders 只读由系统统计。 */
+const STAFF_WHITELIST = [
+  { id: 's1', phone: '13800006620', name: '林建国', enabled: true,  joinAt: '2026-03-12', bound: true,  spend: 1286, orders: 42 },
+  { id: 's2', phone: '13500009012', name: '黄映雪', enabled: true,  joinAt: '2026-01-08', bound: true,  spend: 3140, orders: 96 },
+  { id: 's3', phone: '15900002031', name: '陈少芬', enabled: true,  joinAt: '2026-04-02', bound: true,  spend: 468,  orders: 19 },
+  { id: 's4', phone: '13700007788', name: '吴国强', enabled: true,  joinAt: '2026-04-02', bound: false, spend: 0,    orders: 0 },
+  { id: 's5', phone: '13300004456', name: '郑文彬', enabled: true,  joinAt: '2026-02-20', bound: true,  spend: 902,  orders: 31 },
+  { id: 's6', phone: '15000003322', name: '孙丽萍', enabled: false, joinAt: '2026-01-22', bound: true,  spend: 214,  orders: 9 },
+];
+
 window.Seed = {
   STORE, HUES, CATS, MENU, menuList, itemById, ADMIN_ORDERS, RANK, ADMIN_CATS, PICKUP_POINTS,
-  SETTINGS, LAYER_DEFAULTS, ME, TODAY, MANAGER,
+  SETTINGS, LAYER_DEFAULTS, STAFF_WHITELIST, ME, TODAY, MANAGER,
 };

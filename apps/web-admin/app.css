@@ -787,3 +787,16 @@ img { display: block; max-width: 100%; }
 .imp-box { border-radius: var(--r-sm); background: var(--bg2); padding: 12px 14px; }
 .imp-row { padding: 5px 0; font-size: 13.5px; }
 .imp-row b { font-size: 17px; font-family: var(--font-head); color: var(--blue); }
+
+/* ---------- 员工折扣白名单 ---------- */
+.rate-card { margin-bottom: 16px; }
+.rate-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.rate-pre, .rate-suf { font-size: 13px; color: var(--ink-2); }
+.rate-in { width: 92px; text-align: right; }
+.rate-hint { font-size: 12.5px; margin-left: 4px; }
+.staff-search { width: 200px; margin-right: 10px; }
+.staff-ro { margin-top: 4px; background: var(--card-2); }
+.ro-row { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--line-2); }
+.ro-row:last-child { border-bottom: none; }
+.ro-row > span:first-child { color: var(--ink-3); }
+.btn--line.danger { color: #d2483a; }

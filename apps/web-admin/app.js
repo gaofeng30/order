@@ -17,6 +17,7 @@
       cats: clone(Seed.ADMIN_CATS),
       settings: clone(Seed.SETTINGS),
       layer: clone(Seed.LAYER_DEFAULTS),
+      staff: clone(Seed.STAFF_WHITELIST),
     };
   }
 
@@ -30,6 +31,9 @@
     { g: '菜品', items: [
       { r: 'products', t: '菜品管理', ic: 'bowl' },
       { r: 'categories', t: '分类管理', ic: 'tag' },
+    ] },
+    { g: '名单', items: [
+      { r: 'staff', t: '员工折扣白名单', ic: 'user' },
     ] },
     { g: '门店', items: [
       { r: 'settings', t: '营业设置', ic: 'settings' },
