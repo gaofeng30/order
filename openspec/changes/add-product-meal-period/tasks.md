@@ -65,8 +65,12 @@ external_assets: none
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - 第一轮：候选 `9c56c18` 未通过——归档门禁 `check_bulk_import_prd.py` 报 FAIL，原因见 4.4。旧验证随修复失效。
+  - 第二轮：`candidate_sha=6bd1e1f832c54e08f43c3fb27bc4d109290312b2`，验证树 clean。`MEAL_PERIOD_GATE=PASS`，同一脚本对 `base_sha` 树 `exit=1`；`PICKUP_SETTINGS_GATE` / `ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE` / `STAFF_TEMPLATE` / `BASELINE_SINGLE_SOURCE` 全部 PASS；小程序 `npm test` 65/65。diff 相对 base 为 11 files / 309 insertions / 22 deletions，全部在 owned paths 内。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**，第二轮候选。
+  - 剩余外部边界：① **用户端菜单仍不按餐段过滤** —— 菜单来自 API，需后端在 catalog 响应中下发 `meal_period`，属独立 change；② PC 后台仍为 mock，零网络调用，接后端时机由项目方决定（本轮选 B）；③ 种子的餐段赋值为 mock 数据，真实值属 §13.3 的 UAT 前配置；④ 归档门禁 `check_bulk_import_prd.py` 为已被取代状态，其断言已由本 change 接管；⑤ UI1 为人工浏览器操作，未覆盖真机。
 
 ## 6. 后续
 
