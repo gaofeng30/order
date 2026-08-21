@@ -882,13 +882,17 @@ interface Order {
   orderNote?: string;              // 整单备注，新增
   contact: string;
   phone: string;
-  items: [id, qty, price, discountedPrice, flavors?, note?][];
+  items: [id, name, qty, price, discountedPrice, flavors?, note?][];
   // 删除：type(即时/预约)、minsToPickup、levelName/levelLabel/levelCut、
   //       couponName/couponCut、pickupLabel
 }
 ```
 
 口味与备注绑定在 `items` 行内；**整单级只有 `orderNote`，没有整单级口味**。
+
+**`name` 是下单当刻固化的名称快照，不是指向商品表的外键。** §5.6 已要求订单固化原价、折扣率、折后价、身份与价格版本，目的是让订单在目录变化后仍能复述下单当时的事实；名称属于同一类事实，不能与价格采用不同的存储策略。商品改名、下架或删除后，历史订单 MUST 仍显示下单当时的名称，渲染 MUST NOT 按 `id` 回查商品表。`id` 保留用于退款、对账与销量归集。
+
+`name` MUST 位于必填段内（`id` 之后、`qty` 之前），MUST NOT 追加在 `flavors` / `note` 这两个可选尾项之后 —— 否则元组不再有稳定 arity，未填口味的订单会取到错误的列。
 
 ### 15.6.3 分类 Category
 

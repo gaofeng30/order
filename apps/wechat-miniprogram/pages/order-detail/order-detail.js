@@ -12,9 +12,11 @@ Page({
     this.build(o);
   },
   build(o) {
-    const rows = o.items.map(([id, q, p, flavors, note]) => {
-      const m = data.itemById(id);
-      return { id, m, name: m.name, q, p, sub: p * q, flavors: flavors || [], note: note || '' };
+    /* 名称取订单自身的快照；m 只用于图片，订单没有固化图片，
+       商品不在本地目录时回落占位图（imageph 接受空 item）。 */
+    const rows = o.items.map(([id, name, q, p, dp, flavors, note]) => {
+      const m = data.itemById(id) || null;
+      return { id, m, name, q, p: dp, sub: dp * q, flavors: flavors || [], note: note || '' };
     });
     const pt = data.PICKUP_POINTS.find(x => x.name === o.pickupPoint);
     this.setData({

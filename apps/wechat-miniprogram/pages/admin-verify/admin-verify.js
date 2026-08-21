@@ -25,7 +25,8 @@ Page({
     else if (o.status === '已退款') err = '该订单已退款，不可核销';
     else if (o.status === '退款中') err = '该订单退款处理中，不可核销';
     else if (o.status !== '待取餐') err = '订单尚未备好';
-    const rows = o.items.map(([id, q, p]) => { const m = data.itemById(id); return { name: m.name, q, p, sub: p * q }; });
+    // 名称取订单自身的快照，不回查菜品表（§15.6.2）
+    const rows = o.items.map(([, name, q, p, dp]) => ({ name, q, p: dp, sub: dp * q }));
     this.setData({ match: { o, err, rows } });
   },
   closeSheet() { this.setData({ match: null }); },

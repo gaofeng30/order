@@ -210,9 +210,10 @@ function searchOrders(keyword) {
     String(o.code).includes(key));
 }
 
-// 菜品摘要串
+/* 菜品摘要串。名称取自订单自身的快照（§15.6.2），不按 id 回查菜品表 ——
+   订单是历史记录，商品改名或删除后它必须仍复述下单当时的事实。 */
 function itemsSummary(items) {
-  return items.map(([id, q]) => data.itemById(id).name + '×' + q).join('，');
+  return items.map(([, name, q]) => name + '×' + q).join('，');
 }
 
 // 商户端单向推进订单状态。不可回退：生效 spec 禁止生产撤销。
