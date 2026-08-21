@@ -94,7 +94,7 @@
       cols: [
         { t: '取餐号', w: '78px', render: r => `<b class="tnum">${r.code}</b>` },
         { t: '菜品', render: r => `<span class="ellipsis" style="display:block">${T.esc(Api.itemsSummary(r.items))}</span>` },
-        { t: '等待', w: '84px', render: r => `<span class="faint tnum">${r.time}</span><br><span class="faint tnum" style="font-size:11.5px">${r.mins} 分钟</span>` },
+        { t: '取餐', w: '92px', render: r => `<span class="tnum">${r.pickupTime}</span><br><span class="faint tnum" style="font-size:11.5px">${r.pickupDate.slice(5)}</span>` },
         { t: '状态', w: '84px', render: r => T.pill(r.status) },
         { t: '', w: '88px', cls: 'act', render: r => {
           const m = Api.advanceMeta(r.status);

@@ -553,6 +553,7 @@ img { display: block; max-width: 100%; }
 .dt-foot { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
   border-top: 1px solid var(--line); background: var(--card); flex: 0 0 auto; }
 .ord-band { font-size: 12px; color: var(--gold-2); margin-top: 2px; }
+.dt-item .ord-band { display: inline; margin: 0 0 0 8px; }
 
 /* ============================================================
    13. 核销页

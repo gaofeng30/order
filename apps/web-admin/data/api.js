@@ -152,7 +152,9 @@
      生产禁止撤销或回退已完成的转换。 */
   const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
   const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
-  const LANES = ['已预约', '制作中', '待取餐', '已完成', '已退款', '全部'];
+  /* 六态各一条泳道（PRD §7.1、§15.5.3）。退款中必须自成一格：
+     它是唯一需要人工盯着直到到账的状态，混在「全部」里等于没有。 */
+  const LANES = ['已预约', '制作中', '待取餐', '已完成', '退款中', '已退款', '全部'];
 
   const STATUS_MAP = {
     已预约: 'info', 制作中: 'info', 待取餐: 'info',
@@ -180,6 +182,15 @@
   function findOrder(id) { return g().aOrders.find(o => o.id === id); }
   function findOrderByCode(code) {
     return g().aOrders.find(o => o.code.toUpperCase() === String(code).toUpperCase());
+  }
+
+  /* 分 → 元的展示串。订单金额一律以整数分存储（PRD §15.6.2），
+     页面 MUST NOT 自己做 /100 —— 一处手写就是一处四舍五入口径分叉。 */
+  function yuan(cents) {
+    const n = Number(cents);
+    if (!Number.isFinite(n)) return '—';
+    const neg = n < 0, v = Math.abs(Math.round(n));
+    return (neg ? '-' : '') + Math.floor(v / 100) + '.' + String(v % 100).padStart(2, '0');
   }
 
   // 菜品摘要串
@@ -575,7 +586,7 @@
   window.Api = {
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
-    listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary,
+    listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,
     getLayer, saveLayer, clearLayer,

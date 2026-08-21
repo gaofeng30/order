@@ -65,34 +65,95 @@ function menuList() {
 const itemById = id => menuList().find(m => m.id === id);
 
 // 商户端 订单 (六态履约模型: 已预约 → 制作中 → 待取餐 → 已完成；旁路 退款中 → 已退款)
+/* 订单（PRD §15.6.2）。金额一律为整数分：财务与对账页要按分核对微信账单，
+   任何浮点或元为单位的中间态都会在求和时产生一分钱的差。
+   items 行为 [菜品 id, 数量, 原价单价(分), 折后单价(分), 口味?, 备注?]，
+   口味与备注绑定在行内，整单级只有 orderNote。
+   员工折扣按 §6.6 逐商品先舍入到分再乘数量，因此 discountCut 恒等于逐行差之和。 */
 const ADMIN_ORDERS = [
-  { id: 'a0', no: 'SA2406100145', code: '0145', status: '已预约', time: '16:55', mins: 0, total: 58, count: 2,
-    contact: '孙女士', phone: '150****3322', flavor: '少盐', note: '预约 18:00 取',
-    items: [['p002', 1, 28], ['p005', 1, 30]] },
-  { id: 'a1', no: 'SA2406100131', code: 'A131', status: '制作中', time: '16:51', mins: 1, total: 60, count: 2,
-    contact: '陈女士', phone: '159****2031', flavor: '双拼饭加辣 ×1', note: '打包分开装',
-    items: [['p001', 1, 32], ['p002', 1, 28]] },
-  { id: 'a2', no: 'SA2406100129', code: 'A129', status: '制作中', time: '16:49', mins: 3, total: 26, count: 1,
-    contact: '吴先生', phone: '137****7788', flavor: '—', note: '',
-    items: [['p004', 1, 26]] },
-  { id: 'a3', no: 'SA2406100126', code: 'A126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
-    contact: '林先生', phone: '138****6620', flavor: '加饭 · 加辣', note: '双拼饭加饭',
-    items: [['p001', 2, 32], ['p006', 1, 12]] },
-  { id: 'a4', no: 'SA2406100120', code: 'A120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
-    contact: '黄小姐', phone: '135****9012', flavor: '酱汁分装', note: '能量碗酱汁分装',
-    items: [['p005', 1, 30], ['p004', 1, 26], ['p006', 1, 12]] },
-  { id: 'a5', no: 'SA2406100118', code: 'A118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
-    contact: '郑先生', phone: '133****4456', flavor: '少盐', note: '',
-    items: [['p002', 2, 28], ['p006', 1, 12]] },
-  { id: 'a6', no: 'SA2406100112', code: 'A112', status: '待取餐', time: '16:22', mins: 30, total: 38, count: 2,
-    contact: '王女士', phone: '188****0021', flavor: '—', note: '',
-    items: [['p004', 1, 26], ['p006', 1, 12]] },
-  { id: 'a7', no: 'SA2406100090', code: 'A090', status: '已完成', time: '15:40', mins: 0, total: 62, count: 2,
-    contact: '刘先生', phone: '130****5567', flavor: '加饭', note: '',
-    items: [['p001', 1, 32], ['p005', 1, 30]] },
-  { id: 'a8', no: 'SA2406100071', code: 'A071', status: '已退款', time: '14:55', mins: 0, total: 26, count: 1,
-    contact: '孙女士', phone: '150****3322', flavor: '—', note: '用户取消',
-    items: [['p004', 1, 26]] },
+  { id: 'a0', no: 'SA2406100145', code: '0145', status: '已预约',
+    pickupDate: '2026-08-21', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:55:12', txnId: '4200002318202608210001',
+    subtotal: 5800, discountRate: 100, discountCut: 0, total: 5800, isStaff: false,
+    contact: '孙女士', phone: '150****3322', orderNote: '预约 18:00 取',
+    items: [['p002', 1, 2800, 2800, '少盐', ''], ['p005', 1, 3000, 3000, '', '']] },
+
+  { id: 'a1', no: 'SA2406100131', code: '0131', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:51:40', txnId: '4200002318202608210002',
+    subtotal: 6000, discountRate: 85, discountCut: 900, total: 5100, isStaff: true,
+    contact: '陈女士', phone: '159****2031', orderNote: '打包分开装',
+    items: [['p001', 1, 3200, 2720, '加辣', ''], ['p002', 1, 2800, 2380, '', '']] },
+
+  { id: 'a2', no: 'SA2406100129', code: '0129', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:49:03', txnId: '4200002318202608210003',
+    subtotal: 2600, discountRate: 100, discountCut: 0, total: 2600, isStaff: false,
+    contact: '吴先生', phone: '137****7788', orderNote: '',
+    items: [['p004', 1, 2600, 2600, '', '']] },
+
+  { id: 'a3', no: 'SA2406100126', code: '0126', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:42:18', txnId: '4200002318202608210004',
+    subtotal: 7600, discountRate: 100, discountCut: 0, total: 7600, isStaff: false,
+    contact: '林先生', phone: '138****6620', orderNote: '双拼饭加饭',
+    items: [['p001', 2, 3200, 3200, '加饭 · 加辣', ''], ['p006', 1, 1200, 1200, '', '']] },
+
+  { id: 'a4', no: 'SA2406100120', code: '0120', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:35:55', txnId: '4200002318202608210005',
+    subtotal: 6800, discountRate: 85, discountCut: 1020, total: 5780, isStaff: true,
+    contact: '黄小姐', phone: '135****9012', orderNote: '',
+    items: [['p005', 1, 3000, 2550, '酱汁分装', ''], ['p004', 1, 2600, 2210, '', ''], ['p006', 1, 1200, 1020, '', '']] },
+
+  { id: 'a5', no: 'SA2406100118', code: '0118', status: '待取餐',
+    pickupDate: '2026-08-21', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:30:07', txnId: '4200002318202608210006',
+    subtotal: 6800, discountRate: 100, discountCut: 0, total: 6800, isStaff: false,
+    contact: '郑先生', phone: '133****4456', orderNote: '',
+    items: [['p002', 2, 2800, 2800, '少盐', ''], ['p006', 1, 1200, 1200, '', '']] },
+
+  { id: 'a6', no: 'SA2406100112', code: '0112', status: '待取餐',
+    pickupDate: '2026-08-21', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:22:31', txnId: '4200002318202608210007',
+    subtotal: 3800, discountRate: 100, discountCut: 0, total: 3800, isStaff: false,
+    contact: '王女士', phone: '188****0021', orderNote: '',
+    items: [['p004', 1, 2600, 2600, '', ''], ['p006', 1, 1200, 1200, '', '']] },
+
+  { id: 'a7', no: 'SA2406100090', code: '0090', status: '已完成',
+    pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 11:40:22', txnId: '4200002318202608210008',
+    subtotal: 6200, discountRate: 100, discountCut: 0, total: 6200, isStaff: false,
+    contact: '刘先生', phone: '130****5567', orderNote: '',
+    items: [['p001', 1, 3200, 3200, '加饭', ''], ['p005', 1, 3000, 3000, '', '']] },
+
+  /* 退款中：已受理未到账，财务页净额里必须已扣除，但退款状态仍需人工盯 */
+  { id: 'a8', no: 'SA2406100085', code: '0085', status: '退款中',
+    pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 11:12:09', txnId: '4200002318202608210009',
+    subtotal: 3600, discountRate: 100, discountCut: 0, total: 3600, isStaff: false,
+    contact: '赵先生', phone: '186****7710', orderNote: '',
+    items: [['p003', 1, 3600, 3600, '', '']],
+    refund: { no: '50000123452026082100001', amount: 3600, status: '退款中',
+              operator: '高特', at: '2026-08-21 11:58:40', reason: '菜品临时售罄，商户取消' } },
+
+  /* 部分退款：退款金额小于订单实付，用于验证净额不是按订单数而是按金额算 */
+  { id: 'a9', no: 'SA2406100071', code: '0071', status: '已退款',
+    pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 10:55:14', txnId: '4200002318202608210010',
+    subtotal: 3800, discountRate: 100, discountCut: 0, total: 3800, isStaff: false,
+    contact: '孙女士', phone: '150****3322', orderNote: '',
+    items: [['p004', 1, 2600, 2600, '', ''], ['p006', 1, 1200, 1200, '', '']],
+    refund: { no: '50000123452026082100002', amount: 1200, status: '已退款',
+              operator: '周敏', at: '2026-08-21 11:20:02', reason: '汤洒了，退单品' } },
+
+  /* 昨天的单，用于验证财务页按营业日期筛选 */
+  { id: 'a10', no: 'SA2406090210', code: '0210', status: '已完成',
+    pickupDate: '2026-08-20', pickupTime: '12:30', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 11:48:37', txnId: '4200002318202608200011',
+    subtotal: 6600, discountRate: 85, discountCut: 990, total: 5610, isStaff: true,
+    contact: '周工', phone: '139****1188', orderNote: '',
+    items: [['p003', 1, 3600, 3060, '', ''], ['p005', 1, 3000, 2550, '', '']] },
 ];
 
 // 单品销量排行
