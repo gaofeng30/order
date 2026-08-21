@@ -211,6 +211,15 @@ check('the uncollected filter clears whenever the lane changes', () => {
     'switching away from 待取餐 does not clear the filter');
 });
 
+check('the live spec agrees with the PRD on full refunds only', () => {
+  /* 这条纠错的要点就是让规格与 PRD §7.7 一致；生效 spec 里若还留着
+     「部分退款是合法情形」这类表述，纠错就只做了一半。 */
+  const live = fs.readFileSync(path.join(root, 'openspec/specs/web-admin-scope-conformance/spec.md'), 'utf8');
+  assert.doesNotMatch(live, /部分退款是合法情形/, 'the live spec still calls partial refunds legitimate');
+  assert.doesNotMatch(live, /MUST NOT 超过订单实付/, 'the live spec still allows a refund below the order total');
+  assert.match(live, /退款金额 MUST 恒等于/, 'the live spec does not pin refunds to the full order amount');
+});
+
 check('all javascript parses', () => {
   const files = [];
   (function walk(d) {

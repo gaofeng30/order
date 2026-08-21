@@ -1,5 +1,35 @@
 ## MODIFIED Requirements
 
+### Requirement: Every order carries the payment and refund facts
+
+订单记录 MUST 携带对账所需的支付事实：`paidAt`（支付成功时间，精确到秒）、`txnId`（微信交易号，全局唯一）、`discountRate` 与 `isStaff`（身份与折扣率快照）。
+
+取餐信息 MUST 由 `pickupDate`（营业日期）、`pickupTime`（时间点 `hh:mm`）、`mealPeriod`（`lunch` 或 `dinner`）、`pickupPoint` 四项承载，MUST NOT 保留「距取餐还有几分钟」这类派生量 —— 它随时间变化，存下来必然过期。
+
+处于 `退款中` 或 `已退款` 的订单 MUST 携带退款记录，含退款单号、退款金额、退款状态、操作人、退款时间与退款原因；退款状态 MUST 与订单状态一致。其余状态的订单 MUST NOT 携带退款记录。
+
+退款金额 MUST 恒等于订单实付。一期只支持原路全额退款（§7.7），部分退款 MUST 被拒绝且 MUST NOT 创建退款记录。
+
+口味与备注 MUST 绑定在 `items` 行内，整单级 MUST 只有 `orderNote`，MUST NOT 存在整单级口味字段。
+
+#### Scenario: A refunded order is audited
+
+- **WHEN** 检查状态为 `退款中` 或 `已退款` 的订单
+- **THEN** 它带有完整的退款记录且退款状态与订单状态一致
+- **AND** 退款金额等于订单实付
+
+#### Scenario: A non-refunded order is audited
+
+- **WHEN** 检查其余四个状态的订单
+- **THEN** 它不带退款记录
+
+#### Scenario: The order detail is opened
+
+- **WHEN** 主账号在订单管理页选中一笔订单
+- **THEN** 详情展示支付时间、取餐日期与时间点、取餐点与微信交易号
+- **AND** 员工折扣单额外展示折扣率与减免金额，且原价小计减减免等于实付
+
+
 ### Requirement: The reconciliation summary nets by amount
 
 对账汇总 MUST 给出实收合计、退款合计、净额三项，且 MUST 满足 `净额 === 实收合计 − 退款合计`。三项 MUST 以整数分计算后再格式化，MUST NOT 以元为单位求和。

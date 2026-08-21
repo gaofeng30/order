@@ -60,6 +60,8 @@
 
 ## 9. 交付
 
-- [ ] 9.1 提交
-- [ ] 9.2 clean worktree 独立验证
-- [ ] 9.3 合入 main、应用 delta、归档、推送
+- [x] 9.1 提交
+- [x] 9.2 clean worktree 独立验证
+- [x] 9.3 合入 main、应用 delta、归档、推送
+
+- [x] 9.4 补第三条 MODIFIED：`align-order-model` 的「退款金额 MUST NOT 超过订单实付 —— 部分退款是合法情形」同样与 §7.7 冲突，一并改为「恒等于订单实付」，并加断言防止生效 spec 里再出现该表述
