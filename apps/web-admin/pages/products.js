@@ -66,6 +66,7 @@
               </div>
             </div>` },
           { t: '分类', w: '92px', render: r => T.esc(r.cat) },
+          { t: '餐段', w: '68px', render: r => T.esc(Api.MEAL_LABEL[r.meal] || '—') },
           { t: '售价', w: '76px', cls: 'num', render: r => T.money(r.price) },
           { t: '状态', w: '82px', render: r => T.pill(LABEL[r.status], TONE[r.status]) },
           { t: '操作', w: '234px', cls: 'act', render: r => `
@@ -187,7 +188,7 @@
             let np = m === 'set' ? v : (m === 'pct' ? p.price * (1 + v / 100) : p.price + v);
             np = Math.round(np * 10) / 10;
             if (!(np > 0)) return Promise.reject(new Error(`「${p.name}」调整后价格为 ${np}，必须大于 0`));
-            return Api.saveProduct({ id: p.id, name: p.name, price: np, cat: p.cat, desc: p.desc, imgs: p.imgs });
+            return Api.saveProduct({ id: p.id, name: p.name, price: np, cat: p.cat, meal: p.meal, desc: p.desc, imgs: p.imgs });
           });
           Promise.all(jobs).then(() => {
             close();
@@ -222,6 +223,13 @@
              <div class="fld-lb">售价（元）<span class="req">*</span></div>
              <input class="inp tnum" id="f-price" type="number" step="0.5" value="${p ? p.price : ''}">
            </div>
+         </div>
+         <div class="fld">
+           <div class="fld-lb">餐段可售 <span class="req">*</span></div>
+           <select class="sel" id="f-meal">
+             ${Api.MEALS.map(m => `<option value="${m}"${p && p.meal === m ? ' selected' : ''}>${Api.MEAL_LABEL[m]}</option>`).join('')}
+           </select>
+           <div class="fld-hint">用户端菜单按所选取餐时间的餐段过滤商品。</div>
          </div>
          <div class="fld">
            <div class="fld-lb">分类 <span class="req">*</span></div>
@@ -294,6 +302,7 @@
             name: root.querySelector('#f-name').value,
             price: root.querySelector('#f-price').value,
             cat: root.querySelector('#f-cat').value,
+            meal: root.querySelector('#f-meal').value,
             desc: root.querySelector('#f-desc').value,
             imgs,
           }).then(() => {
@@ -307,5 +316,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['products'] = { sub: '上下架、售罄与价格', render };
+  window.Pages['products'] = { sub: '上下架、售罄、餐段与价格', render };
 })();
