@@ -20,7 +20,8 @@ App({
     orders: [],             // 用户端订单
     lastOrder: null,        // 最近一笔下单
     aOrders: [],            // 商户端订单
-    menu: [],               // 菜品表（含 status/imgs，商户端可编辑）
+    menu: [],               // 菜品表（status 只表达上下架，商户端可编辑）
+    soldOut: [],            // 当日售罄记录 { productId, serviceDate }（§6.5）
 
   },
 
@@ -32,6 +33,7 @@ App({
     g.aOrders = JSON.parse(JSON.stringify(data.ADMIN_ORDERS));
     // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面（列表/购物车/订单只用封面）
     g.menu = JSON.parse(JSON.stringify(data.MENU)).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] }));
+    g.soldOut = JSON.parse(JSON.stringify(data.PRODUCT_SOLD_OUT_DATES));
   },
 
   initSystemInfo() {

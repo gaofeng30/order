@@ -8,8 +8,10 @@
   let kw = '';
   const picked = new Set();
 
-  const LABEL = { on: '可购', soldout: '售罄', off: '已下架' };
-  const TONE = { on: 'ok', soldout: 'mute', off: 'mute' };
+  /* 上下架与当日售罄是两个独立维度（§6.5）：status 只表达上下架，
+     售罄按取餐日期查记录。展示标签从两者现算，不存第三个综合状态。 */
+  const label = r => (r.status === 'off' ? '已下架' : (Api.isSoldOut(r.id, Api.today()) ? '售罄' : '可购'));
+  const tone = r => (r.status === 'on' && !Api.isSoldOut(r.id, Api.today()) ? 'ok' : 'mute');
 
   function render(el) {
     picked.clear();
@@ -68,9 +70,9 @@
           { t: '分类', w: '92px', render: r => T.esc(r.cat) },
           { t: '餐段', w: '68px', render: r => T.esc(Api.MEAL_LABEL[r.meal] || '—') },
           { t: '售价', w: '76px', cls: 'num', render: r => T.money(r.price) },
-          { t: '状态', w: '82px', render: r => T.pill(LABEL[r.status], TONE[r.status]) },
+          { t: '状态', w: '82px', render: r => T.pill(label(r), tone(r)) },
           { t: '操作', w: '234px', cls: 'act', render: r => `
-            <button class="btn btn--sm btn--line" data-act="sold" data-id="${r.id}">${r.status === 'soldout' ? '恢复售卖' : '标记售罄'}</button>
+            <button class="btn btn--sm btn--line" data-act="sold" data-id="${r.id}">${Api.isSoldOut(r.id, Api.today()) ? '恢复售卖' : '标记售罄'}</button>
             <button class="btn btn--sm btn--line" data-act="shelf" data-id="${r.id}">${r.status === 'off' ? '上架' : '下架'}</button>
             <button class="btn btn--sm btn--ghost-blue" data-act="edit" data-id="${r.id}">编辑</button>` },
         ],
@@ -90,12 +92,12 @@
           const head = host.querySelector('[data-act="all"]');
           if (head) head.checked = list.length && picked.size === list.length;
         },
+        /* 售罄只写当前营业日的记录，不动 status。D 日售罄不影响 D+1 的预约。 */
         sold(id) {
-          const cur = list.find(m => m.id === id);
-          const nx = cur.status === 'soldout' ? 'on' : 'soldout';
-          Api.setProductStatus(id, nx).then(() => {
+          const nx = !Api.isSoldOut(id, Api.today());
+          Api.setSoldOut(id, nx).then(() => {
             paint(el);
-            window.Toast.show(nx === 'soldout' ? '已置售罄' : '已恢复售卖', { icon: 'tag' });
+            window.Toast.show(nx ? `已置售罄 · 仅限 ${Api.today()}` : '已恢复售卖', { icon: 'tag' });
           });
         },
         shelf(id) {
@@ -127,7 +129,7 @@
          <span class="grow"></span>
          <button class="btn btn--sm btn--line" data-b="on">批量上架</button>
          <button class="btn btn--sm btn--line" data-b="off">批量下架</button>
-         <button class="btn btn--sm btn--line" data-b="soldout">批量置售罄</button>
+         <button class="btn btn--sm btn--line" data-b="sold">批量置售罄</button>
          <button class="btn btn--sm btn--ghost-blue" data-b="price">批量改价</button>
          <button class="btn btn--sm btn--line" data-b="clear">取消选择</button>
        </div>`;
@@ -138,8 +140,12 @@
         if (a === 'clear') { picked.clear(); paint(el); return; }
         if (a === 'price') return batchPrice(el, list);
         const ids = Array.from(picked);
-        Promise.all(ids.map(id => Api.setProductStatus(id, a))).then(() => {
-          window.Toast.show(`已批量${{ on: '上架', off: '下架', soldout: '置售罄' }[a]} ${ids.length} 项`, { icon: 'tag' });
+        // 批量同样分两个维度：上下架改 status，置售罄写当日记录
+        const run = a === 'sold'
+          ? ids.map(id => Api.setSoldOut(id, true))
+          : ids.map(id => Api.setShelf(id, a));
+        Promise.all(run).then(() => {
+          window.Toast.show(`已批量${{ on: '上架', off: '下架', sold: '置售罄' }[a]} ${ids.length} 项`, { icon: 'tag' });
           paint(el);
         });
       };

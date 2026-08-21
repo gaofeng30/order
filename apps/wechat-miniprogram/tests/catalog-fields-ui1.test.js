@@ -26,7 +26,9 @@ test('product contract neither accepts nor produces a quantity', () => {
   const api = require('../utils/api.js');
   const src = read('utils/api.js');
   assert.doesNotMatch(src, /\bstock\b|库存/, 'api.js still handles a quantity');
-  assert.doesNotMatch(src, /\btags\b|\ballergens\b|\bsold\b/, 'api.js still seeds a retired field');
+  /* 防的是已废止的月售字段 sold（§0.2 D 清单）。当日售罄的 sold-out / soldOut
+     是不同的词，按字段形态断言以免误伤。 */
+  assert.doesNotMatch(src, /\btags\b|\ballergens\b|\bsold\s*:|\.sold\b|月售/, 'api.js still seeds a retired field');
   assert.equal(typeof api.setProductStatus, 'function', 'sale-status contract broken');
 });
 

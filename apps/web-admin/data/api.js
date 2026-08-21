@@ -81,11 +81,40 @@
     return ok({});
   }
 
-  // PUT /admin/products/:id/status  body: { status: 'on'|'soldout'|'off' }
-  function setProductStatus(id, status) {
+  /* PUT /admin/products/:id/status  body: { status: 'on'|'off' } —— 只表达上下架。
+     上下架是长期的、仅 PC 可写；当日售罄是按取餐日期的记录、两端可写。
+     两个维度分开写，同一次操作不得改动另一个（§6.5、§15.6.1）。 */
+  function setShelf(id, status) {
     const m = g().menu.find(x => x.id === id);
     if (!m) return fail('菜品不存在');
+    if (!['on', 'off'].includes(status)) return fail('上下架只有 on / off 两个取值');
     m.status = status;
+    return ok(clone(m));
+  }
+  const setProductStatus = setShelf;      // 旧调用点的别名，语义不变
+
+  function soldOutList() { return g().soldOut || (g().soldOut = []); }
+
+  // 该商品在该取餐日期是否售罄。serviceDate 是取餐日期，不是操作日期。
+  function isSoldOut(productId, serviceDate) {
+    return soldOutList().some(r => r.productId === productId && r.serviceDate === serviceDate);
+  }
+
+  // 可售 = 上架 且 该取餐日期无售罄记录。两个维度分别判断，不合成第三个枚举。
+  function isSellable(product, serviceDate) {
+    const m = typeof product === 'string' ? g().menu.find(x => x.id === product) : product;
+    return !!m && m.status === 'on' && !isSoldOut(m.id, serviceDate);
+  }
+
+  /* PUT /admin/products/:id/sold-out  body: { serviceDate, soldOut } */
+  function setSoldOut(id, soldOut, serviceDate) {
+    const day = serviceDate || BUSINESS_DAY;
+    const m = g().menu.find(x => x.id === id);
+    if (!m) return fail('菜品不存在');
+    const list = soldOutList();
+    const i = list.findIndex(r => r.productId === id && r.serviceDate === day);
+    if (soldOut && i < 0) list.push({ productId: id, serviceDate: day });
+    if (!soldOut && i >= 0) list.splice(i, 1);
     return ok(clone(m));
   }
 
@@ -435,7 +464,10 @@
       const m = g().menu.find(x => x.id === pid);
       if (!m) return `「${pid}」已被删除，无法补建。请退款作废。`;
       if (m.status === 'off') return `「${m.name}」仍处于下架状态。请先在菜品管理重新上架，再补建订单。`;
-      if (m.status === 'soldout') return `「${m.name}」当前售罄。请先恢复可售，再补建订单。`;
+      // 售罄按该笔的取餐日期判断，不按当前时刻的全局状态（§6.5）
+      if (isSoldOut(pid, p.pickupDate)) {
+        return `「${m.name}」在 ${p.pickupDate} 售罄。请先恢复该日可售，再补建订单。`;
+      }
     }
     if (`${p.pickupDate} ${p.pickupTime}` < `${BUSINESS_DAY} ${nowHm()}`) {
       return `取餐时间 ${p.pickupDate} ${p.pickupTime} 已过，无法排产。请退款作废。`;
@@ -912,6 +944,7 @@
 
   window.Api = {
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
+    setShelf, setSoldOut, isSoldOut, isSellable,
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
     today, currentAccount, refundOrder, canRefund, uncollectedCount,
