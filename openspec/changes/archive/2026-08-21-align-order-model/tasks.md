@@ -43,6 +43,6 @@
 
 ## 7. 交付
 
-- [ ] 7.1 提交
-- [ ] 7.2 clean worktree 独立验证
-- [ ] 7.3 合入 main、应用 delta、归档
+- [x] 7.1 提交
+- [x] 7.2 clean worktree 独立验证
+- [x] 7.3 合入 main、应用 delta、归档
