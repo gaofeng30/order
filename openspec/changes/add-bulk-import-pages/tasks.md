@@ -62,8 +62,11 @@ dependencies:
 
 ## 5. Independent verification
 
-- [ ] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
-- [ ] 5.2 记录 PASS/FAIL 与剩余外部边界。
+- [x] 5.1 在干净 detached worktree 对精确 candidate SHA 只读验证。
+  - Verify: `candidate_sha=f39752d21f1f662a8372ee1c1b82e787487ad043`，验证树 clean。`BULK_IMPORT_GATE=PASS`（`parsed 20 javascript files`），同一脚本对 `base_sha` 树 `exit=1`；`STAFF_PAGE_GATE` / `MEAL_PERIOD_GATE` / `PICKUP_SETTINGS_GATE` / `ORDER_LIFECYCLE_GATE` / `ADMIN_SCOPE_GATE` / `CATALOG_FIELDS_GATE` 全部 PASS；小程序 `npm test` 65/65。diff 相对 base 为 15 files / 946 insertions / 0 deletions，全部在 owned paths 内。
+- [x] 5.2 记录 PASS/FAIL 与剩余外部边界。
+  - Verdict: **PASS（W2 / UI1）**。
+  - 剩余外部边界：① **解析为 PRD §6.13.1 标注的 P0 原型例外**，生产必须移至服务端，后端就位时契约层实现整体替换并从 PRD 移除该例外；② 自写读取器不支持加密、宏与多工作表选择，固定读第一张表，限制写在 `data/xlsx.js` 文件头；③ 单次行数上限 500 为暂定值，§16.3 P6 待拍板；④ PC 后台仍为 mock，零网络调用；⑤ PRD §3.5 仍缺商户账号名单、财务与对账、支付待处理三页；⑥ UI1 为人工浏览器操作，未覆盖真机与真实 Excel 生成的复杂文件（如合并单元格、多工作表）。
 
 ## 6. 后续
 
