@@ -18,6 +18,7 @@
       settings: clone(Seed.SETTINGS),
       layer: clone(Seed.LAYER_DEFAULTS),
       staff: clone(Seed.STAFF_WHITELIST),
+      accounts: clone(Seed.MERCHANT_ACCOUNTS),
     };
   }
 
@@ -36,6 +37,7 @@
     { g: '名单', items: [
       { r: 'staff', t: '员工折扣白名单', ic: 'user' },
       { r: 'staff-import', t: '员工批量导入', ic: 'box' },
+      { r: 'accounts', t: '商户账号名单', ic: 'store' },
     ] },
     { g: '门店', items: [
       { r: 'settings', t: '营业设置', ic: 'settings' },

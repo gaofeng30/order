@@ -286,6 +286,85 @@
   }
 
 
+
+  /* ---------------- 商户账号名单（PRD §4.4） ----------------
+     与员工折扣白名单分开管理。核心不变量：名单中至少保留一个启用的主账号——
+     否则没有人能登录 PC 后台，且无法从界面恢复。删除、停用、降级三条路径都要挡。 */
+
+  const ROLES = ['owner', 'staff'];
+  const ROLE_LABEL = { owner: '主账号', staff: '子账号' };
+
+  function enabledOwners(exceptId) {
+    return g().accounts.filter(a => a.role === 'owner' && a.enabled && a.id !== exceptId);
+  }
+  function guardLastOwner(id, action) {
+    const target = g().accounts.find(a => a.id === id);
+    if (!target || target.role !== 'owner' || !target.enabled) return null;
+    if (enabledOwners(id).length > 0) return null;
+    return fail(`「${target.name}」是唯一启用的主账号，不能${action}。请先添加并启用另一个主账号。`);
+  }
+
+  // GET /admin/merchant-accounts → { list: MerchantAccount[] }
+  function listMerchantAccounts(kw) {
+    const q = (kw || '').trim();
+    const all = clone(g().accounts);
+    if (!q) return ok(all);
+    return ok(all.filter(a => a.phone.includes(q) || a.name.includes(q)));
+  }
+
+  // POST /admin/merchant-accounts       新增（无 id）
+  // PUT  /admin/merchant-accounts/:id   修改
+  // body: { phone, name, role }
+  function saveMerchantAccount(a) {
+    const s = g();
+    const phone = normPhone(a.phone);
+    if (!phone) return fail('手机号必填');
+    if (!PHONE_RE.test(phone)) return fail('手机号格式不正确');
+    const name = String(a.name == null ? '' : a.name).trim();
+    if (!name) return fail('姓名必填');
+    if (!ROLES.includes(a.role)) return fail('请选择角色');
+    const dup = s.accounts.find(x => x.phone === phone && x.id !== a.id);
+    if (dup) return fail(`手机号 ${phone} 已在商户名单中（${dup.name} · ${ROLE_LABEL[dup.role]}）`);
+
+    if (a.id) {
+      const i = s.accounts.findIndex(x => x.id === a.id);
+      if (i < 0) return fail('账号不存在');
+      if (a.role !== 'owner') {
+        const blocked = guardLastOwner(a.id, '降级为子账号');
+        if (blocked) return blocked;
+      }
+      // 微信绑定关系由小程序侧建立，PC 编辑不得覆盖
+      s.accounts[i] = Object.assign({}, s.accounts[i], { phone, name, role: a.role });
+      return ok(clone(s.accounts[i]));
+    }
+    const created = { id: uid('ma'), phone, name, role: a.role, enabled: true, boundOpenId: '' };
+    s.accounts.push(created);
+    return ok(clone(created));
+  }
+
+  // PUT /admin/merchant-accounts/:id/enabled  body: { enabled }
+  function setMerchantAccountEnabled(id, enabled) {
+    const a = g().accounts.find(x => x.id === id);
+    if (!a) return fail('账号不存在');
+    if (!enabled) {
+      const blocked = guardLastOwner(id, '停用');
+      if (blocked) return blocked;
+    }
+    a.enabled = !!enabled;
+    return ok(clone(a));
+  }
+
+  // DELETE /admin/merchant-accounts/:id
+  function deleteMerchantAccount(id) {
+    const s = g();
+    const blocked = guardLastOwner(id, '删除');
+    if (blocked) return blocked;
+    const i = s.accounts.findIndex(x => x.id === id);
+    if (i < 0) return fail('账号不存在');
+    s.accounts.splice(i, 1);
+    return ok({});
+  }
+
   /* ---------------- 批量导入（PRD §6.13） ----------------
      三步：预览 → 确认 → 提交。预览不写任何数据，只返回计数、异常行与一次性令牌；
      提交按令牌生效且幂等，重复提交只返回首次结果。
@@ -503,5 +582,6 @@
     imgUrl, MEALS, MEAL_LABEL,
     listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
     previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, MAX_IMPORT_ROWS,
+    listMerchantAccounts, saveMerchantAccount, setMerchantAccountEnabled, deleteMerchantAccount, ROLES, ROLE_LABEL,
   };
 })();
