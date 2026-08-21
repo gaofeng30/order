@@ -9,7 +9,7 @@
       <view class="ticket-inner">
         <view class="ticket-lbl">取餐号</view>
         <view class="ticket-code serif">{{o.code}}</view>
-        <view class="ticket-rsv"><icon name="calendarClock" size="15" color="#9fd3ff" /><text>{{o.pickupLabel}} 取餐</text></view>
+        <view class="ticket-rsv"><icon name="calendarClock" size="15" color="#9fd3ff" /><text>{{pickupText}} 取餐</text></view>
         <!-- 核销二维码只在订单进入 待取餐 后展示（生效 spec §5.8） -->
         <view wx:if="{{o.status === '待取餐'}}" class="qr-white"><qrcode size="300" dark="#0b2f63" /></view>
         <view class="ticket-pill"><pill s="{{o.status}}" ondark /></view>
@@ -25,24 +25,24 @@
           <imageph item="{{item.m}}" h="92" w="92" radius="22" tag="{{false}}" />
           <view class="od-item-info">
             <view class="od-item-name">{{item.name}}</view>
-            <view class="od-item-unit">¥{{item.p}} × {{item.q}}</view>
+            <view class="od-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
             <view wx:if="{{item.flavors.length || item.note}}" class="od-prefs">
               <text wx:for="{{item.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
               <text wx:if="{{item.note}}" class="pref-note">“{{item.note}}”</text>
             </view>
           </view>
-          <money v="{{item.sub}}" size="30" />
+          <money cents="{{item.sub}}" size="30" />
         </view>
-        <view class="pay-row"><text class="pay-lbl">实付</text><money v="{{o.total}}" size="40" /></view>
+        <view class="pay-row"><text class="pay-lbl">实付</text><money cents="{{o.total}}" size="40" /></view>
       </view>
 
       <view class="card sec-card">
         <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">取餐信息</text><view class="pill pill--info">预约单</view></view>
         <view class="info-row"><view class="ir-l"><view class="ir-label">取餐地点</view><view class="ir-sub">{{ptAddr}}</view></view><text class="ir-val">{{o.pickupPoint || store.branch}}</text></view>
-        <view class="info-row"><view class="ir-label">预约取餐</view><text class="ir-val">{{o.pickupLabel}}</text></view>
-        <view class="info-row {{!flavorsStr && !o.note ? 'last' : ''}}"><view class="ir-label">联系人</view><text class="ir-val">{{o.contact}} · {{o.phone}}</text></view>
-        <view wx:if="{{flavorsStr}}" class="info-row {{!o.note ? 'last' : ''}}"><view class="ir-label">口味偏好</view><text class="ir-val">{{flavorsStr}}</text></view>
-        <view wx:if="{{o.note}}" class="info-row last"><view class="ir-label">备注</view><text class="ir-val">{{o.note}}</text></view>
+        <view class="info-row"><view class="ir-label">预约取餐</view><text class="ir-val">{{pickupText}}</text></view>
+        <view class="info-row {{!flavorsStr && !o.orderNote ? 'last' : ''}}"><view class="ir-label">联系人</view><text class="ir-val">{{o.contact}} · {{o.phone}}</text></view>
+        <view wx:if="{{flavorsStr}}" class="info-row {{!o.orderNote ? 'last' : ''}}"><view class="ir-label">口味偏好</view><text class="ir-val">{{flavorsStr}}</text></view>
+        <view wx:if="{{o.orderNote}}" class="info-row last"><view class="ir-label">备注</view><text class="ir-val">{{o.orderNote}}</text></view>
       </view>
 
       <!-- 取消预约 -->
@@ -51,7 +51,7 @@
           <icon name="{{canCancel ? 'calendar' : 'warn'}}" size="18" color="{{canCancel ? '#2a5fa6' : '#a4873f'}}" />
           <view class="cancel-text">
             <view class="cancel-title">取消预约</view>
-            <view class="cancel-desc {{canCancel ? '' : 'warn'}}">{{canCancel ? ('取餐前 ' + cancelMin + ' 分钟外可取消，款项原路退回。') : ('距取餐不足 ' + cancelMin + ' 分钟（约 ' + o.minsToPickup + ' 分钟后取餐），已无法取消。')}}</view>
+            <view class="cancel-desc {{canCancel ? '' : 'warn'}}">{{canCancel ? ('取餐前 ' + cancelMin + ' 分钟外可取消，款项原路退回。') : ('距取餐不足 ' + cancelMin + ' 分钟（约 ' + minsLeft + ' 分钟后取餐），已无法取消。')}}</view>
           </view>
         </view>
         <view class="cancel-btn {{canCancel ? 'on' : 'off'}}" bindtap="openCancel">{{canCancel ? '取消预约' : '不可取消'}}</view>
@@ -67,7 +67,7 @@
     <view class="cs-center">
       <view class="cs-ring"><icon name="warn" size="30" color="#a4873f" /></view>
       <view class="cs-title serif">确认取消预约？</view>
-      <view class="cs-sub">预约单 {{o.code}} · {{o.pickupLabel}} 取餐</view>
+      <view class="cs-sub">预约单 {{o.code}} · {{pickupText}} 取餐</view>
       <view class="cs-sub">取消后款项将原路退回，名额释放。</view>
     </view>
     <view class="cs-actions">

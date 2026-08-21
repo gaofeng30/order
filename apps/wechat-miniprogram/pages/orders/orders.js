@@ -20,7 +20,8 @@ Page({
       summary: itemsSummary(o.items),
       itemCount: o.items.reduce((a, b) => a + b[1], 0),
       typeIcon: 'calendarClock',
-      timeText: '预约 ' + o.pickupLabel + ' · ' + o.pickupPoint,
+      // 取餐文案现算：§15.6.2 删除了 pickupLabel 字段
+      timeText: '预约 ' + data.orderPickupLabel(o) + ' · ' + o.pickupPoint,
       canCancel: data.canCancelReserve(o),
     }));
     this.setData({ counts, list });

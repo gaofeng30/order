@@ -84,30 +84,35 @@ Page({
     const minsToPickup = data.slotMins(pk.off, pk.time);
     // 取餐号为 4 位数字，按取餐日期累计；即时单已删除，不再有前缀
     const code = String(130 + Math.floor(Math.random() * 60)).padStart(4, '0');
+    /* 金额一律整数分（§5.6）。直接取目录快照的 price_cents，不经过
+       Number(price_text) 这一次元的往返 —— 那次往返正是浮点尾数的来源。 */
+    const subtotal = this.data.subtotal_cents;
     const order = {
       id: 'o' + Date.now(),
       no: 'SA24061001' + (40 + Math.floor(Math.random() * 50)),
       code,
       // 支付成功即建单。距取餐不足 30 分钟时直接进 制作中（生效 spec §7.4）
       status: minsToPickup <= data.CANCEL_LIMIT_MIN ? '制作中' : '已预约',
-      time: '06-10 16:48',
-      /* 金额与种子订单保持同一类型：同一字段不能一处是数字、一处是格式化字符串。
-         单位仍是元，改整数分是紧随其后的另一个 change。 */
-      total: Number(this.data.payable_text),
-      subtotal: Number(this.data.subtotal_text),
+      pickupDate: data.pickupDateOf(pk),
+      pickupTime: pk.time,
+      mealPeriod: pk.period,
       pickupPoint: data.STORE.pickupWindow,
+      paidAt: data.nowStamp(),
+      subtotal,
+      /* 身份识别链路尚未接后端（§16.5），一期在手机号授权就位前所有人按
+         访客原价结算（§5.6「访客按原价结算」）。这不是占位符，是当前真实状态。 */
+      discountRate: 100,
+      discountCut: 0,
+      total: subtotal,
+      isStaff: false,
+      orderNote: '',
       contact: this.data.form.contact || '林先生',
       phone: this.data.form.phone || '138****6620',
-      note: '',
-      flavors: [],
       /* 名称在此刻固化（§15.6.2）：订单是历史记录，商品改名或删除后
-         它必须仍复述下单当时的事实。一期无折扣，折后价等于原价。 */
+         它必须仍复述下单当时的事实。折后价等于原价，同上。 */
       items: list.map(({ item, q, flavors, note }) =>
-        [item.id, item.name, q, item.price, item.price, flavors, note]),
+        [item.id, item.name, q, item.price_cents, item.price_cents, flavors, note]),
     };
-    order.pickupLabel = data.pickupLabel(pk);
-    order.mealPeriod = pk.period;
-    order.minsToPickup = minsToPickup;
     g.orders = [order, ...g.orders];
     g.lastOrder = order;
     cart.clear();

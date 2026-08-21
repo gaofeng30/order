@@ -22,8 +22,11 @@ Page({
     this.setData({
       o, rows,
       showQr: o.status === '待取餐',
-      flavorsStr: (o.flavors || []).join(' / '),
+      // 整单级口味已删除：聚合行内口味展示，信息不丢（§15.6.4）
+      flavorsStr: [...new Set(rows.flatMap(r => r.flavors))].join(' / '),
       canCancel: data.canCancelReserve(o),
+      pickupText: data.orderPickupLabel(o),
+      minsLeft: data.minsToPickup(o),
       ptAddr: pt ? pt.addr : data.STORE.addr,
       navTitle: o.status === '待取餐' ? '取餐码' : '预约详情',
     });

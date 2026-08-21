@@ -13,8 +13,13 @@ Page({
     const orders = getApp().globalData.aOrders;
     const o = orders.find(x => x.id === this._id) || getApp().globalData._aSel || orders[0];
     // 名称取订单自身的快照，不回查菜品表（§15.6.2）
-    const rows = o.items.map(([, name, q, p, dp]) => ({ name, q, p: dp, sub: dp * q }));
-    this.setData({ o, rows, meta: advanceMeta(o.status), flavorShow: o.flavor && o.flavor !== '—' });
+    const rows = o.items.map(([, name, q, p, dp, flavor, note]) => (
+      { name, q, p: dp, sub: dp * q, band: [flavor, note].filter(Boolean).join(' · ') }
+    ));
+    // 整单级口味已删除：聚合行内口味展示（§15.6.4）
+    const flavorText = [...new Set(rows.map(r => r.band).filter(Boolean))].join('；');
+    this.setData({ o, rows, meta: advanceMeta(o.status), flavorText, flavorShow: !!flavorText,
+                   paidTime: String(o.paidAt).slice(11, 16) });
   },
   advance() {
     advanceOrder(this.data.o.id, this.selectComponent('#toast'), () => this.build());

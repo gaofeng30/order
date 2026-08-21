@@ -16,7 +16,8 @@ Page({
       sub: '备好后会推送提醒，凭取餐码到窗口领取',
       codeLbl: '取餐号',
       footIcon: 'calendarClock',
-      footText: `${o.pickupLabel} 取 · ${o.pickupPoint}`,
+      // 取餐文案现算：§15.6.2 删除了 pickupLabel 字段
+      footText: `${data.orderPickupLabel(o)} 取 · ${o.pickupPoint}`,
       viewBtn: '查看取餐码',
     });
     // 预约成功后停留 5s，自动跳转到取餐码页

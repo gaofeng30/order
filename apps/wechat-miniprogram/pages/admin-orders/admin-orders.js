@@ -43,11 +43,19 @@ Page({
       ? searchOrders(kw)
       : (lane === '全部' ? orders : orders.filter(o => o.status === lane));
     const list = src.map(o => {
-      const hasFlavor = o.flavor && o.flavor !== '—';
-      let band = '';
-      if (hasFlavor) band += o.flavor;
-      if (o.note) band += (hasFlavor ? ' · ' : '') + o.note;
-      return { ...o, summary: itemsSummary(o.items), meta: advanceMeta(o.status), band, showBand: !!(hasFlavor || o.note) };
+      /* 整单级口味已删除（§15.6.2）：口味本就绑定在具体菜品上，
+         一张单里两个菜要不同口味时整单级字段根本表达不了。聚合行内展示。 */
+      const inline = [...new Set(o.items.flatMap(it => [it[5], it[6]]).filter(Boolean).map(String))];
+      const band = [...inline, o.orderNote].filter(Boolean).join(' · ');
+      return {
+        ...o,
+        summary: itemsSummary(o.items),
+        meta: advanceMeta(o.status),
+        band,
+        showBand: !!band,
+        itemCount: o.items.reduce((a, it) => a + it[2], 0),
+        paidTime: String(o.paidAt).slice(11, 16),
+      };
     });
     this.setData({ counts, list, hint: kw ? codeHint(kw) : '' });
   },

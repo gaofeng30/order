@@ -105,7 +105,10 @@ test('checkout reads the chosen pickup time instead of choosing again', () => {
   assert.doesNotMatch(wxml, /pickDate|pickSlot|rsv-slots/, 'confirm still picks the time itself');
   confirm.pay();
   const order = app.globalData.orders[0];
-  assert.equal(order.pickupLabel, '明天 12:00');
+  assert.equal(Object.hasOwn(order, 'pickupLabel'), false, 'order still stores a frozen pickup label');
+  assert.equal(order.pickupDate, '2026-08-22');
+  assert.equal(order.pickupTime, '12:00');
+  assert.equal(require('../utils/data.js').orderPickupLabel(order), '明天 12:00');
   assert.equal(order.mealPeriod, 'lunch');
 });
 
@@ -128,9 +131,17 @@ test('cancel eligibility no longer depends on the deleted order type', () => {
   createHarness().loadApp();
   const data = require('../utils/data.js');
   assert.doesNotMatch(read('utils/data.js'), /o\.type === 'reserve'/, 'cancel rule still reads the deleted type field');
-  assert.equal(data.canCancelReserve({ status: '已预约', minsToPickup: 102 }), true);
-  assert.equal(data.canCancelReserve({ status: '已预约', minsToPickup: 18 }), false);
-  assert.equal(data.canCancelReserve({ status: '制作中', minsToPickup: 102 }), false);
+  /* 剩余时间现算，不读记录上的冻结值（§15.6.2 删除了 minsToPickup）。
+     NOW_MINS = 16:48，故 18:30 距取餐 102 分钟、17:06 距取餐 18 分钟。 */
+  const far = { status: '已预约', pickupDate: data.BUSINESS_DAY, pickupTime: '18:30' };
+  const near = { status: '已预约', pickupDate: data.BUSINESS_DAY, pickupTime: '17:06' };
+  assert.equal(data.minsToPickup(far), 102);
+  assert.equal(data.minsToPickup(near), 18);
+  assert.equal(data.canCancelReserve(far), true);
+  assert.equal(data.canCancelReserve(near), false);
+  assert.equal(data.canCancelReserve({ ...far, status: '制作中' }), false);
+  // 记录上残留的陈旧字段不得影响判定
+  assert.equal(data.canCancelReserve({ ...near, minsToPickup: 999 }), false);
 });
 
 test('no template binds a data field its page never sets', () => {

@@ -65,20 +65,30 @@ const itemById = id => menuList().find(m => m.id === id);
 /* items: [id, name, qty, price, discountedPrice, flavors?, note?]
    name 是下单当刻固化的名称快照，不是指向菜品表的外键（§15.6.2）：
    订单是历史记录，商品改名或删除后它必须仍复述下单当时的事实。
-   一期无折扣机制，折后价等于原价。 */
+   price / discountedPrice 为整数分（§5.6：金额一律以整数分保存与计算）。
+   口味与备注绑定在行内；整单级只有 orderNote，没有整单级口味（§15.6.4）。
+   一期身份识别链路未接后端，所有人按访客原价，折后价等于原价。 */
 const USER_ORDERS = [
-  { id: 'o1', no: 'SA2406100126', code: '0126', status: '待取餐', time: '06-10 16:42', total: 70, pickupLabel: '今天 17:00', minsToPickup: 12, pickupPoint: '县前直营店',
-    contact: '林先生', phone: '138****6620', note: '双拼饭加饭', flavors: ['加饭', '加辣'],
-    items: [['p001', '商务双拼饭', 2, 32, 32, ['加饭', '加辣'], '双拼饭加饭'], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'r1', no: 'SA2406100140', code: '0208', status: '已预约', time: '06-10 16:30', total: 60, pickupLabel: '今天 18:30', pickupPoint: '县前直营店', minsToPickup: 102,
-    contact: '林先生', phone: '138****6620', note: '会议餐，准点取', flavors: ['少盐'],
-    items: [['p001', '商务双拼饭', 1, 32, 32], ['p002', '江南三鲜套餐', 1, 28, 28, ['少盐'], '会议餐，准点取']] },
-  { id: 'r2', no: 'SA2406100138', code: '0176', status: '已预约', time: '06-10 16:28', total: 42, pickupLabel: '今天 17:06', pickupPoint: '县前直营店', minsToPickup: 18,
-    contact: '林先生', phone: '138****6620', note: '', flavors: ['酱汁分装'],
-    items: [['p005', '藜麦鸡胸能量碗', 1, 30, 30, ['酱汁分装']], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'o3', no: 'SA2406090311', code: '0311', status: '已完成', time: '06-09 12:08', total: 62, pickupLabel: '昨天 12:30', pickupPoint: '县前直营店',
-    contact: '林先生', phone: '138****6620', note: '鸡腿排双拼', flavors: ['双拼', '酱汁分装'],
-    items: [['p004', '蒜香鸡腿排', 1, 26, 26, ['双拼']], ['p005', '藜麦鸡胸能量碗', 1, 30, 30, ['酱汁分装']], ['p006', '山药排骨汤', 1, 12, 12]] },
+  { id: 'o1', no: 'SA2406100126', code: '0126', status: '待取餐',
+    pickupDate: '2026-08-21', pickupTime: '17:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:42:00', subtotal: 7600, discountRate: 100, discountCut: 0, total: 7600, isStaff: false,
+    orderNote: '双拼饭加饭', contact: '林先生', phone: '138****6620',
+    items: [['p001', '商务双拼饭', 2, 3200, 3200, ['加饭', '加辣'], '双拼饭加饭'], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'r1', no: 'SA2406100140', code: '0208', status: '已预约',
+    pickupDate: '2026-08-21', pickupTime: '18:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:30:00', subtotal: 6000, discountRate: 100, discountCut: 0, total: 6000, isStaff: false,
+    orderNote: '会议餐，准点取', contact: '林先生', phone: '138****6620',
+    items: [['p001', '商务双拼饭', 1, 3200, 3200], ['p002', '江南三鲜套餐', 1, 2800, 2800, ['少盐'], '会议餐，准点取']] },
+  { id: 'r2', no: 'SA2406100138', code: '0176', status: '已预约',
+    pickupDate: '2026-08-21', pickupTime: '17:06', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:28:00', subtotal: 4200, discountRate: 100, discountCut: 0, total: 4200, isStaff: false,
+    orderNote: '', contact: '林先生', phone: '138****6620',
+    items: [['p005', '藜麦鸡胸能量碗', 1, 3000, 3000, ['酱汁分装']], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'o3', no: 'SA2406090311', code: '0311', status: '已完成',
+    pickupDate: '2026-08-20', pickupTime: '12:30', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 12:08:00', subtotal: 6800, discountRate: 100, discountCut: 0, total: 6800, isStaff: false,
+    orderNote: '鸡腿排双拼', contact: '林先生', phone: '138****6620',
+    items: [['p004', '蒜香鸡腿排', 1, 2600, 2600, ['双拼']], ['p005', '藜麦鸡胸能量碗', 1, 3000, 3000, ['酱汁分装']], ['p006', '山药排骨汤', 1, 1200, 1200]] },
 ];
 
 /* 当前营业日。§7.8：取餐号按取餐日期从 0001 累计，跨营业日可能重复，
@@ -88,47 +98,71 @@ const BUSINESS_DAY = '2026-08-21';
 
 // 商户端 订单 (六态履约模型: 已预约 → 制作中 → 待取餐 → 已完成；旁路 退款中 → 已退款)
 const ADMIN_ORDERS = [
-  { id: 'a0', pickupDate: '2026-08-21', no: 'SA2406100145', code: '0145', status: '已预约', time: '16:55', mins: 0, total: 58, count: 2,
-    contact: '孙女士', phone: '150****3322', flavor: '少盐', note: '预约 18:00 取',
-    items: [['p002', '江南三鲜套餐', 1, 28, 28], ['p005', '藜麦鸡胸能量碗', 1, 30, 30]] },
-  { id: 'a1', pickupDate: '2026-08-21', no: 'SA2406100131', code: '0131', status: '制作中', time: '16:51', mins: 1, total: 60, count: 2,
-    contact: '陈女士', phone: '159****2031', flavor: '双拼饭加辣 ×1', note: '打包分开装',
-    items: [['p001', '商务双拼饭', 1, 32, 32], ['p002', '江南三鲜套餐', 1, 28, 28]] },
-  { id: 'a2', pickupDate: '2026-08-21', no: 'SA2406100129', code: '0129', status: '制作中', time: '16:49', mins: 3, total: 26, count: 1,
-    contact: '吴先生', phone: '137****7788', flavor: '—', note: '',
-    items: [['p004', '蒜香鸡腿排', 1, 26, 26]] },
-  { id: 'a3', pickupDate: '2026-08-21', no: 'SA2406100126', code: '0126', status: '制作中', time: '16:42', mins: 10, total: 76, count: 3,
-    contact: '林先生', phone: '138****6620', flavor: '加饭 · 加辣', note: '双拼饭加饭',
-    items: [['p001', '商务双拼饭', 2, 32, 32], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'a4', pickupDate: '2026-08-21', no: 'SA2406100120', code: '0120', status: '制作中', time: '16:35', mins: 17, total: 58, count: 2,
-    contact: '黄小姐', phone: '135****9012', flavor: '酱汁分装', note: '能量碗酱汁分装',
-    items: [['p005', '藜麦鸡胸能量碗', 1, 30, 30], ['p004', '蒜香鸡腿排', 1, 26, 26], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'a5', pickupDate: '2026-08-21', no: 'SA2406100118', code: '0118', status: '待取餐', time: '16:30', mins: 22, total: 68, count: 3,
-    contact: '郑先生', phone: '133****4456', flavor: '少盐', note: '',
-    items: [['p002', '江南三鲜套餐', 2, 28, 28], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'a6', pickupDate: '2026-08-21', no: 'SA2406100112', code: '0112', status: '待取餐', time: '16:22', mins: 30, total: 38, count: 2,
-    contact: '王女士', phone: '188****0021', flavor: '—', note: '',
-    items: [['p004', '蒜香鸡腿排', 1, 26, 26], ['p006', '山药排骨汤', 1, 12, 12]] },
-  { id: 'a7', pickupDate: '2026-08-21', no: 'SA2406100090', code: '0090', status: '已完成', time: '15:40', mins: 0, total: 62, count: 2,
-    contact: '刘先生', phone: '130****5567', flavor: '加饭', note: '',
-    items: [['p001', '商务双拼饭', 1, 32, 32], ['p005', '藜麦鸡胸能量碗', 1, 30, 30]] },
-  { id: 'a8', pickupDate: '2026-08-21', no: 'SA2406100071', code: '0071', status: '已退款', time: '14:55', mins: 0, total: 26, count: 1,
-    contact: '孙女士', phone: '150****3322', flavor: '—', note: '用户取消',
-    items: [['p004', '蒜香鸡腿排', 1, 26, 26]] },
+  { id: 'a0', no: 'SA2406100145', code: '0145', status: '已预约',
+    pickupDate: '2026-08-21', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:55:00', subtotal: 5800, discountRate: 100, discountCut: 0, total: 5800, isStaff: false,
+    orderNote: '预约 18:00 取', contact: '孙女士', phone: '150****3322',
+    items: [['p002', '江南三鲜套餐', 1, 2800, 2800, '少盐'], ['p005', '藜麦鸡胸能量碗', 1, 3000, 3000]] },
+  { id: 'a1', no: 'SA2406100131', code: '0131', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:20', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:51:00', subtotal: 6000, discountRate: 100, discountCut: 0, total: 6000, isStaff: false,
+    orderNote: '打包分开装', contact: '陈女士', phone: '159****2031',
+    items: [['p001', '商务双拼饭', 1, 3200, 3200, '双拼饭加辣 ×1'], ['p002', '江南三鲜套餐', 1, 2800, 2800]] },
+  { id: 'a2', no: 'SA2406100129', code: '0129', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:20', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:49:00', subtotal: 2600, discountRate: 100, discountCut: 0, total: 2600, isStaff: false,
+    orderNote: '', contact: '吴先生', phone: '137****7788',
+    items: [['p004', '蒜香鸡腿排', 1, 2600, 2600]] },
+  { id: 'a3', no: 'SA2406100126', code: '0126', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:10', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:42:00', subtotal: 7600, discountRate: 100, discountCut: 0, total: 7600, isStaff: false,
+    orderNote: '双拼饭加饭', contact: '林先生', phone: '138****6620',
+    items: [['p001', '商务双拼饭', 2, 3200, 3200, '加饭 · 加辣'], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'a4', no: 'SA2406100120', code: '0120', status: '制作中',
+    pickupDate: '2026-08-21', pickupTime: '17:10', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:35:00', subtotal: 6800, discountRate: 100, discountCut: 0, total: 6800, isStaff: false,
+    orderNote: '能量碗酱汁分装', contact: '黄小姐', phone: '135****9012',
+    items: [['p005', '藜麦鸡胸能量碗', 1, 3000, 3000, '酱汁分装'], ['p004', '蒜香鸡腿排', 1, 2600, 2600], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'a5', no: 'SA2406100118', code: '0118', status: '待取餐',
+    pickupDate: '2026-08-21', pickupTime: '17:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:30:00', subtotal: 6800, discountRate: 100, discountCut: 0, total: 6800, isStaff: false,
+    orderNote: '', contact: '郑先生', phone: '133****4456',
+    items: [['p002', '江南三鲜套餐', 2, 2800, 2800, '少盐'], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'a6', no: 'SA2406100112', code: '0112', status: '待取餐',
+    pickupDate: '2026-08-21', pickupTime: '17:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 16:22:00', subtotal: 3800, discountRate: 100, discountCut: 0, total: 3800, isStaff: false,
+    orderNote: '', contact: '王女士', phone: '188****0021',
+    items: [['p004', '蒜香鸡腿排', 1, 2600, 2600], ['p006', '山药排骨汤', 1, 1200, 1200]] },
+  { id: 'a7', no: 'SA2406100090', code: '0090', status: '已完成',
+    pickupDate: '2026-08-21', pickupTime: '13:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 12:35:00', subtotal: 6200, discountRate: 100, discountCut: 0, total: 6200, isStaff: false,
+    orderNote: '', contact: '刘先生', phone: '130****5567',
+    items: [['p001', '商务双拼饭', 1, 3200, 3200, '加饭'], ['p005', '藜麦鸡胸能量碗', 1, 3000, 3000]] },
+  { id: 'a8', no: 'SA2406100071', code: '0071', status: '已退款',
+    pickupDate: '2026-08-21', pickupTime: '12:30', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 11:55:00', subtotal: 2600, discountRate: 100, discountCut: 0, total: 2600, isStaff: false,
+    orderNote: '用户取消', contact: '孙女士', phone: '150****3322',
+    items: [['p004', '蒜香鸡腿排', 1, 2600, 2600]] },
   /* a9 与 a5 取餐号相同、取餐日期不同 —— 没有这一组，「限定当前营业日」不可证伪。
      它同时是 §6.7 的「未取餐」样本：营业日结束后仍停在 待取餐。 */
-  { id: 'a9', pickupDate: '2026-08-20', no: 'SA2406090118', code: '0118', status: '待取餐', time: '16:30', mins: 0, total: 32, count: 1,
-    contact: '许先生', phone: '186****7742', flavor: '—', note: '昨日未取',
-    items: [['p001', '商务双拼饭', 1, 32, 32]] },
+  { id: 'a9', no: 'SA2406090118', code: '0118', status: '待取餐',
+    pickupDate: '2026-08-20', pickupTime: '17:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 16:30:00', subtotal: 3200, discountRate: 100, discountCut: 0, total: 3200, isStaff: false,
+    orderNote: '昨日未取', contact: '许先生', phone: '186****7742',
+    items: [['p001', '商务双拼饭', 1, 3200, 3200]] },
   // a10 的取餐号只存在于旧营业日：用于验证跨日提示，而不是空列表。
-  { id: 'a10', pickupDate: '2026-08-20', no: 'SA2406090203', code: '0203', status: '已完成', time: '12:14', mins: 0, total: 42, count: 2,
-    contact: '钱女士', phone: '159****8830', flavor: '少盐', note: '',
-    items: [['p002', '江南三鲜套餐', 1, 28, 28], ['p006', '山药排骨汤', 1, 12, 12]] },
+  { id: 'a10', no: 'SA2406090203', code: '0203', status: '已完成',
+    pickupDate: '2026-08-20', pickupTime: '12:30', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 12:14:00', subtotal: 4000, discountRate: 100, discountCut: 0, total: 4000, isStaff: false,
+    orderNote: '', contact: '钱女士', phone: '159****8830',
+    items: [['p002', '江南三鲜套餐', 1, 2800, 2800, '少盐'], ['p006', '山药排骨汤', 1, 1200, 1200]] },
   /* §7.1 允许订单长期停在 退款中（退款结果无法确定时即停在此处）。
      §6.6 的泳道只有五档、不含 退款中，因此该状态只能经「全部」泳道或搜索找到。 */
-  { id: 'a11', pickupDate: '2026-08-21', no: 'SA2406100102', code: '0102', status: '退款中', time: '15:12', mins: 0, total: 30, count: 1,
-    contact: '曹先生', phone: '187****2214', flavor: '—', note: '商户取消，退款处理中',
-    items: [['p005', '藜麦鸡胸能量碗', 1, 30, 30]] },
+  { id: 'a11', no: 'SA2406100102', code: '0102', status: '退款中',
+    pickupDate: '2026-08-21', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-21 15:12:00', subtotal: 3000, discountRate: 100, discountCut: 0, total: 3000, isStaff: false,
+    orderNote: '商户取消，退款处理中', contact: '曹先生', phone: '187****2214',
+    items: [['p005', '藜麦鸡胸能量碗', 1, 3000, 3000]] },
 ];
 
 
@@ -202,7 +236,47 @@ function defaultPickup() {
   return { off: last.off, period: MEAL_PERIODS[0].key, time: pickupTimes(MEAL_PERIODS[0].key)[0] };
 }
 
+/* ---- 纯字符串日历运算 ----
+   刻意不使用 Date：营业日必须是数据里的事实，不能由运行时时钟推导，
+   否则同一份种子数据的断言结果会随日期翻转。
+   算法为 days-from-civil / civil-from-days，输入输出都是 YYYY-MM-DD。 */
+function daysFromCivil(iso) {
+  const [y0, m, d] = iso.split('-').map(Number);
+  const y = y0 - (m <= 2 ? 1 : 0);
+  const era = Math.floor(y / 400);
+  const yoe = y - era * 400;
+  const doy = Math.floor((153 * (m + (m > 2 ? -3 : 9)) + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+function civilFromDays(z0) {
+  const z = z0 + 719468;
+  const era = Math.floor(z / 146097);
+  const doe = z - era * 146097;
+  const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+  const mp = Math.floor((5 * doy + 2) / 153);
+  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+  const m = mp + (mp < 10 ? 3 : -9);
+  const y = era * 400 + yoe + (m <= 2 ? 1 : 0);
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+// 相对当前营业日的天数
+const dayOffsetOf = iso => daysFromCivil(iso) - daysFromCivil(BUSINESS_DAY);
+
 const dateLabel = off => (RESERVE_DATES.find(d => d.off === off) || RESERVE_DATES[0]).k;
+
+/* 取餐选择 {off,time} → 绝对营业日期。off 是相对当前营业日的天数。 */
+function pickupDateOf(pk) {
+  return civilFromDays(daysFromCivil(BUSINESS_DAY) + (pk && pk.off ? pk.off : 0));
+}
+
+/* 下单时刻。演示时钟固定为 NOW_MINS，真实实现由服务端按门店时区给出。 */
+function nowStamp() {
+  const hh = String(Math.floor(NOW_MINS / 60)).padStart(2, '0');
+  const mm = String(NOW_MINS % 60).padStart(2, '0');
+  return `${BUSINESS_DAY} ${hh}:${mm}:00`;
+}
 const pickupLabel = pk => `${dateLabel(pk.off)} ${pk.time}`;
 
 // 距取餐分钟数
@@ -211,9 +285,27 @@ function slotMins(off, t) { return off * 1440 + toMins(t) - NOW_MINS; }
 // 取餐前可取消的最短分钟数
 const CANCEL_LIMIT_MIN = 30;
 
+/* 距取餐的剩余分钟数，从订单的取餐日期与时刻现算（§15.6.2 删除了 minsToPickup）。
+   剩余时间是随时间变化的量，落在记录上就会陈旧：时钟一旦真实流动，
+   取消窗口会按下单时刻而不是当前时刻判定，放行本该拒绝的取消。 */
+function minsToPickup(o) {
+  if (!o || !o.pickupDate || !o.pickupTime) return NaN;
+  return dayOffsetOf(o.pickupDate) * 1440 + toMins(o.pickupTime) - NOW_MINS;
+}
+
 // 可自助取消：`已预约` 且距取餐大于 30 分钟（生效 spec §7.6）。
 // 订单类型字段已随即时单删除，不再参与判定。
-function canCancelReserve(o) { return !!(o && o.status === '已预约' && o.minsToPickup > CANCEL_LIMIT_MIN); }
+function canCancelReserve(o) {
+  return !!(o && o.status === '已预约' && minsToPickup(o) > CANCEL_LIMIT_MIN);
+}
+
+/* 取餐文案，同样现算（§15.6.2 删除了 pickupLabel 字段）。 */
+function orderPickupLabel(o) {
+  if (!o || !o.pickupDate || !o.pickupTime) return '';
+  const off = dayOffsetOf(o.pickupDate);
+  const day = off === 0 ? '今天' : off === 1 ? '明天' : off === -1 ? '昨天' : o.pickupDate;
+  return day + ' ' + o.pickupTime;
+}
 
 // 当前登录用户（微信授权手机号；真实实现由服务端用 code 换取，前端拿不到明文）
 const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
@@ -223,6 +315,7 @@ module.exports = {
   BUSINESS_DAY,
   NOW_MINS, PICKUP_POINTS, RESERVE_DATES, MEAL_PERIODS, PICKUP_STEP_MIN,
   pickupTimes, isPeriodCutOff, isDateCutOff, defaultPickup, dateLabel, pickupLabel,
-  CANCEL_LIMIT_MIN, slotMins, canCancelReserve,
+  CANCEL_LIMIT_MIN, slotMins, canCancelReserve, minsToPickup, orderPickupLabel,
+  pickupDateOf, nowStamp,
   ME,
 };
