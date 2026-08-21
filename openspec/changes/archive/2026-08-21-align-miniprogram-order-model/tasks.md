@@ -39,5 +39,7 @@
 
 ## 独立验证
 
-- [ ] 19. 提交产生候选 SHA。
-- [ ] 20. 在干净 detached worktree 对该精确 SHA 只读重跑 12–16。
+- [x] 19. 候选 SHA `841dfe3`。
+  - 首个候选 `8e90666` 因 `git add openspec` 连带纳入运行门禁生成的 `__pycache__/*.pyc` 作废；amend 剔除后重新产生候选并重跑验证。该失误本轮第三次出现，根因是归档门禁里的 Python 脚本会在仓库内生成字节码而仓库未忽略该目录。
+- [x] 20. 在干净 detached worktree 对 `841dfe3` 只读验证。
+  - `DIRTY=0`；`MP_ORDER_MODEL_GATE=PASS`；`node --test tests/*.test.js` → 87 pass / 0 fail；`WX_LINT=PASS`；归档门禁 30 项与 base 逐行一致。
