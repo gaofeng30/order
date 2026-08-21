@@ -12,10 +12,8 @@ Page({
   build() {
     const orders = getApp().globalData.aOrders;
     const o = orders.find(x => x.id === this._id) || getApp().globalData._aSel || orders[0];
-    const rows = o.items.map(([id, q, p]) => {
-      const m = data.itemById(id);
-      return { name: m.name, q, p, sub: p * q };
-    });
+    // 名称取订单自身的快照，不回查菜品表（§15.6.2）
+    const rows = o.items.map(([, name, q, p, dp]) => ({ name, q, p: dp, sub: dp * q }));
     this.setData({ o, rows, meta: advanceMeta(o.status), flavorShow: o.flavor && o.flavor !== '—' });
   },
   advance() {

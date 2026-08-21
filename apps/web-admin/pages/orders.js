@@ -65,7 +65,7 @@
         cols: [
           { t: '取餐号', w: '72px', render: r => `<b class="tnum">${r.code}</b>` },
           { t: '菜品', render: r => {
-            const band = [...new Set(r.items.flatMap(it => [it[4], it[5]]).filter(Boolean)), r.orderNote]
+            const band = [...new Set(r.items.flatMap(it => [it[5], it[6]]).filter(Boolean)), r.orderNote]
               .filter(Boolean).join(' · ');
             return `<div class="ellipsis">${T.esc(Api.itemsSummary(r.items))}</div>` +
                    (band ? `<div class="ord-band ellipsis">${T.esc(band)}</div>` : '');
@@ -136,11 +136,10 @@
 
     /* 口味与备注绑定在 items 行内（PRD §15.6.2），整单级只有 orderNote。
        小计按折后单价算 —— 逐行折后价之和恒等于 o.total，展示与结算不会各说各话。 */
-    const rows = o.items.map(([iid, q, p, dp, flavor, note]) => {
-      const m = window.Seed.itemById(iid);
-      return { name: m ? m.name : '已删除菜品', q, p, dp, sub: dp * q,
-               band: [flavor, note].filter(Boolean).join(' · ') };
-    });
+    // 名称取订单自身的快照，不回查商品表（§15.6.2）
+    const rows = o.items.map(([, iname, q, p, dp, flavor, note]) => (
+      { name: iname, q, p, dp, sub: dp * q, band: [flavor, note].filter(Boolean).join(' · ') }
+    ));
     const m = Api.advanceMeta(o.status);
 
     host.innerHTML =

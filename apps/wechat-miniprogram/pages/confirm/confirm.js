@@ -91,14 +91,19 @@ Page({
       // 支付成功即建单。距取餐不足 30 分钟时直接进 制作中（生效 spec §7.4）
       status: minsToPickup <= data.CANCEL_LIMIT_MIN ? '制作中' : '已预约',
       time: '06-10 16:48',
-      total: this.data.payable_text,
-      subtotal: this.data.subtotal_text,
+      /* 金额与种子订单保持同一类型：同一字段不能一处是数字、一处是格式化字符串。
+         单位仍是元，改整数分是紧随其后的另一个 change。 */
+      total: Number(this.data.payable_text),
+      subtotal: Number(this.data.subtotal_text),
       pickupPoint: data.STORE.pickupWindow,
       contact: this.data.form.contact || '林先生',
       phone: this.data.form.phone || '138****6620',
       note: '',
       flavors: [],
-      items: list.map(({ item, q, flavors, note }) => [item.id, q, item.price, flavors, note]),
+      /* 名称在此刻固化（§15.6.2）：订单是历史记录，商品改名或删除后
+         它必须仍复述下单当时的事实。一期无折扣，折后价等于原价。 */
+      items: list.map(({ item, q, flavors, note }) =>
+        [item.id, item.name, q, item.price, item.price, flavors, note]),
     };
     order.pickupLabel = data.pickupLabel(pk);
     order.mealPeriod = pk.period;

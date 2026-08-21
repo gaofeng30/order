@@ -407,10 +407,15 @@ test('cart snapshot drives confirm, subtotal-only pricing and mock pay without m
   confirm.pay();
   assert.equal(menuReads, 0);
   assert.equal(harness.requestCalls.length, 0);
+  // §15.6.2: [id, name, qty, price, discountedPrice, flavors?, note?]
   assert.equal(app.globalData.orders[0].items[0][0], HUGE_PRODUCT_ID);
-  assert.equal(app.globalData.orders[0].items[0][2], 123.45);
-  assert.equal(app.globalData.orders[0].total, '246.90');
-  assert.equal(app.globalData.orders[0].subtotal, '246.90');
+  assert.equal(app.globalData.orders[0].items[0][1], 'Snapshot Product');
+  assert.equal(app.globalData.orders[0].items[0][2], 2);
+  assert.equal(app.globalData.orders[0].items[0][3], 123.45);
+  assert.equal(app.globalData.orders[0].items[0][4], 123.45);
+  // 金额与种子订单同为数字，不再是格式化字符串
+  assert.equal(app.globalData.orders[0].total, 246.9);
+  assert.equal(app.globalData.orders[0].subtotal, 246.9);
   assert.equal(harness.navigationCalls.at(-1).type, 'redirectTo');
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/result/result');
 });
