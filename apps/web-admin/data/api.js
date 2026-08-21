@@ -15,6 +15,9 @@
 (function () {
   const Seed = window.Seed;
 
+  const MEALS = ['all', 'lunch', 'dinner'];
+  const MEAL_LABEL = { all: '全天', lunch: '午餐', dinner: '晚餐' };
+
   function g() { return window.__store; }
 
   // 统一模拟网络往返，让页面从一开始就按异步写，避免后端接入时重写
@@ -42,7 +45,8 @@
 
   // POST /admin/products      新增（无 id）
   // PUT  /admin/products/:id  修改
-  // body: { name, price, cat, desc, imgs }
+  // body: { name, price, cat, meal, desc, imgs }
+  //   meal: 'all' 全天 | 'lunch' 午餐 | 'dinner' 晚餐（必填，PRD §6.3）
   function saveProduct(p) {
     const s = g();
     const name = (p.name || '').trim();
@@ -50,9 +54,10 @@
     const price = Number(p.price);
     if (!(price > 0)) return fail('价格需大于 0');
     if (!p.cat) return fail('请选择分类');
+    if (!MEALS.includes(p.meal)) return fail('请选择餐段可售');
     const imgs = (p.imgs || []).slice(0, 3);
 
-    const patch = { name, price, cat: p.cat, desc: p.desc || '', imgs, img: imgs[0] || '' };
+    const patch = { name, price, cat: p.cat, meal: p.meal, desc: p.desc || '', imgs, img: imgs[0] || '' };
     if (p.id) {
       const i = s.menu.findIndex(x => x.id === p.id);
       if (i < 0) return fail('菜品不存在');
@@ -272,6 +277,6 @@
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,
     getLayer, saveLayer, clearLayer,
-    imgUrl,
+    imgUrl, MEALS, MEAL_LABEL,
   };
 })();
