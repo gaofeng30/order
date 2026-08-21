@@ -165,10 +165,20 @@
   const statusTone = s => STATUS_MAP[s] || 'mute';
 
   // GET /admin/orders?lane= → Order[]
-  function listOrders(lane) {
+  /* opts.uncollected：§6.7 的「未取餐」口径 —— 营业日已结束仍处于 待取餐 的订单。
+     它是一个筛选条件而不是第七个状态，所以不进 LANES 也不进 ACT，只在这里做交集。 */
+  function listOrders(lane, opts) {
     const all = g().aOrders;
-    const list = (!lane || lane === '全部') ? all : all.filter(o => o.status === lane);
+    let list = (!lane || lane === '全部') ? all : all.filter(o => o.status === lane);
+    if (opts && opts.uncollected) {
+      list = list.filter(o => o.status === '待取餐' && o.pickupDate < BUSINESS_DAY);
+    }
     return ok(clone(list));
+  }
+
+  // 「未取餐」的条数，用于筛选按钮上的角标
+  function uncollectedCount() {
+    return g().aOrders.filter(o => o.status === '待取餐' && o.pickupDate < BUSINESS_DAY).length;
   }
 
   // 各泳道计数（前端聚合，后端可合并进 listOrders 的响应头）
@@ -196,6 +206,63 @@
   // 菜品摘要串
   function itemsSummary(items) {
     return items.map(([id, q]) => (Seed.itemById(id) || { name: '已删除菜品' }).name + '×' + q).join('，');
+  }
+
+  /* 当前营业日。P0 用演示数据的“今天”，接后端后由服务端下发 ——
+     页面 MUST NOT 各自硬编日期，否则订单页和财务页会在跨零点时各说各话。 */
+  const BUSINESS_DAY = '2026-08-21';
+  function today() { return BUSINESS_DAY; }
+
+  /* 当前登录的商户账号。PC 后台仅主账号可登录（§4.4），退款的操作人取自这里，
+     不是 Seed.MANAGER 那个装饰用的常量 —— 财务页要按操作人追责。 */
+  function currentAccount() {
+    const list = g().accounts || [];
+    return clone(list.find(a => a.role === 'owner' && a.enabled) || list[0] || null);
+  }
+
+  /* POST /admin/orders/:id/refund  主账号发起退款（§6.7、§7.1 旁路、§7.7）
+
+     三条硬规则：
+     1. **只有全额。** §7.7 一期只支持原路全额退款，部分退款必须拒绝。这里的做法是
+        接口根本不收金额入参 —— 表达不出来的请求不需要校验，也不会被下一个人"顺手加上"。
+     2. **只到退款中。** 只有微信确认退款成功才是 已退款（§7.7）。PC 端把订单推到
+        退款中就到头了，剩下的由支付回调驱动。前端自行置终态等于伪造到账。
+     3. **幂等。** §7.1 要求相同幂等键重复请求返回第一次结果，不重复产生退款副作用。
+        订单已在 退款中 / 已退款 时直接拒绝，既有退款记录一个字都不动。 */
+  const REFUNDABLE = ['已预约', '制作中', '待取餐', '已完成'];
+  const canRefund = st => REFUNDABLE.includes(st);
+
+  function refundOrder(id, reason) {
+    const o = findOrder(id);
+    if (!o) return fail('订单不存在');
+    if (o.refund || !REFUNDABLE.includes(o.status)) {
+      return fail(`「${o.code}」当前为 ${o.status}，不能再次发起退款。退款结果以微信为准。`);
+    }
+    const why = String(reason == null ? '' : reason).trim();
+    if (!why) return fail('请填写退款原因。退款不可撤销，原因会记入财务对账。');
+    const me = currentAccount();
+    o.refund = {
+      no: refundNo(),
+      amount: o.total,                 // 全额，且不接受调用方指定
+      status: '退款中',
+      operator: me ? me.name : '未知操作人',
+      at: stamp(),
+      reason: why,
+    };
+    o.status = '退款中';
+    return ok(clone(o));
+  }
+
+  // 退款单号：微信退款单以 5000 开头，与交易号的 42000 区分
+  let refundSeq = 100;
+  function refundNo() {
+    refundSeq += 1;
+    return '5000' + BUSINESS_DAY.replace(/-/g, '') + String(refundSeq).padStart(9, '0');
+  }
+  function stamp() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${BUSINESS_DAY} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
   }
 
   // PUT /admin/orders/:id/advance  单向推进一步，返回 { prev, next, act }
@@ -256,7 +323,6 @@
         operator: o.refund.operator, at: o.refund.at, reason: o.refund.reason,
         orderId: o.id, orderNo: o.no, orderCode: o.code, orderTotal: o.total,
         txnId: o.txnId, paidAt: o.paidAt, contact: o.contact,
-        partial: o.refund.amount < o.total,
       }))
       .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
   }
@@ -675,6 +741,7 @@
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
+    today, currentAccount, refundOrder, canRefund, uncollectedCount,
     listPayments, listRefunds, financeSummary, buildPaymentExport,
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,

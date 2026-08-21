@@ -137,15 +137,15 @@ const ADMIN_ORDERS = [
     refund: { no: '50000123452026082100001', amount: 3600, status: '退款中',
               operator: '高特', at: '2026-08-21 11:58:40', reason: '菜品临时售罄，商户取消' } },
 
-  /* 部分退款：退款金额小于订单实付，用于验证净额不是按订单数而是按金额算 */
+  /* 跨日退款：08-21 付款、08-22 才到账。财务页按到账日归集，两天各算各的 */
   { id: 'a9', no: 'SA2406100071', code: '0071', status: '已退款',
     pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
     paidAt: '2026-08-21 10:55:14', txnId: '4200002318202608210010',
     subtotal: 3800, discountRate: 100, discountCut: 0, total: 3800, isStaff: false,
     contact: '孙女士', phone: '150****3322', orderNote: '',
     items: [['p004', 1, 2600, 2600, '', ''], ['p006', 1, 1200, 1200, '', '']],
-    refund: { no: '50000123452026082100002', amount: 1200, status: '已退款',
-              operator: '周敏', at: '2026-08-22 09:30:11', reason: '汤洒了，退单品' } },
+    refund: { no: '50000123452026082100002', amount: 3800, status: '已退款',
+              operator: '周敏', at: '2026-08-22 09:30:11', reason: '汤洒了，客户要求退单' } },
 
   /* 前一天付款、次日取餐。支付日期 08-20、营业日期 08-21 —— 财务页按支付日期
      归集（微信账单以交易时间为准），营业日期只是展示，两者混用即对不上账 */
@@ -155,6 +155,15 @@ const ADMIN_ORDERS = [
     subtotal: 6000, discountRate: 100, discountCut: 0, total: 6000, isStaff: false,
     contact: '钱女士', phone: '137****3390', orderNote: '明天中午取',
     items: [['p002', 1, 2800, 2800, '', ''], ['p001', 1, 3200, 3200, '', '']] },
+
+  /* 营业日已过仍是 待取餐 —— §6.7 的「未取餐」查询口径针对的就是这种单。
+     它不是第七个状态，只是一个筛选条件：状态仍为 待取餐，营业日期早于今天。 */
+  { id: 'a12', no: 'SA2406090150', code: '0150', status: '待取餐',
+    pickupDate: '2026-08-20', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    paidAt: '2026-08-20 17:12:50', txnId: '4200002318202608200013',
+    subtotal: 2600, discountRate: 100, discountCut: 0, total: 2600, isStaff: false,
+    contact: '马先生', phone: '135****2266', orderNote: '',
+    items: [['p004', 1, 2600, 2600, '', '']] },
 
   /* 昨天的单 */
   { id: 'a10', no: 'SA2406090210', code: '0210', status: '已完成',

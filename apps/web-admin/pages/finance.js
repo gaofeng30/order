@@ -13,7 +13,7 @@
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
-  const TODAY = '2026-08-21';           // P0 演示数据的“今天”，接后端后取服务端日期
+  const TODAY = Api.today();            // 营业日由契约层单一下发，页面不硬编日期
   let range = { from: TODAY, to: TODAY };
   let tab = 'pay';                       // pay | refund
 
@@ -140,7 +140,7 @@
           { t: '退款单号', w: '210px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.no)}</span>` },
           { t: '原订单', w: '150px', render: r => `<span class="tnum">${T.esc(r.orderNo)}</span><br><span class="faint tnum" style="font-size:11.5px">付于 ${T.esc(r.paidAt.slice(0, 10))}</span>` },
           { t: '微信交易号', w: '190px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.txnId)}</span>` },
-          { t: '退款金额', w: '124px', cls: 'num', render: r => `${T.money(Api.yuan(r.amount))}${r.partial ? `<br><span class="faint" style="font-size:11.5px">部分退款 / 实付 ¥${Api.yuan(r.orderTotal)}</span>` : ''}` },
+          { t: '退款金额', w: '110px', cls: 'num', render: r => T.money(Api.yuan(r.amount)) },
           { t: '退款状态', w: '96px', render: r => T.pill(r.status) },
           { t: '操作人', w: '90px', render: r => T.esc(r.operator) },
           { t: '退款时间', w: '160px', render: r => `<span class="tnum">${T.esc(r.at)}</span>` },
