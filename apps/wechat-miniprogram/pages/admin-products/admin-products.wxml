@@ -19,7 +19,7 @@
     <view wx:for="{{list}}" wx:key="id" class="card prod {{item.s === 'off' ? 'off' : ''}}">
       <view class="prod-pic">
         <imageph item="{{item}}" h="136" w="136" radius="24" tag="{{false}}" />
-        <view wx:if="{{item.s === 'soldout'}}" class="prod-mask">售罄</view>
+        <view wx:if="{{item.soldOut}}" class="prod-mask">售罄</view>
       </view>
       <view class="prod-info">
         <view class="prod-head">
@@ -31,7 +31,7 @@
           <text wx:if="{{item.imgCount > 1}}" class="prod-imgs">{{item.imgCount}} 图</text>
         </view>
         <view class="prod-actions">
-          <text class="pa-soldout {{item.s === 'soldout' ? 'green' : ''}}" data-id="{{item.id}}" catchtap="toggleSoldout">{{item.soldoutLabel}}</text>
+          <text class="pa-soldout {{item.soldOut ? 'green' : ''}}" data-id="{{item.id}}" catchtap="toggleSoldout">{{item.soldoutLabel}}</text>
           <view class="pa-shelf">
             <text class="pa-shelf-lbl">上架</text>
           </view>

@@ -71,11 +71,23 @@ function deleteProduct(id) {
   return ok({ });
 }
 
-// PUT /admin/products/:id/status  body: { status: 'on'|'soldout'|'off' }
+// PUT /admin/products/:id/status  body: { status: 'on'|'off' }  —— 只表达上下架
 function setProductStatus(id, status) {
   const m = g().menu.find(x => x.id === id);
   if (!m) return fail('菜品不存在');
   m.status = status;
+  return ok(clone(m));
+}
+
+/* PUT /admin/products/:id/sold-out  body: { serviceDate, soldOut }
+   当日售罄按取餐日期写入独立记录，不触碰 status（§6.5、§15.6.1）。 */
+function setSoldOut(id, serviceDate, soldOut) {
+  const s = g();
+  const m = s.menu.find(x => x.id === id);
+  if (!m) return fail('菜品不存在');
+  const i = s.soldOut.findIndex(r => r.productId === id && r.serviceDate === serviceDate);
+  if (soldOut && i < 0) s.soldOut.push({ productId: id, serviceDate });
+  if (!soldOut && i >= 0) s.soldOut.splice(i, 1);
   return ok(clone(m));
 }
 
@@ -87,5 +99,5 @@ function uploadImage(tempFilePath) {
 }
 
 module.exports = {
-  listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
+  listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, setSoldOut, uploadImage,
 };

@@ -21,6 +21,8 @@
       layer: clone(Seed.LAYER_DEFAULTS),
       staff: clone(Seed.STAFF_WHITELIST),
       accounts: clone(Seed.MERCHANT_ACCOUNTS),
+      // 当日售罄记录 { productId, serviceDate }，与上下架分开存（§6.5）
+      soldOut: clone(Seed.PRODUCT_SOLD_OUT_DATES),
     };
   }
 

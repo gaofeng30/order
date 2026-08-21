@@ -35,7 +35,7 @@ const MENU = [
     specs: [['规格', '标准份 / 少盐'], ['含汤', '紫菜蛋花汤'], ['建议', '口味清淡 · 老少咸宜']] },
   { id: 'p003', name: '招牌红烧牛腩', cat: '热销菜品', price: 36, img: '/assets/dishes/p003.jpg',
     desc: '慢炖牛腩，适合搭配米饭。红烧汁浓郁但不过甜，当前午市已售罄。',
-    meal: 'all', status: 'soldout',
+    meal: 'all', status: 'on',
     specs: [['规格', '标准份'], ['建议', '加热后食用']] },
   { id: 'p004', name: '蒜香鸡腿排', cat: '热销菜品', price: 26, img: '/assets/dishes/p004.jpg',
     desc: '高频复购单品，窗口取餐快。去骨鸡腿排配蒜香酱汁，适合加班餐。',
@@ -63,6 +63,16 @@ function menuList() {
   return MENU;
 }
 const itemById = id => menuList().find(m => m.id === id);
+
+/* ---- 当日售罄（§6.5、§15.6.1）----
+   售罄不落在 Product 上，而是按取餐日期的独立记录，唯一键为
+   (productId, serviceDate)，与后端 product_sold_out_dates 同形。
+   只存记录的有无，不存布尔 —— 次日清零时，昨天的 false 与今天的
+   「还没标过」会成为两种形态表示同一件事。 */
+const PRODUCT_SOLD_OUT_DATES = [
+  { productId: 'p003', serviceDate: '2026-08-21' },   // 今日售罄
+  { productId: 'p006', serviceDate: '2026-08-20' },   // 昨日售罄，今日已自然清零
+];
 
 // 商户端 订单 (六态履约模型: 已预约 → 制作中 → 待取餐 → 已完成；旁路 退款中 → 已退款)
 /* 订单（PRD §15.6.2）。金额一律为整数分：财务与对账页要按分核对微信账单，
@@ -291,6 +301,7 @@ const MERCHANT_ACCOUNTS = [
 
 window.Seed = {
   STORE, HUES, CATS, MENU, menuList, itemById, ADMIN_ORDERS, RANK, ADMIN_CATS, PICKUP_POINTS,
+  PRODUCT_SOLD_OUT_DATES,
   PENDING_PAYMENTS,
   SETTINGS, LAYER_DEFAULTS, STAFF_WHITELIST, MERCHANT_ACCOUNTS, ME, TODAY, MANAGER,
 };

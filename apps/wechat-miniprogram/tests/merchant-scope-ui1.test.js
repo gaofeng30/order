@@ -39,11 +39,17 @@ test('the sell-out toggle still works end to end', async () => {
   const app = harness.loadApp();
   const page = harness.loadPage('pages/admin-products/admin-products.js');
   harness.invoke(page, 'onShow');
+  /* 售罄按取餐日期写独立记录，不动 status（§6.5、§15.6.1）。 */
+  const data = require('../utils/data.js');
   const id = app.globalData.menu[0].id;
-  const before = app.globalData.menu[0].status;
+  const shelf = app.globalData.menu[0].status;
+  const day = data.BUSINESS_DAY;
+  const before = data.isSoldOut(id, day);
   page.toggleSoldout({ currentTarget: { dataset: { id } } });
   await harness.flush(90);
-  assert.notEqual(app.globalData.menu[0].status, before);
+  assert.equal(app.globalData.menu[0].status, shelf, '售罄开关改动了上下架');
+  assert.notEqual(data.isSoldOut(id, day), before, '售罄记录没有变化');
+  assert.equal(data.isSoldOut(id, '2026-08-22'), false, '当日售罄影响了次日');
 });
 
 test('business status can be switched from the orders screen', () => {

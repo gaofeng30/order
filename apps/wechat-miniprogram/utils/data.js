@@ -29,7 +29,7 @@ const MENU = [
     specs: [['规格', '标准份 / 少盐'], ['含汤', '紫菜蛋花汤'], ['建议', '口味清淡 · 老少咸宜']] },
   { id: 'p003', name: '招牌红烧牛腩', cat: '热销菜品', price: 36, img: '/assets/dishes/p003.jpg',
     desc: '慢炖牛腩，适合搭配米饭。红烧汁浓郁但不过甜，当前午市已售罄。',
-    meal: 'all', status: 'soldout',
+    meal: 'all', status: 'on',
     specs: [['规格', '标准份'], ['建议', '加热后食用']] },
   { id: 'p004', name: '蒜香鸡腿排', cat: '热销菜品', price: 26, img: '/assets/dishes/p004.jpg',
     desc: '高频复购单品，窗口取餐快。去骨鸡腿排配蒜香酱汁，适合加班餐。',
@@ -60,6 +60,40 @@ function menuList() {
   return MENU;
 }
 const itemById = id => menuList().find(m => m.id === id);
+
+/* ---- 当日售罄（§6.5、§15.6.1）----
+   售罄不落在 Product 上，而是按取餐日期的独立记录，唯一键为
+   (productId, serviceDate)。与后端 product_sold_out_dates 同形。
+
+   只存记录的「有无」，不存布尔：次日清零时，昨天的 false 与今天的
+   「还没标过」会成为两种形态表示同一件事，判断就得处理两遍。
+   存在性只有一种形态，且天然满足「未来的日期默认可售」。
+
+   serviceDate 是取餐日期而非操作日期 —— §6.5：商户在营业日 D 标记售罄，
+   只屏蔽 D 当天的下单，不影响 D+1 的预约。 */
+const PRODUCT_SOLD_OUT_DATES = [
+  { productId: 'p003', serviceDate: '2026-08-21' },   // 今日售罄
+  { productId: 'p006', serviceDate: '2026-08-20' },   // 昨日售罄，今日已自然清零
+];
+
+function soldOutList() {
+  try {
+    const g = getApp().globalData;
+    if (g && g.soldOut) return g.soldOut;
+  } catch (e) { /* App 尚未实例化 */ }
+  return PRODUCT_SOLD_OUT_DATES;
+}
+
+// 该商品在该取餐日期是否售罄
+function isSoldOut(productId, serviceDate) {
+  return soldOutList().some(r => r.productId === productId && r.serviceDate === serviceDate);
+}
+
+// 可售 = 上架 且 该取餐日期无售罄记录。两个维度分别判断，不合成第三个枚举。
+function isSellable(product, serviceDate) {
+  const m = typeof product === 'string' ? itemById(product) : product;
+  return !!m && m.status === 'on' && !isSoldOut(m.id, serviceDate);
+}
 
 // 用户端 我的订单
 /* items: [id, name, qty, price, discountedPrice, flavors?, note?]
@@ -312,6 +346,7 @@ const ME = { phone: '13800006620', nick: '林先生', avatarChar: '林' };
 
 module.exports = {
   STORE, HUES, CATS, MENU, menuList, itemById, USER_ORDERS, ADMIN_ORDERS, ADMIN_CATS, FLAVORS,
+  PRODUCT_SOLD_OUT_DATES, soldOutList, isSoldOut, isSellable,
   BUSINESS_DAY,
   NOW_MINS, PICKUP_POINTS, RESERVE_DATES, MEAL_PERIODS, PICKUP_STEP_MIN,
   pickupTimes, isPeriodCutOff, isDateCutOff, defaultPickup, dateLabel, pickupLabel,
