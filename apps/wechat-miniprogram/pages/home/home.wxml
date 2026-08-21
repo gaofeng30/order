@@ -14,7 +14,7 @@
         <view class="store-meta">
           <icon name="pin" size="13" color="#b79a55" />
           <text class="addr">{{store.addr}}</text>
-          <text class="cut">　·　{{store.cutoff}}</text>
+          <text class="biz biz--{{bizStatus === '营业中' ? 'open' : 'closed'}}">　·　{{bizStatus}}</text>
         </view>
         <view class="search" bindtap="toMenu">
           <icon name="search" size="17" color="rgba(255,255,255,0.8)" />
@@ -24,20 +24,24 @@
     </view>
 
     <view class="body">
+      <!-- 进行中订单提示条（§5.1）。也是 §5.10 订阅被拒时的兜底 -->
+      <view wx:if="{{ongoing}}" class="ob {{ongoing.ready ? 'ob--ready' : ''}}" bindtap="tapOngoing">
+        <icon name="{{ongoing.ready ? 'ticket' : 'calendarClock'}}" size="17" color="{{ongoing.ready ? '#ffffff' : '#467a32'}}" />
+        <text class="ob-txt">{{ongoing.text}}</text>
+        <icon name="arrowRight" size="15" color="{{ongoing.ready ? 'rgba(255,255,255,0.9)' : '#8f9384'}}" />
+      </view>
+
+      <!-- 门店公告，内容来自营业设置（§5.1、§6.9） -->
+      <view wx:if="{{notice}}" class="notice">
+        <icon name="bell" size="15" color="#b79a55" />
+        <text class="notice-txt">{{notice}}</text>
+      </view>
+
       <!-- 服务宫格 -->
       <view class="sec-h"><text class="t">服务功能</text></view>
       <view class="card grid">
-        <view
-          wx:for="{{grid}}"
-          wx:key="k"
-          class="grid-item {{item.off ? 'off' : ''}}"
-          data-k="{{item.k}}"
-          bindtap="{{item.off ? '' : 'gridTap'}}"
-        >
-          <view class="grid-ico {{item.off ? 'off' : ''}}">
-            <icon name="{{item.icon}}" size="24" color="{{item.off ? '#9a9e8c' : '#467a32'}}" />
-            <view wx:if="{{item.off}}" class="grid-tag">未开放</view>
-          </view>
+        <view wx:for="{{grid}}" wx:key="k" class="grid-item" data-k="{{item.k}}" bindtap="gridTap">
+          <view class="grid-ico"><icon name="{{item.icon}}" size="24" color="#467a32" /></view>
           <text class="grid-cn">{{item.cn}}</text>
         </view>
       </view>

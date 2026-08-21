@@ -14,7 +14,7 @@ App({
     screenWidth: 375,
 
     // ---- 业务状态（跨页共享，模拟后端）----
-    store: { status: '营业中' },
+    store: {},              // 门店信息与营业状态（商户可配置，§6.9）
     cart: {},               // { [id]: { product, qty, flavors:[], note:'' } } 商品为首次选择时的目录快照
     orderMode: 'now',       // 下单模式 'now'尽快 | 'reserve'预约
     orders: [],             // 用户端订单
@@ -34,6 +34,7 @@ App({
     // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面（列表/购物车/订单只用封面）
     g.menu = JSON.parse(JSON.stringify(data.MENU)).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] }));
     g.soldOut = JSON.parse(JSON.stringify(data.PRODUCT_SOLD_OUT_DATES));
+    g.store = JSON.parse(JSON.stringify(data.STORE));
   },
 
   initSystemInfo() {
