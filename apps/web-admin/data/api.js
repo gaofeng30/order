@@ -224,6 +224,94 @@
   }
 
 
+  /* ---------------- 财务与对账（PRD §6.11） ----------------
+     归集口径是本节唯一要紧的事，两条都容易写反：
+
+     1. 收款按 **支付日期**（paidAt）归集，不是营业日期。微信商户平台的交易账单
+        以交易时间为准；预约单可以今天付明天取，按营业日期归集必然对不上。
+     2. 退款按 **退款日期**（refund.at）归集，不是原订单的支付日期。跨日退款在
+        微信账单里出现在到账那天，跟着原单走就会两天都错。
+
+     净额一律按金额相减，不按订单数 —— 部分退款是合法情形。 */
+
+  const dayOf = ts => String(ts || '').slice(0, 10);
+  const inRange = (day, r) => (!r || !r.from || day >= r.from) && (!r || !r.to || day <= r.to);
+
+  // 内部同步取数；对外的契约方法在下面统一包成异步，与其余接口一致
+  function _payments(range) {
+    return g().aOrders
+      .filter(o => inRange(dayOf(o.paidAt), range))
+      .slice()
+      .sort((a, b) => (a.paidAt < b.paidAt ? 1 : a.paidAt > b.paidAt ? -1 : 0))
+      .map(o => clone(o));
+  }
+
+  /* GET /admin/finance/refunds?from=&to= → Refund[]（按退款时间倒序）
+     每条退款都带回订单号与微信交易号：对账时拿到一条退款要能立刻定位原单。 */
+  function _refunds(range) {
+    return g().aOrders
+      .filter(o => o.refund && inRange(dayOf(o.refund.at), range))
+      .map(o => ({
+        no: o.refund.no, amount: o.refund.amount, status: o.refund.status,
+        operator: o.refund.operator, at: o.refund.at, reason: o.refund.reason,
+        orderId: o.id, orderNo: o.no, orderCode: o.code, orderTotal: o.total,
+        txnId: o.txnId, paidAt: o.paidAt, contact: o.contact,
+        partial: o.refund.amount < o.total,
+      }))
+      .sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  }
+
+  function _summary(range) {
+    const pays = _payments(range), refunds = _refunds(range);
+    const gross = pays.reduce((s, o) => s + o.total, 0);
+    const refundAmount = refunds.reduce((s, r) => s + r.amount, 0);
+    return {
+      count: pays.length,
+      gross,
+      refundCount: refunds.length,
+      refundAmount,
+      net: gross - refundAmount,
+      pendingCount: refunds.filter(r => r.status === '退款中').length,
+      staffCount: pays.filter(o => o.isStaff).length,
+      discountCut: pays.reduce((s, o) => s + o.discountCut, 0),
+    };
+  }
+
+  /* 明细导出。CSV 而非 .xlsx：导出是给人拿去和微信账单比对的，纯文本谁都能开，
+     而我们没有生成 .xlsx 的能力（xlsx.js 只读不写）。
+     两处 Excel 的坑必须防：
+     - 无 BOM 的 UTF-8 中文在 Excel 里是乱码；
+     - 微信交易号是 20 位数字，Excel 会转成科学计数法。用制表符前缀钉成文本。 */
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  const asText = v => '="' + String(v) + '"';
+
+  function _export(range) {
+    const head = ['订单号', '取餐号', '支付时间', '微信交易号', '原价小计', '折扣率', '折扣减免',
+                  '实付金额', '员工价', '营业日期', '取餐时间', '餐段', '联系人', '手机号',
+                  '退款单号', '退款金额', '退款状态', '操作人', '退款时间'];
+    const rows = _payments(range).map(o => [
+      o.no, o.code, o.paidAt, asText(o.txnId), yuan(o.subtotal), o.discountRate + '%', yuan(o.discountCut),
+      yuan(o.total), o.isStaff ? '是' : '否', o.pickupDate, o.pickupTime,
+      o.mealPeriod === 'lunch' ? '午餐' : '晚餐', o.contact, o.phone,
+      o.refund ? asText(o.refund.no) : '', o.refund ? yuan(o.refund.amount) : '',
+      o.refund ? o.refund.status : '', o.refund ? o.refund.operator : '', o.refund ? o.refund.at : '',
+    ]);
+    const body = [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+    return '﻿' + body + '\r\n';
+  }
+
+  // GET /admin/finance/payments?from=&to= → Payment[]（按支付时间倒序）
+  function listPayments(range) { return ok(_payments(range)); }
+  // GET /admin/finance/refunds?from=&to= → Refund[]（按退款时间倒序）
+  function listRefunds(range) { return ok(_refunds(range)); }
+  // GET /admin/finance/summary?from=&to= → 对账汇总。金额一律整数分。
+  function financeSummary(range) { return ok(_summary(range)); }
+  // GET /admin/finance/export?from=&to= → CSV 文本
+  function buildPaymentExport(range) { return ok(_export(range)); }
+
   /* ---------------- 员工折扣白名单 / 全局折扣率（PRD §6.4） ---------------- */
 
   const PHONE_RE = /^1[3-9]\d{9}$/;
@@ -587,6 +675,7 @@
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage,
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
+    listPayments, listRefunds, financeSummary, buildPaymentExport,
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
     getSettings, saveSettings, setStoreStatus,
     getLayer, saveLayer, clearLayer,

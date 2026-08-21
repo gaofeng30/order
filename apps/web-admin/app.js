@@ -28,6 +28,7 @@
       { r: 'dashboard', t: '工作台', ic: 'dash' },
       { r: 'orders', t: '订单管理', ic: 'receipt' },
       { r: 'verify', t: '扫码核销', ic: 'scan' },
+      { r: 'finance', t: '财务与对账', ic: 'receipt' },
     ] },
     { g: '菜品', items: [
       { r: 'products', t: '菜品管理', ic: 'bowl' },
