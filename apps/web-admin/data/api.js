@@ -176,6 +176,52 @@
     return ok(clone(list));
   }
 
+  /* 订单搜索（§6.6 末条、§6.7）。PC 扫码核销页删除后，手工核销的定位由这里承担。
+
+     一条规则决定了它的形状：**4 位取餐号只匹配当前营业日**。
+     §7.8 明写「跨营业日的取餐号可能重复」，§6.6 因此规定手工输入只匹配当前营业日期 ——
+     不限定的话，输入 0150 会同时命中今天和前天的两张单，核销就核错了人。
+
+     订单号与手机号没有这个歧义（订单号全局唯一），所以它们跨全部营业日匹配。
+
+     搜索跨泳道：要核销的时候并不知道那张单现在是什么状态。 */
+  const CODE_RE = /^\d{4}$/;
+
+  function _search(q) {
+    const key = String(q == null ? '' : q).trim();
+    if (!key) return [];
+    const all = g().aOrders;
+    const up = key.toUpperCase();
+    /* 4 位纯数字既可能是取餐号，也可能是手机尾号。两者都匹配，但**只有取餐号那一半
+       限定当前营业日** —— 跨日歧义是取餐号独有的（§7.8），手机号没有这个问题。 */
+    if (CODE_RE.test(key)) {
+      return all.filter(o =>
+        (o.code === key && o.pickupDate === BUSINESS_DAY) ||
+        String(o.phone).includes(key));
+    }
+    return all.filter(o =>
+      o.no.toUpperCase().includes(up) ||
+      String(o.phone).includes(key) ||
+      String(o.contact).includes(key) ||
+      o.code.includes(key));
+  }
+
+  // GET /admin/orders?q= → Order[]
+  function searchOrders(q) { return ok(clone(_search(q))); }
+
+  /* 「搜不到就以为没有」是上面那条规则最容易造成的误判：单子明明在，只是在别的营业日。
+     所以当一个 4 位取餐号在当日无果、却存在于其他营业日时，把这个事实报出来并给出定位办法。 */
+  function codeHint(q) {
+    const key = String(q == null ? '' : q).trim();
+    if (!CODE_RE.test(key)) return '';
+    if (g().aOrders.some(o => o.code === key && o.pickupDate === BUSINESS_DAY)) return '';
+    const other = g().aOrders.filter(o => o.code === key);
+    if (!other.length) return '';
+    const days = [...new Set(other.map(o => o.pickupDate))].sort().join('、');
+    return `取餐号 ${key} 在当前营业日没有订单，但 ${days} 有同号订单。取餐号按营业日重复使用，`
+         + `跨营业日的单不能凭取餐号核销 —— 请改用订单号 / 手机号搜索，或在「待取餐」泳道用「未取餐」筛选定位。`;
+  }
+
   // 「未取餐」的条数，用于筛选按钮上的角标
   function uncollectedCount() {
     return g().aOrders.filter(o => o.status === '待取餐' && o.pickupDate < BUSINESS_DAY).length;
@@ -867,6 +913,7 @@
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan,
     today, currentAccount, refundOrder, canRefund, uncollectedCount,
+    searchOrders, codeHint,
     listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport,
     advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,

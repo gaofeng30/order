@@ -8,6 +8,9 @@
   /* §6.7 的「未取餐」是查询口径不是状态：营业日已过仍在 待取餐 的单。
      因此它做成一个可叠加在 待取餐 泳道上的开关，不进 LANES。 */
   let uncollected = false;
+  /* PC 扫码核销页已删（§15.5.3，扫码在手机上做）。手工核销的定位并到这里：
+     按取餐号 / 订单号 / 手机号搜索，跨泳道 —— 要核销时并不知道单子在哪个状态。 */
+  let kw = '';
 
   function render(el) {
     // 由工作台带过来的泳道 / 选中项
@@ -20,25 +23,38 @@
            <div class="segs" id="lanes"></div>
            <span class="sp"></span>
            <span id="unc-host"></span>
+           <input class="inp" id="f-kw" placeholder="取餐号 / 订单号 / 手机号" value="${T.esc(kw)}" style="width:210px">
          </div>
          <div id="tbl-host"></div>
        </div>
        <aside class="split-r" id="detail"></aside>`;
 
+    const search = el.querySelector('#f-kw');
+    search.oninput = () => { kw = search.value; paint(el); };
     paint(el);
   }
 
   function paint(el) {
     const counts = Api.laneCounts();
     paintUncollected(el);
+    paintHint(el);
     el.querySelector('#lanes').innerHTML = Api.LANES.map(l =>
       `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts[l]}</span></span>`
     ).join('');
     el.querySelectorAll('[data-lane]').forEach(n => {
-      n.onclick = () => { lane = n.dataset.lane; if (lane !== '待取餐') uncollected = false; paint(el); };
+      /* 点泳道即退出搜索态：两者都决定列表内容，同时生效会让人不知道自己在看什么 */
+      n.onclick = () => {
+        lane = n.dataset.lane;
+        if (lane !== '待取餐') uncollected = false;
+        kw = '';
+        const box = el.querySelector('#f-kw');
+        if (box) box.value = '';
+        paint(el);
+      };
     });
 
-    Api.listOrders(lane, { uncollected }).then(list => {
+    const q = kw.trim();
+    (q ? Api.searchOrders(q) : Api.listOrders(lane, { uncollected })).then(list => {
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 
@@ -62,7 +78,7 @@
           } },
         ],
         rows: list,
-        empty: `「${lane}」暂无订单`,
+        empty: kw.trim() ? `没有匹配「${T.esc(kw.trim())}」的订单` : `「${lane}」暂无订单`,
         rowCls: r => (r.id === selId ? 'sel' : ''),
         onRow: true,
       });
@@ -79,6 +95,20 @@
 
       detail(el, selId);
     });
+  }
+
+  /* 跨营业日取餐号的提示。搜不到就以为没有，是 §6.6 那条规则最容易造成的误判 ——
+     单子明明在，只是在别的营业日，而取餐号按营业日重复使用。 */
+  function paintHint(el) {
+    let host = el.querySelector('#kw-hint');
+    const msg = kw.trim() ? Api.codeHint(kw) : '';
+    if (!msg) { if (host) host.remove(); return; }
+    if (!host) {
+      el.querySelector('.toolbar').insertAdjacentHTML('afterend',
+        `<div class="card card-pad imp-note warn" id="kw-hint" style="margin-bottom:12px"></div>`);
+      host = el.querySelector('#kw-hint');
+    }
+    host.textContent = msg;
   }
 
   /* 「未取餐」筛选。只在 待取餐 泳道下有意义 —— 其余状态谈不上"未取"。 */
