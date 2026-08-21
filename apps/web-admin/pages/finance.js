@@ -38,8 +38,9 @@
        </div>
        <div class="tbl-wrap" id="fin-host"></div>
        <div class="card card-pad imp-note" style="margin-top:14px">
-         对账口径：<b>净额 = 实收合计 − 退款合计</b>，均按金额相加，部分退款只扣实际退回的金额。
+         对账口径：<b>净额 = 实收合计 − 退款合计</b>，均按金额相加；一期只有原路全额退款，每笔退款金额等于原订单实付。
          把净额与微信商户平台同一日期区间的「交易账单」核对即可。
+         <b>已收款未建单的条目不计入实收合计</b>（它们没有订单），因此微信账单会比实收合计多出这部分 —— 差额见「支付待处理」页，处理完即回归一致。
          <b>自动拉取并比对微信账单一期未实现</b>，本页数字只汇总本系统内的订单，不代表已与微信核平。
        </div>`;
 
@@ -96,7 +97,9 @@
          ${card('实收合计', amt(s.gross), s.count + ' 笔收款', 'receipt', '#3f6b46')}
          ${card('退款合计', amt(s.refundAmount, true),
                 s.refundCount + ' 笔' + (s.pendingCount ? ` · ${s.pendingCount} 笔未到账` : ''), 'bell', '#a4873f')}
-         ${card('净额', amt(s.net), '与微信交易账单核对此项', 'chart', '#2f5d8a')}
+         ${card('净额', amt(s.net), s.unbuiltCount
+                  ? `另有 ${s.unbuiltCount} 笔已收款未建单 ¥${Api.yuan(s.unbuiltAmount)}，未计入`
+                  : '与微信交易账单核对此项', 'chart', '#2f5d8a')}
          ${card('员工折扣', amt(s.discountCut, true), s.staffCount + ' 笔按员工价', 'user', '#7a6a52')}
        </div>`;
   }

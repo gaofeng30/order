@@ -174,6 +174,51 @@ const ADMIN_ORDERS = [
     items: [['p003', 1, 3600, 3060, '', ''], ['p005', 1, 3000, 2550, '', '']] },
 ];
 
+/* 支付待处理（PRD §7.3）—— 「用户已付款、系统无订单」的兜底条目。
+
+   这些**不是订单**：没有六态状态，也没有取餐号。取餐号在订单生成时才分配（§7.8），
+   而它们恰恰是没能生成订单的那一批。带上状态或取餐号，就等于把 PRD 明确删掉的
+   「异常订单」概念又请了回来。
+
+   来源是后端定时任务：扫描已发起支付但未生成订单的预支付记录，调微信查询接口，
+   查得已支付则幂等补建订单；补建失败的才落到这里，由主账号人工建单或退款作废。
+
+   cause 只有 §7.3 列的三种。三种的可解性不同，这决定了页面上能给什么动作：
+   - 商品已下架   → 主账号重新上架后可重试建单
+   - 取餐时间已过 → 不可解，只能退款作废
+   - 数据校验不通过 → 需人工核对，本期只提供退款作废 */
+const PENDING_PAYMENTS = [
+  { id: 'pp01', outTradeNo: 'SAPRE2608210031', txnId: '4200002318202608210101',
+    paidAt: '2026-08-21 16:20:33', amount: 4000,
+    contact: '许女士', phone: '137****5512',
+    pickupDate: '2026-08-21', pickupTime: '18:00', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    items: [['p007', 4, 1000, 1000, '冰镇', '']],
+    isStaff: false, discountRate: 100, discountCut: 0, subtotal: 4000,
+    orderNote: '',
+    cause: '商品已下架', causeDetail: '「鲜橙气泡水」在支付完成前被下架',
+    detectedAt: '2026-08-21 16:35:00' },
+
+  { id: 'pp02', outTradeNo: 'SAPRE2608210014', txnId: '4200002318202608210102',
+    paidAt: '2026-08-21 11:28:07', amount: 2600,
+    contact: '何先生', phone: '133****8890',
+    pickupDate: '2026-08-21', pickupTime: '12:00', mealPeriod: 'lunch', pickupPoint: '县前直营店',
+    items: [['p004', 1, 2600, 2600, '', '']],
+    isStaff: false, discountRate: 100, discountCut: 0, subtotal: 2600,
+    orderNote: '',
+    cause: '取餐时间已过', causeDetail: '补建时该取餐时间点已过，无法排产',
+    detectedAt: '2026-08-21 12:40:00' },
+
+  { id: 'pp03', outTradeNo: 'SAPRE2608200022', txnId: '4200002318202608200103',
+    paidAt: '2026-08-20 17:44:19', amount: 5100,
+    contact: '曹先生', phone: '159****2244',
+    pickupDate: '2026-08-20', pickupTime: '18:30', mealPeriod: 'dinner', pickupPoint: '县前直营店',
+    items: [['p001', 1, 3200, 2720, '', ''], ['p002', 1, 2800, 2380, '', '']],
+    isStaff: true, discountRate: 85, discountCut: 900, subtotal: 6000,
+    orderNote: '',
+    cause: '数据校验不通过', causeDetail: '折扣快照与当时的全局折扣率不一致，需人工核对',
+    detectedAt: '2026-08-20 18:05:00' },
+];
+
 // 单品销量排行
 const RANK = [
   { id: 'p003', sold: 320 }, { id: 'p001', sold: 286 }, { id: 'p004', sold: 254 }, { id: 'p002', sold: 198 }, { id: 'p005', sold: 142 },
@@ -246,5 +291,6 @@ const MERCHANT_ACCOUNTS = [
 
 window.Seed = {
   STORE, HUES, CATS, MENU, menuList, itemById, ADMIN_ORDERS, RANK, ADMIN_CATS, PICKUP_POINTS,
+  PENDING_PAYMENTS,
   SETTINGS, LAYER_DEFAULTS, STAFF_WHITELIST, MERCHANT_ACCOUNTS, ME, TODAY, MANAGER,
 };
