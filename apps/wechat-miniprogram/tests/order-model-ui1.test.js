@@ -99,7 +99,9 @@ test('user surfaces render a cents order end to end', () => {
   harness.invoke(list, 'onShow');
   const row = list.data.list.find(o => o.id === order.id);
   assert.equal(row.total, 3250, '列表拿到的仍不是整数分');
-  assert.match(row.timeText, /^预约 (今天|明天) \d{2}:\d{2} · /);
+  // 取餐时间与取餐地点已拆为两行两字段
+  assert.match(row.timeText, /^预约 (今天|明天) \d{2}:\d{2} 取餐$/);
+  assert.equal(row.placeText, order.pickupPoint);
   const detail = harness.loadPage('pages/order-detail/order-detail.js');
   harness.invoke(detail, 'onLoad', { id: order.id });
   assert.equal(detail.data.rows[0].p, 3250);

@@ -33,7 +33,8 @@
         </view>
         <view class="oc-body">
           <view class="oc-summary ellipsis-1">{{item.summary}}</view>
-          <view class="oc-time"><icon name="{{item.typeIcon}}" size="12" color="#8f9384" /><text>{{item.timeText}}</text></view>
+          <view class="oc-time"><icon name="calendarClock" size="12" color="#8f9384" /><text>{{item.timeText}}</text></view>
+          <view class="oc-place"><icon name="pin" size="12" color="#8f9384" /><text>{{item.placeText}}</text></view>
         </view>
       </view>
       <view class="oc-foot">
