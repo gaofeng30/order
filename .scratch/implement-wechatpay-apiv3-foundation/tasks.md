@@ -234,6 +234,82 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: 1ace103e3f7f1ea27bb2f3f8023a2b560d461247
+phase: review
+command_or_action: both independent review axes reran from scratch on exact SHA 1ace103e3f7f1ea27bb2f3f8023a2b560d461247
+exit_result: FAIL
+sanitized_summary: Standards found two hard evidence-record defects for the missing null fixture and an invalid combined retry status; Spec found one strict callback defect allowing case-insensitive field aliases and semantic duplicate keys
+artifact_or_environment: exact committed review SHA 1ace103e3f7f1ea27bb2f3f8023a2b560d461247; now invalidated
+unverified_boundary: no detached verification was attempted because neither axis had a zero-finding result
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add the null fixture, split failure/retry evidence, and enforce exact canonical JSON field names before creating a new SHA
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: red
+command_or_action: focused semantic_case_duplicate_envelope_field and noncanonical_transaction_field callback subtests
+exit_result: FAIL
+sanitized_summary: signed callbacks using id plus ID or a single AppID alias bypassed exact duplicate and unknown-field rejection
+artifact_or_environment: local signed and encrypted callback fixtures differing only in JSON field-name case
+unverified_boundary: strict JSON still delegated case-insensitive matching to encoding/json at Red
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: validate every strict object key against its exact DTO JSON tag before decoding
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: green
+command_or_action: rerun semantic case-duplicate and noncanonical nested-field callback subtests
+exit_result: PASS
+sanitized_summary: the private strict decoder now recursively rejects keys that do not exactly match DTO JSON tags before encoding/json can perform case-insensitive matching
+artifact_or_environment: internal standard-library reflection validator plus signed callback fixtures
+unverified_boundary: validation covers strict callback DTO structs only; provider operation responses retain their separately frozen decoding contract
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun complete writer gates and both exact-SHA review axes
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: refactor
+command_or_action: explicit format; focused/full and both race layers; vet/build; repository smoke; diff/owned/sensitive scans
+exit_result: PASS
+sanitized_summary: all latest tests and both race layers passed; vet/build/format were clean; smoke reported PASS on the first attempt; audits remained ten owned files, zero high-risk/static-token files, and one synthetic test-key fixture
+artifact_or_environment: final strict-JSON remediation writer tree before replacement commit
+unverified_boundary: exact-SHA double review and clean detached verification remain pending
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: all formal WeChat Pay assets listed in ticket.md
+  recovery: provision and authorize assets, then execute separately authorized external gates
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
 candidate_sha: c6f8e0edb7cbb1e4b24c995959906330420d4802
 phase: review
 command_or_action: both independent review axes reran from scratch on exact SHA c6f8e0edb7cbb1e4b24c995959906330420d4802
@@ -276,7 +352,7 @@ candidate_sha: not-yet-created
 phase: green
 command_or_action: rerun explicit_empty_associated_data and missing_associated_data focused subtests together
 exit_result: PASS
-sanitized_summary: an explicitly present empty associated_data value now decrypts with empty AAD while a missing or null field still fails closed
+sanitized_summary: an explicitly present empty associated_data value now decrypts with empty AAD while a missing field fails closed
 artifact_or_environment: presence-aware private envelope DTO and local encrypted fixtures
 unverified_boundary: no real callback or provider network ran
 external_asset:
@@ -292,12 +368,69 @@ ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: a56aeec6b041bf1a31988a888956ad851e128469
 candidate_sha: not-yet-created
+phase: red
+command_or_action: rg for an associated_data null fixture in client_test.go
+exit_result: FAIL
+sanitized_summary: static evidence audit confirmed that null presence semantics had been claimed without an executable null fixture
+artifact_or_environment: exact review remediation tree based on invalidated SHA 1ace103e3f7f1ea27bb2f3f8023a2b560d461247
+unverified_boundary: production already rejected null through the presence-aware DTO, but the declared evidence was absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add the exact null callback fixture and run it with empty-present and missing variants
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: green
+command_or_action: run explicit_empty_associated_data, missing_associated_data, and null_associated_data focused subtests together
+exit_result: PASS
+sanitized_summary: executable fixtures now prove explicit empty is accepted while both missing and null associated_data fail closed
+artifact_or_environment: three signed local callback fixtures differing only in associated_data presence/value semantics
+unverified_boundary: local callback fixtures do not prove real WeChat delivery behavior
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: formal WeChat Pay assets and authorized callback
+  recovery: execute separately authorized external callback gates after asset provisioning
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
 phase: refactor
-command_or_action: explicit format; focused/full and both race layers; vet/build; repository smoke; diff/owned/sensitive scans
-exit_result: PASS_AFTER_RETRY
-sanitized_summary: Go test/race/vet/build/format all passed; the first smoke attempt hit a temporary log-creation race and hung while cleaning its temporary order-api process, which was explicitly terminated; rerunning the identical smoke command from the failure point reported PASS; audits remained ten owned files, zero high-risk/static-token files, one synthetic test-key fixture
+command_or_action: explicit format; focused/full and both race layers; vet/build; first repository smoke attempt
+exit_result: FAIL
+sanitized_summary: Go test/race/vet/build/format passed; smoke hit a temporary log-creation race and then hung while cleaning its temporary order-api process, which was explicitly terminated
 artifact_or_environment: final remediated writer tree; failed smoke affected only its mktemp directory and process
-unverified_boundary: the smoke rerun is local environment evidence and does not prove real WeChat connectivity
+unverified_boundary: repository smoke had not passed at this point
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the identical smoke command from the first failing gate, then run final audits
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: rerun identical repository smoke command from the failed gate; then diff/owned/sensitive scans
+exit_result: PASS
+sanitized_summary: the identical smoke command reported PASS; audits remained ten owned files, zero high-risk/static-token files, and one synthetic test-key fixture
+artifact_or_environment: final remediated writer tree after explicit failure recovery
+unverified_boundary: local smoke and scans do not prove real WeChat connectivity, runtime log custody, or formal secret custody
 external_asset:
   owner: customer merchant administrator and development/UAT owners
   missing: all formal WeChat Pay assets listed in ticket.md

@@ -310,8 +310,10 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 	}{
 		{name: "unknown envelope field", resource: resource, associatedData: associatedData, extraOuter: `,"unexpected":true`, want: ErrorProtocol},
 		{name: "duplicate envelope field", resource: resource, associatedData: associatedData, extraOuter: `,"id":"NOTICE_DUPLICATE"`, want: ErrorProtocol},
+		{name: "semantic case duplicate envelope field", resource: resource, associatedData: associatedData, extraOuter: `,"ID":"NOTICE_CASE_DUPLICATE"`, want: ErrorProtocol},
 		{name: "unknown transaction field", resource: strings.TrimSuffix(resource, "}") + `,"unexpected":true}`, associatedData: associatedData, want: ErrorProtocol},
 		{name: "duplicate transaction field", resource: strings.TrimSuffix(resource, "}") + `,"appid":"wx-duplicate"}`, associatedData: associatedData, want: ErrorProtocol},
+		{name: "noncanonical transaction field", resource: strings.Replace(resource, `"appid":`, `"AppID":`, 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "missing required transaction id", resource: strings.Replace(resource, `"transaction_id":"TX_TEST_001",`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "missing success time", resource: strings.Replace(resource, `"success_time":"2027-01-15T08:00:00Z",`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "wrong associated data", resource: resource, associatedData: "wrong-aad", want: ErrorDecryption},
@@ -348,6 +350,18 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 		var providerError *Error
 		if !errors.As(err, &providerError) || providerError.Kind() != ErrorProtocol {
 			t.Fatal("missing callback associated_data was accepted")
+		}
+	})
+	t.Run("null associated data", func(t *testing.T) {
+		t.Parallel()
+		emptyAADCiphertext := encryptTestResource(t, apiV3Key, resourceNonce, "", []byte(resource))
+		body := notificationBody(emptyAADCiphertext, "", "")
+		body = []byte(strings.Replace(string(body), `"associated_data":""`, `"associated_data":null`, 1))
+		headers := signedTestHeaders(t, providerKey, body, "1800000000", "callback-nonce")
+		_, err := client.ParseTransactionNotification(body, headers)
+		var providerError *Error
+		if !errors.As(err, &providerError) || providerError.Kind() != ErrorProtocol {
+			t.Fatal("null callback associated_data was accepted")
 		}
 	})
 }
