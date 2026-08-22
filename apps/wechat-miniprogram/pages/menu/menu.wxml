@@ -3,7 +3,7 @@
 
   <view class="store-row">
     <icon name="pin" size="13" color="#467a32" />
-    <text>{{store.branch}} · 到店自提</text>
+    <text>{{store.name}} · 到店自提</text>
   </view>
 
   <!-- 取餐时间条：进入菜单即有默认值，点击展开选择弹层 -->

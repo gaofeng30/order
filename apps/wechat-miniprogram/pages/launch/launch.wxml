@@ -42,7 +42,7 @@
       <view class="id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
     </view>
 
-    <view class="ver">绥安食品 · 县前直营店　小程序 v1.0</view>
+    <view class="ver">{{store.name}}　小程序 v1.0</view>
   </view>
 
   <!-- 微信登录授权弹窗 -->

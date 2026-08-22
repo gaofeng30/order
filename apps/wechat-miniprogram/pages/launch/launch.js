@@ -9,6 +9,7 @@ const WX_SVG =
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
+    store: require('../../utils/data.js').STORE,
     auth: false,
     wxIcon: 'data:image/svg+xml,' + encodeURIComponent(WX_SVG),
   },

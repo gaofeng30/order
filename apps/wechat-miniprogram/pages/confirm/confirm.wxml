@@ -24,7 +24,7 @@
         <view class="win-ico"><icon name="store" size="19" color="#467a32" /></view>
         <view class="win-info">
           <view class="win-name">{{pickupPoint}}</view>
-          <view class="win-sub">{{store.branch}} · {{store.addr}}</view>
+          <view class="win-sub">{{store.addr}}</view>
         </view>
       </view>
     </view>
