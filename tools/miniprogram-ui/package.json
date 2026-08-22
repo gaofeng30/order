@@ -1,0 +1,22 @@
+{
+  "name": "order-miniprogram-ui-gates",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reproducible UI1 and UI2 gates for the Order WeChat mini-program",
+  "scripts": {
+    "browser:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium --no-shell --no-progress",
+    "ui1": "PLAYWRIGHT_BROWSERS_PATH=0 node run-ui1.mjs",
+    "ui2": "node run-ui2.mjs"
+  },
+  "devDependencies": {
+    "karma": "6.4.4",
+    "karma-chrome-launcher": "3.2.0",
+    "karma-mocha": "2.0.1",
+    "karma-webpack": "5.0.1",
+    "miniprogram-automator": "0.12.1",
+    "miniprogram-simulate": "1.6.2",
+    "mocha": "11.8.0",
+    "playwright": "1.62.1",
+    "webpack": "5.109.2"
+  }
+}
