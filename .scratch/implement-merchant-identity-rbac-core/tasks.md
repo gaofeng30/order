@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 9cd2ffa330e40af05e91e5424b9ad252327b15f1-invalid
+phase: red
+command_or_action: static lifecycle assertion comparing the committed clean HEAD with ticket status and candidate declaration
+exit_result: FAIL
+sanitized_summary: ticket still claimed CANDIDATE_PENDING_COMMIT after the review target had already been committed; both review axes and SHA were invalidated before verifier
+artifact_or_environment: exact WIP SHA 9cd2ffa330e40af05e91e5424b9ad252327b15f1
+unverified_boundary: corrected WIP lifecycle, complete Writer Gate, replacement WIP SHA, both reviews and detached verification remained pending
+external_asset:
+  owner: Writer and controller
+  missing: N/A
+  recovery: declare IMPLEMENTING / REVIEWING_WIP with candidate not yet created; externally bind reviews to clean HEAD and designate that same HEAD only after both reviews and controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static lifecycle assertion after removing the premature Candidate claim and recording the commit self-reference boundary
+exit_result: PASS
+sanitized_summary: ticket now truthfully remains IMPLEMENTING / REVIEWING_WIP; review targets are externally pinned to clean HEAD, and no commit is asked to contain its own hash
+artifact_or_environment: replacement Writer lifecycle artifacts
+unverified_boundary: full Writer Gate, replacement WIP commit, two-axis review, controller designation and detached verification remained pending
+external_asset:
+  owner: controller
+  missing: final Candidate designation after reviews
+  recovery: if reviews pass, designate the unchanged clean HEAD as Candidate and only then authorize exact-SHA verifier
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-lifecycle focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; format/diff/ownership/PII cleanup checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after correcting the WIP review lifecycle; product behavior remained unchanged and every disposable MySQL asset was cleaned
+artifact_or_environment: final replacement WIP tree before commit
+unverified_boundary: replacement clean HEAD still required fresh two-axis review and controller review before external Candidate designation; detached verifier did not start
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the WIP tree, pin reviews externally to that clean HEAD, and leave the tree unchanged if approved
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: dbdb508194a7e5524c3f5abdb98c60e5fb0b9878-invalid
 phase: red
 command_or_action: fixed-base zero-context shared-file ownership checker allowing only the v12/v13 wantNames additions in catalog/migrations_test.go

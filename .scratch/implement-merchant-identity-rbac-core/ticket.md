@@ -2,7 +2,7 @@
 
 ## 状态与唯一结果
 
-- 状态：`REPLACEMENT_WRITER_GATE_PASS / CANDIDATE_PENDING_COMMIT`；旧 Candidate `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878` 因 shared-file ownership finding 失效，不得进入 verifier。
+- 状态：`IMPLEMENTING / REVIEWING_WIP`；旧 SHA `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878` 与 `9cd2ffa330e40af05e91e5424b9ad252327b15f1` 已失效，不得进入 verifier。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`；本 change 不创建/更新 GitHub Issue，不伪造 `READY`。
 - 唯一业务结果：实现 merchant identity 核心 v12/v13、`GET /api/v1/me/identity`、`POST /api/v1/me/merchant-login` 与 transaction-bound `AuthorizeInTx`；现有三条 Mini Program identity/phone API 保持不变。
 - 最小成功标准：严格 HTTP、schema、实时 RBAC、首次绑定/审计原子性及故障恢复在 fresh MySQL 8.0.46 闭环；Writer 全 Gate 与 fixed-base 双轴 Review 通过后形成 Candidate，等待主控独立审计批准。
@@ -20,7 +20,7 @@
 - dependency: fixed base 已含 independently verified storefront v11，migrations 当前精确止于 v11；transaction migrations 从 v14 起。
 - canonical product authority: `docs/product/online-ordering-system-prd-0818.md` §4.2–§4.4、§5.9、§6.1、§6.5–§6.10、§12、§15.5、§15.6。
 - read-only contract reference: exact `8567157693aeb6cf09ceec95dfaaee2a090f3780` 的 `.scratch/freeze-merchant-miniprogram-auth-rbac-contract/{spec.md,tickets.md}`，只取 T1 与共享授权契约，不复用其 WIP 状态或历史证据。
-- `candidate_sha`: `not-yet-created`。
+- `candidate_sha`: `not-yet-created`。当前 fixed review target 由主控在线程外绑定到每轮 clean HEAD；双审与主控复审 PASS 后，主控直接将当时 clean HEAD 指定为 Candidate，不再修改本工件，避免 commit 内容自引用自身 SHA。
 
 ## Owned / read-only / non-goals
 
