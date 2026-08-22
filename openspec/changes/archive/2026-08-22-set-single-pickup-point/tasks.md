@@ -34,5 +34,5 @@
 
 ## 独立验证
 
-- [ ] 18. 提交产生候选 SHA。
-- [ ] 19. 在干净 detached worktree 对该精确 SHA 只读重跑 13–17。
+- [x] 18. 候选 SHA `962b803`。
+- [x] 19. 在干净 detached worktree 对 `962b803` 只读验证：`DIRTY=0`；`PICKUP_POINT_GATE=PASS`；102 pass / 0 fail；`WX_LINT=PASS`；归档门禁 35 项与 base 逐行一致。
