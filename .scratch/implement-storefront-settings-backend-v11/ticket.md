@@ -2,7 +2,7 @@
 
 ## DRAFT 状态与目标
 
-- 状态：`DRAFT`；本次 delegated instruction 已明确授权实现，但 Matt tracker 尚待用户确认。
+- 状态：`IMPLEMENTING`；DRAFT 已在首个产品测试前建立，本次 delegated instruction 已明确授权实现；Matt tracker 尚待用户确认且不影响本地实现授权。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`，本 change 不创建或更新 GitHub Issue，也不把 tracker 状态伪装为 `READY`。
 - 唯一目标：建立 v11 单门店公开设置持久化与可独立挂载的匿名 provider seam。
 - 最小成功标准：v11 schema、repository/model 与独立 GET provider 满足冻结契约；真实隔离 MySQL 8.0、focused/full/race/vet/build/smoke、双轴 Review 和 exact-SHA detached 验证全部通过。
@@ -88,7 +88,7 @@
 
 | 资产 | owner | 当前状态 | 恢复条件 |
 | --- | --- | --- | --- |
-| 临时隔离 MySQL 8.0.46 | Writer/Verifier | `AVAILABLE_LOCAL`：Docker 可用且镜像已存在；尚未运行本 change W3 Gate | 各阶段启动独占临时 container、等待 healthy、运行全部真实数据库场景并清理 |
+| 临时隔离 MySQL 8.0.46 | Writer/Verifier | `AVAILABLE_LOCAL`；Writer W3 latest rerun: `PASS`，临时 container 与凭据已清理 | Candidate 或实现/验证命令变化后启动独占临时 container，经 TCP readiness 后从头重跑全部真实数据库场景并清理 |
 | Matt issue tracker | workflow owner / 用户 | `BLOCKED_LOCAL_GOVERNANCE` | 用户确认并配置 `docs/agents/issue-tracker.md` 后另行建立 linkage；不得追溯伪造本 change READY |
 | 正式 storefront 数据、COS PNG、生产 DB/流量 | 客户/平台/UAT owner | `BLOCKED_EXTERNAL` 且非本 change Candidate Gate | 经单独授权提供脱敏资产、环境和验收标识后，由后续集成/UAT change 验证 |
 

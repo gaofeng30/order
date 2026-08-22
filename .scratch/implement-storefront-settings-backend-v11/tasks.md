@@ -155,7 +155,7 @@ external_asset:
 - T = 10：真实 RGR、边界/非法状态/scan/DB failure、并发、migration repeat 与 MySQL 8.0.46 均闭环。
 - V = 8：Writer Gate 完整，可形成提交；exact-SHA detached verifier 尚待提交与 Review 后执行。
 - R = 9：无 seed/写 API，缺行和故障 fail closed；临时 schema/container/凭据清理及 DB 重连恢复均已执行验证。
-- 总分：36；当前 Candidate 硬阻断为 0。tracker 与 formal runtime 资产保持各自的 `BLOCKED_LOCAL_GOVERNANCE` / `BLOCKED_EXTERNAL`，未被本地测试冒充 READY。
+- 总分：36；该 checkpoint 的 Writer 产品/代码硬阻断为 0，Review 与 detached verifier 当时仍待执行。tracker 与 formal runtime 资产保持各自的 `BLOCKED_LOCAL_GOVERNANCE` / `BLOCKED_EXTERNAL`，未被本地测试冒充 READY。
 
 ```yaml
 change: implement-storefront-settings-backend-v11
@@ -250,4 +250,80 @@ external_asset:
   owner: workflow and formal runtime owners
   missing: tracker linkage and formal storefront/COS/production assets
   recovery: keep external statuses blocked until separately authorized evidence exists
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: faf63bb147c6dbd1892d886e7d352d227f01250d
+phase: review
+command_or_action: second full parallel Standards and frozen Spec review of git diff 70522ed01b08aaf5dad77f51f1bfbc431bb84530...HEAD
+exit_result: FAIL
+sanitized_summary: Spec PASS with zero findings; Standards found two hard artifact-consistency findings because lifecycle remained DRAFT and the ticket still described the already-run local MySQL W3 as not yet executed
+artifact_or_environment: exact committed review SHA faf63bb147c6dbd1892d886e7d352d227f01250d; invalidated for Candidate use
+unverified_boundary: detached verification did not start because both review axes had not passed
+external_asset:
+  owner: workflow owner and Writer/Verifier
+  missing: current lifecycle and MySQL asset status declarations
+  recovery: preserve blocked tracker status, record delegated implementation authorization as IMPLEMENTING, refresh local MySQL status, rerun full Writer gates and both review axes
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: red
+command_or_action: static artifact assertions for status IMPLEMENTING and Writer W3 latest rerun PASS
+exit_result: FAIL
+sanitized_summary: ticket still declared DRAFT and still said the local MySQL W3 had not run
+artifact_or_environment: writer tree based on invalidated reviewed SHA faf63bb147c6dbd1892d886e7d352d227f01250d
+unverified_boundary: product code and tests were unchanged; lifecycle and asset declarations were stale
+external_asset:
+  owner: workflow owner and Writer/Verifier
+  missing: current local declarations only
+  recovery: update the declarations without marking the unconfigured tracker or formal runtime assets READY
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static artifact assertions after lifecycle and MySQL status refresh
+exit_result: PASS
+sanitized_summary: ticket now records delegated authorization as IMPLEMENTING and records the latest Writer MySQL W3 rerun as PASS without marking tracker or formal runtime assets READY
+artifact_or_environment: remediated local lifecycle artifacts
+unverified_boundary: product code was unchanged; full Writer and replacement review gates remained required
+external_asset:
+  owner: workflow owner and Writer/Verifier
+  missing: Matt tracker linkage and formal runtime assets remain intentionally blocked
+  recovery: configure or authorize those assets separately; do not infer READY from local evidence
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-artifact-remediation focused test/race; real TCP-ready MySQL W3; full test/race/vet/build/smoke; gofmt/diff/owned/high-risk/cleanup/staging audits
+exit_result: PASS
+sanitized_summary: every declared Writer gate passed again; only the two owned scratch artifacts changed, high-risk material count was zero, disposable assets were absent, and staging remained clean at the fixed base
+artifact_or_environment: final remediated writer tree before replacement governance commit
+unverified_boundary: both review axes and detached exact-SHA verifier must restart after commit
+external_asset:
+  owner: workflow and formal runtime owners
+  missing: tracker linkage and formal storefront/COS/production assets
+  recovery: retain blocked states until separate authorization and evidence
 ```
