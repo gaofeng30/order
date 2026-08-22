@@ -30,5 +30,5 @@
 
 ## 独立验证
 
-- [ ] 14. 提交产生候选 SHA。
-- [ ] 15. 在干净 detached worktree 对该精确 SHA 只读重跑 9–13。
+- [x] 14. 候选 SHA `397e14d`。
+- [x] 15. 在干净 detached worktree 对 `397e14d` 只读验证：`DIRTY=0`；`STORE_IDENTITY_GATE=PASS`；102 pass / 0 fail；`WX_LINT=PASS`；归档门禁 36 项与 base 逐行一致。
