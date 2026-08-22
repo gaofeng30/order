@@ -4,7 +4,7 @@
   <view class="ring r3"></view>
 
   <!-- 顶部：返回品牌选择（仅图标） -->
-  <view class="back-btn" bindtap="toBrand"><icon name="back" size="22" color="rgba(255,255,255,0.85)" /></view>
+  <view class="back-btn" bindtap="back"><icon name="back" size="22" color="rgba(255,255,255,0.85)" /></view>
 
   <!-- 左上角 商户 logo -->
   <view class="brand">
@@ -24,7 +24,7 @@
 
   <!-- 身份卡 -->
   <view class="cards">
-    <view class="id-card primary fade-up" bindtap="openAuth">
+    <view class="id-card primary fade-up" data-to="home" bindtap="go">
       <view class="id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
       <view class="id-body">
         <view class="id-name serif">用户端</view>
@@ -45,22 +45,5 @@
     <view class="ver">{{store.name}}　小程序 v1.0</view>
   </view>
 
-  <!-- 微信登录授权弹窗 -->
-  <view wx:if="{{auth}}" class="auth-mask" bindtap="closeAuth"></view>
-  <view wx:if="{{auth}}" class="auth-card" catchtap="noop">
-    <view class="auth-top">
-      <view class="auth-wx">
-        <image class="auth-wx-ico" src="{{wxIcon}}" mode="aspectFit" />
-        <text>微信授权登录</text>
-      </view>
-      <view class="auth-emblem"><image src="/assets/emblem.png" class="auth-emblem-img" mode="aspectFit" /></view>
-      <view class="auth-name">绥安食品</view>
-      <view class="auth-desc"><view>申请获取并使用你的</view><view>昵称、头像与手机号</view></view>
-    </view>
-    <view class="auth-actions">
-      <view class="auth-btn" bindtap="closeAuth">拒绝</view>
-      <view class="auth-btn allow" bindtap="allowAuth">允许</view>
-    </view>
-  </view>
 
 </view>
