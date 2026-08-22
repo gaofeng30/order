@@ -1,5 +1,7 @@
 /* global App, Behavior, Component, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+const appConfig = require('../../../../apps/wechat-miniprogram/app.json');
 const homeTemplate = require('../../../../apps/wechat-miniprogram/pages/home/home.wxml');
+const launchTemplate = require('../../../../apps/wechat-miniprogram/pages/launch/launch.wxml');
 const menuTemplate = require('../../../../apps/wechat-miniprogram/pages/menu/menu.wxml');
 const customizeTemplate = require('../../../../apps/wechat-miniprogram/components/customize/customize.wxml');
 const iconTemplate = require('../../../../apps/wechat-miniprogram/components/icon/icon.wxml');
@@ -56,6 +58,8 @@ const toastDefinition = componentDefinition;
 require('../../../../apps/wechat-miniprogram/components/customize/customize.js');
 const customizeDefinition = componentDefinition;
 require('../../../../apps/wechat-miniprogram/app.js');
+registeringPage = 'launch';
+require('../../../../apps/wechat-miniprogram/pages/launch/launch.js');
 registeringPage = 'home';
 require('../../../../apps/wechat-miniprogram/pages/home/home.js');
 registeringPage = 'menu';
@@ -139,6 +143,27 @@ describe('mini-program UI1 in real Chromium simulator', () => {
 
     const componentSuffix = Date.now();
     const components = globalComponents(componentSuffix);
+    if (appConfig.pages[0] !== 'pages/launch/launch') {
+      throw new Error(`configured first route was ${appConfig.pages[0] || 'missing'}`);
+    }
+
+    const launch = renderPage({
+      definition: pageDefinitions.launch,
+      template: launchTemplate,
+      id: `launch-page-${componentSuffix}`,
+      usingComponents: components,
+    });
+    if (!launch.dom.textContent.includes('用户端')) {
+      throw new Error(`cold start did not render the user entry: ${launch.dom.textContent}`);
+    }
+    const userEntry = launch.querySelector('.id-card.primary');
+    if (!userEntry) throw new Error('rendered launch page has no user entry');
+    userEntry.dispatchEvent('touchstart');
+    userEntry.dispatchEvent('touchend');
+    await simulate.sleep(10);
+    if (lastNavigation !== '/pages/home/home') {
+      throw new Error(`user entry navigated to ${lastNavigation || 'nothing'}`);
+    }
 
     const home = renderPage({
       definition: pageDefinitions.home,
@@ -151,6 +176,9 @@ describe('mini-program UI1 in real Chromium simulator', () => {
     if (!visibleText.includes('你好，欢迎光临')) throw new Error(`home greeting was not rendered: ${visibleText}`);
     if (!visibleText.includes('进入菜单查看当日商品目录')) throw new Error(`menu entry was not rendered: ${visibleText}`);
     if (visibleText.includes('手机号授权')) throw new Error(`cold start rendered a phone authorization prompt: ${visibleText}`);
+    if (home.querySelector('button[open-type="getPhoneNumber"]')) {
+      throw new Error('user home rendered a phone authorization control');
+    }
 
     const menuEntry = home.querySelector('.search');
     if (!menuEntry) throw new Error('rendered menu entry is not interactive');

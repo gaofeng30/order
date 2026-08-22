@@ -1,4 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,7 +33,42 @@ function sanitizedFailure(error) {
     .slice(0, 300);
 }
 
+function blockedExternal(owner, missing, recovery) {
+  const error = new Error(missing);
+  error.code = 'BLOCKED_EXTERNAL';
+  error.externalAsset = { owner, missing, recovery };
+  return error;
+}
+
+function developerToolsVersion() {
+  const infoPlist = path.resolve(path.dirname(cliPath), '../Info.plist');
+  if (!existsSync(infoPlist)) return 'unknown (custom CLI path)';
+  try {
+    return execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', infoPlist], {
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    return 'unknown (version metadata unavailable)';
+  }
+}
+
 function assertProjectPermission() {
+  if (!existsSync(cliPath)) {
+    throw blockedExternal(
+      'UI2 runner machine operator',
+      'WeChat Developer Tools CLI is not installed at the configured path',
+      'install WeChat Developer Tools or set WECHAT_DEVTOOLS_CLI to its CLI, then rerun npm --prefix tools/miniprogram-ui run ui2',
+    );
+  }
+  const login = spawnSync(cliPath, ['islogin'], { encoding: 'utf8' });
+  const loginOutput = `${login.stdout || ''}\n${login.stderr || ''}`;
+  if (login.status !== 0 || !/"login"\s*:\s*true/.test(loginOutput)) {
+    throw blockedExternal(
+      'UI2 runner machine operator',
+      'WeChat Developer Tools CLI login is not active',
+      'log in through WeChat Developer Tools, confirm cli islogin reports true, then rerun npm --prefix tools/miniprogram-ui run ui2',
+    );
+  }
   const result = spawnSync(
     cliPath,
     ['auto', '--project', projectRoot, '--auto-port', String(automationPort), '--lang', 'zh'],
@@ -40,9 +76,11 @@ function assertProjectPermission() {
   );
   const output = `${result.stdout || ''}\n${result.stderr || ''}`;
   if (output.includes('登录用户不是该小程序的开发者')) {
-    const error = new Error('logged-in WeChat Developer Tools account lacks developer permission for the configured mini-program project');
-    error.code = 'BLOCKED_EXTERNAL';
-    throw error;
+    throw blockedExternal(
+      'mini-program AppID administrator',
+      'developer permission for the currently logged-in WeChat Developer Tools account',
+      'grant that account developer access, confirm cli islogin, then rerun npm --prefix tools/miniprogram-ui run ui2',
+    );
   }
   if (result.status !== 0) throw new Error('WeChat Developer Tools project permission probe failed');
 }
@@ -53,11 +91,8 @@ async function writeReceipt(receipt) {
 }
 
 const projectConfig = JSON.parse(await readFile(path.join(projectRoot, 'project.config.json'), 'utf8'));
-const developerToolsVersion = execFileSync(
-  '/usr/libexec/PlistBuddy',
-  ['-c', 'Print :CFBundleShortVersionString', '/Applications/wechatwebdevtools.app/Contents/Info.plist'],
-  { encoding: 'utf8' },
-).trim();
+const appConfig = JSON.parse(await readFile(path.join(projectRoot, 'apps/wechat-miniprogram/app.json'), 'utf8'));
+const entryRoute = appConfig.pages[0];
 const sourceHead = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: projectRoot, encoding: 'utf8' }).trim();
 const receipt = {
   schema_version: 1,
@@ -68,7 +103,7 @@ const receipt = {
   environment: {
     runner: 'order-miniprogram-ui-gates@1.0.0',
     automator: 'miniprogram-automator@0.12.1',
-    developer_tools: developerToolsVersion,
+    developer_tools: developerToolsVersion(),
     base_library: projectConfig.libVersion,
     runtime_class: 'WeChat Developer Tools local simulator',
   },
@@ -88,9 +123,15 @@ try {
     wsEndpoint: `ws://127.0.0.1:${automationPort}`,
   });
 
-  let page = await miniProgram.reLaunch('/pages/home/home');
-  if (!page) throw new Error('home page did not launch');
+  if (entryRoute !== 'pages/launch/launch') throw new Error(`configured first route was ${entryRoute || 'missing'}`);
+  let page = await miniProgram.reLaunch(`/${entryRoute}`);
+  if (!page) throw new Error('launch page did not launch');
   await page.waitFor(500);
+  const userEntry = requireElement(await page.$('.id-card.primary'), 'launch user entry');
+  await userEntry.tap();
+  await page.waitFor(500);
+  page = await miniProgram.currentPage();
+  if (!page || page.path !== 'pages/home/home') throw new Error('launch user entry did not navigate to the home page');
   const greeting = requireElement(await page.$('.greet'), 'home greeting');
   requireIncludes(await greeting.text(), '你好，欢迎光临', 'home greeting');
   const phonePrompt = await page.$('button[open-type="getPhoneNumber"]');
@@ -128,11 +169,7 @@ try {
 } catch (error) {
   if (error && error.code === 'BLOCKED_EXTERNAL') {
     receipt.status = 'BLOCKED_EXTERNAL';
-    receipt.external_asset = {
-      owner: 'mini-program AppID administrator',
-      missing: 'developer permission for the currently logged-in WeChat Developer Tools account',
-      recovery: 'grant that account developer access, confirm cli islogin, then rerun npm --prefix tools/miniprogram-ui run ui2',
-    };
+    receipt.external_asset = error.externalAsset;
   }
   receipt.failure = sanitizedFailure(error);
   process.exitCode = 1;

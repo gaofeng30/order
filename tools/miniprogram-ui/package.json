@@ -8,6 +8,15 @@
     "ui1": "PLAYWRIGHT_BROWSERS_PATH=0 node run-ui1.mjs",
     "ui2": "node run-ui2.mjs"
   },
+  "overrides": {
+    "diff": "8.0.4",
+    "jpeg-js": "0.4.4",
+    "less": "4.9.0",
+    "mkdirp": "0.5.6",
+    "phin": "3.7.1",
+    "postcss": "8.5.26",
+    "serialize-javascript": "7.0.7"
+  },
   "devDependencies": {
     "karma": "6.4.4",
     "karma-chrome-launcher": "3.2.0",

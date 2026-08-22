@@ -29,7 +29,7 @@ Establish a repository-reproducible mini-program UI1 gate that actually runs the
   - `docs/product/online-ordering-system-prd-0818.md` sections 10 and 14
   - `project.config.json`
   - `apps/wechat-miniprogram/**`
-- dependencies: Node.js, a locked UI1 browser/simulator dependency set under `tools/miniprogram-ui`; UI2 additionally requires the locally installed WeChat Developer Tools, CLI login, and access to the configured project AppID.
+- dependencies: Node.js, a locked UI1 browser/simulator dependency set under `tools/miniprogram-ui`, and compatibility-tested overrides for vulnerable stale transitive dependencies; UI2 additionally requires the locally installed WeChat Developer Tools, CLI login, and access to the configured project AppID.
 - non-goals: product code or configuration changes; real order/payment/fulfillment claims; UI3; preview/upload/deploy; external platform writes.
 
 ## Pre-agreed TDD seams
@@ -42,7 +42,7 @@ The delegated instruction already fixes the public seam, so no additional produc
 
 ## Required scenarios and current version boundary
 
-1. Cold-start anonymous browsing: launch into the current user home without a phone authorization prompt, then enter the menu.
+1. Cold-start anonymous browsing: start at the configured launch page, select `用户端` without triggering phone authorization, arrive at the user home, then enter the menu.
 2. Recoverable network error: the real catalog request fails, the rendered menu shows `目录加载失败`, the user taps `重试`, and the rendered catalog becomes ready.
 3. Menu interaction: after recovery, the user changes category and triggers the current product-selection interaction.
 
@@ -50,7 +50,7 @@ The exact base only integrates anonymous catalog browsing and local cart-selecti
 
 ## Minimal success standard
 
-- A locked, isolated runner under `tools/miniprogram-ui` launches a real browser and passes all three UI1 scenarios from a clean install.
+- A locked, isolated runner under `tools/miniprogram-ui` launches a real browser and passes all three UI1 scenarios from a clean install; `npm audit --json` reports zero vulnerabilities after the locked compatibility overrides are applied.
 - The Red failure, Green pass, and Refactor rerun are recorded in `tasks.md` using the repository evidence fields.
 - WeChat Developer Tools `36.6.0`, CLI login, and project configuration are present. The permission probe found that the logged-in account is not a developer for this project, so UI2 records `BLOCKED_EXTERNAL` with one recovery path: the AppID administrator grants developer access, then the same `ui2` command is rerun.
 - The diff stays inside owned paths, contains no sensitive data, passes applicable repository gates, is committed, and is rerun in a clean detached worktree at the exact candidate SHA.

@@ -6,8 +6,8 @@ This runbook establishes UI1 through a real locked Chromium process plus a non-W
 
 The current executable slice covers:
 
-1. anonymous cold start into the user home without a phone-authorization control;
-2. entry into the menu;
+1. cold start at the configured launch page and user selection without triggering phone authorization;
+2. arrival at the user home and entry into the menu;
 3. a real loopback catalog `503`, rendered error, user retry, and recovered `200` catalog;
 4. category switching and opening the rendered product-selection sheet.
 
@@ -25,6 +25,8 @@ npm run ui1
 ```
 
 `package-lock.json` pins the runner and simulator dependencies. `browser:install` installs Playwright's exact full Chromium revision below `tools/miniprogram-ui/node_modules`; `ui1` refuses to fall back to an arbitrary system browser.
+
+The lock also applies compatibility-tested security overrides to stale transitive dependencies declared by the official simulator/automator packages. `npm audit --json` must report zero vulnerabilities; changing or removing an override invalidates the gate until a clean install, audit, UI1, and UI2 probe are rerun.
 
 The runner loads the current `app.js`, page definitions, WXML, and component definitions. Assertions observe rendered text/class and real touch events in Chromium. The catalog store is not mocked: `wx.request` crosses a loopback HTTP fixture on `127.0.0.1:8080`, whose first catalog response is `503` and later responses are valid `200` data.
 
