@@ -43,8 +43,6 @@
         </view>
       </view>
 
-      </view>
-
       <view class="switch-id" bindtap="reset">切换身份入口 ›</view>
       <view style="height:{{safeBottom + 30}}px"></view>
     </view>
