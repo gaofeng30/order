@@ -7,6 +7,8 @@ toolchain go1.26.5
 require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-sql-driver/mysql v1.10.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.164
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssm v1.3.164
 )
 
 require (

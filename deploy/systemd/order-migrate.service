@@ -1,0 +1,32 @@
+[Unit]
+Description=Order forward-only database migration
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=order
+Group=order
+WorkingDirectory=/opt/order/current
+EnvironmentFile=/etc/order/order-production.env
+ExecStartPre=+/opt/order/current/order-preflight
+ExecStart=/opt/order/current/order-migrate
+TimeoutStartSec=90s
+UMask=0027
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=

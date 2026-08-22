@@ -1,0 +1,42 @@
+[Unit]
+Description=Order API
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=order
+Group=order
+WorkingDirectory=/opt/order/current
+EnvironmentFile=/etc/order/order-production.env
+ExecStartPre=+/opt/order/current/order-preflight
+ExecStart=/opt/order/current/order-api
+ExecStartPost=/opt/order/current/order-healthcheck live
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=45s
+TimeoutStopSec=15s
+KillSignal=SIGTERM
+UMask=0027
+StandardOutput=journal
+StandardError=journal
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
