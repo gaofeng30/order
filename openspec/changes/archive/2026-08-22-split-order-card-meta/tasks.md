@@ -30,5 +30,5 @@
 
 ## 独立验证
 
-- [ ] 13. 提交产生候选 SHA。
-- [ ] 14. 在干净 detached worktree 对该精确 SHA 只读重跑 8–12。
+- [x] 13. 候选 SHA `9c597b7`。
+- [x] 14. 在干净 detached worktree 对 `9c597b7` 只读验证：`DIRTY=0`；`CARD_META_GATE=PASS`；102 pass / 0 fail；`WX_LINT=PASS`；归档门禁 37 项与 base 逐行一致。
