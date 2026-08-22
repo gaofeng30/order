@@ -16,7 +16,14 @@
 .oc-code-val { font-size: 38rpx; font-weight: 800; line-height: 1; }
 .oc-body { flex: 1; min-width: 0; }
 .oc-summary { font-size: 26rpx; color: var(--ink); }
-.oc-time { font-size: 23rpx; color: var(--ink-3); margin-top: 10rpx; display: flex; align-items: center; gap: 10rpx; }
+/* 图标对齐首行而非垂直居中：取餐点是客户可配值，任何一行都可能因为
+   配置变长而折行，居中会让图标与两行都不对齐。 */
+.oc-time, .oc-place {
+  font-size: 23rpx; color: var(--ink-3); margin-top: 10rpx;
+  display: flex; align-items: flex-start; gap: 10rpx; line-height: 1.45;
+}
+.oc-time icon, .oc-place icon { margin-top: 4rpx; flex: 0 0 auto; }
+.oc-place text { flex: 1; min-width: 0; }
 .oc-foot { display: flex; align-items: center; margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid var(--line-2); }
 .oc-total-lbl { margin-left: auto; font-size: 24rpx; color: var(--ink-3); margin-right: 12rpx; }
 .oc-pay { margin-left: 24rpx; height: 60rpx; }

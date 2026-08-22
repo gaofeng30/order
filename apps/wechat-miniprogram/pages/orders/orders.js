@@ -18,9 +18,11 @@ Page({
     const list = filtered.map(o => ({
       ...o,
       summary: itemsSummary(o.items),
-      typeIcon: 'calendarClock',
-      // 取餐文案现算：§15.6.2 删除了 pickupLabel 字段
-      timeText: '预约 ' + data.orderPickupLabel(o) + ' · ' + o.pickupPoint,
+      /* 取餐时间与取餐地点是两条独立事实，各占一行。拼成一串后，
+         渲染宽度一变两条信息一起塌陷，而宽度取决于客户填了多长的地址。
+         取餐文案现算：§15.6.2 删除了 pickupLabel 字段。 */
+      timeText: '预约 ' + data.orderPickupLabel(o) + ' 取餐',
+      placeText: o.pickupPoint,
       canCancel: data.canCancelReserve(o),
     }));
     this.setData({ counts, list });
