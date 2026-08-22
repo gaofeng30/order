@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 8f9937f38a72f0f9b744baed1e779c49993738a6
+phase: red
+command_or_action: fresh MySQL 8.0.46 race suite with provider rejection held while another transaction bound the account, followed by either auth_version drift or immediate disable
+exit_result: FAIL
+sanitized_summary: both real concurrent scenarios returned PHONE_CODE_REJECTED but their durable rejection audits retained current account snapshots despite lacking same-account same-version success proof; WIP SHA and reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: nil-snapshot fix, Green, full Writer Gate, replacement WIP review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: pass no account snapshot for every unconfirmed provider rejection; preserve snapshots only in the confirmed success branch
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 race suite after passing nil snapshot to unconfirmed PHONE_CODE_REJECTED audit
+exit_result: PASS
+sanitized_summary: version-drift and disabled concurrent rejection audits now have null merchant account reference and all-null account snapshot fields; confirmed same-version recovery still returns durable success with complete snapshot
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, both reviews, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the fresh-container suite after any login recovery or audit change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-recovery-fix focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; format/diff/ownership/PII/evidence checks
+exit_result: PASS
+sanitized_summary: full Writer Gate passed with both unconfirmed-rejection concurrency cases, existing same-code confirmed recovery, every prior transaction/authorization scenario and all repository regressions green
+artifact_or_environment: final replacement WIP tree before commit; disposable database assets cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verification remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the replacement WIP tree, externally pin both reviews to that clean HEAD, and do not start verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: e89a7561382b486c4958cceb455eb698736d129c
 phase: red
 command_or_action: static evidence-format checker requiring every candidate_sha to be either one complete SHA or not-yet-created

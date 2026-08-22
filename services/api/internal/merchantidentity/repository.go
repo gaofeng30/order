@@ -300,17 +300,15 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 		projection := accountIdentity(account)
 		return repository.finishLogin(ctx, transaction, userID, requestID, &account, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
 	}
-	var snapshot *accountState
 	state := "UNRESOLVED"
 	if found {
-		snapshot = &account
 		if account.Enabled {
 			state = "BOUND_UNCONFIRMED"
 		} else {
 			state = "BOUND_DISABLED"
 		}
 	}
-	return repository.finishLogin(ctx, transaction, userID, requestID, snapshot, "REJECTED", "PHONE_CODE_REJECTED", state, state, at, Identity{}, ErrPhoneCodeRejected)
+	return repository.finishLogin(ctx, transaction, userID, requestID, nil, "REJECTED", "PHONE_CODE_REJECTED", state, state, at, Identity{}, ErrPhoneCodeRejected)
 }
 
 func (repository *Repository) finishLogin(ctx context.Context, transaction *sql.Tx, userID uint64, requestID string, account *accountState, result, reason, before, after string, at time.Time, projection Identity, businessErr error) (Identity, error) {

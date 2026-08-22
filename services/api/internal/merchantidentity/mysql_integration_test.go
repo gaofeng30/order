@@ -78,6 +78,12 @@ func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 		t.Run("provider rejection is audited once without concurrent proof", func(t *testing.T) {
 			assertRejectedPhoneCodeAudit(t, db)
 		})
+		t.Run("provider rejection after concurrent version drift has unresolved audit", func(t *testing.T) {
+			assertRejectedPhoneCodeAfterConcurrentAccountChange(t, db, false)
+		})
+		t.Run("provider rejection after concurrent disable has unresolved audit", func(t *testing.T) {
+			assertRejectedPhoneCodeAfterConcurrentAccountChange(t, db, true)
+		})
 		t.Run("real session HTTP and durable audit exclude PII canaries", func(t *testing.T) {
 			assertMerchantPIIBoundaries(t, db)
 		})
@@ -962,6 +968,119 @@ func assertRejectedPhoneCodeAudit(t *testing.T, db *sql.DB) {
 	if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "PHONE_CODE_REJECTED" {
 		t.Fatal("rejected code audit did not retain the unresolved business result")
 	}
+}
+
+func assertRejectedPhoneCodeAfterConcurrentAccountChange(t *testing.T, db *sql.DB, disable bool) {
+	t.Helper()
+	ctx := context.Background()
+	now := time.Date(2026, time.August, 23, 9, 30, 0, 888888000, time.UTC)
+	suffix := "version-drift"
+	phone := "+91"
+	if disable {
+		suffix = "disabled"
+		phone = "+92"
+	}
+	userID := insertMerchantTestUser(t, db, "opaque-provider-subject-"+suffix, now)
+	accountID := insertMerchantTestAccount(t, db, phone, RoleOwner, true, nil, now)
+	provider := &blockingRejectedPhoneProvider{started: make(chan struct{}), release: make(chan struct{})}
+	service := newService(NewRepository(db), provider, func() time.Time { return now })
+	requestID := "internal-rejected-" + suffix
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := service.Login(ctx, userID, "concurrently-consumed-code", requestID)
+		result <- err
+	}()
+	select {
+	case <-provider.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("provider rejection scenario did not reach exchange")
+	}
+
+	bindingTx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal("begin concurrent successful binding transaction failed")
+	}
+	defer bindingTx.Rollback()
+	if _, err := bindingTx.ExecContext(ctx, `
+		UPDATE miniprogram_users
+		SET primary_phone=?,primary_phone_bound_at=?
+		WHERE id=? AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
+	`, phone, now, userID); err != nil {
+		t.Fatal("bind concurrent primary phone failed")
+	}
+	if _, err := bindingTx.ExecContext(ctx, `
+		UPDATE merchant_accounts
+		SET bound_user_id=?,bound_at=?,record_version=2,auth_version=2,updated_at=?
+		WHERE id=? AND bound_user_id IS NULL AND record_version=1 AND auth_version=1
+	`, userID, now, now, accountID); err != nil {
+		t.Fatal("bind concurrent merchant account failed")
+	}
+	boundSnapshot := &accountState{ID: accountID, Role: RoleOwner, Enabled: true, RecordVersion: 2, AuthVersion: 2}
+	if err := insertLoginAudit(
+		ctx, bindingTx, userID, "internal-success-"+suffix, boundSnapshot,
+		"SUCCEEDED", "FIRST_BINDING", "UNBOUND", "BOUND_ENABLED", now,
+	); err != nil {
+		t.Fatal("write concurrent successful binding audit failed")
+	}
+	if err := bindingTx.Commit(); err != nil {
+		t.Fatal("commit concurrent successful binding failed")
+	}
+
+	if disable {
+		if _, err := db.ExecContext(ctx, `
+			UPDATE merchant_accounts
+			SET enabled=FALSE,record_version=3,auth_version=3,updated_at=?
+			WHERE id=? AND record_version=2 AND auth_version=2
+		`, now.Add(time.Microsecond), accountID); err != nil {
+			t.Fatal("disable concurrently bound merchant account failed")
+		}
+	} else {
+		if _, err := db.ExecContext(ctx, `
+			UPDATE merchant_accounts
+			SET role='SUBACCOUNT',record_version=3,auth_version=3,updated_at=?
+			WHERE id=? AND record_version=2 AND auth_version=2
+		`, now.Add(time.Microsecond), accountID); err != nil {
+			t.Fatal("change concurrently bound merchant account version failed")
+		}
+	}
+	close(provider.release)
+	select {
+	case err := <-result:
+		if !errors.Is(err, ErrPhoneCodeRejected) {
+			t.Fatalf("unconfirmed provider rejection result = %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("unconfirmed provider rejection did not complete")
+	}
+	if provider.calls != 1 {
+		t.Fatalf("unconfirmed provider rejection calls = %d", provider.calls)
+	}
+
+	var merchantAccountID, snapshotID, snapshotRole, snapshotAuth sql.NullString
+	var auditResult, reason string
+	if err := db.QueryRowContext(ctx, `
+		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
+		FROM merchant_action_audits WHERE request_id=?
+	`, []byte(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &auditResult, &reason); err != nil {
+		t.Fatal("read unconfirmed provider rejection audit failed")
+	}
+	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || auditResult != "REJECTED" || reason != "PHONE_CODE_REJECTED" {
+		t.Fatal("unconfirmed provider rejection audit retained an account snapshot")
+	}
+}
+
+type blockingRejectedPhoneProvider struct {
+	started chan struct{}
+	release chan struct{}
+	calls   int
+}
+
+func (provider *blockingRejectedPhoneProvider) Exchange(context.Context, string, string) (string, error) {
+	provider.calls++
+	close(provider.started)
+	<-provider.release
+	return "", wechat.ErrPhoneCodeRejected
 }
 
 func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
