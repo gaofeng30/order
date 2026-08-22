@@ -26,6 +26,7 @@ func TestCatalogMigrationSet(t *testing.T) {
 		"000008_create_miniprogram_users.sql",
 		"000009_create_miniprogram_sessions.sql",
 		"000010_add_miniprogram_primary_phone.sql",
+		"000011_create_storefront_settings.sql",
 	}
 	if len(loaded) != len(wantNames) {
 		t.Fatalf("migration count = %d, want %d", len(loaded), len(wantNames))
