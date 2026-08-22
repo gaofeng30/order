@@ -18,7 +18,6 @@ Page({
     const list = filtered.map(o => ({
       ...o,
       summary: itemsSummary(o.items),
-      itemCount: o.items.reduce((a, b) => a + b[1], 0),
       typeIcon: 'calendarClock',
       // 取餐文案现算：§15.6.2 删除了 pickupLabel 字段
       timeText: '预约 ' + data.orderPickupLabel(o) + ' · ' + o.pickupPoint,
