@@ -66,14 +66,83 @@ func assertConcurrentSameCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	}
 }
 
+func assertConcurrentDifferentCodeMerchantLogin(t *testing.T, db *sql.DB) {
+	t.Helper()
+	ctx := context.Background()
+	now := time.Date(2026, time.August, 23, 5, 30, 0, 343434000, time.UTC)
+	userID := insertMerchantTestUser(t, db, "opaque-provider-subject-different-codes", now)
+	accountID := insertMerchantTestAccount(t, db, "+42", RoleOwner, true, nil, now)
+	repository := NewRepository(db)
+	committed := make(chan struct{})
+	store := &signalingCompleteStore{Store: repository, committed: committed}
+	provider := &concurrentSameCodeProvider{
+		phone: "+42", secondAtProvider: make(chan struct{}), committed: committed,
+	}
+	service := newService(store, provider, func() time.Time { return now })
+
+	type loginResult struct {
+		identity Identity
+		err      error
+	}
+	results := make(chan loginResult, 2)
+	for index, code := range []string{"first-one-use-code", "different-one-use-code"} {
+		requestID := "internal-different-code-" + strconv.Itoa(index)
+		go func() {
+			identity, err := service.Login(ctx, userID, code, requestID)
+			results <- loginResult{identity: identity, err: err}
+		}()
+	}
+	successes := 0
+	rejections := 0
+	for index := 0; index < 2; index++ {
+		result := <-results
+		switch {
+		case result.err == nil && result.identity.Merchant != nil && result.identity.Merchant.AuthVersion == 2:
+			successes++
+		case errors.Is(result.err, ErrPhoneCodeRejected):
+			rejections++
+		default:
+			t.Fatalf("different-code concurrent result invalid: %v", result.err)
+		}
+	}
+	if successes != 1 || rejections != 1 || provider.Calls() != 2 {
+		t.Fatalf("different-code result successes=%d rejections=%d provider_calls=%d", successes, rejections, provider.Calls())
+	}
+	var boundUserID, authVersion uint64
+	if err := db.QueryRowContext(ctx, "SELECT bound_user_id,auth_version FROM merchant_accounts WHERE id=?", accountID).Scan(&boundUserID, &authVersion); err != nil || boundUserID != userID || authVersion != 2 {
+		t.Fatal("different-code concurrency changed binding more than once")
+	}
+	var auditSuccesses, auditRejections int
+	if err := db.QueryRowContext(ctx, `
+		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED')
+		FROM merchant_action_audits WHERE request_id IN (?,?)
+	`, []byte("internal-different-code-0"), []byte("internal-different-code-1")).Scan(&auditSuccesses, &auditRejections); err != nil {
+		t.Fatal("read different-code login audits failed")
+	}
+	if auditSuccesses != 1 || auditRejections != 1 {
+		t.Fatal("different-code audits did not retain one success and one rejection")
+	}
+	var accountSnapshot, roleSnapshot, authSnapshot sql.NullString
+	if err := db.QueryRowContext(ctx, `
+		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot
+		FROM merchant_action_audits
+		WHERE request_id IN (?,?) AND result='REJECTED'
+	`, []byte("internal-different-code-0"), []byte("internal-different-code-1")).Scan(&accountSnapshot, &roleSnapshot, &authSnapshot); err != nil {
+		t.Fatal("read different-code rejection snapshot failed")
+	}
+	if accountSnapshot.Valid || roleSnapshot.Valid || authSnapshot.Valid {
+		t.Fatal("different-code rejection retained an account snapshot")
+	}
+}
+
 type signalingCompleteStore struct {
 	Store
 	committed chan struct{}
 	once      sync.Once
 }
 
-func (store *signalingCompleteStore) CompleteLogin(ctx context.Context, userID uint64, phone, requestID string, at time.Time) (Identity, error) {
-	identity, err := store.Store.CompleteLogin(ctx, userID, phone, requestID, at)
+func (store *signalingCompleteStore) CompleteLogin(ctx context.Context, userID uint64, phone string, codeHash LoginCodeHash, requestID string, at time.Time) (Identity, error) {
+	identity, err := store.Store.CompleteLogin(ctx, userID, phone, codeHash, requestID, at)
 	if err == nil {
 		store.once.Do(func() { close(store.committed) })
 	}
@@ -125,7 +194,7 @@ func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {
 			}
 			return errors.New("controlled rollback")
 		})
-		if _, err := repository.CompleteLogin(ctx, userID, "+51", "internal-rollback", now); !errors.Is(err, ErrUnavailable) {
+		if _, err := repository.CompleteLogin(ctx, userID, "+51", hashLoginCode("rollback-code"), "internal-rollback", now); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("rollback result = %v", err)
 		}
 		assertNoMerchantBindingWrites(t, db, userID, accountID, "internal-rollback")
@@ -143,7 +212,7 @@ func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {
 				_, _ = db.ExecContext(context.Background(), "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits")
 			}
 		}()
-		if _, err := NewRepository(db).CompleteLogin(ctx, userID, "+52", "internal-audit-unavailable", now); !errors.Is(err, ErrUnavailable) {
+		if _, err := NewRepository(db).CompleteLogin(ctx, userID, "+52", hashLoginCode("audit-unavailable-code"), "internal-audit-unavailable", now); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("audit unavailable result = %v", err)
 		}
 		if _, err := db.ExecContext(ctx, "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits"); err != nil {
@@ -162,7 +231,8 @@ func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {
 			}
 			return errors.New("controlled unknown commit outcome")
 		})
-		if _, err := repository.CompleteLogin(ctx, userID, "+53", "internal-commit-unknown", now); !errors.Is(err, ErrUnavailable) {
+		codeHash := hashLoginCode("commit-unknown-code")
+		if _, err := repository.CompleteLogin(ctx, userID, "+53", codeHash, "internal-commit-unknown", now); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("commit-unknown result = %v", err)
 		}
 		var boundUserID, authVersion uint64
@@ -170,7 +240,7 @@ func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {
 			t.Fatal("committed fact was not durable after unknown outcome")
 		}
 		recovered, err := NewRepository(db).RecoverRejectedLogin(
-			ctx, userID, "internal-commit-recovery", now, now.Add(time.Microsecond),
+			ctx, userID, codeHash, "internal-commit-recovery", now, now.Add(time.Microsecond),
 		)
 		if err != nil || recovered.Merchant == nil || recovered.Merchant.Role != RoleOwner || recovered.Merchant.AuthVersion != 2 {
 			t.Fatalf("commit-unknown recovery failed: %v", err)
@@ -370,7 +440,7 @@ func assertRejectedPhoneCodeAfterConcurrentAccountChange(t *testing.T, db *sql.D
 	}
 	boundSnapshot := &accountState{ID: accountID, Role: RoleOwner, Enabled: true, RecordVersion: 2, AuthVersion: 2}
 	if err := insertLoginAudit(
-		ctx, bindingTx, userID, "internal-success-"+suffix, boundSnapshot,
+		ctx, bindingTx, userID, hashLoginCode("concurrently-consumed-code"), "internal-success-"+suffix, boundSnapshot,
 		"SUCCEEDED", "FIRST_BINDING", "UNBOUND", "BOUND_ENABLED", now,
 	); err != nil {
 		t.Fatal("write concurrent successful binding audit failed")

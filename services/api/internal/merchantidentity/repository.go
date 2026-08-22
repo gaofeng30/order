@@ -67,8 +67,8 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 }
 
 // StartLogin audits and returns an existing binding, or returns only the provider subject.
-func (repository *Repository) StartLogin(ctx context.Context, userID uint64, requestID string, at time.Time) (result LoginStart, resultErr error) {
-	if repository.db == nil || userID == 0 || !validRequestID(requestID) || at.IsZero() {
+func (repository *Repository) StartLogin(ctx context.Context, userID uint64, codeHash LoginCodeHash, requestID string, at time.Time) (result LoginStart, resultErr error) {
+	if repository.db == nil || userID == 0 || !validLoginCodeHash(codeHash) || !validRequestID(requestID) || at.IsZero() {
 		return LoginStart{}, ErrUnavailable
 	}
 	transaction, err := repository.db.BeginTx(ctx, nil)
@@ -106,7 +106,7 @@ func (repository *Repository) StartLogin(ctx context.Context, userID uint64, req
 		return LoginStart{}, ErrUnavailable
 	}
 	if !account.Enabled {
-		if err := insertLoginAudit(ctx, transaction, userID, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_DISABLED", "BOUND_DISABLED", at); err != nil {
+		if err := insertLoginAudit(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_DISABLED", "BOUND_DISABLED", at); err != nil {
 			return LoginStart{}, ErrUnavailable
 		}
 		if err := repository.commit(transaction); err != nil {
@@ -117,7 +117,7 @@ func (repository *Repository) StartLogin(ctx context.Context, userID uint64, req
 	if !phone.Valid {
 		return LoginStart{}, ErrUnavailable
 	}
-	if err := insertLoginAudit(ctx, transaction, userID, requestID, &account, "SUCCEEDED", "ALREADY_BOUND", "BOUND_ENABLED", "BOUND_ENABLED", at); err != nil {
+	if err := insertLoginAudit(ctx, transaction, userID, codeHash, requestID, &account, "SUCCEEDED", "ALREADY_BOUND", "BOUND_ENABLED", "BOUND_ENABLED", at); err != nil {
 		return LoginStart{}, ErrUnavailable
 	}
 	if err := repository.commit(transaction); err != nil {
@@ -133,12 +133,12 @@ func (repository *Repository) StartLogin(ctx context.Context, userID uint64, req
 }
 
 // CompleteLogin atomically binds the primary phone, account versions, and success audit.
-func (repository *Repository) CompleteLogin(ctx context.Context, userID uint64, phone, requestID string, at time.Time) (Identity, error) {
-	if repository.db == nil || userID == 0 || !canonicalPhone(phone) || !validRequestID(requestID) || at.IsZero() {
+func (repository *Repository) CompleteLogin(ctx context.Context, userID uint64, phone string, codeHash LoginCodeHash, requestID string, at time.Time) (Identity, error) {
+	if repository.db == nil || userID == 0 || !canonicalPhone(phone) || !validLoginCodeHash(codeHash) || !validRequestID(requestID) || at.IsZero() {
 		return Identity{}, ErrUnavailable
 	}
 	for attempt := 0; attempt < 2; attempt++ {
-		projection, err := repository.completeLoginOnce(ctx, userID, phone, requestID, at)
+		projection, err := repository.completeLoginOnce(ctx, userID, phone, codeHash, requestID, at)
 		if retryableTransaction(err) && attempt == 0 {
 			continue
 		}
@@ -150,7 +150,7 @@ func (repository *Repository) CompleteLogin(ctx context.Context, userID uint64, 
 	return Identity{}, ErrUnavailable
 }
 
-func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint64, phone, requestID string, at time.Time) (result Identity, resultErr error) {
+func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint64, phone string, codeHash LoginCodeHash, requestID string, at time.Time) (result Identity, resultErr error) {
 	transaction, err := repository.db.BeginTx(ctx, nil)
 	if err != nil {
 		return Identity{}, err
@@ -184,10 +184,10 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 			return Identity{}, ErrUnavailable
 		}
 		if !boundAccount.Enabled {
-			return repository.finishLogin(ctx, transaction, userID, requestID, &boundAccount, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_DISABLED", "BOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
+			return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_DISABLED", "BOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
 		}
 		projection := accountIdentity(boundAccount)
-		return repository.finishLogin(ctx, transaction, userID, requestID, &boundAccount, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
 	}
 
 	account, found, err := readPhoneAccount(ctx, transaction, phone)
@@ -195,13 +195,13 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		return Identity{}, err
 	}
 	if !found {
-		return repository.finishLogin(ctx, transaction, userID, requestID, nil, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNRESOLVED", "UNRESOLVED", at, Identity{}, ErrMerchantAccountNotAvailable)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, nil, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNRESOLVED", "UNRESOLVED", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 	if !validAccount(account) {
 		return Identity{}, ErrUnavailable
 	}
 	if !account.Enabled {
-		return repository.finishLogin(ctx, transaction, userID, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNBOUND_DISABLED", "UNBOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNBOUND_DISABLED", "UNBOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 
 	var accountBoundUser sql.NullInt64
@@ -209,10 +209,10 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		return Identity{}, err
 	}
 	if accountBoundUser.Valid {
-		return repository.finishLogin(ctx, transaction, userID, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_OTHER", "BOUND_OTHER", at, Identity{}, ErrMerchantAccountNotAvailable)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_OTHER", "BOUND_OTHER", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 	if currentPhone.Valid && currentPhone.String != phone {
-		return repository.finishLogin(ctx, transaction, userID, requestID, &account, "REJECTED", "PRIMARY_PHONE_MISMATCH", "UNBOUND", "UNBOUND", at, Identity{}, ErrPrimaryPhoneMismatch)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "PRIMARY_PHONE_MISMATCH", "UNBOUND", "UNBOUND", at, Identity{}, ErrPrimaryPhoneMismatch)
 	}
 	if !currentPhone.Valid {
 		if _, err := transaction.ExecContext(ctx, `
@@ -221,7 +221,7 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 			WHERE id=? AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
 		`, phone, at, userID); err != nil {
 			if duplicateKey(err) {
-				return repository.finishLogin(ctx, transaction, userID, requestID, &account, "REJECTED", "PHONE_IN_USE", "UNBOUND", "UNBOUND", at, Identity{}, ErrPhoneInUse)
+				return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "PHONE_IN_USE", "UNBOUND", "UNBOUND", at, Identity{}, ErrPhoneInUse)
 			}
 			return Identity{}, err
 		}
@@ -245,12 +245,12 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 	account.RecordVersion++
 	account.AuthVersion++
 	projection := accountIdentity(account)
-	return repository.finishLogin(ctx, transaction, userID, requestID, &account, "SUCCEEDED", "FIRST_BINDING", "UNBOUND", "BOUND_ENABLED", at, projection, nil)
+	return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "SUCCEEDED", "FIRST_BINDING", "UNBOUND", "BOUND_ENABLED", at, projection, nil)
 }
 
 // RecoverRejectedLogin returns success only when a same-user, same-version success audit is visible.
-func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID uint64, requestID string, startedAt, at time.Time) (result Identity, resultErr error) {
-	if repository.db == nil || userID == 0 || !validRequestID(requestID) || startedAt.IsZero() || at.Before(startedAt) {
+func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID uint64, codeHash LoginCodeHash, requestID string, startedAt, at time.Time) (result Identity, resultErr error) {
+	if repository.db == nil || userID == 0 || !validLoginCodeHash(codeHash) || !validRequestID(requestID) || startedAt.IsZero() || at.Before(startedAt) {
 		return Identity{}, ErrUnavailable
 	}
 	transaction, err := repository.db.BeginTx(ctx, nil)
@@ -285,12 +285,13 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 			WHERE actor_user_id=?
 			  AND account_id_snapshot=?
 			  AND auth_version_snapshot=?
+			  AND idempotency_key_hash=?
 			  AND action='merchant.login'
 			  AND result='SUCCEEDED'
 			  AND occurred_at>=?
 			ORDER BY id DESC
 			LIMIT 1
-		`, userID, account.ID, account.AuthVersion, startedAt).Scan(&marker)
+		`, userID, account.ID, account.AuthVersion, codeHash[:], startedAt).Scan(&marker)
 		confirmed = err == nil && marker == 1
 		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return Identity{}, ErrUnavailable
@@ -298,7 +299,7 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 	}
 	if confirmed {
 		projection := accountIdentity(account)
-		return repository.finishLogin(ctx, transaction, userID, requestID, &account, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
 	}
 	state := "UNRESOLVED"
 	if found {
@@ -308,11 +309,11 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 			state = "BOUND_DISABLED"
 		}
 	}
-	return repository.finishLogin(ctx, transaction, userID, requestID, nil, "REJECTED", "PHONE_CODE_REJECTED", state, state, at, Identity{}, ErrPhoneCodeRejected)
+	return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, nil, "REJECTED", "PHONE_CODE_REJECTED", state, state, at, Identity{}, ErrPhoneCodeRejected)
 }
 
-func (repository *Repository) finishLogin(ctx context.Context, transaction *sql.Tx, userID uint64, requestID string, account *accountState, result, reason, before, after string, at time.Time, projection Identity, businessErr error) (Identity, error) {
-	if err := insertLoginAudit(ctx, transaction, userID, requestID, account, result, reason, before, after, at); err != nil {
+func (repository *Repository) finishLogin(ctx context.Context, transaction *sql.Tx, userID uint64, codeHash LoginCodeHash, requestID string, account *accountState, result, reason, before, after string, at time.Time, projection Identity, businessErr error) (Identity, error) {
+	if err := insertLoginAudit(ctx, transaction, userID, codeHash, requestID, account, result, reason, before, after, at); err != nil {
 		return Identity{}, err
 	}
 	if err := repository.commit(transaction); err != nil {
@@ -356,7 +357,7 @@ func scanAccount(row scanner) (accountState, bool, error) {
 	return account, true, nil
 }
 
-func insertLoginAudit(ctx context.Context, transaction *sql.Tx, userID uint64, requestID string, account *accountState, result, reason, before, after string, at time.Time) error {
+func insertLoginAudit(ctx context.Context, transaction *sql.Tx, userID uint64, codeHash LoginCodeHash, requestID string, account *accountState, result, reason, before, after string, at time.Time) error {
 	var accountID, snapshotID, role, authVersion, targetType, targetID any
 	if account != nil {
 		accountID = account.ID
@@ -369,10 +370,10 @@ func insertLoginAudit(ctx context.Context, transaction *sql.Tx, userID uint64, r
 	_, err := transaction.ExecContext(ctx, `
 		INSERT INTO merchant_action_audits(
 			merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			actor_user_id,action,result,reason,target_type,target_id,request_id,
+			actor_user_id,action,result,reason,target_type,target_id,request_id,idempotency_key_hash,
 			state_before,state_after,occurred_at
-		) VALUES (?,?,?,?,?,'merchant.login',?,?,?,?,?,?,?,?)
-	`, accountID, snapshotID, role, authVersion, userID, result, reason, targetType, targetID, []byte(requestID), before, after, at)
+		) VALUES (?,?,?,?,?,'merchant.login',?,?,?,?,?,?,?,?,?)
+	`, accountID, snapshotID, role, authVersion, userID, result, reason, targetType, targetID, []byte(requestID), codeHash[:], before, after, at)
 	return err
 }
 
@@ -397,6 +398,10 @@ func validAccount(account accountState) bool {
 
 func validRequestID(requestID string) bool {
 	return requestID != "" && len(requestID) <= 64 && strings.TrimSpace(requestID) == requestID
+}
+
+func validLoginCodeHash(codeHash LoginCodeHash) bool {
+	return codeHash != (LoginCodeHash{})
 }
 
 func duplicateKey(err error) bool {

@@ -173,6 +173,18 @@ func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
 			t.Fatal("durable merchant audit contained a PII canary")
 		}
 	}
+	var storedCodeHash []byte
+	if err := db.QueryRowContext(ctx, `
+		SELECT idempotency_key_hash
+		FROM merchant_action_audits
+		WHERE merchant_account_id=? AND request_id=?
+	`, accountID, []byte("internal-pii-request")).Scan(&storedCodeHash); err != nil {
+		t.Fatal("read merchant login code hash failed")
+	}
+	wantCodeHash := hashLoginCode(providerCodeCanary)
+	if !bytes.Equal(storedCodeHash, wantCodeHash[:]) || bytes.Contains(storedCodeHash, []byte(providerCodeCanary)) {
+		t.Fatal("merchant login audit did not retain only the domain-separated code hash")
+	}
 }
 
 type unusedSessionExchanger struct{}

@@ -49,6 +49,9 @@ func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 		t.Run("same code concurrency converges only after committed binding proof", func(t *testing.T) {
 			assertConcurrentSameCodeMerchantLogin(t, db)
 		})
+		t.Run("different codes do not converge to the same binding result", func(t *testing.T) {
+			assertConcurrentDifferentCodeMerchantLogin(t, db)
+		})
 		t.Run("rollback audit failure and commit unknown preserve recoverable facts", func(t *testing.T) {
 			assertMerchantTransactionRecovery(t, db)
 		})

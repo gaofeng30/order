@@ -2,6 +2,7 @@ package merchantidentity
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"time"
 
@@ -18,9 +19,9 @@ type LoginStart struct {
 // Store owns all durable merchant identity transactions.
 type Store interface {
 	ReadIdentity(context.Context, uint64) (Identity, error)
-	StartLogin(context.Context, uint64, string, time.Time) (LoginStart, error)
-	CompleteLogin(context.Context, uint64, string, string, time.Time) (Identity, error)
-	RecoverRejectedLogin(context.Context, uint64, string, time.Time, time.Time) (Identity, error)
+	StartLogin(context.Context, uint64, LoginCodeHash, string, time.Time) (LoginStart, error)
+	CompleteLogin(context.Context, uint64, string, LoginCodeHash, string, time.Time) (Identity, error)
+	RecoverRejectedLogin(context.Context, uint64, LoginCodeHash, string, time.Time, time.Time) (Identity, error)
 }
 
 // PhoneProvider exchanges one active-user phone code at most once.
@@ -61,8 +62,9 @@ func (service *Service) Login(ctx context.Context, userID uint64, code, requestI
 	if userID == 0 || requestID == "" {
 		return Identity{}, ErrUnavailable
 	}
+	codeHash := hashLoginCode(code)
 	startedAt := service.now().UTC().Truncate(time.Microsecond)
-	start, err := service.store.StartLogin(ctx, userID, requestID, startedAt)
+	start, err := service.store.StartLogin(ctx, userID, codeHash, requestID, startedAt)
 	if err != nil {
 		return Identity{}, err
 	}
@@ -79,7 +81,7 @@ func (service *Service) Login(ctx context.Context, userID uint64, code, requestI
 	phone, err := service.provider.Exchange(ctx, code, start.OpenID)
 	if errors.Is(err, wechat.ErrPhoneCodeRejected) {
 		projection, recoverErr := service.store.RecoverRejectedLogin(
-			ctx, userID, requestID, startedAt, service.now().UTC().Truncate(time.Microsecond),
+			ctx, userID, codeHash, requestID, startedAt, service.now().UTC().Truncate(time.Microsecond),
 		)
 		if recoverErr != nil {
 			return Identity{}, recoverErr
@@ -93,7 +95,7 @@ func (service *Service) Login(ctx context.Context, userID uint64, code, requestI
 		return Identity{}, ErrUnavailable
 	}
 	projection, err := service.store.CompleteLogin(
-		ctx, userID, phone, requestID, service.now().UTC().Truncate(time.Microsecond),
+		ctx, userID, phone, codeHash, requestID, service.now().UTC().Truncate(time.Microsecond),
 	)
 	if err != nil {
 		return Identity{}, err
@@ -102,6 +104,10 @@ func (service *Service) Login(ctx context.Context, userID uint64, code, requestI
 		return Identity{}, ErrUnavailable
 	}
 	return projection, nil
+}
+
+func hashLoginCode(code string) LoginCodeHash {
+	return LoginCodeHash(sha256.Sum256([]byte("order:merchant-login-code:v1:\x00" + code)))
 }
 
 func validIdentity(projection Identity, requireMerchant bool) bool {

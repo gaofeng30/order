@@ -5,6 +5,10 @@ import "errors"
 // Role is the only persisted merchant role vocabulary.
 type Role string
 
+// LoginCodeHash is the domain-separated, non-replayable proof used only for
+// same-code merchant-login convergence.
+type LoginCodeHash [32]byte
+
 const (
 	RoleOwner      Role = "OWNER"
 	RoleSubaccount Role = "SUBACCOUNT"

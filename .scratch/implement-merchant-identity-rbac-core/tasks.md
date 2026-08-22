@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: a6e88d87c27c99a87a4c29c42cd018c15889a42a
+phase: red
+command_or_action: fresh MySQL 8.0.46 race scenario with two concurrent merchant-login requests using different provider codes
+exit_result: FAIL
+sanitized_summary: different codes incorrectly produced two successful responses because recovery proved only user, account, auth_version and time; WIP SHA and both review axes were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: same-code hash proof, Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: domain-separate and hash each accepted code, persist only its hash with the success audit, and require the same hash during restricted recovery
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 race scenario after adding domain-separated code-hash proof to every merchant-login database phase
+exit_result: PASS
+sanitized_summary: same code still converges after exact committed proof; different codes now retain exactly one success and one PHONE_CODE_REJECTED with empty account snapshot; audit stores only the 32-byte domain-separated hash and never the raw code
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun same-code, different-code, version-drift, disable and PII scenarios after any recovery-proof change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-code-proof focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact same-code convergence, different-code rejection, version-drift and disable rejection, commit-unknown recovery and raw-code exclusion all green
+artifact_or_environment: final replacement WIP tree before commit; MySQL/build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact proof change, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b
 phase: red
 command_or_action: clean-gate inspection and controlled-build static assertion

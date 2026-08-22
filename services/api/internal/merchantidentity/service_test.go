@@ -29,6 +29,9 @@ func TestMerchantLoginBypassesPhoneProviderForExistingEnabledBinding(t *testing.
 	if provider.calls != 0 || store.completeCalls != 0 || store.recoverCalls != 0 {
 		t.Fatalf("calls = provider %d, complete %d, recover %d", provider.calls, store.completeCalls, store.recoverCalls)
 	}
+	if store.startHash == (merchantidentity.LoginCodeHash{}) {
+		t.Fatal("existing binding audit did not receive a code hash")
+	}
 }
 
 func TestMerchantLoginCallsProviderAtMostOnceAndUsesRestrictedRecovery(t *testing.T) {
@@ -78,6 +81,9 @@ func TestMerchantLoginCallsProviderAtMostOnceAndUsesRestrictedRecovery(t *testin
 			if provider.calls != 1 || store.completeCalls != test.wantComplete || store.recoverCalls != test.wantRecover {
 				t.Fatalf("calls = provider %d complete %d recover %d", provider.calls, store.completeCalls, store.recoverCalls)
 			}
+			if store.startHash == (merchantidentity.LoginCodeHash{}) || (store.completeCalls == 1 && store.completeHash != store.startHash) || (store.recoverCalls == 1 && store.recoverHash != store.startHash) {
+				t.Fatal("merchant login did not preserve one code hash across its database phases")
+			}
 		})
 	}
 }
@@ -104,22 +110,28 @@ type storeStub struct {
 	recoverErr    error
 	completeCalls int
 	recoverCalls  int
+	startHash     merchantidentity.LoginCodeHash
+	completeHash  merchantidentity.LoginCodeHash
+	recoverHash   merchantidentity.LoginCodeHash
 }
 
 func (stub *storeStub) ReadIdentity(context.Context, uint64) (merchantidentity.Identity, error) {
 	return stub.identity, stub.identityErr
 }
 
-func (stub *storeStub) StartLogin(context.Context, uint64, string, time.Time) (merchantidentity.LoginStart, error) {
+func (stub *storeStub) StartLogin(_ context.Context, _ uint64, codeHash merchantidentity.LoginCodeHash, _ string, _ time.Time) (merchantidentity.LoginStart, error) {
+	stub.startHash = codeHash
 	return stub.start, stub.startErr
 }
 
-func (stub *storeStub) CompleteLogin(context.Context, uint64, string, string, time.Time) (merchantidentity.Identity, error) {
+func (stub *storeStub) CompleteLogin(_ context.Context, _ uint64, _ string, codeHash merchantidentity.LoginCodeHash, _ string, _ time.Time) (merchantidentity.Identity, error) {
 	stub.completeCalls++
+	stub.completeHash = codeHash
 	return stub.complete, stub.completeErr
 }
 
-func (stub *storeStub) RecoverRejectedLogin(context.Context, uint64, string, time.Time, time.Time) (merchantidentity.Identity, error) {
+func (stub *storeStub) RecoverRejectedLogin(_ context.Context, _ uint64, codeHash merchantidentity.LoginCodeHash, _ string, _, _ time.Time) (merchantidentity.Identity, error) {
 	stub.recoverCalls++
+	stub.recoverHash = codeHash
 	return stub.recovered, stub.recoverErr
 }
