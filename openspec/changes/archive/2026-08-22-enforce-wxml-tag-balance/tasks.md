@@ -32,5 +32,6 @@
 
 ## 独立验证
 
-- [ ] 12. 提交产生候选 SHA。
-- [ ] 13. 在干净 detached worktree 对该精确 SHA 只读重跑 7–11。
+- [x] 12. 候选 SHA `2444af3`（一次通过，未误纳构建产物）。
+- [x] 13. 在干净 detached worktree 对 `2444af3` 只读验证。
+  - `DIRTY=0`；`WXML_BALANCE_GATE=PASS`；`WX_LINT=PASS`；`node --test tests/*.test.js` → 102 pass / 0 fail；归档门禁 33 项与 base 逐行一致。
