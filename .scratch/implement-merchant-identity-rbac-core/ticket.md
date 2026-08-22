@@ -2,7 +2,7 @@
 
 ## 状态与唯一结果
 
-- 状态：`IMPLEMENTING / REVIEWING_WIP`；旧 SHA `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878`、`9cd2ffa330e40af05e91e5424b9ad252327b15f1`、`e89a7561382b486c4958cceb455eb698736d129c`、`8f9937f38a72f0f9b744baed1e779c49993738a6` 与 `90d3792c485d833aac25b947160ccd082a13f2b5` 已失效，不得进入 verifier。
+- 状态：`IMPLEMENTING / REVIEWING_WIP`；旧 SHA `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878`、`9cd2ffa330e40af05e91e5424b9ad252327b15f1`、`e89a7561382b486c4958cceb455eb698736d129c`、`8f9937f38a72f0f9b744baed1e779c49993738a6`、`90d3792c485d833aac25b947160ccd082a13f2b5` 与 `d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b` 已失效，不得进入 verifier。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`；本 change 不创建/更新 GitHub Issue，不伪造 `READY`。
 - 唯一业务结果：实现 merchant identity 核心 v12/v13、`GET /api/v1/me/identity`、`POST /api/v1/me/merchant-login` 与 transaction-bound `AuthorizeInTx`；现有三条 Mini Program identity/phone API 保持不变。
 - 最小成功标准：严格 HTTP、schema、实时 RBAC、首次绑定/审计原子性及故障恢复在 fresh MySQL 8.0.46 闭环；Writer 全 Gate 与 fixed-base 双轴 Review 通过后形成 Candidate，等待主控独立审计批准。
@@ -80,12 +80,12 @@ shared ownership：当前包含 fixed base 的分支仅 staging 与本 Writer；
 - focused：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity ./services/api/internal/httpapi ./services/api/cmd/order-api ./services/api/migrations ./services/api/internal/catalog -count=1`。
 - focused race：同一 package 集合加 `-race`。
 - fresh MySQL：`.scratch/implement-merchant-identity-rbac-core/verify-mysql.sh` 启动 loopback-only `mysql:8.0.46-oraclelinux9`，等待 TCP ready，注入仓库七个 `ORDER_TEST_MYSQL_*` 变量，运行 merchantidentity W3 suite 后清理 container/credential；禁止 sqlmock/skip 冒充。
-- full：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/... -count=1`；同路径 `go test -race`、`go vet`、`go build`。
+- full：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/... -count=1`；同路径 `go test -race`、`go vet`；build 统一运行 `.scratch/implement-merchant-identity-rbac-core/verify-build.sh`，所有二进制只写入受控 `mktemp -d` 并由 trap 移入 Trash，不得落在 worktree。
 - smoke：`GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh`。
 - format/diff：`test -z "$(gofmt -l <owned-go-paths>)"`；`git diff --check 122913c6bcc8c22acb73e05385d54449f27c2465...HEAD`；exact owned-path allowlist；worktree/index clean。
 - Review：中文功能提交后固定 `git diff 122913c6bcc8c22acb73e05385d54449f27c2465...HEAD` 与 `git log 122913c6bcc8c22acb73e05385d54449f27c2465..HEAD --oneline`，按 `$code-review` 并行 Standards/Spec；finding 修复产生 replacement SHA，并从头 Gate/Review。
-- Verifier：主控独立审计批准后，fresh clean detached worktree 对 exact candidate SHA 只读重跑全部 focused/race/fresh-MySQL/full/vet/build/smoke/format/diff/owned/PII/clean Gate。
-- Integration：本 Writer 不执行；不集成 staging/main，不 push/PR/deploy。
+- Verifier：主控独立审计批准后，fresh clean detached worktree 对 exact candidate SHA 只读重跑全部 focused/race/fresh-MySQL/full/vet/受控 build/smoke/format/diff/owned/PII/clean Gate；build 只能调用同一 `verify-build.sh`。
+- Integration：本 Writer 不执行；不集成 staging/main，不 push/PR/deploy。后续若获单独授权在 integration 阶段复跑 build，也只能调用同一 `verify-build.sh`，不得向 worktree 输出二进制。
 - OpenSpec：`N/A`；`openspec/**` 为只读历史且不在 owned paths，不伪造 validate PASS。
 
 ## 外部资产与恢复

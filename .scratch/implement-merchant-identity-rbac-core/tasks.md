@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b
+phase: red
+command_or_action: clean-gate inspection and controlled-build static assertion
+exit_result: FAIL
+sanitized_summary: one untracked worktree-root order-api Mach-O matched the repository order-api main package and was created after the WIP commit during review; it was moved to Trash and no other change remained, then the checker proved build output was not yet forced into controlled temporary storage
+artifact_or_environment: exact externally pinned WIP SHA d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b and its worktree
+unverified_boundary: controlled build wrapper, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer/reviewer/verifier/integration runners
+  missing: enforced worktree-clean build output boundary
+  recovery: route every build through one mktemp directory with exit cleanup and assert the worktree stays clean
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same controlled-build static assertion and verify-build.sh producing both API binaries under mktemp
+exit_result: PASS
+sanitized_summary: Writer, verifier and any future authorized integration build now share one wrapper; both binaries are executable only under controlled temporary output, the directory is moved to Trash on exit, and the worktree remains clean
+artifact_or_environment: owned verify-build.sh and controlled private temporary directory
+unverified_boundary: complete Writer Gate, replacement clean WIP SHA, two-axis review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject any build command that bypasses the wrapper or leaves a worktree artifact
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-build-boundary focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled verify-build.sh; smoke; structure/content/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with both binaries confined to temporary output and removed from the active path; build preserved Git status exactly and every product/test regression stayed green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh two-axis review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the build boundary, externally pin fresh reviews to clean HEAD, and prohibit direct go build output in every later stage
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: 90d3792c485d833aac25b947160ccd082a13f2b5
 phase: red
 command_or_action: structure checker counting lines, top-level functions and mixed MySQL test concerns in mysql_integration_test.go
