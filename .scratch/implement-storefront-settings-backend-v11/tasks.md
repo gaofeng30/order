@@ -327,3 +327,79 @@ external_asset:
   missing: tracker linkage and formal storefront/COS/production assets
   recovery: retain blocked states until separate authorization and evidence
 ```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: 43379f30e9e7d83161f009421c0baf10f3760cf2
+phase: review
+command_or_action: controller independent Standards audit using rg '^## DRAFT|状态：' on ticket.md
+exit_result: FAIL
+sanitized_summary: ticket heading still declared DRAFT while its current lifecycle field declared IMPLEMENTING; the inconsistency invalidated Candidate 43379f30 and the running detached verifier
+artifact_or_environment: exact committed SHA 43379f30e9e7d83161f009421c0baf10f3760cf2; invalidated and never accepted as independently verified
+unverified_boundary: interrupted verifier evidence is discarded; no Candidate or verifier PASS remains current
+external_asset:
+  owner: controller independent reviewer and Writer
+  missing: consistent current lifecycle heading
+  recovery: remove only the stale DRAFT heading marker, rerun full Writer gates, commit replacement SHA and restart both internal review axes; do not start verifier before controller re-review
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: red
+command_or_action: rg -n '^## DRAFT|状态：' ticket.md followed by an assertion that no DRAFT heading remains
+exit_result: FAIL
+sanitized_summary: output showed the stale DRAFT heading and IMPLEMENTING state together; the no-DRAFT assertion exited one
+artifact_or_environment: writer tree based on invalidated SHA 43379f30e9e7d83161f009421c0baf10f3760cf2
+unverified_boundary: product code was unchanged; this Red covers only lifecycle artifact consistency
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: change the heading to 状态与目标 without claiming CANDIDATE
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same heading/status rg output and no-DRAFT-heading assertion after the minimal title edit
+exit_result: PASS
+sanitized_summary: ticket now has the neutral 状态与目标 heading and retains current lifecycle IMPLEMENTING; it does not claim CANDIDATE
+artifact_or_environment: remediated lifecycle artifact
+unverified_boundary: full Writer gates, replacement commit and both internal review axes were still pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun all declared Writer gates before replacement commit
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-heading focused test/race; real TCP-ready MySQL W3; full test/race/vet/build/smoke; gofmt/diff/exact-owned/high-risk/cleanup/staging audits
+exit_result: PASS
+sanitized_summary: every Writer gate passed after the minimal title correction; only the two owned scratch files changed, high-risk material count was zero, no verifier/MySQL temporary asset remained, and staging stayed clean at the fixed base
+artifact_or_environment: final replacement writer tree before commit
+unverified_boundary: internal Standards/Spec review must restart; detached verifier is intentionally not authorized before controller independent re-review
+external_asset:
+  owner: controller and formal runtime owners
+  missing: controller replacement review and all formal runtime assets
+  recovery: commit replacement SHA, run internal reviews only, then wait for controller direction
+```

@@ -1,6 +1,6 @@
 # implement-storefront-settings-backend-v11
 
-## DRAFT 状态与目标
+## 状态与目标
 
 - 状态：`IMPLEMENTING`；DRAFT 已在首个产品测试前建立，本次 delegated instruction 已明确授权实现；Matt tracker 尚待用户确认且不影响本地实现授权。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`，本 change 不创建或更新 GitHub Issue，也不把 tracker 状态伪装为 `READY`。
