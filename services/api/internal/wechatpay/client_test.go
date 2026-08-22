@@ -224,6 +224,8 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 		{name: "duplicate transaction field", resource: strings.TrimSuffix(resource, "}") + `,"appid":"wx-duplicate"}`, associatedData: associatedData, want: ErrorProtocol},
 		{name: "missing required transaction id", resource: strings.Replace(resource, `"transaction_id":"TX_TEST_001",`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "wrong associated data", resource: resource, associatedData: "wrong-aad", want: ErrorDecryption},
+		{name: "missing payer total", resource: strings.Replace(resource, `"payer_total":1,`, "", 1), associatedData: associatedData, want: ErrorProtocol},
+		{name: "missing payer currency", resource: strings.Replace(resource, `,"payer_currency":"CNY"`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 	}
 	for _, test := range badResources {
 		test := test
@@ -355,6 +357,7 @@ func TestClientClassifiesProviderFailures(t *testing.T) {
 		{name: "rate limited", status: http.StatusTooManyRequests, body: `{"code":"FREQUENCY_LIMITED","message":"provider-detail-canary"}`, wantKind: ErrorRateLimited, wantCode: "FREQUENCY_LIMITED", wantRetryable: true},
 		{name: "server unavailable", status: http.StatusServiceUnavailable, body: `{"code":"SYSTEM_ERROR","message":"provider-detail-canary"}`, wantKind: ErrorProviderUnavailable, wantCode: "SYSTEM_ERROR", wantRetryable: true},
 		{name: "provider rejected", status: http.StatusBadRequest, body: `{"code":"PARAM_ERROR","message":"provider-detail-canary"}`, wantKind: ErrorProviderRejected, wantCode: "PARAM_ERROR"},
+		{name: "order not found remains unknown", status: http.StatusNotFound, body: `{"code":"ORDER_NOT_EXIST","message":"provider-detail-canary"}`, wantKind: ErrorProviderRejected, wantCode: "ORDER_NOT_EXIST", wantRetryable: true},
 	}
 	for _, test := range tests {
 		test := test
@@ -365,6 +368,11 @@ func TestClientClassifiesProviderFailures(t *testing.T) {
 					<-request.Context().Done()
 					return
 				}
+				providerNonce := "provider-failure-nonce"
+				writer.Header().Set("Wechatpay-Timestamp", "1800000000")
+				writer.Header().Set("Wechatpay-Nonce", providerNonce)
+				writer.Header().Set("Wechatpay-Serial", testProviderSerial)
+				writer.Header().Set("Wechatpay-Signature", signTestMessage(t, providerKey, "1800000000\n"+providerNonce+"\n"+test.body+"\n"))
 				writer.WriteHeader(test.status)
 				_, _ = writer.Write([]byte(test.body))
 			}))
@@ -396,24 +404,86 @@ func TestClientClassifiesProviderFailures(t *testing.T) {
 	}
 }
 
-func TestRuntimeClientUsesFixedBoundedNonReplayingTransport(t *testing.T) {
+func TestClientRejectsUnsignedProviderFailures(t *testing.T) {
 	t.Parallel()
 	merchantKey, providerKey := generatedTestKeys(t)
-	client, err := NewClient(Config{
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusTooManyRequests)
+		_, _ = writer.Write([]byte(`{"code":"FREQUENCY_LIMITED","message":"provider-detail-canary"}`))
+	}))
+	defer server.Close()
+	client, err := newClient(Config{
 		AppID: testAppID, MerchantID: testMerchantID, MerchantCertificateSerial: testMerchantSerial,
 		MerchantPrivateKey:  merchantKey,
 		WeChatPayPublicKeys: map[string]*rsa.PublicKey{testProviderSerial: &providerKey.PublicKey},
 		APIv3Key:            []byte(testAPIv3Key),
-	})
+	}, server.Client(), server.URL, func() time.Time { return time.Unix(1_800_000_000, 0) }, func() (string, error) { return "failure-nonce", nil })
 	if err != nil {
-		t.Fatal("runtime client construction failed")
+		t.Fatal("controlled client construction failed")
 	}
-	if client.origin != apiOrigin || client.httpClient.Timeout != 5*time.Second || client.httpClient.CheckRedirect == nil {
-		t.Fatal("runtime client origin/timeout/redirect policy mismatch")
+	_, err = client.QueryTransactionByOutTradeNo(context.Background(), "ORDER_TEST_001")
+	var providerError *Error
+	if !errors.As(err, &providerError) || providerError.Kind() != ErrorUnknownSerial || providerError.ProviderCode() != "" {
+		t.Fatal("unsigned provider failure was trusted")
 	}
-	transport, ok := client.httpClient.Transport.(*http.Transport)
-	if !ok || !transport.DisableKeepAlives || transport.ForceAttemptHTTP2 || transport.TLSNextProto == nil || len(transport.TLSNextProto) != 0 {
-		t.Fatal("runtime transport permits signed-request replay preconditions")
+}
+
+func TestClientRefusesRedirectWithoutReplayingSignedRequest(t *testing.T) {
+	t.Parallel()
+	merchantKey, providerKey := generatedTestKeys(t)
+	var calls atomic.Int32
+	var redirected atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		calls.Add(1)
+		if request.URL.Path == "/redirected" {
+			redirected.Add(1)
+			return
+		}
+		http.Redirect(writer, request, "/redirected", http.StatusTemporaryRedirect)
+	}))
+	defer server.Close()
+	client, err := newClient(Config{
+		AppID: testAppID, MerchantID: testMerchantID, MerchantCertificateSerial: testMerchantSerial,
+		MerchantPrivateKey:  merchantKey,
+		WeChatPayPublicKeys: map[string]*rsa.PublicKey{testProviderSerial: &providerKey.PublicKey},
+		APIv3Key:            []byte(testAPIv3Key),
+	}, server.Client(), server.URL, time.Now, func() (string, error) { return "redirect-nonce", nil })
+	if err != nil {
+		t.Fatal("controlled client construction failed")
+	}
+	if _, err := client.QueryTransactionByOutTradeNo(context.Background(), "ORDER_TEST_001"); err == nil {
+		t.Fatal("redirect was accepted")
+	}
+	if calls.Load() != 1 || redirected.Load() != 0 {
+		t.Fatal("signed request followed or replayed a redirect")
+	}
+}
+
+func TestCloseTransactionRequiresNoContent(t *testing.T) {
+	t.Parallel()
+	merchantKey, providerKey := generatedTestKeys(t)
+	now := time.Unix(1_800_000_000, 0)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		writer.Header().Set("Wechatpay-Timestamp", "1800000000")
+		writer.Header().Set("Wechatpay-Nonce", "close-response-nonce")
+		writer.Header().Set("Wechatpay-Serial", testProviderSerial)
+		writer.Header().Set("Wechatpay-Signature", signTestMessage(t, providerKey, "1800000000\nclose-response-nonce\n\n"))
+		writer.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	client, err := newClient(Config{
+		AppID: testAppID, MerchantID: testMerchantID, MerchantCertificateSerial: testMerchantSerial,
+		MerchantPrivateKey:  merchantKey,
+		WeChatPayPublicKeys: map[string]*rsa.PublicKey{testProviderSerial: &providerKey.PublicKey},
+		APIv3Key:            []byte(testAPIv3Key),
+	}, server.Client(), server.URL, func() time.Time { return now }, func() (string, error) { return "close-request-nonce", nil })
+	if err != nil {
+		t.Fatal("controlled client construction failed")
+	}
+	err = client.CloseTransaction(context.Background(), "ORDER_TEST_001")
+	var providerError *Error
+	if !errors.As(err, &providerError) || providerError.Kind() != ErrorProtocol || providerError.StatusCode() != http.StatusOK {
+		t.Fatal("close accepted a non-204 response")
 	}
 }
 
@@ -438,6 +508,7 @@ func TestCreateRefundRequiresOneTransactionIdentifier(t *testing.T) {
 	inputs := []RefundCreateRequest{
 		{OutRefundNo: "REFUND_TEST_001", Amount: RefundRequestAmount{Refund: 1, Total: 1, Currency: "CNY"}},
 		{TransactionID: "TX_TEST_001", OutTradeNo: "ORDER_TEST_001", OutRefundNo: "REFUND_TEST_001", Amount: RefundRequestAmount{Refund: 1, Total: 1, Currency: "CNY"}},
+		{TransactionID: " ", OutTradeNo: "ORDER_TEST_001", OutRefundNo: "REFUND_TEST_001", Amount: RefundRequestAmount{Refund: 1, Total: 1, Currency: "CNY"}},
 	}
 	for _, input := range inputs {
 		_, err := client.CreateRefund(context.Background(), input)

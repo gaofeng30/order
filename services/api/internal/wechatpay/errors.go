@@ -43,6 +43,8 @@ func (err *Error) Retryable() bool {
 	case ErrorTransport, ErrorTimeout, ErrorRateLimited, ErrorProviderUnavailable,
 		ErrorUnknownSerial, ErrorTimestamp, ErrorSignature:
 		return true
+	case ErrorProviderRejected:
+		return err.providerCode == "ORDER_NOT_EXIST"
 	default:
 		return false
 	}

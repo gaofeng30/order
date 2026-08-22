@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -86,7 +85,7 @@ func (client *Client) QueryTransactionByOutTradeNo(ctx context.Context, outTrade
 	if err != nil {
 		return Transaction{}, err
 	}
-	body, err := client.do(ctx, http.MethodGet, requestTarget, nil)
+	body, err := client.sendSignedRequest(ctx, http.MethodGet, requestTarget, nil, http.StatusOK)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -99,7 +98,7 @@ func (client *Client) QueryTransactionByID(ctx context.Context, transactionID st
 	if err != nil {
 		return Transaction{}, err
 	}
-	body, err := client.do(ctx, http.MethodGet, requestTarget, nil)
+	body, err := client.sendSignedRequest(ctx, http.MethodGet, requestTarget, nil, http.StatusOK)
 	if err != nil {
 		return Transaction{}, err
 	}
@@ -118,7 +117,7 @@ func (client *Client) CloseTransaction(ctx context.Context, outTradeNo string) e
 		return &Error{kind: ErrorProtocol}
 	}
 	requestTarget := "/v3/pay/transactions/out-trade-no/" + url.PathEscape(outTradeNo) + "/close"
-	_, err = client.do(ctx, http.MethodPost, requestTarget, body)
+	_, err = client.sendSignedRequest(ctx, http.MethodPost, requestTarget, body, http.StatusNoContent)
 	return err
 }
 
@@ -143,7 +142,7 @@ func (client *Client) CreateRefund(ctx context.Context, input RefundCreateReques
 	if err != nil {
 		return Refund{}, &Error{kind: ErrorProtocol}
 	}
-	responseBody, err := client.do(ctx, http.MethodPost, "/v3/refund/domestic/refunds", body)
+	responseBody, err := client.sendSignedRequest(ctx, http.MethodPost, "/v3/refund/domestic/refunds", body, http.StatusOK)
 	if err != nil {
 		return Refund{}, err
 	}
@@ -156,7 +155,7 @@ func (client *Client) QueryRefund(ctx context.Context, outRefundNo string) (Refu
 		return Refund{}, &Error{kind: ErrorProtocol}
 	}
 	requestTarget := "/v3/refund/domestic/refunds/" + url.PathEscape(outRefundNo)
-	body, err := client.do(ctx, http.MethodGet, requestTarget, nil)
+	body, err := client.sendSignedRequest(ctx, http.MethodGet, requestTarget, nil, http.StatusOK)
 	if err != nil {
 		return Refund{}, err
 	}
@@ -181,27 +180,16 @@ func decodeTransactionResponse(body []byte) (Transaction, error) {
 		resource.AppID == "" || resource.MerchantID == "" || resource.OutTradeNo == "" || resource.TradeState == "" {
 		return Transaction{}, &Error{kind: ErrorProtocol}
 	}
-	var successTime time.Time
-	if resource.SuccessTime != "" {
-		var err error
-		successTime, err = time.Parse(time.RFC3339, resource.SuccessTime)
-		if err != nil {
-			return Transaction{}, &Error{kind: ErrorProtocol}
-		}
+	transaction, err := transactionFromResource(resource)
+	if err != nil {
+		return Transaction{}, err
 	}
-	if resource.TradeState == "SUCCESS" && (resource.TransactionID == "" || successTime.IsZero() || resource.Amount.Total <= 0 || resource.Amount.Currency == "") {
+	if resource.TradeState == "SUCCESS" && (resource.TransactionID == "" || transaction.SuccessTime.IsZero() ||
+		resource.Amount.Total <= 0 || resource.Amount.Currency == "" ||
+		resource.Amount.PayerTotal == nil || resource.Amount.PayerCurrency == nil) {
 		return Transaction{}, &Error{kind: ErrorProtocol}
 	}
-	return Transaction{
-		AppID: resource.AppID, MerchantID: resource.MerchantID, OutTradeNo: resource.OutTradeNo,
-		TransactionID: resource.TransactionID, TradeType: resource.TradeType, TradeState: resource.TradeState,
-		TradeStateDescription: resource.TradeStateDescription, BankType: resource.BankType,
-		Attach: resource.Attach, SuccessTime: successTime, Payer: resource.Payer,
-		Amount: TransactionAmount{
-			Total: resource.Amount.Total, PayerTotal: resource.Amount.PayerTotal,
-			Currency: resource.Amount.Currency, PayerCurrency: resource.Amount.PayerCurrency,
-		},
-	}, nil
+	return transaction, nil
 }
 
 func decodeRefundResponse(body []byte) (Refund, error) {
@@ -244,5 +232,5 @@ func decodeRefundResponse(body []byte) (Refund, error) {
 }
 
 func singleIdentifier(transactionID, outTradeNo string) bool {
-	return (strings.TrimSpace(transactionID) == "") != (strings.TrimSpace(outTradeNo) == "")
+	return (transactionID == "") != (outTradeNo == "")
 }

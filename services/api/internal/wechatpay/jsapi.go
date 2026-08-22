@@ -63,7 +63,7 @@ func (client *Client) CreateJSAPIPrepay(ctx context.Context, input JSAPICreateRe
 	if err != nil {
 		return JSAPIPrepay{}, &Error{kind: ErrorProtocol}
 	}
-	responseBody, err := client.do(ctx, http.MethodPost, "/v3/pay/transactions/jsapi", body)
+	responseBody, err := client.sendSignedRequest(ctx, http.MethodPost, "/v3/pay/transactions/jsapi", body, http.StatusOK)
 	if err != nil {
 		return JSAPIPrepay{}, err
 	}

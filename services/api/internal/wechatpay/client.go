@@ -87,7 +87,7 @@ func newClient(config Config, source *http.Client, origin string, now func() tim
 	}, nil
 }
 
-func (client *Client) do(ctx context.Context, method, requestTarget string, body []byte) ([]byte, error) {
+func (client *Client) sendSignedRequest(ctx context.Context, method, requestTarget string, body []byte, expectedStatus int) ([]byte, error) {
 	timestamp := strconv.FormatInt(client.now().Unix(), 10)
 	nonce, err := client.nonce()
 	if err != nil || !safeHeaderToken(nonce) {
@@ -124,6 +124,12 @@ func (client *Client) do(ctx context.Context, method, requestTarget string, body
 	if err != nil || len(responseBody) > responseMaxBytes {
 		return nil, &Error{kind: ErrorProtocol}
 	}
+	if err := client.verify(responseBody, SignatureHeaders{
+		Serial: response.Header.Get("Wechatpay-Serial"), Signature: response.Header.Get("Wechatpay-Signature"),
+		Timestamp: response.Header.Get("Wechatpay-Timestamp"), Nonce: response.Header.Get("Wechatpay-Nonce"),
+	}); err != nil {
+		return nil, err
+	}
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		kind := ErrorProviderRejected
 		switch {
@@ -134,11 +140,8 @@ func (client *Client) do(ctx context.Context, method, requestTarget string, body
 		}
 		return nil, &Error{kind: kind, statusCode: response.StatusCode, providerCode: safeProviderCode(responseBody)}
 	}
-	if err := client.verify(responseBody, SignatureHeaders{
-		Serial: response.Header.Get("Wechatpay-Serial"), Signature: response.Header.Get("Wechatpay-Signature"),
-		Timestamp: response.Header.Get("Wechatpay-Timestamp"), Nonce: response.Header.Get("Wechatpay-Nonce"),
-	}); err != nil {
-		return nil, err
+	if response.StatusCode != expectedStatus {
+		return nil, &Error{kind: ErrorProtocol, statusCode: response.StatusCode}
 	}
 	return responseBody, nil
 }

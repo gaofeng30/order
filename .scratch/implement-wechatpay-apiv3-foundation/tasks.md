@@ -368,3 +368,100 @@ external_asset:
 - V=8：writer gates 已完整；exact candidate SHA、双审与 detached verifier 尚待提交后执行。
 - R=9：模糊/临时失败不产生业务终态，错误 retryability 明确，客户端不自动重放，恢复命令完整。
 - 总分：36；产品/代码硬阻断为 0。外部 tracker linkage 保持 `BLOCKED_LOCAL_GOVERNANCE`，真实微信资产保持 `BLOCKED_EXTERNAL`，二者均未被本地 fixture 冒充 PASS。
+
+## First review SHA invalidation and remediation
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: reviewer
+command_or_action: independent Standards and Spec review of exact review SHA 185e6e64cce32e6007bb850556fa48b055f66001
+exit_result: FAIL
+sanitized_summary: Standards found two hard evidence/test-seam violations and two smells; Spec found four trust/status/DTO/input findings; the SHA was invalidated before detached verification
+artifact_or_environment: immutable review SHA 185e6e64cce32e6007bb850556fa48b055f66001
+unverified_boundary: no Candidate or independent verification status was granted
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: writer fixes every finding, creates a new exact SHA, then both axes review from scratch
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: red
+command_or_action: focused tests for signed ORDER_NOT_EXIST retryability, unsigned non-2xx, close non-204, callback missing payer totals/currency, and refund whitespace XOR; static private-seam grep
+exit_result: FAIL
+sanitized_summary: all five behavior tests failed for the reviewed defects; static grep found two assertions against Client private fields
+artifact_or_environment: writer tree based on invalidated review SHA with new public-seam regression tests
+unverified_boundary: reviewed defects were still present at Red
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: implement only the reviewed fixes and rerun the identical tests/audit
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: green
+command_or_action: rerun the five defect tests plus redirect/public-seam and existing signed operation/signature regression tests
+exit_result: PASS
+sanitized_summary: every reviewed behavior passed; private-field grep returned no match; sendSignedRequest and one transaction mapper removed the two named smells
+artifact_or_environment: remediated local writer tree
+unverified_boundary: new exact SHA review and detached verification remain pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: complete writer gates, commit, then rerun both review axes on the new SHA
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/wechatpay -count=1; go test -race same package; go test ./services/api/... -count=1; go test -race ./services/api/... -count=1; go vet ./services/api/...; go build ./services/api/...; bash services/api/scripts/smoke.sh
+exit_result: PASS
+sanitized_summary: remediated focused/full/race/vet/build/smoke gates all exited zero; smoke reported PASS
+artifact_or_environment: final remediated writer product tree before replacement commit
+unverified_boundary: exact replacement SHA review and clean detached verification remain pending
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: formal WeChat Pay assets and authorized real transaction
+  recovery: execute separately authorized external gates after asset provisioning
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: git diff --check a56aeec6b041bf1a31988a888956ad851e128469; git diff --name-only a56aeec6b041bf1a31988a888956ad851e128469 with exact owned-prefix awk; rg filename-only high-risk material and static long-token patterns in owned paths
+exit_result: PASS
+sanitized_summary: diff check and owned-prefix audit passed for ten files; sensitive scan found zero high-risk material files, zero static long-token files, and exactly one synthetic test-key fixture file
+artifact_or_environment: complete remediated writer tree and owned scratch artifacts
+unverified_boundary: scan detects committed/static material patterns only and does not prove external secret custody or runtime log hygiene
+external_asset:
+  owner: customer merchant administrator and development owners
+  missing: formal secret/key custody and runtime logging evidence
+  recovery: verify custody and sanitized runtime behavior in a separately authorized external gate
+```

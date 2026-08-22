@@ -74,10 +74,10 @@ type transactionResource struct {
 }
 
 type transactionResourceAmount struct {
-	Total         int64  `json:"total"`
-	PayerTotal    int64  `json:"payer_total"`
-	Currency      string `json:"currency"`
-	PayerCurrency string `json:"payer_currency"`
+	Total         int64   `json:"total"`
+	PayerTotal    *int64  `json:"payer_total"`
+	Currency      string  `json:"currency"`
+	PayerCurrency *string `json:"payer_currency"`
 }
 
 // ParseTransactionNotification verifies the original body before strict decoding and decryption.
@@ -107,25 +107,46 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 	if err := decodeStrictJSON(plaintext, &resource); err != nil ||
 		resource.AppID == "" || resource.MerchantID == "" || resource.OutTradeNo == "" ||
 		resource.TransactionID == "" || resource.TradeState != "SUCCESS" ||
-		resource.Amount.Total <= 0 || resource.Amount.Currency == "" {
+		resource.Amount.Total <= 0 || resource.Amount.Currency == "" ||
+		resource.Amount.PayerTotal == nil || resource.Amount.PayerCurrency == nil || *resource.Amount.PayerCurrency == "" {
 		return TransactionNotification{}, &Error{kind: ErrorProtocol}
 	}
-	successTime, err := time.Parse(time.RFC3339, resource.SuccessTime)
+	transaction, err := transactionFromResource(resource)
 	if err != nil {
-		return TransactionNotification{}, &Error{kind: ErrorProtocol}
+		return TransactionNotification{}, err
 	}
 	return TransactionNotification{
 		ID: envelope.ID, CreateTime: createTime, ResourceType: envelope.ResourceType,
 		EventType: envelope.EventType, Summary: envelope.Summary,
-		Transaction: Transaction{
-			AppID: resource.AppID, MerchantID: resource.MerchantID, OutTradeNo: resource.OutTradeNo,
-			TransactionID: resource.TransactionID, TradeType: resource.TradeType, TradeState: resource.TradeState,
-			TradeStateDescription: resource.TradeStateDescription, BankType: resource.BankType,
-			Attach: resource.Attach, SuccessTime: successTime, Payer: resource.Payer,
-			Amount: TransactionAmount{
-				Total: resource.Amount.Total, PayerTotal: resource.Amount.PayerTotal,
-				Currency: resource.Amount.Currency, PayerCurrency: resource.Amount.PayerCurrency,
-			},
+		Transaction: transaction,
+	}, nil
+}
+
+func transactionFromResource(resource transactionResource) (Transaction, error) {
+	var successTime time.Time
+	if resource.SuccessTime != "" {
+		var err error
+		successTime, err = time.Parse(time.RFC3339, resource.SuccessTime)
+		if err != nil {
+			return Transaction{}, &Error{kind: ErrorProtocol}
+		}
+	}
+	var payerTotal int64
+	if resource.Amount.PayerTotal != nil {
+		payerTotal = *resource.Amount.PayerTotal
+	}
+	var payerCurrency string
+	if resource.Amount.PayerCurrency != nil {
+		payerCurrency = *resource.Amount.PayerCurrency
+	}
+	return Transaction{
+		AppID: resource.AppID, MerchantID: resource.MerchantID, OutTradeNo: resource.OutTradeNo,
+		TransactionID: resource.TransactionID, TradeType: resource.TradeType, TradeState: resource.TradeState,
+		TradeStateDescription: resource.TradeStateDescription, BankType: resource.BankType,
+		Attach: resource.Attach, SuccessTime: successTime, Payer: resource.Payer,
+		Amount: TransactionAmount{
+			Total: resource.Amount.Total, PayerTotal: payerTotal,
+			Currency: resource.Amount.Currency, PayerCurrency: payerCurrency,
 		},
 	}, nil
 }
