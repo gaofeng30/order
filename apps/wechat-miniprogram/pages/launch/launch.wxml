@@ -33,14 +33,22 @@
       <view class="id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
     </view>
 
-    <view class="id-card fade-up" data-to="admin-orders" bindtap="go">
+    <!-- 商户端：微信真实的手机号授权控件，不是自绘弹层 -->
+    <button
+      class="id-card id-card--btn fade-up"
+      open-type="getPhoneNumber"
+      bindgetphonenumber="onMerchantPhone"
+      hover-class="none"
+    >
       <view class="id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
       <view class="id-body">
         <view class="id-name serif">商户端</view>
         <view class="id-desc">接单 · 制作 · 核销 · 菜品与经营管理</view>
       </view>
       <view class="id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
-    </view>
+    </button>
+
+    <view wx:if="{{hint}}" class="id-hint">{{hint}}</view>
 
     <view class="ver">{{store.name}}　小程序 v1.0</view>
   </view>

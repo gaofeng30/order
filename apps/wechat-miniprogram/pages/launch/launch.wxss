@@ -50,3 +50,17 @@
 .ver { text-align: center; font-size: 22rpx; color: rgba(255, 255, 255, .4); margin-top: 8rpx; }
 
 /* 微信授权弹窗 */
+
+/* 商户端入口是微信的 <button>（open-type="getPhoneNumber"），
+   去掉系统默认的边框、背景与内边距，保持与用户端卡片一致的外观。 */
+.id-card--btn {
+  padding: 0; margin: 0; background: transparent; line-height: normal;
+  text-align: left; font-size: inherit; color: inherit; border-radius: 28rpx;
+}
+.id-card--btn::after { border: none; }
+
+.id-hint {
+  margin-top: 20rpx; padding: 18rpx 24rpx; border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.86);
+  font-size: 23rpx; line-height: 1.6;
+}
