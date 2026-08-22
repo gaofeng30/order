@@ -8,7 +8,6 @@
 
   function render(el) {
     Api.getSettings().then(s => {
-      const pts = window.Seed.PICKUP_POINTS;
       el.innerHTML =
         `<div class="set-cols">
            <div>
@@ -36,10 +35,8 @@
                </div>
                <div class="fld" style="margin-bottom:0">
                  <div class="fld-lb">取餐地点</div>
-                 <select class="sel" id="f-pt">
-                   ${pts.map(p => `<option value="${T.esc(p.name)}"${s.pickupPoint === p.name ? ' selected' : ''}>${T.esc(p.name)} · ${T.esc(p.addr)}</option>`).join('')}
-                 </select>
-                 <div class="fld-hint">取餐点显示在用户端首页与订单凭证上：${T.esc(window.Seed.STORE.pickupWindow)}</div>
+                 <input class="inp" id="f-pt" value="${T.esc(window.Seed.PICKUP_POINT)}" readonly>
+                 <div class="fld-hint">一期为单门店单取餐点，不提供多点选择（§3.1）。该地点显示在用户端首页与订单凭证上。</div>
                </div>
              </div>
            </div>

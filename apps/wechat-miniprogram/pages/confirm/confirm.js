@@ -7,6 +7,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     store: data.STORE,
+    pickupPoint: data.PICKUP_POINT,
     cancelMin: data.CANCEL_LIMIT_MIN,
     // 取餐时间在菜单顶部选定，结算页只读展示（生效 spec §5.5）
     pickup: {},
@@ -96,7 +97,8 @@ Page({
       pickupDate: data.pickupDateOf(pk),
       pickupTime: pk.time,
       mealPeriod: pk.period,
-      pickupPoint: data.STORE.pickupWindow,
+      // 与种子订单写同一个常量：同一字段不能在两条写入路径上装不同语义的值
+      pickupPoint: data.PICKUP_POINT,
       paidAt: data.nowStamp(),
       subtotal,
       /* 身份识别链路尚未接后端（§16.5），一期在手机号授权就位前所有人按
