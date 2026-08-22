@@ -23,7 +23,64 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
-candidate_sha: 9cd2ffa330e40af05e91e5424b9ad252327b15f1-invalid
+candidate_sha: e89a7561382b486c4958cceb455eb698736d129c
+phase: red
+command_or_action: static evidence-format checker requiring every candidate_sha to be either one complete SHA or not-yet-created
+exit_result: FAIL
+sanitized_summary: evidence contained non-canonical invalid-suffix and replacement-pending values; WIP SHA e89a7561382b486c4958cceb455eb698736d129c and its reviews were invalidated, with invalidity retained only in summaries
+artifact_or_environment: exact externally pinned WIP SHA e89a7561382b486c4958cceb455eb698736d129c
+unverified_boundary: evidence normalization, corrected migration Red/Green, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: retain pure complete SHA for committed historical records and use only not-yet-created before a replacement is formed
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same evidence-format checker after canonicalizing all candidate_sha fields
+exit_result: PASS
+sanitized_summary: every evidence candidate_sha is now either a pure 40-character committed SHA or not-yet-created; invalid status remains only in sanitized summaries
+artifact_or_environment: replacement Writer evidence
+unverified_boundary: complete Writer Gate, replacement WIP SHA, review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the format checker after every evidence edit
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-evidence-remediation focused and race; anchored migration Green; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; static gates
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after authenticating the migration Red and canonicalizing every evidence SHA; all product and failure scenarios stayed green and temporary assets were cleaned
+artifact_or_environment: final replacement WIP tree before commit
+unverified_boundary: replacement clean HEAD still required two fresh review axes and controller review before Candidate designation; verifier remained prohibited
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the unchanged product plus corrected evidence, pin reviews externally to clean HEAD, and do not modify files after approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 9cd2ffa330e40af05e91e5424b9ad252327b15f1
 phase: red
 command_or_action: static lifecycle assertion comparing the committed clean HEAD with ticket status and candidate declaration
 exit_result: FAIL
@@ -80,7 +137,7 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
-candidate_sha: dbdb508194a7e5524c3f5abdb98c60e5fb0b9878-invalid
+candidate_sha: dbdb508194a7e5524c3f5abdb98c60e5fb0b9878
 phase: red
 command_or_action: fixed-base zero-context shared-file ownership checker allowing only the v12/v13 wantNames additions in catalog/migrations_test.go
 exit_result: FAIL
@@ -99,7 +156,7 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
-candidate_sha: replacement-not-yet-created
+candidate_sha: not-yet-created
 phase: green
 command_or_action: same fixed-base shared-file ownership checker plus focused TestMerchantIdentityMigrationContracts and TestCatalogMigrationSet after moving the contract test
 exit_result: PASS
@@ -118,7 +175,7 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
-candidate_sha: replacement-not-yet-created
+candidate_sha: not-yet-created
 phase: writer
 command_or_action: replacement focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; gofmt; fixed-base shared-file and owned-path checks
 exit_result: PASS
@@ -519,7 +576,7 @@ ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: not-yet-created
 phase: green
-command_or_action: same focused exact migration-chain tests after adding one minimal forward CREATE TABLE in each assigned v12/v13 file
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/migrations ./services/api/internal/catalog -run '^(TestEmbeddedMigrationChainIsExactAndRecoverable|TestCatalogMigrationSet)$' -count=1 after adding one minimal forward CREATE TABLE in each assigned v12/v13 file
 exit_result: PASS
 sanitized_summary: embedded and loaded migration sets were exact contiguous v1-v13 and each new file was one LF-terminated CREATE TABLE statement
 artifact_or_environment: Writer first migration vertical slice
@@ -538,15 +595,15 @@ ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: not-yet-created
 phase: red
-command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/migrations ./services/api/internal/catalog -run TestEmbeddedMigrationChainIsExactAndRecoverable-or-TestCatalogMigrationSet -count=1
+command_or_action: fixed-base temporary export with only the v12/v13 expectations overlaid, then GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/migrations ./services/api/internal/catalog -run '^(TestEmbeddedMigrationChainIsExactAndRecoverable|TestCatalogMigrationSet)$' -count=1
 exit_result: FAIL
-sanitized_summary: embedded and loaded migration sets each contained 11 files while the new exact-chain contract required v1-v13
-artifact_or_environment: fixed-base Writer tree with only exact-chain expectations added
+sanitized_summary: both matching tests executed and failed because embedded and loaded migration sets each contained 11 files while the test-only expectations required 13; the temporary export was moved to Trash after capture
+artifact_or_environment: disposable archive export of exact fixed base with only the two test expectation additions
 unverified_boundary: schema columns, constraints, real MySQL application and all runtime behavior remained absent
 external_asset:
   owner: N/A
   missing: N/A
-  recovery: add only one forward CREATE TABLE file for each assigned v12/v13 version and rerun the identical focused command
+  recovery: add only one forward CREATE TABLE file for each assigned v12/v13 version and rerun the identical anchored-regex focused command
 ```
 
 ## Writer C/T/V/R
