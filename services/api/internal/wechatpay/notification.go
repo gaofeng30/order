@@ -51,11 +51,11 @@ type encryptedNotification struct {
 }
 
 type encryptedResource struct {
-	OriginalType   string `json:"original_type"`
-	Algorithm      string `json:"algorithm"`
-	Ciphertext     string `json:"ciphertext"`
-	AssociatedData string `json:"associated_data"`
-	Nonce          string `json:"nonce"`
+	OriginalType   string  `json:"original_type"`
+	Algorithm      string  `json:"algorithm"`
+	Ciphertext     string  `json:"ciphertext"`
+	AssociatedData *string `json:"associated_data"`
+	Nonce          string  `json:"nonce"`
 }
 
 type transactionResource struct {
@@ -91,7 +91,7 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 		envelope.ID == "" || envelope.ResourceType != "encrypt-resource" ||
 		envelope.EventType != "TRANSACTION.SUCCESS" || envelope.Summary == "" ||
 		envelope.Resource.OriginalType != "transaction" || envelope.Resource.Algorithm != "AEAD_AES_256_GCM" ||
-		envelope.Resource.Ciphertext == "" || envelope.Resource.AssociatedData == "" || envelope.Resource.Nonce == "" {
+		envelope.Resource.Ciphertext == "" || envelope.Resource.AssociatedData == nil || envelope.Resource.Nonce == "" {
 		return TransactionNotification{}, &Error{kind: ErrorProtocol}
 	}
 	createTime, err := time.Parse(time.RFC3339, envelope.CreateTime)
@@ -164,7 +164,7 @@ func (client *Client) decrypt(resource encryptedResource) ([]byte, error) {
 	if err != nil || len(resource.Nonce) != aead.NonceSize() {
 		return nil, &Error{kind: ErrorDecryption}
 	}
-	plaintext, err := aead.Open(nil, []byte(resource.Nonce), ciphertext, []byte(resource.AssociatedData))
+	plaintext, err := aead.Open(nil, []byte(resource.Nonce), ciphertext, []byte(*resource.AssociatedData))
 	if err != nil {
 		return nil, &Error{kind: ErrorDecryption}
 	}

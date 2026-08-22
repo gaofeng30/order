@@ -234,6 +234,82 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: c6f8e0edb7cbb1e4b24c995959906330420d4802
+phase: review
+command_or_action: both independent review axes reran from scratch on exact SHA c6f8e0edb7cbb1e4b24c995959906330420d4802
+exit_result: FAIL
+sanitized_summary: Standards passed with zero findings; Spec found one field-presence defect because callback associated_data was required non-empty although the frozen official format allows an explicitly present empty value
+artifact_or_environment: exact committed review SHA c6f8e0edb7cbb1e4b24c995959906330420d4802; now invalidated
+unverified_boundary: no detached verification was attempted because Spec had not passed
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: distinguish missing associated_data from an explicitly present empty string, then rerun all gates and both review axes on a new SHA
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: red
+command_or_action: focused callback explicit_empty_associated_data subtest
+exit_result: FAIL
+sanitized_summary: a signed callback containing associated_data as an explicit empty string and encrypted with empty AAD was rejected before decryption
+artifact_or_environment: local generated keys and an official-shape encrypted callback fixture
+unverified_boundary: field presence and field value were not distinguishable at Red
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: make the internal encrypted envelope DTO presence-aware without exporting a new abstraction
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: green
+command_or_action: rerun explicit_empty_associated_data and missing_associated_data focused subtests together
+exit_result: PASS
+sanitized_summary: an explicitly present empty associated_data value now decrypts with empty AAD while a missing or null field still fails closed
+artifact_or_environment: presence-aware private envelope DTO and local encrypted fixtures
+unverified_boundary: no real callback or provider network ran
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: formal WeChat Pay assets and authorized callback
+  recovery: execute separately authorized external callback gates after asset provisioning
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: refactor
+command_or_action: explicit format; focused/full and both race layers; vet/build; repository smoke; diff/owned/sensitive scans
+exit_result: PASS_AFTER_RETRY
+sanitized_summary: Go test/race/vet/build/format all passed; the first smoke attempt hit a temporary log-creation race and hung while cleaning its temporary order-api process, which was explicitly terminated; rerunning the identical smoke command from the failure point reported PASS; audits remained ten owned files, zero high-risk/static-token files, one synthetic test-key fixture
+artifact_or_environment: final remediated writer tree; failed smoke affected only its mktemp directory and process
+unverified_boundary: the smoke rerun is local environment evidence and does not prove real WeChat connectivity
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: all formal WeChat Pay assets listed in ticket.md
+  recovery: provision and authorize assets, then execute separately authorized external gates
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
 candidate_sha: not-yet-created
 phase: red
 command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/wechatpay -run '^TestCreateRefundRequiresOneTransactionIdentifier$' -count=1

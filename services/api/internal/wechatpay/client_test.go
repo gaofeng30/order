@@ -290,6 +290,16 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 		notification.Transaction.Amount.Total != 1 || notification.Transaction.Amount.Currency != "CNY" {
 		t.Fatal("transaction notification DTO mismatch")
 	}
+	t.Run("explicit empty associated data", func(t *testing.T) {
+		t.Parallel()
+		emptyAADCiphertext := encryptTestResource(t, apiV3Key, resourceNonce, "", []byte(resource))
+		body := notificationBody(emptyAADCiphertext, "", "")
+		headers := signedTestHeaders(t, providerKey, body, "1800000000", "callback-nonce")
+		notification, err := client.ParseTransactionNotification(body, headers)
+		if err != nil || notification.Transaction.TransactionID != "TX_TEST_001" {
+			t.Fatal("explicit empty callback associated_data was rejected")
+		}
+	})
 
 	badResources := []struct {
 		name           string
