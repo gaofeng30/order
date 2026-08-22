@@ -328,6 +328,18 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 			}
 		})
 	}
+	t.Run("missing associated data", func(t *testing.T) {
+		t.Parallel()
+		emptyAADCiphertext := encryptTestResource(t, apiV3Key, resourceNonce, "", []byte(resource))
+		body := notificationBody(emptyAADCiphertext, "", "")
+		body = []byte(strings.Replace(string(body), `,"associated_data":""`, "", 1))
+		headers := signedTestHeaders(t, providerKey, body, "1800000000", "callback-nonce")
+		_, err := client.ParseTransactionNotification(body, headers)
+		var providerError *Error
+		if !errors.As(err, &providerError) || providerError.Kind() != ErrorProtocol {
+			t.Fatal("missing callback associated_data was accepted")
+		}
+	})
 }
 
 func TestTypedOperationsUseOfficialEndpointsAndVerifiedResponses(t *testing.T) {
@@ -418,6 +430,40 @@ func TestTypedOperationsUseOfficialEndpointsAndVerifiedResponses(t *testing.T) {
 	}
 	if callIndex.Load() != int32(len(expected)) {
 		t.Fatalf("provider calls = %d, want %d", callIndex.Load(), len(expected))
+	}
+}
+
+func TestQueryTransactionAllowsNonSuccessWithoutSuccessTime(t *testing.T) {
+	t.Parallel()
+	merchantKey, providerKey := generatedTestKeys(t)
+	now := time.Unix(1_800_000_000, 0).UTC()
+	for _, tradeState := range []string{"NOTPAY", "CLOSED"} {
+		tradeState := tradeState
+		t.Run(tradeState, func(t *testing.T) {
+			t.Parallel()
+			responseBody := []byte(fmt.Sprintf(`{"appid":"wx-test-app","mchid":"1900000109","out_trade_no":"ORDER_TEST_001","trade_state":"%s","trade_state_desc":"synthetic non-success"}`, tradeState))
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				writer.Header().Set("Wechatpay-Timestamp", "1800000000")
+				writer.Header().Set("Wechatpay-Nonce", "non-success-response")
+				writer.Header().Set("Wechatpay-Serial", testProviderSerial)
+				writer.Header().Set("Wechatpay-Signature", signTestMessage(t, providerKey, "1800000000\nnon-success-response\n"+string(responseBody)+"\n"))
+				_, _ = writer.Write(responseBody)
+			}))
+			defer server.Close()
+			client, err := newClient(Config{
+				AppID: testAppID, MerchantID: testMerchantID, MerchantCertificateSerial: testMerchantSerial,
+				MerchantPrivateKey:  merchantKey,
+				WeChatPayPublicKeys: map[string]*rsa.PublicKey{testProviderSerial: &providerKey.PublicKey},
+				APIv3Key:            []byte(testAPIv3Key),
+			}, server.Client(), server.URL, func() time.Time { return now }, func() (string, error) { return "non-success-request", nil })
+			if err != nil {
+				t.Fatal("controlled client construction failed")
+			}
+			transaction, err := client.QueryTransactionByOutTradeNo(context.Background(), "ORDER_TEST_001")
+			if err != nil || transaction.TradeState != tradeState || !transaction.SuccessTime.IsZero() {
+				t.Fatal("verified non-success transaction query mismatch")
+			}
+		})
 	}
 }
 

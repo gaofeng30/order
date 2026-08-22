@@ -91,7 +91,7 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 		envelope.ID == "" || envelope.ResourceType != "encrypt-resource" ||
 		envelope.EventType != "TRANSACTION.SUCCESS" || envelope.Summary == "" ||
 		envelope.Resource.OriginalType != "transaction" || envelope.Resource.Algorithm != "AEAD_AES_256_GCM" ||
-		envelope.Resource.Ciphertext == "" || envelope.Resource.Nonce == "" {
+		envelope.Resource.Ciphertext == "" || envelope.Resource.AssociatedData == "" || envelope.Resource.Nonce == "" {
 		return TransactionNotification{}, &Error{kind: ErrorProtocol}
 	}
 	createTime, err := time.Parse(time.RFC3339, envelope.CreateTime)
@@ -123,9 +123,13 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 }
 
 func transactionFromResource(resource transactionResource) (Transaction, error) {
-	successTime, err := time.Parse(time.RFC3339, resource.SuccessTime)
-	if err != nil {
-		return Transaction{}, &Error{kind: ErrorProtocol}
+	var successTime time.Time
+	if resource.SuccessTime != "" {
+		var err error
+		successTime, err = time.Parse(time.RFC3339, resource.SuccessTime)
+		if err != nil {
+			return Transaction{}, &Error{kind: ErrorProtocol}
+		}
 	}
 	var payerTotal int64
 	if resource.Amount.PayerTotal != nil {
