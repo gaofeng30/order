@@ -9,10 +9,11 @@ const { createHarness, miniprogramRoot } = require('./page-harness.js');
 //          §5.9：商户经个人中心的「切换身份」回身份选择页。
 const read = rel => fs.readFileSync(path.join(miniprogramRoot, rel), 'utf8');
 
-test('the entry page is the home screen, not the identity screen', () => {
+test('the entry page is the identity screen', () => {
+  // 项目方 2026-08-22 决策：入口为身份选择页，已回写 §4.4
   const app = JSON.parse(read('app.json'));
-  assert.equal(app.pages[0], 'pages/home/home');
-  assert.ok(app.pages.includes('pages/launch/launch'), '身份选择页仍是用户端 9 屏之一');
+  assert.equal(app.pages[0], 'pages/launch/launch');
+  assert.ok(app.pages.includes('pages/home/home'), '用户端首页仍在页面清单中');
 });
 
 test('the home screen opens with no authorization of any kind', () => {

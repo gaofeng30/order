@@ -80,7 +80,11 @@ test('home no longer touches the catalog', async () => {
 test('the identity screen routes merchants to a page that exists', () => {
   const wxml = read('pages/launch/launch.wxml');
   assert.doesNotMatch(wxml, /admin-dashboard/, 'identity screen still routes to the removed dashboard');
-  assert.match(wxml, /data-to="admin-orders"/, 'identity screen lost the merchant entry');
+  /* 商户端入口已改为微信 getPhoneNumber 控件，目标页在回调里跳转，
+     不再写在模板的 data-to 上；断言改看真正的落点。 */
+  assert.match(wxml, /open-type="getPhoneNumber"/, 'identity screen lost the merchant entry');
+  assert.match(read('pages/launch/launch.js'), /admin-orders/, 'the merchant entry has no destination');
+  assert.doesNotMatch(read('pages/launch/launch.js'), /admin-dashboard/);
 });
 
 test('the local-storage launch layer is gone from the mini program', () => {
