@@ -4,7 +4,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     o: null, store: data.STORE, rows: [], flavorsStr: '', showQr: false,
-    canCancel: false, ptAddr: '', cancelMin: data.CANCEL_LIMIT_MIN, cancelSheet: false,
+    canCancel: false, cancelMin: data.CANCEL_LIMIT_MIN, cancelSheet: false,
   },
   onLoad(opts) {
     const orders = getApp().globalData.orders;
@@ -18,7 +18,6 @@ Page({
       const m = data.itemById(id) || null;
       return { id, m, name, q, p: dp, sub: dp * q, flavors: flavors || [], note: note || '' };
     });
-    const pt = data.PICKUP_POINTS.find(x => x.name === o.pickupPoint);
     this.setData({
       o, rows,
       showQr: o.status === '待取餐',
@@ -27,7 +26,6 @@ Page({
       canCancel: data.canCancelReserve(o),
       pickupText: data.orderPickupLabel(o),
       minsLeft: data.minsToPickup(o),
-      ptAddr: pt ? pt.addr : data.STORE.addr,
       navTitle: o.status === '待取餐' ? '取餐码' : '预约详情',
     });
   },
