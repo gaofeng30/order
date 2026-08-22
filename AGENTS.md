@@ -16,27 +16,25 @@
 - 不允许过度设计，也不得顺手优化、重构或处理相邻问题。
 - 修改前明确具体范围和最小成功标准；涉及业务规则、公共契约、权限责任或上线流程时，验证必须覆盖请求范围内的完整链路。
 
-## OpenSpec 变更边界
+## Matt Skills
 
-- 根 `AGENTS.md` 是跨工具硬规则的单一事实源，`.agents/skills/` 是项目执行流程的单一事实源；Claude、Codex 和 Cursor 入口只做薄引用，不复制规则。
-- 任何会改变产品行为、公共契约、数据、架构、研发流程或部署方式的工作，都必须对应一个 `openspec/changes/<change-name>/`。
-- 实现前必须完成并读取 `proposal.md`、`design.md`、`specs/*/spec.md` 和 `tasks.md`，并通过 `openspec validate <change-name> --strict`。
-- 一个 change 只承载一个可独立理解、实现、验收和回滚的主能力；可以分别验收或回滚的结果必须拆开，不得用大 spec 汇总多个需求。
-- change 必须声明 owner、owned paths、依赖、非目标和可执行验收命令；会改变业务结果的未决项不得进入实现。
-- 状态流统一为：`DRAFT → APPROVED → IMPLEMENTING → CANDIDATE → INDEPENDENT_VERIFIED → INTEGRATED → ARCHIVED`。
+- 根 `AGENTS.md` 是跨工具硬规则的单一事实源，`.agents/skills/` 保存可复用执行流程。
+- Codex 显式调用 Skill 使用 `$skill-name`，例如 `$wait-what`；`/wait what` 不是 Skill 调用。
+- 首次配置 tracker 或 domain 文档时使用 `$setup-matt-pocock-skills`；其他入口见 `docs/agents/skills.md`。
+- `openspec/` 仅作为历史工件保留，不再提供 Codex/Cursor 工具入口。
 
 ## Worktree 与并行
 
 - 每个 change 使用独立 branch 和 worktree；同一 change、同一路径同时只有一个 writer。
 - 无依赖、无公共契约冲突且 owned paths 不重叠的 changes 可以并行，不得被其他 change 的本地 Gate 全局阻塞。
-- 存在依赖或共享路径时，必须在 OpenSpec 中声明依赖或重新划分所有权后再开工。
+- 存在依赖或共享路径时，必须在当前任务工件中声明依赖或重新划分所有权后再开工。
 - 不得直接在 `main` 上提交。提交只包含当前 change 的 owned paths，不得覆盖或回退其他人改动。
 
 ## TDD 与实现
 
 - 行为实现严格遵循 Red → Green → Refactor：先得到可观察的失败证据，再完成最小实现，重构后重跑同一验证。
 - 文档、配置、迁移和文件移动使用链接、结构、契约、迁移或内容完整性检查建立 Red/Green 证据，不编造无价值测试。
-- 每完成一项就在 `tasks.md` 勾选，并在条目下记录决定性命令、结果或设计理由。
+- 每完成一项就在当前任务工件中勾选，并记录决定性命令、结果或设计理由。
 
 ## 独立验证与集成
 

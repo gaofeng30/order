@@ -1,4 +1,0 @@
-interface:
-  display_name: "Order Verify Change"
-  short_description: "在独立 worktree 验证候选提交的精确 SHA"
-  default_prompt: "Use $order-verify-change to independently verify this candidate SHA."

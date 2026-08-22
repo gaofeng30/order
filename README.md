@@ -128,7 +128,7 @@ Harness 提供当前 change、任务和本地 Gate 的快速入口：
 ./tools/harness check
 ```
 
-状态保存在 Git common dir 下的 `codex-harness` 本地索引，可跨同一仓库的 worktree 读取；它不替代 OpenSpec 生命周期、任务证据或独立验证。`checkpoint` 和 `observe` 会写本地索引，只在已批准 change 的执行流程中使用，参数见 `./tools/harness --help`。
+状态保存在 Git common dir 下的 `codex-harness` 本地索引，可跨同一仓库的 worktree 读取；它不替代需求、任务证据或独立验证。`checkpoint` 和 `observe` 会写本地索引，只在已批准 change 的执行流程中使用，参数见 `./tools/harness --help`。
 
 ## 评审走查路径
 

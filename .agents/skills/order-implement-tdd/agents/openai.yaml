@@ -1,4 +1,0 @@
-interface:
-  display_name: "Order Implement TDD"
-  short_description: "按 OpenSpec 以 Red Green Refactor 实现 change"
-  default_prompt: "Use $order-implement-tdd to implement the approved OpenSpec change with TDD."
