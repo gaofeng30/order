@@ -32,5 +32,5 @@
 
 ## 独立验证
 
-- [ ] 14. 提交产生候选 SHA。
-- [ ] 15. 在干净 detached worktree 对该精确 SHA 只读重跑 9–13。
+- [x] 14. 候选 SHA `bb138bb`。
+- [x] 15. 在干净 detached worktree 对 `bb138bb` 只读验证：`DIRTY=0`；`IDENTITY_ENTRY_GATE=PASS`；117 pass / 0 fail；`WX_LINT=PASS`；归档门禁 39 项与 base 逐行 diff 仅 `check_browse_first.js` 一行由 PASS 转 FAIL，即已记录的接管。
