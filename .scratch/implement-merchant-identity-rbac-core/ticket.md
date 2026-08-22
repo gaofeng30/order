@@ -2,7 +2,7 @@
 
 ## 状态与唯一结果
 
-- 状态：`WRITER_GATE_PASS / CANDIDATE_PENDING_COMMIT`；本 delegated instruction 已明确授权 T1 本地实现。
+- 状态：`REPLACEMENT_WRITER_GATE_PASS / CANDIDATE_PENDING_COMMIT`；旧 Candidate `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878` 因 shared-file ownership finding 失效，不得进入 verifier。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`；本 change 不创建/更新 GitHub Issue，不伪造 `READY`。
 - 唯一业务结果：实现 merchant identity 核心 v12/v13、`GET /api/v1/me/identity`、`POST /api/v1/me/merchant-login` 与 transaction-bound `AuthorizeInTx`；现有三条 Mini Program identity/phone API 保持不变。
 - 最小成功标准：严格 HTTP、schema、实时 RBAC、首次绑定/审计原子性及故障恢复在 fresh MySQL 8.0.46 闭环；Writer 全 Gate 与 fixed-base 双轴 Review 通过后形成 Candidate，等待主控独立审计批准。

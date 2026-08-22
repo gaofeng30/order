@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: dbdb508194a7e5524c3f5abdb98c60e5fb0b9878-invalid
+phase: red
+command_or_action: fixed-base zero-context shared-file ownership checker allowing only the v12/v13 wantNames additions in catalog/migrations_test.go
+exit_result: FAIL
+sanitized_summary: checker rejected an extra 78-line merchant schema and PII contract test in the shared catalog file; the old Candidate and both in-flight reviews were invalidated and stopped
+artifact_or_environment: Writer tree and fixed-base catalog diff
+unverified_boundary: replacement move, complete Writer Gate, replacement SHA, two-axis review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: move the test unchanged into owned merchantidentity/migration_test.go, retain only two exact-list additions in catalog, then rerun every Writer Gate and both reviews
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: replacement-not-yet-created
+phase: green
+command_or_action: same fixed-base shared-file ownership checker plus focused TestMerchantIdentityMigrationContracts and TestCatalogMigrationSet after moving the contract test
+exit_result: PASS
+sanitized_summary: catalog/migrations_test.go now differs from fixed base only by the two permitted v12/v13 wantNames additions; the unchanged schema and PII assertions pass from owned merchantidentity/migration_test.go
+artifact_or_environment: replacement Writer tree
+unverified_boundary: complete fresh MySQL/full/race/vet/build/smoke/static Gate, replacement commit, review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun every declared Writer Gate before creating replacement SHA
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: replacement-not-yet-created
+phase: writer
+command_or_action: replacement focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; gofmt; fixed-base shared-file and owned-path checks
+exit_result: PASS
+sanitized_summary: moved migration contract retained behavior while catalog stayed within its exact two-line authorization; all focused/full/race/MySQL/tooling/smoke checks passed and disposable assets were cleaned
+artifact_or_environment: replacement Writer tree after ownership correction
+unverified_boundary: replacement commit, fresh fixed-base Standards/Spec review and approved detached exact-SHA verification remained pending
+external_asset:
+  owner: Writer/Verifier
+  missing: none for local W3
+  recovery: any further product/test/task/SHA change invalidates this run and requires the complete Gate again
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: not-yet-created
 phase: writer
 command_or_action: exact base, worktree branch, staging shared-path conflict, rules, PRD, skills, frozen exact-SHA T1 contract and missing-capability audit
