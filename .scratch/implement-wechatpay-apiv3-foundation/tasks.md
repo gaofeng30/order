@@ -11,7 +11,7 @@
 - [x] Red/Green：五类 typed operations 与响应先验签后解析。
 - [x] Red/Green：非 2xx、签名/解密、timeout、429、5xx 稳定类型化错误。
 - [x] Refactor：收窄导出面并重跑同一 focused/full/race/vet/build/smoke/scan。
-- [ ] 只提交 owned paths 的中文完整 commit，记录 exact candidate SHA。
+- [x] 只提交 owned paths 的中文完整 commit；exact candidate SHA 由提交后外部证据记录。
 - [ ] 两个独立 reviewer 对同一 SHA 完成 Standards/Spec 双 PASS。
 - [ ] 另一 clean detached worktree 对 exact SHA 只读验证 PASS。
 
@@ -36,6 +36,120 @@ external_asset:
   owner: customer merchant administrator and development/UAT owners
   missing: all formal WeChat Pay assets listed in ticket.md
   recovery: provision and authorize assets, then run a separately authorized controlled real-WeChat gate
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: eec333055a4bf6e260bfd32f388d1ab083850a8f
+phase: review
+command_or_action: two independent reviewers reran Standards and frozen TX-00 Spec review from scratch on exact SHA eec333055a4bf6e260bfd32f388d1ab083850a8f
+exit_result: FAIL
+sanitized_summary: Standards found missing public NewClient runtime-policy evidence and missing post-fix gofmt evidence; Spec found transaction callbacks still accepted a missing success_time
+artifact_or_environment: exact committed replacement review SHA; now invalidated
+unverified_boundary: no detached verification was attempted because both review axes had not passed
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add public-seam runtime proof, require success_time, rerun formatting and every writer gate, then create a new exact SHA
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: red
+command_or_action: rg -n 'NewClient\\(' services/api/internal/wechatpay/client_test.go; focused missing_success_time callback test
+exit_result: FAIL
+sanitized_summary: static audit found no public NewClient runtime test; the signed and decrypted callback without success_time was incorrectly accepted
+artifact_or_environment: writer tree based on invalidated SHA eec333055a4bf6e260bfd32f388d1ab083850a8f
+unverified_boundary: reviewed evidence and callback defects were present at Red
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add a local TLS public-constructor test and require a parseable non-empty success_time
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: green
+command_or_action: focused TestNewClientEnforcesRuntimeTransportPolicy and TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs/missing_success_time
+exit_result: PASS
+sanitized_summary: public NewClient used the fixed provider Host through controlled local TLS, emitted a signed HTTP/1 request, opened a fresh connection per request, and timed out near five seconds; callback without success_time now fails closed
+artifact_or_environment: local-only generated RSA keys, loopback TLS server, fixed-format provider fixtures, and remediated writer product tree
+unverified_boundary: the runtime test redirects socket dialing only inside the test process and does not call or claim real WeChat connectivity
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: formal WeChat Pay assets and authorized real transaction
+  recovery: execute separately authorized external gates after asset provisioning
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: refactor
+command_or_action: test -z gofmt output; rerun both focused tests after simplifying success_time parsing
+exit_result: PASS
+sanitized_summary: package formatting was clean and the same runtime-policy and callback tracers remained green after the minimal mapper cleanup
+artifact_or_environment: final product tree before full writer gates
+unverified_boundary: full repository gates and exact-SHA review were still pending at this phase
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: run every declared writer gate before commit
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test focused package; go test -race focused package; go test ./services/api/...; go test -race ./services/api/...; go vet ./services/api/...; go build ./services/api/...; bash services/api/scripts/smoke.sh; test -z gofmt output
+exit_result: PASS
+sanitized_summary: focused/full/race/vet/build/smoke all exited zero, smoke reported PASS, and the declared post-change formatting gate explicitly passed
+artifact_or_environment: final remediated writer product tree before the next replacement commit
+unverified_boundary: a new exact SHA review and clean detached verification remain pending
+external_asset:
+  owner: customer merchant administrator and development/UAT owners
+  missing: formal WeChat Pay assets and authorized real transaction
+  recovery: execute separately authorized external gates after asset provisioning
+```
+
+```yaml
+change: implement-wechatpay-apiv3-foundation
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: a56aeec6b041bf1a31988a888956ad851e128469
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: git diff --check base; exact owned-prefix awk over git diff --name-only base; filename-only high-risk material and static long-token scans in owned paths
+exit_result: PASS
+sanitized_summary: diff and owned-prefix audits passed for ten files; sensitive scan found zero high-risk material files, zero static long-token files, and exactly one synthetic test-key fixture file
+artifact_or_environment: complete remediated writer tree and owned scratch artifacts
+unverified_boundary: scan detects committed/static material patterns only and does not prove external secret custody or runtime log hygiene
+external_asset:
+  owner: customer merchant administrator and development owners
+  missing: formal secret/key custody and runtime logging evidence
+  recovery: verify custody and sanitized runtime behavior in a separately authorized external gate
 ```
 
 ```yaml

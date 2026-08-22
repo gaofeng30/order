@@ -12,9 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -36,6 +38,84 @@ var (
 	testMerchantKey *rsa.PrivateKey
 	testProviderKey *rsa.PrivateKey
 )
+
+func TestNewClientEnforcesRuntimeTransportPolicy(t *testing.T) {
+	merchantKey, providerKey := generatedTestKeys(t)
+	transactionBody := []byte(`{"appid":"wx-test-app","mchid":"1900000109","out_trade_no":"ORDER_TEST_001","transaction_id":"TX_TEST_001","trade_type":"JSAPI","trade_state":"SUCCESS","trade_state_desc":"synthetic success","success_time":"2027-01-15T08:00:00Z","payer":{"openid":"synthetic-openid"},"amount":{"total":1,"payer_total":1,"currency":"CNY","payer_currency":"CNY"}}`)
+	var requests atomic.Int32
+	var connections atomic.Int32
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		index := requests.Add(1)
+		if request.Host != "api.mch.weixin.qq.com" || request.ProtoMajor != 1 {
+			t.Error("NewClient did not use the fixed origin over HTTP/1")
+		}
+		if !strings.HasPrefix(request.Header.Get("Authorization"), "WECHATPAY2-SHA256-RSA2048 ") {
+			t.Error("NewClient request was not signed")
+		}
+		if strings.Contains(request.URL.Path, "TIMEOUT_TEST") {
+			<-request.Context().Done()
+			return
+		}
+		if request.URL.RequestURI() != "/v3/pay/transactions/out-trade-no/ORDER_TEST_001?mchid=1900000109" {
+			t.Error("NewClient request target mismatch")
+		}
+		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
+		nonce := fmt.Sprintf("runtime-response-%d", index)
+		writer.Header().Set("Wechatpay-Timestamp", timestamp)
+		writer.Header().Set("Wechatpay-Nonce", nonce)
+		writer.Header().Set("Wechatpay-Serial", testProviderSerial)
+		writer.Header().Set("Wechatpay-Signature", signTestMessage(t, providerKey, timestamp+"\n"+nonce+"\n"+string(transactionBody)+"\n"))
+		_, _ = writer.Write(transactionBody)
+	}))
+	server.Config.ConnState = func(_ net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			connections.Add(1)
+		}
+	}
+	server.StartTLS()
+	defer server.Close()
+
+	defaultTransport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		t.Fatal("default HTTP transport is not configurable for the controlled runtime test")
+	}
+	controlledTransport := defaultTransport.Clone()
+	controlledTransport.Proxy = nil
+	controlledTransport.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, network, server.Listener.Addr().String())
+	}
+	controlledTransport.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
+	controlledTransport.TLSClientConfig.ServerName = "example.com"
+	http.DefaultTransport = controlledTransport
+	defer func() { http.DefaultTransport = defaultTransport }()
+
+	client, err := NewClient(Config{
+		AppID: testAppID, MerchantID: testMerchantID, MerchantCertificateSerial: testMerchantSerial,
+		MerchantPrivateKey:  merchantKey,
+		WeChatPayPublicKeys: map[string]*rsa.PublicKey{testProviderSerial: &providerKey.PublicKey},
+		APIv3Key:            []byte(testAPIv3Key),
+	})
+	if err != nil {
+		t.Fatal("public client construction failed")
+	}
+	for range 2 {
+		transaction, err := client.QueryTransactionByOutTradeNo(context.Background(), "ORDER_TEST_001")
+		if err != nil || transaction.TransactionID != "TX_TEST_001" {
+			t.Fatal("public runtime request failed")
+		}
+	}
+	if connections.Load() != 2 {
+		t.Fatalf("runtime connections = %d, want 2 fresh connections", connections.Load())
+	}
+
+	started := time.Now()
+	_, err = client.QueryTransactionByOutTradeNo(context.Background(), "TIMEOUT_TEST")
+	elapsed := time.Since(started)
+	var providerError *Error
+	if !errors.As(err, &providerError) || providerError.Kind() != ErrorTimeout || elapsed < 4500*time.Millisecond || elapsed > 7*time.Second {
+		t.Fatal("public runtime timeout policy mismatch")
+	}
+}
 
 func TestCreateJSAPIPrepaySignsRequestAndRequestPayment(t *testing.T) {
 	t.Parallel()
@@ -223,6 +303,7 @@ func TestParseTransactionNotificationVerifiesDecryptsAndRejectsInvalidDTOs(t *te
 		{name: "unknown transaction field", resource: strings.TrimSuffix(resource, "}") + `,"unexpected":true}`, associatedData: associatedData, want: ErrorProtocol},
 		{name: "duplicate transaction field", resource: strings.TrimSuffix(resource, "}") + `,"appid":"wx-duplicate"}`, associatedData: associatedData, want: ErrorProtocol},
 		{name: "missing required transaction id", resource: strings.Replace(resource, `"transaction_id":"TX_TEST_001",`, "", 1), associatedData: associatedData, want: ErrorProtocol},
+		{name: "missing success time", resource: strings.Replace(resource, `"success_time":"2027-01-15T08:00:00Z",`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "wrong associated data", resource: resource, associatedData: "wrong-aad", want: ErrorDecryption},
 		{name: "missing payer total", resource: strings.Replace(resource, `"payer_total":1,`, "", 1), associatedData: associatedData, want: ErrorProtocol},
 		{name: "missing payer currency", resource: strings.Replace(resource, `,"payer_currency":"CNY"`, "", 1), associatedData: associatedData, want: ErrorProtocol},

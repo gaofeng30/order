@@ -106,7 +106,7 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 	var resource transactionResource
 	if err := decodeStrictJSON(plaintext, &resource); err != nil ||
 		resource.AppID == "" || resource.MerchantID == "" || resource.OutTradeNo == "" ||
-		resource.TransactionID == "" || resource.TradeState != "SUCCESS" ||
+		resource.TransactionID == "" || resource.TradeState != "SUCCESS" || resource.SuccessTime == "" ||
 		resource.Amount.Total <= 0 || resource.Amount.Currency == "" ||
 		resource.Amount.PayerTotal == nil || resource.Amount.PayerCurrency == nil || *resource.Amount.PayerCurrency == "" {
 		return TransactionNotification{}, &Error{kind: ErrorProtocol}
@@ -123,13 +123,9 @@ func (client *Client) ParseTransactionNotification(body []byte, headers Signatur
 }
 
 func transactionFromResource(resource transactionResource) (Transaction, error) {
-	var successTime time.Time
-	if resource.SuccessTime != "" {
-		var err error
-		successTime, err = time.Parse(time.RFC3339, resource.SuccessTime)
-		if err != nil {
-			return Transaction{}, &Error{kind: ErrorProtocol}
-		}
+	successTime, err := time.Parse(time.RFC3339, resource.SuccessTime)
+	if err != nil {
+		return Transaction{}, &Error{kind: ErrorProtocol}
 	}
 	var payerTotal int64
 	if resource.Amount.PayerTotal != nil {
