@@ -38,5 +38,5 @@
 
 ## 独立验证
 
-- [ ] 17. 提交产生候选 SHA。
-- [ ] 18. 在干净 detached worktree 对该精确 SHA 只读重跑 12–16。
+- [x] 17. 候选 SHA `8445f0e`。
+- [x] 18. 在干净 detached worktree 对 `8445f0e` 只读验证：`DIRTY=0`；`BROWSE_FIRST_GATE=PASS`；111 pass / 0 fail；`WX_LINT=PASS`；归档门禁 36 项与 base 逐行一致。
