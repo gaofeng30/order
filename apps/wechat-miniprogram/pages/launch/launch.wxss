@@ -41,7 +41,6 @@
 .id-ico.ghost { background: rgba(255, 255, 255, .08); }
 .id-body { flex: 1; min-width: 0; }
 .id-name { font-size: 42rpx; font-weight: 700; color: #fff; letter-spacing: 2rpx; }
-.id-desc { font-size: 25rpx; color: rgba(255, 255, 255, .72); margin-top: 10rpx; line-height: 1.5; }
 .id-go {
   width: 68rpx; height: 68rpx; border-radius: 50%; flex: 0 0 68rpx;
   display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, .12);
@@ -51,13 +50,17 @@
 
 /* 微信授权弹窗 */
 
-/* 商户端入口是微信的 <button>（open-type="getPhoneNumber"），
-   去掉系统默认的边框、背景与内边距，保持与用户端卡片一致的外观。 */
-.id-card--btn {
-  padding: 0; margin: 0; background: transparent; line-height: normal;
-  text-align: left; font-size: inherit; color: inherit; border-radius: 28rpx;
+/* 商户端入口是微信的 <button>（open-type="getPhoneNumber"）。
+   它只当透明外壳，不承载布局 —— <button> 自带 margin-left/right: auto，
+   在 flex 列容器里会覆盖 align-self: stretch，把卡片收缩居中并让文字逐字
+   折行；再叠加它默认的内边距与字号，在同一个盒子上跟这些默认值竞争必输。
+   卡片布局因此回到内部的 .id-card，与用户端卡片共用同一份规则。 */
+.id-plain {
+  display: block; width: 100%; margin: 0; padding: 0; background: transparent;
+  line-height: normal; text-align: left; font-size: inherit; color: inherit;
+  border-radius: 44rpx; overflow: visible;
 }
-.id-card--btn::after { border: none; }
+.id-plain::after { border: none; }
 
 .id-hint {
   margin-top: 20rpx; padding: 18rpx 24rpx; border-radius: 16rpx;
