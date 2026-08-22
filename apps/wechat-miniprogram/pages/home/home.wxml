@@ -1,5 +1,5 @@
 <view class="page">
-  <navbar tone="dark" overlay exit>
+  <navbar tone="dark" overlay>
     <view slot="right"><icon name="bell" size="20" color="#ffffff" /></view>
   </navbar>
 
