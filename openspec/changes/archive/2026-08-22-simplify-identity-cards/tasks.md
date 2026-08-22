@@ -26,5 +26,5 @@
 
 ## 独立验证
 
-- [ ] 11. 提交产生候选 SHA。
-- [ ] 12. 在干净 detached worktree 对该精确 SHA 只读重跑 7–9。
+- [x] 11. 候选 SHA `0de33af`。
+- [x] 12. 在干净 detached worktree 对 `0de33af` 只读验证：`DIRTY=0`；`IDENTITY_CARDS_GATE=PASS`；117 pass / 0 fail；`WX_LINT=PASS`；归档门禁 40 项与 base 逐行一致。
