@@ -23,7 +23,7 @@ docker run -d --rm \
 
 storefront_ready=NO
 for _ in {1..60}; do
-  if docker exec "${storefront_container}" mysqladmin --user=root --password="${storefront_password}" ping --silent >/dev/null 2>&1; then
+  if docker exec "${storefront_container}" mysqladmin --host=127.0.0.1 --protocol=tcp --user=root --password="${storefront_password}" ping --silent >/dev/null 2>&1; then
     storefront_ready=YES
     break
   fi

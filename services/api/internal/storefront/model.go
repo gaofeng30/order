@@ -71,7 +71,7 @@ func (layer LaunchLayer) valid() bool {
 }
 
 func validLaunchPNGURL(value string) bool {
-	if value == "" || !utf8.ValidString(value) {
+	if value == "" || !utf8.ValidString(value) || strings.Contains(value, "#") {
 		return false
 	}
 	parsed, err := url.Parse(value)

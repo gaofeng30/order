@@ -156,3 +156,98 @@ external_asset:
 - V = 8：Writer Gate 完整，可形成提交；exact-SHA detached verifier 尚待提交与 Review 后执行。
 - R = 9：无 seed/写 API，缺行和故障 fail closed；临时 schema/container/凭据清理及 DB 重连恢复均已执行验证。
 - 总分：36；当前 Candidate 硬阻断为 0。tracker 与 formal runtime 资产保持各自的 `BLOCKED_LOCAL_GOVERNANCE` / `BLOCKED_EXTERNAL`，未被本地测试冒充 READY。
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: a22fdf9d2a29468ec84fdf951e18f9e8596ba511
+phase: review
+command_or_action: parallel Standards and frozen Spec review of git diff 70522ed01b08aaf5dad77f51f1bfbc431bb84530...HEAD
+exit_result: FAIL
+sanitized_summary: Standards PASS with zero findings; Spec found one reproducible empty-fragment URL acceptance because url.Parse does not preserve a trailing empty fragment in parsed.Fragment
+artifact_or_environment: exact committed review SHA a22fdf9d2a29468ec84fdf951e18f9e8596ba511; invalidated for Candidate use
+unverified_boundary: detached verification did not start because both review axes had not passed
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add a focused trailing-hash Red, reject every literal fragment delimiter, rerun all Writer gates, commit and restart both review axes
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/storefront -run '^TestPublicSettingsValidatesFrozenLaunchLayerContract$/^empty_fragment$' -count=1
+exit_result: FAIL
+sanitized_summary: trailing-hash PNG URL returned exact 200 settings DTO instead of exact 503 unavailable
+artifact_or_environment: writer tree based on invalidated reviewed SHA a22fdf9d2a29468ec84fdf951e18f9e8596ba511
+unverified_boundary: the reviewed fragment defect was present at Red
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject any literal fragment delimiter before URL parsing
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same focused empty_fragment tracer after raw fragment-delimiter validation
+exit_result: PASS
+sanitized_summary: trailing-hash PNG URL now fails closed with exact 503 before JSON mapping
+artifact_or_environment: remediated writer tree
+unverified_boundary: complete Writer gates and both review axes still required a full rerun
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun every declared Writer gate before replacement commit
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: full post-review focused/race/MySQL gate rerun
+exit_result: FAIL
+sanitized_summary: focused and focused race passed, but the disposable MySQL gate reached its connector check before TCP readiness because mysqladmin had used the earlier-ready local Unix socket
+artifact_or_environment: ephemeral MySQL 8.0.46 container; product assertions remained strict and the container/credential were cleaned
+unverified_boundary: this infrastructure failure did not establish a product PASS or FAIL
+external_asset:
+  owner: Writer/Verifier
+  missing: reliable TCP readiness in the local W3 runner
+  recovery: probe mysqladmin over explicit 127.0.0.1 TCP, then rerun the real W3 and every remaining Writer gate
+```
+
+```yaml
+change: implement-storefront-settings-backend-v11
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 70522ed01b08aaf5dad77f51f1bfbc431bb84530
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: focused test/race; TCP-ready verify-mysql.sh; full test/race/vet/build/smoke; gofmt/diff/owned/high-risk/cleanup audits
+exit_result: PASS
+sanitized_summary: fragment remediation and TCP readiness were followed by complete focused, real MySQL, full normal/race, vet, build and smoke PASS; only owned paths changed and disposable assets were absent after cleanup
+artifact_or_environment: final remediated writer tree before replacement commit
+unverified_boundary: replacement exact-SHA Standards/Spec review and detached verifier remained pending
+external_asset:
+  owner: workflow and formal runtime owners
+  missing: tracker linkage and formal storefront/COS/production assets
+  recovery: keep external statuses blocked until separately authorized evidence exists
+```

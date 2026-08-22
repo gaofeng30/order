@@ -112,6 +112,7 @@ func TestPublicSettingsValidatesFrozenLaunchLayerContract(t *testing.T) {
 		{name: "missing host", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https:///launch.png" }},
 		{name: "userinfo", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://user@static.example.com/launch.png" }},
 		{name: "fragment", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://static.example.com/launch.png#top" }},
+		{name: "empty fragment", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://static.example.com/launch.png#" }},
 		{name: "not PNG", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://static.example.com/launch.jpg" }},
 		{name: "port zero", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://static.example.com:0/launch.png" }},
 		{name: "port overflow", mutate: func(layer *LaunchLayer) { layer.PNGURL = "https://static.example.com:65536/launch.png" }},
