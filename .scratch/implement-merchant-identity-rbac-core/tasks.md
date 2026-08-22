@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 90d3792c485d833aac25b947160ccd082a13f2b5
+phase: red
+command_or_action: structure checker counting lines, top-level functions and mixed MySQL test concerns in mysql_integration_test.go
+exit_result: FAIL
+sanitized_summary: one test file contained 1244 lines and 27 functions or methods across migration, binding, recovery, concurrency, authorization, schema and PII; WIP SHA and reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 90d3792c485d833aac25b947160ccd082a13f2b5
+unverified_boundary: mechanical split, content integrity, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: split recovery/concurrency, authorization, schema/PII and shared fixtures without changing the test entry, scenarios, assertions or product behavior
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same per-file line/function budget plus exact sorted function signatures, t.Run scenarios and Fatal/Fatalf assertion-text comparison against 90d3792c; focused package test
+exit_result: PASS
+sanitized_summary: five concern files are 270/4, 436/10, 243/3, 182/3 and 153/7 lines/functions; all 27 signatures, scenario names and assertion texts are unchanged and focused tests pass
+artifact_or_environment: mechanically split merchantidentity MySQL tests; one-time AST splitter removed
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, both reviews, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun content-integrity comparison after any future test move
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-test-split focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; structure/content/format/diff/ownership/PII/evidence checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the test-only responsibility split; every MySQL scenario and repository regression stayed green with unchanged test entry and assertions
+artifact_or_environment: final replacement WIP tree before commit; disposable database assets cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the mechanical split, externally pin fresh reviews to that clean HEAD, and prohibit verifier until controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: 8f9937f38a72f0f9b744baed1e779c49993738a6
 phase: red
 command_or_action: fresh MySQL 8.0.46 race suite with provider rejection held while another transaction bound the account, followed by either auth_version drift or immediate disable
