@@ -41,7 +41,7 @@
         <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contact}}</text></view>
         <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.phone}}</text></view>
         <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">备注</text><text class="ir-val">{{o.orderNote}}</text></view>
-        <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{store.branch}}</text></view>
+        <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
       </view>
       <view style="height:24rpx"></view>
     </view>

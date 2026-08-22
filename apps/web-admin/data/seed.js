@@ -13,8 +13,7 @@ const PICKUP_POINT = '党政办公中心后院老食堂北门';
 
 const STORE = {
   name: '绥安食品',
-  branch: '县前直营店',
-  addr: '绥芬河市青云镇通商路',
+  addr: '党政办公中心后院老食堂',
   cutoff: '今日 16:30 截单',
   pickup: '预计 17:10 可取',
   status: '营业中',

@@ -119,7 +119,7 @@
               <div class="m-id-body"><div class="m-id-name serif">商户端</div><div class="m-id-desc">接单 · 制作 · 核销 · 菜品与经营管理</div></div>
               <div class="m-id-go">${I.svg('arrowRight', 18, '#ffffff')}</div>
             </div>
-            <div class="m-ver">绥安食品 · 县前直营店　小程序 v1.0</div>
+            <div class="m-ver">${window.Seed.STORE.name}　小程序 v1.0</div>
           </div>
         </div>`;
     }

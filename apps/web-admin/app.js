@@ -88,7 +88,7 @@
            <span class="ac-logo"><img src="../wechat-miniprogram/assets/emblem.png" alt=""></span>
            <div>
              <div class="ac-nm">${Seed.STORE.name}</div>
-             <div class="ac-sub">${Seed.STORE.branch} · ${mg.role} ${mg.name}</div>
+             <div class="ac-sub">${Seed.STORE.name} · ${mg.role} ${mg.name}</div>
            </div>
          </div>
        </div>
