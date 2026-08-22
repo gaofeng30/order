@@ -92,7 +92,7 @@ worker 使用 MySQL 8.0 `SELECT ... FOR UPDATE SKIP LOCKED` 分批领取任务�
 
 UAT 与 prod 使用同一 MySQL 引擎版本但不同资源和身份。单个进程只绑定一个环境；生产数据不得原样进入 dev/UAT，需要样本时先做不可逆匿名化。
 
-非敏感配置存入 root-owned 且权限不宽于 `0640` 的 systemd EnvironmentFile。数据库密码、微信商户私钥、APIv3 key、会话签名 key 等密钥存入 `/order/{env}/...` SSM 前缀；当前环境 CVM 的 CAM Role 只能读取本环境前缀。必要密钥读取失败时应用启动失败，不回退到文件、命令行或内置长期凭据；轮换通过更新 SSM 后重启进程加载。
+非敏感配置存入 root-owned 且权限不宽于 `0640` 的 systemd EnvironmentFile。SSM SecretName 唯一采用 `order-{env}-{purpose}`，其中当前代码只允许 `db-password` 与 `wechat-miniprogram-app-secret` 两个 purpose；production 的名称固定为 `order-production-db-password` 与 `order-production-wechat-miniprogram-app-secret`，不接受运行时覆盖或兼容名称。当前环境 CVM 的 CAM Role 只能对这两个本环境 Secret 执行 `ssm:GetSecretValue`。必要密钥读取失败时应用启动失败，不回退到文件、命令行、配置文件、长期凭据或内置值；轮换通过更新 `SSM_Current` 后重启进程加载。新增密钥用途必须由实现它的独立 change 同步扩展 allowlist，不预留未使用的 Secret。
 
 ### 2.6 COS、HTTPS 与安全边界
 

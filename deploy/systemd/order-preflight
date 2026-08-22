@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+environment_file="${1:-/etc/order/order-production.env}"
+
+fail() {
+  echo "order runtime preflight failed: $1" >&2
+  exit 1
+}
+
+[[ -f "${environment_file}" ]] || fail "EnvironmentFile missing"
+[[ "$(stat -c '%u' "${environment_file}")" == "0" ]] || fail "EnvironmentFile owner must be root"
+environment_mode="$(stat -c '%a' "${environment_file}")"
+if (( (8#${environment_mode} & 8#037) != 0 )); then
+  fail "EnvironmentFile permissions are broader than 0640"
+fi
+
+for required_key in ORDER_ENV ORDER_API_HTTP_ADDR ORDER_API_SHUTDOWN_TIMEOUT ORDER_DB_HOST ORDER_DB_PORT ORDER_DB_NAME ORDER_DB_USER ORDER_DB_TLS_MODE ORDER_WECHAT_MINIPROGRAM_APP_ID ORDER_TENCENT_REGION; do
+  grep -Eq "^${required_key}=" "${environment_file}" || fail "required non-secret setting missing"
+done
+
+if grep -Eq '^(ORDER_DB_PASSWORD|ORDER_DB_DSN|ORDER_WECHAT_MINIPROGRAM_APP_SECRET|TENCENTCLOUD_SECRET_ID|TENCENTCLOUD_SECRET_KEY|TENCENTCLOUD_TOKEN|TENCENTCLOUD_CREDENTIALS_FILE)=' "${environment_file}"; then
+  fail "forbidden secret or persistent credential setting present"
+fi
+if grep -Eq '=(TODO_|REPLACE_)' "${environment_file}"; then
+  fail "external non-secret setting is unresolved"
+fi
+
+for runtime_file in /opt/order/current/order-api /opt/order/current/order-migrate /opt/order/current/order-healthcheck; do
+  [[ -f "${runtime_file}" && -x "${runtime_file}" ]] || fail "runtime artifact missing or not executable"
+  [[ "$(stat -c '%u' "${runtime_file}")" == "0" ]] || fail "runtime artifact owner must be root"
+  runtime_mode="$(stat -c '%a' "${runtime_file}")"
+  if (( (8#${runtime_mode} & 8#022) != 0 )); then
+    fail "runtime artifact must not be group/world writable"
+  fi
+done
