@@ -29,7 +29,6 @@
       </view>
       <view class="oc-mid">
         <view class="oc-code">
-          <text class="oc-code-lbl">号</text>
           <text class="oc-code-val serif">{{item.code}}</text>
         </view>
         <view class="oc-body">
@@ -38,7 +37,6 @@
         </view>
       </view>
       <view class="oc-foot">
-        <text class="oc-count">共 {{item.itemCount}} 件</text>
         <text class="oc-total-lbl">合计</text>
         <money cents="{{item.total}}" size="34" />
         <view wx:if="{{item.canCancel}}" class="btn btn--sm oc-cancel" data-id="{{item.id}}" catchtap="goDetail">取消预约</view>

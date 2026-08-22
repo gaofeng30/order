@@ -13,13 +13,14 @@
   width: 104rpx; height: 104rpx; border-radius: 26rpx; background: var(--hero); flex: 0 0 104rpx;
   display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff;
 }
-.oc-code-lbl { font-size: 16rpx; letter-spacing: 2rpx; color: var(--gold); }
 .oc-code-val { font-size: 38rpx; font-weight: 800; line-height: 1; }
 .oc-body { flex: 1; min-width: 0; }
 .oc-summary { font-size: 26rpx; color: var(--ink); }
 .oc-time { font-size: 23rpx; color: var(--ink-3); margin-top: 10rpx; display: flex; align-items: center; gap: 10rpx; }
 .oc-foot { display: flex; align-items: center; margin-top: 24rpx; padding-top: 24rpx; border-top: 1rpx solid var(--line-2); }
-.oc-count { font-size: 24rpx; color: var(--ink-3); }
 .oc-total-lbl { margin-left: auto; font-size: 24rpx; color: var(--ink-3); margin-right: 12rpx; }
 .oc-pay { margin-left: 24rpx; height: 60rpx; }
-.oc-cancel { margin-left: 24rpx; height: 60rpx; background: #fff; color: #c0392b; box-shadow: inset 0 0 0 3rpx #d8a89f; }
+.oc-cancel {
+  margin-left: 24rpx; height: 60rpx; padding: 0 24rpx; flex: 0 0 auto; white-space: nowrap;
+  background: #fff; color: #c0392b; box-shadow: inset 0 0 0 3rpx #d8a89f;
+}
