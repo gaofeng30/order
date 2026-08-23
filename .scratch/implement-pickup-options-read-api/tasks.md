@@ -2,33 +2,38 @@
 
 ## Lifecycle and checklist
 
-- lifecycle: `PRE_CANDIDATE_WIP`
-- `candidate_sha`: `NOT_CREATED`
-- `formal_exact_sha_review`: `PENDING`
-- `clean_detached_verifier`: `PENDING`
+- lifecycle: `REPLACEMENT_CANDIDATE_READY_FOR_EXACT_REVIEW`
+- `business_candidate_sha`: `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0`
+- `business_candidate_status`: `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT`
+- `replacement_final_sha`: 由包含本治理修复的 commit 形成，并在 immutable external handoff 中绑定完整 SHA；禁止未来 SHA 自写造成无限 amend。
+- `replacement_formal_exact_sha_review`: `PENDING`
+- `replacement_clean_detached_verifier`: `PENDING`
 - `integration`: `PENDING_NOT_AUTHORIZED`
 - `ui_level_target`: `UI1`
-- `ui_level_actual`: `NOT_RUN` (current)
-- `ui1_historical_receipt`: `PO-08-ui1`
-- `ui1_receipt_status`: `INVALIDATED_NOT_CURRENT` after replay/Gate/receipt/spec/tasks changes; exact historical observation was Chrome for Testing `151.0.7922.34`, `TOTAL 3 SUCCESS`.
-- `ui1_pre_receipt_writer_receipt`: `PO-08-writer-post-freeze`; UI1 3/3 passed on `source_tree_sha256: 15a2a659c40e6fc3ff05a9cad26e8e46e63341aeff6ae63389ed33113cb30b8c`, while this tasks insertion leaves final staged-tree UI1/Writer evidence pending rerun.
-- `post_freeze_writer_gate`: `INITIAL_PASS_RECORDED_FOR_PRE_RECEIPT_STAGED_TREE`; this receipt insertion changes tasks, so the final staged-tree pre-review and Writer Gate rerun remain `PENDING`.
+- `ui_level_actual`: `UI1`；最终 Writer Gate 锁定 Chromium runner `3/3 PASS`。UI2/UI3 仍 `NOT_RUN`。
+- `final_staged_pre_review`: Git tree `818b9a591707669f1ddcbb7e995727b70d5e1751`, Standards 0 finding, Spec 0 finding.
+- `final_writer_gate`: `PASS`, `base_sha=head_sha=f3c4efa4cd665652d93d5da76f92d18c4bdc59ac`, `source_tree_sha256=8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`.
+- `old_candidate_detached_verifier`: exact `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` PASS on the same source-tree SHA, now `INVALIDATED_BY_GOVERNANCE_REPLACEMENT` and not verified.
 - [x] `PO-01` exact base / ancestry / clean detached start / unique writer branch。
 - [x] `PO-02` 完整读取 rules、quality Gate、PRD、CONTEXT 与三项 skills；tracker 诚实为 `GOVERNANCE_PENDING`。
-- [ ] `PO-03` 当前 W2/UI1、seams、owned/read-only、contract、RGR、命令与资产已写入治理工件；最终冻结与 post-freeze receipt 尚未完成，不追认未保存的历史中间树。
+- [x] `PO-03` W2/UI1、seams、owned/read-only、contract、RGR、命令、资产与两阶段 replacement 治理已冻结；不追认未保存的历史中间树。
 - [x] `PO-04` replay-only infrastructure self-check + 6 条 Red 已由 `PO-04-replay-current` exact receipt current PASS；该 receipt 写入后仍必须在 full post-freeze Writer Gate 内重跑，不升级为完整 Writer PASS。
 - [x] `PO-05` 首轮 post-freeze Writer Gate 已重跑 Green/Refactor、focused/race/determinism、all API test/race、vet/build/smoke。
 - [x] `PO-06` 首轮 post-freeze Writer Gate 的 infrastructure shield + 8/8 mutations PASS。
 - [x] `PO-07` 首轮 post-freeze Writer Gate 的 fresh loopback MySQL `mysql:8.0.46-oraclelinux9` PASS。
 - [x] `PO-08` receipt 写入前 staged tree 的完整 Writer Gate PASS，exact receipt 为 `PO-08-writer-post-freeze`；两次此前失败均为已失效 infrastructure attempts，不是业务 failure。
-- [ ] `PO-08-final` stage 本 receipt 后对最终治理树重跑 Standards/Spec 双轴 pre-review 至 0 finding，再对完全相同 staged tree 重跑 Writer Gate；最后 terminal receipt 不反写。
-- [ ] `PO-09` 仅 owned paths 提交完整 candidate，worktree clean。
-- [ ] `PO-10` exact candidate Standards/Spec 双轴 review 零 finding。
-- [ ] `PO-11` 另一 clean detached worktree 对 exact candidate SHA 只读重跑全部 Gate。
+- [x] `PO-08-final` final staged tree `818b9a591707669f1ddcbb7e995727b70d5e1751` 双轴 pre-review 0 finding；相同冻结树最终 Writer terminal PASS，source-tree SHA 为 `8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`。
+- [x] `PO-09` 仅 owned paths 提交旧业务 candidate `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` 且 worktree clean；该 candidate 随后因 Standards governance P1 作废，不是 replacement。
+- [x] `PO-10-old` exact `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` 正式 review 已完成：Spec 0 finding、业务实现无 finding；Standards 唯一 P1 导致 `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT`。
+- [x] `PO-11-old` 旧 `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` clean detached verifier exact PASS，但本治理修复使其 receipt 失效，仅记 `INVALIDATED_BY_GOVERNANCE_REPLACEMENT`，不得升级 verified。
+- [ ] `PO-12-replacement-commit` 只提交 ticket/spec/tasks 治理 replacement，并由 immutable external handoff 绑定 `replacement_final_sha`；writer worktree clean。
+- [ ] `PO-13-replacement-review` 对 replacement exact SHA 并行完成 Standards/Spec 双轴 review，0 finding。
+- [ ] `PO-14-replacement-verifier` 在另一 clean detached worktree 对 replacement exact SHA 从头重跑全部 Gate，取得未失效 PASS。
+- [ ] `PO-15-integration` 未授权；只有 replacement exact review/verifier 完成后才可另行处理。
 
 ## Evidence contract
 
-每条 receipt 都包含质量协议强制字段和显式 `receipt_status`。`candidate_sha: NOT_CREATED` 是当前真实 lifecycle 状态；形成提交后只新增 exact candidate receipts，不追溯改写 Red source tree。`exit_result` 为单值。标记为 historical/invalidated 的运行证据不是 current PASS；`PO-08-writer-post-freeze` 精确绑定 receipt 写入前 staged tree，本次 tasks 变化后仍须按 post-freeze 顺序完成最终 review 与 Writer rerun。
+每条 receipt 都包含质量协议强制字段和显式 `receipt_status`；`exit_result` 为单值。旧业务 candidate 与其 review/verifier receipts 均按明确状态失效，不得继承到 replacement。replacement exact SHA 不写入自身内容，由 immutable external handoff 绑定；形成该 SHA 后只新增外部 exact review/verifier receipts，不追溯改写历史 Red source tree。
 
 ```yaml
 task_id: PO-01
@@ -508,20 +513,124 @@ external_asset:
   recovery: stage only this tasks receipt, rerun staged Standards/Spec pre-review to zero finding, then rerun the unchanged Writer Gate on that exact staged tree without writing the terminal receipt back
 ```
 
-## Current required replay and post-freeze sequence
+```yaml
+task_id: PO-08-final-staged-review
+receipt_status: PASS_FOR_INVALIDATED_BUSINESS_CANDIDATE_TREE_NOT_INHERITED_BY_REPLACEMENT
+allowed_phase: writer
+phase: writer
+change: implement-pickup-options-read-api
+gate_type: W2
+ui_level_target: UI1
+ui_level_actual: UI1
+base_sha: f3c4efa4cd665652d93d5da76f92d18c4bdc59ac
+candidate_sha: b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+source_git_tree: 818b9a591707669f1ddcbb7e995727b70d5e1751
+command_or_action: staged git diff fixed to source_git_tree; parallel Standards and Spec pre-review under code-review
+exit_result: PASS
+expected: both staged review axes report zero finding before the final Writer rerun
+observed: Standards P0-P3 zero and all baseline smells zero; Spec P0-P3 zero with missing, extra, scope creep and implementation error all zero
+sanitized_summary: final pre-commit staged source tree passed both pre-review axes
+artifact_or_environment: clean writer worktree with exact staged Git tree 818b9a591707669f1ddcbb7e995727b70d5e1751
+unverified_boundary: staged review is not exact replacement-SHA review or detached verification; the later business candidate was invalidated by a governance lifecycle P1
+external_asset:
+  owner: replacement review owner
+  missing: replacement final SHA and exact replacement review
+  recovery: bind the governance replacement commit externally, then review the complete base-to-replacement diff
+```
 
-The following are Gate declarations, not PASS receipts:
+```yaml
+task_id: PO-08-final-writer
+receipt_status: PASS_FOR_INVALIDATED_BUSINESS_CANDIDATE_SOURCE_TREE_NOT_INHERITED_BY_REPLACEMENT
+allowed_phase: writer
+phase: writer
+change: implement-pickup-options-read-api
+gate_type: W2
+ui_level_target: UI1
+ui_level_actual: UI1
+base_sha: f3c4efa4cd665652d93d5da76f92d18c4bdc59ac
+head_sha: f3c4efa4cd665652d93d5da76f92d18c4bdc59ac
+candidate_sha: b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+source_tree_sha256: 8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece
+command_or_action: bash .scratch/implement-pickup-options-read-api/verify-writer.sh
+exit_result: exit-0
+expected: complete final Writer Gate passes after final staged dual pre-review on the identical frozen tree
+observed: RGR 6/6, mutation shield and mutations 8/8, fresh mysql:8.0.46-oraclelinux9, focused/determinism, all API normal/race, vet/build/smoke, locked Chromium UI1 3/3 and all resource/scope/diff/sensitive cleanup checks passed; terminal WRITER_GATE PASS bound base/head and source_tree_sha256 exactly
+sanitized_summary: final frozen business source completed the entire W2 Writer sequence with UI1 and cleanup
+artifact_or_environment: exact pre-commit staged index identified by source_tree_sha256; all temporary MySQL credentials/container, mutation/RGR directories and UI symlink cleaned
+unverified_boundary: governance replacement changes ticket/spec/tasks, so this PASS cannot be inherited as replacement exact-SHA verification
+external_asset:
+  owner: replacement writer and verifier
+  missing: replacement exact SHA full Gate receipts
+  recovery: after external replacement SHA handoff, rerun the declared package in a fresh clean detached worktree
+```
 
-- Shanghai-date Red performs the unique minimal source replacement `now := handler.now().In(shanghaiLocation)` -> `now := handler.now()`. It keeps the handler on the success path and makes `TestPickupOptionsUsesShanghaiTodayAndTomorrow` observe the wrong UTC-derived dates; the named date assertion, rather than a generic 503 assertion, produced exact go-test exit 1 and its own `--- FAIL` marker. Status: `CURRENT_REPLAY_ONLY_PASS_PENDING_FULL_POST_FREEZE_WRITER_RERUN`.
-- Complete-enumeration Red removes only the first internal configured pickup point from the successful public DTO while retaining range start/end, the configured interval step, route, Shanghai dates and cutoff calculation. Only `TestPickupOptionsEnumeratesEveryConfiguredPickupTime` ran; its single assertion observed missing `12:00`, with exact go-test exit 1 and its own `--- FAIL` marker. Status: `CURRENT_REPLAY_ONLY_PASS_PENDING_FULL_POST_FREEZE_WRITER_RERUN`.
+```yaml
+task_id: PO-10-old-governance-audit
+receipt_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+allowed_phase: writer
+phase: writer
+change: implement-pickup-options-read-api
+gate_type: W2
+ui_level_target: UI1
+ui_level_actual: UI1
+base_sha: f3c4efa4cd665652d93d5da76f92d18c4bdc59ac
+candidate_sha: b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+command_or_action: formal exact-candidate parallel Standards and Spec code-review from fixed base
+exit_result: FAIL
+expected: both exact-candidate axes report zero finding and lifecycle/Gate/score state proves candidate eligibility
+observed: Spec P0-P3 zero and business implementation zero finding; Standards reported one P1 because candidate, PO-08-final/PO-09, final Gate and C/T/V state remained pre-candidate or pending inside the committed governance snapshot
+sanitized_summary: business/API implementation passed Spec review, while stale governance lifecycle state invalidated the business candidate
+artifact_or_environment: clean exact business commit b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0 with 14 owned paths from fixed base
+unverified_boundary: a zero-finding replacement review and replacement detached verifier remain pending; this audit does not establish verified status
+external_asset:
+  owner: replacement governance owner
+  missing: immutable replacement final SHA handoff
+  recovery: commit only the owned governance repair, bind its exact SHA externally and rerun both review axes
+```
+
+```yaml
+task_id: PO-11-old-detached-verifier
+receipt_status: INVALIDATED_BY_GOVERNANCE_REPLACEMENT
+allowed_phase: verifier
+phase: verifier
+change: implement-pickup-options-read-api
+gate_type: W2
+ui_level_target: UI1
+ui_level_actual: UI1
+base_sha: f3c4efa4cd665652d93d5da76f92d18c4bdc59ac
+candidate_sha: b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+source_tree_sha256: 8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece
+command_or_action: clean detached exact-SHA verifier reran the complete declared Writer package read-only
+exit_result: PASS
+expected: exact business candidate passes all declared Gates in another clean detached worktree
+observed: exact b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0 passed the complete package on the same source_tree_sha256 and the verifier worktree was clean
+sanitized_summary: old exact candidate verifier dynamically passed, but the governance replacement invalidates this receipt and it is not a verified replacement
+artifact_or_environment: separate clean detached worktree at exact old business candidate; temporary assets cleaned
+unverified_boundary: replacement exact SHA did not exist for this run; no replacement review/verifier, picker, UI2/UI3, production, real-menu UAT or integration is proven
+external_asset:
+  owner: replacement verifier
+  missing: replacement exact SHA and fresh detached replacement receipt
+  recovery: recreate a new clean detached worktree for the immutable externally bound replacement final SHA and rerun all declared Gates
+```
+
+## Completed business sequence and replacement rule
+
+The exact receipts above are the evidence source; this summary does not upgrade invalidated evidence:
+
+- Shanghai-date and complete-enumeration Red replays each produced exact exit 1 plus their named FAIL marker; the final Writer Gate reran all six RGR cases. Status: `PASS_FOR_INVALIDATED_BUSINESS_CANDIDATE_NOT_INHERITED_BY_REPLACEMENT`.
 - The complete changed-path audit is the union of `git diff --name-only <base>...HEAD`, `git diff --cached --name-only`, `git diff --name-only`, and `git ls-files --others --exclude-standard`; the Writer Gate rejects unstaged/untracked source, checks committed/staged/unstaged diffs including `git diff --cached --check`, and emits a stable `source_tree_sha256` from the complete staged index before/after the run.
-- After ticket/spec/tasks and all Gate scripts were stage-frozen and staged Standards/Spec pre-review returned zero finding, the first exact full Writer command passed as `PO-08-writer-post-freeze`. Status: `INITIAL_PASS_RECORDED_FOR_PRE_RECEIPT_STAGED_TREE`.
-- This receipt insertion invalidates both the first pre-review and Writer Gate for final candidate eligibility: stage the final governance tree, rerun staged Standards/Spec pre-review to zero finding, then rerun the identical Writer Gate on that same final staged tree. The final exact exit-0 terminal receipt is not written back into the frozen governance files; it is the candidate-formation input. Any implementation/governance/Gate/staged-tree change invalidates the affected prior evidence and restarts this order; any nonzero result leaves lifecycle `PRE_CANDIDATE_WIP`.
+- Final staged Git tree `818b9a591707669f1ddcbb7e995727b70d5e1751` passed Standards/Spec pre-review with zero finding; the identical frozen source then passed final Writer with source-tree SHA `8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`.
+- Business candidate `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` and its exact detached verifier are invalidated by the Standards governance audit and this replacement edit. They prove no replacement verified status.
+- Commit only this governance repair to form replacement final SHA; bind it in immutable external handoff, then rerun exact replacement dual review and fresh detached full Gate. Do not write the future SHA into its own content.
 
-## Writer C/T/V/R pre-candidate score
+## Writer C/T/V/R replacement-ready score
 
-- `C = 9`：当前 HTTP DTO、时区/日期/餐段/时间点、orderable 语义、统一错误、既有 `/menu`、非目标和 consumer 缺口均已明确。
-- `T = 0`：`PO-08-writer-post-freeze` 已证明 receipt 写入前 staged tree 的完整 Writer Gate PASS；但本次 tasks receipt 写入改变最终治理树，最终 staged-tree pre-review 与 full Writer rerun 仍 `PENDING`，因此当前 candidate-eligible T 分仍不提高。
-- `V = 0`：candidate 尚未创建，不能获得 quality protocol 的 candidate exact-SHA 最低 `V = 8`。
-- `R = 8`：当前失败回流、证据失效、临时 MySQL/凭据/UI symlink 的清理与重跑条件已明确；历史清理观察不升级其他维度为 PASS。
-- `total = 17`；当前不满足每项 `>= 8` 或总分 `>= 36`，不能形成 candidate。只有 post-freeze Writer Gate、candidate exact SHA、正式双轴 review 和 clean detached independent verification 实际完成后，才按新 receipts 更新分数。
+- `C = 9`：HTTP DTO、时区/日期/餐段/时间点、orderable、统一错误、legacy `/menu`、非目标与 consumer 缺口完整；旧 exact Spec 轴 0 finding，唯一缺口已收敛为治理 replacement。
+- `T = 10`：RGR 6/6、mutations 8/8、fresh MySQL、focused/determinism、all API normal/race、vet/build/smoke、UI1 3/3 与 cleanup package 已完整执行；旧 receipts 因治理 replacement 不继承，replacement exact verifier仍须重跑。
+- `V = 8`：治理修复提交后可由 immutable handoff 形成 exact replacement SHA，完整 verifier package 已定义且等待另一 clean detached worktree执行；不声明 independent PASS。
+- `R = 9`：两次 infrastructure attempt、candidate/review/verifier 失效、原 writer 回流、MySQL/credential/RGR/mutation/UI symlink cleanup 与 replacement recovery 条件均明确且可执行。
+- `total = 36`；每项 `>= 8`，writer 阶段可形成 replacement candidate。该评分不替代 replacement exact 双轴 0 finding、clean detached PASS 与 integration 单独授权。

@@ -68,12 +68,13 @@ GET /api/v1/menu/pickup-options
 不读取或返回 storefront business status、特殊日期、商品/售罄、身份、报价、支付、订单；不新增 repo/port/migration/缓存/配置 fallback。
 
 - `base_sha`: `f3c4efa4cd665652d93d5da76f92d18c4bdc59ac`
-- `lifecycle`: `PRE_CANDIDATE_WIP`
+- `lifecycle`: `REPLACEMENT_CANDIDATE_READY_FOR_EXACT_REVIEW`
 - `ui_level_target`: `UI1`
-- `ui_level_actual`: `NOT_RUN`（current）
-- `ui1_historical_receipt`: `PO-08-ui1`
-- `ui1_receipt_status`: `INVALIDATED_NOT_CURRENT` after replay/Gate/receipt/spec/tasks changes; the exact historical observation was Chrome for Testing `151.0.7922.34`, `TOTAL 3 SUCCESS`, but it is not current evidence.
-- `candidate_status`: `NOT_CREATED`
-- `post_freeze_writer_gate`: `NOT_RUN_AFTER_FINAL_FREEZE`
-- `post_freeze_order`: first Writer Gate exit 0 -> record exact receipt and check PO-08 -> stage final governance tree -> rerun staged Standards/Spec pre-review to zero finding -> rerun Writer Gate on that identical final staged tree -> keep final terminal receipt external to the frozen tree -> only then commit candidate.
-- 只有提交完整实现、spec/tasks 后才记录 `candidate_sha`；任何实现、spec、tasks、Gate 或 SHA 变化都使 review/verifier receipt 失效。
+- `ui_level_actual`: `UI1`；最终 Writer Gate 的锁定 Chromium runner 已实跑 `3/3 PASS`。UI2/UI3、生产与真实菜单 UAT 未运行。
+- `business_candidate_sha`: `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0`
+- `business_candidate_status`: `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT`；正式 Spec 轴 0 finding，业务/API 实现无 finding；唯一 Standards P1 是治理状态滞后。
+- `final_staged_pre_review`: Git tree `818b9a591707669f1ddcbb7e995727b70d5e1751`, Standards 0 finding, Spec 0 finding.
+- `final_writer_terminal`: PASS，`base_sha=head_sha=f3c4efa4cd665652d93d5da76f92d18c4bdc59ac`，`source_tree_sha256=8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`。
+- `old_candidate_detached_verifier`: exact `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` 曾 PASS，同一 `source_tree_sha256`；因本治理修复统一标记 `INVALIDATED_BY_GOVERNANCE_REPLACEMENT`，不得声明 verified。
+- `replacement_final_sha`: 由包含本治理修复的 commit 形成，并在 immutable external handoff 中绑定完整 SHA；禁止未来 SHA 自写造成无限 amend。
+- replacement exact SHA 的正式 Standards/Spec review 与 clean detached verifier 均 `PENDING`；任何 replacement 实现、spec、tasks、Gate 或 SHA 变化都会使对应 receipt 失效。

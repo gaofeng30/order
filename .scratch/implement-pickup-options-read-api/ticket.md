@@ -2,7 +2,7 @@
 
 ## 状态与唯一结果
 
-- lifecycle: `PRE_CANDIDATE_WIP`；实现尚未形成 candidate，当前历史运行证据已因 replay/Gate/治理工件变化失效。
+- lifecycle: `REPLACEMENT_CANDIDATE_READY_FOR_EXACT_REVIEW`；本次只修治理工件，业务代码、测试与 Gate 脚本不变。
 - governance: `GOVERNANCE_PENDING`；`docs/agents/issue-tracker.md` 缺失，本 change 不伪造 tracker/ticket linkage，也不创建外部 issue。
 - 唯一结果：新增匿名只读 `GET /api/v1/menu/pickup-options`，从现有 `Reader.MealPeriods` 一次性读取完整配置，并用一次注入 clock 投影上海今天、明天的完整午/晚餐取餐选项。
 - 最小成功标准：冻结的 provider/consumer/error contract、8 个 mutation、fresh MySQL 8.0.46、focused/full/race/vet/build/smoke、现有 UI1、双轴 review 与 clean detached exact-SHA verifier 全部通过。
@@ -11,13 +11,15 @@
 
 - `gate_type`: `W2`（新增公共 HTTP contract）。
 - `ui_level_target`: `UI1`。
-- `ui_level_actual`: `NOT_RUN`（current）。历史 receipt `PO-08-ui1` 曾观察到 Chrome for Testing `151.0.7922.34`、`TOTAL 3 SUCCESS`，但在后续 replay/Gate/receipt/spec/tasks 变化后统一标记为 `INVALIDATED_NOT_CURRENT`；只有最终冻结后重新运行才可恢复为 current UI1。
+- `ui_level_actual`: `UI1`；最终 Writer Gate 已真实运行锁定 Chromium runner，观察 `3/3 PASS` 并清理 runtime symlink。UI2/UI3 仍 `NOT_RUN`，该 UI1 只证明邻接既有小程序场景无回归，不证明 pickup-options consumer 已接线。
 - owner: `implement-pickup-options-read-api` independent Writer Session。
 - worktree: `/Users/vivix/.codex/worktrees/869e/order`。
 - branch: `codex/implement-pickup-options-read-api`。
 - `base_sha`: `f3c4efa4cd665652d93d5da76f92d18c4bdc59ac`。
 - base branch: `codex/order-delivery-integration`。
-- `candidate_status`: `NOT_CREATED`；提交完整候选后才增加 immutable `candidate_sha`。
+- `business_candidate_sha`: `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0`。
+- `business_candidate_status`: `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT`；正式 Spec 轴 0 finding、业务实现无 finding，Standards 轴因 candidate/PO/final Gate/C-T-V-R 状态滞后产生唯一 P1。
+- `replacement_final_sha`: 由包含本治理修复的 commit 形成，并在 immutable external handoff 中绑定完整 SHA；禁止把未来 SHA 写入其自身内容造成无限 amend。
 - historical reference: `codex/serve-reservation-menu-availability` 的 `2b83e93` 已在 base ancestry 中；该历史 worktree/branch 只读且不复用其旧证据。
 
 ## 依赖、owned、read-only、非目标
@@ -77,14 +79,20 @@ read-only：`services/api/internal/menu/repository.go`、`services/api/internal/
 2. 执行首轮 exact command `.scratch/implement-pickup-options-read-api/verify-writer.sh`。该脚本检查 committed base diff、staged、unstaged 与 untracked 的完整 changed-path，拒绝未 stage/untracked source，同时执行 `git diff --cached --check`、unstaged diff check 与全部声明的重型 Gate；前后完整 staged index 的 `source_tree_sha256` 必须一致。
 3. 只有首轮命令实际 exit 0 并保存 exact receipt 后，才可勾选 `PO-08` 并把 receipt 写入 tasks。此写入使首轮 pre-review 与 Writer Gate 同时失效；必须 stage 最终治理树，再对新的最终 staged snapshot 重跑 Standards/Spec 双轴 pre-review并取得零 finding。
 4. 双轴零 finding 后，对完全相同的最终 staged tree 再运行 Writer Gate。最后一次 exact exit-0 terminal receipt 不反写治理文件，随后才允许 commit candidate。
-5. 任一实现、ticket/spec/tasks、replay/Gate、staged tree 或 receipt 变化都会使此前相应的 pre-review/Writer Gate 失效并从受影响顺序重来。当前状态：`NOT_RUN_AFTER_FINAL_FREEZE`；历史 Writer/UI1/MySQL 结果均为 `INVALIDATED_NOT_CURRENT`。
+5. final staged pre-review Git tree `818b9a591707669f1ddcbb7e995727b70d5e1751` 的 Standards/Spec 两轴均 0 finding；随后同一冻结树的最终 Writer terminal PASS 为 `base_sha=head_sha=f3c4efa4cd665652d93d5da76f92d18c4bdc59ac`、`source_tree_sha256=8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`。
+
+## 业务 Candidate 作废与两阶段 Replacement
+
+- 旧业务 commit `b6154f3c17f709223f35dbc8b0b49db7a5a2c9e0` 已由正式 Standards/Governance audit 作废；Spec 轴为 0 finding，作废不表示业务/API failure。
+- 旧 SHA 的 detached verifier 曾在 exact SHA 上 PASS，且 source tree 同为 `8ba00c120c6bd97eda4990fa3c68f92bf3ca6454f600dbcc4b09083c57d05ece`；本治理修复改变 ticket/spec/tasks，因此该 verifier receipt 标记 `INVALIDATED_BY_GOVERNANCE_REPLACEMENT`，不得升级为 verified 或被 replacement 继承。
+- 两阶段模式：本工件固定旧业务 SHA、作废原因与已有证据；随后仅提交三个 owned governance 文件形成 replacement final SHA，由 immutable external handoff 绑定，再从 fixed base 对 replacement exact SHA 重跑正式双轴与 clean detached verifier package。
 
 ## 外部资产与边界
 
 | asset | owner | current status | recovery |
 | --- | --- | --- | --- |
-| loopback MySQL 8.0.46 | Writer/Verifier | `AVAILABLE_LOCAL_CURRENT_GATE_NOT_RUN`; historical receipt `PO-07` is `INVALIDATED_NOT_CURRENT` | 最终冻结后用现有脚本 fresh 启动、执行、清理 |
-| locked Chromium UI1 runner | quality owner | `AVAILABLE_LOCAL_CURRENT_GATE_NOT_RUN`; historical receipt `PO-08-ui1` is `INVALIDATED_NOT_CURRENT` | 最终冻结后运行 `verify-ui1.sh`；exact historical observation was Chrome for Testing 151.0.7922.34 / TOTAL 3 SUCCESS |
+| loopback MySQL 8.0.46 | Writer/Verifier | final Writer 与旧 detached verifier 均真实 PASS，旧 receipt 因 governance replacement 失效 | replacement exact SHA 在 clean detached worktree fresh 重建、执行、清理 |
+| locked Chromium UI1 runner | quality owner | `UI1_CURRENTLY_RUN_3_OF_3`; replacement exact verification pending | replacement verifier 重跑 `verify-ui1.sh`；仍不得升级为 future pickup-options consumer E2E |
 | future mini-program pickup picker | future consumer owner | `NOT_IMPLEMENTED_OUT_OF_SCOPE` | 独立 client change 接线并建立自身 RGR/UI evidence |
 | UI2/UI3、生产、真实菜单 UAT | 客户/平台/UAT owner | `BLOCKED_EXTERNAL_NOT_REQUIRED_FOR_CANDIDATE` | 另行授权并提供账号、平台、版本、环境与受控 UAT |
 
