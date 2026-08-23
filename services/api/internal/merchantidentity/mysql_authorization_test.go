@@ -42,6 +42,11 @@ func assertLiveMerchantAuthorization(t *testing.T, db *sql.DB) {
 	if _, err := authorizeTestAction(t, repository, db, userID, ActionOrderRead); !errors.Is(err, ErrMerchantAccountNotAvailable) {
 		t.Fatalf("disabled authorization error = %v", err)
 	}
+	var disabledRole Role
+	var disabledAuthVersion uint64
+	if err := db.QueryRowContext(ctx, "SELECT role,auth_version FROM merchant_accounts WHERE id=?", accountID).Scan(&disabledRole, &disabledAuthVersion); err != nil {
+		t.Fatal("read disabled account audit snapshot failed")
+	}
 	if _, err := service.Login(ctx, userID, "unused-code", "internal-live-disabled"); !errors.Is(err, ErrMerchantAccountNotAvailable) {
 		t.Fatalf("disabled existing-binding login error = %v", err)
 	}
@@ -49,13 +54,15 @@ func assertLiveMerchantAuthorization(t *testing.T, db *sql.DB) {
 		t.Fatal("disabled existing binding reached the phone provider")
 	}
 	var disabledAuditAccountID uint64
+	var disabledAuditRole Role
+	var disabledAuditAuthVersion uint64
 	var disabledAuditResult, disabledAuditReason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,result,reason FROM merchant_action_audits WHERE request_id=?
-	`, []byte("internal-live-disabled")).Scan(&disabledAuditAccountID, &disabledAuditResult, &disabledAuditReason); err != nil {
+		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason FROM merchant_action_audits WHERE request_id=?
+	`, []byte("internal-live-disabled")).Scan(&disabledAuditAccountID, &disabledAuditRole, &disabledAuditAuthVersion, &disabledAuditResult, &disabledAuditReason); err != nil {
 		t.Fatal("read disabled existing-binding audit failed")
 	}
-	if disabledAuditAccountID != accountID || disabledAuditResult != "REJECTED" || disabledAuditReason != "ACCOUNT_NOT_AVAILABLE" {
+	if disabledAuditAccountID != accountID || disabledAuditRole != disabledRole || disabledAuditAuthVersion != disabledAuthVersion || disabledAuditResult != "REJECTED" || disabledAuditReason != "ACCOUNT_NOT_AVAILABLE" {
 		t.Fatal("disabled existing binding was not durably audited")
 	}
 
