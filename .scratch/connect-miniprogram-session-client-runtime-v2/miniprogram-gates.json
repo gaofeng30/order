@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "change": "connect-miniprogram-session-client-runtime-v2",
+  "base_sha": "2e78d1afca0a334739fb377f1f5772edb461f4fd",
+  "gate_type": "W2",
+  "ui_level_target": "UI2",
+  "ui_level_actual": "UI1",
+  "status": "LOCAL_WIP_UI1_PASS_UI2_BLOCKED_EXTERNAL",
+  "candidate_sha": "not-created",
+  "tdd": {
+    "red": "12/12 failed on exact base; missing session state and startup exchange",
+    "green": "session focused 12/12 PASS",
+    "refactor": "runtime+session 57/57; all Node 174/174; JS syntax PASS"
+  },
+  "side_effect_contract": {
+    "non_ready_endpoint": { "wx_login_calls": 0, "wx_request_calls": 0 },
+    "ready_endpoint": { "login_calls": 1, "session_requests": 1, "credential_storage": "runtime-memory-only" }
+  },
+  "ui1": {
+    "status": "PASS",
+    "scenarios": 3,
+    "browser": "Google Chrome for Testing 151.0.7922.34",
+    "result": "UI1_RESULT status=PASS scenarios=3"
+  },
+  "ui2": {
+    "status": "BLOCKED_EXTERNAL",
+    "recovery": "Log in to Developer Tools and ensure the AppID grants the current account developer permission, then rerun UI2 on the exact stacked SHA"
+  },
+  "blocked_external": ["Developer Tools login and AppID permission for UI2"]
+}

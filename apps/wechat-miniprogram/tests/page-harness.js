@@ -36,6 +36,7 @@ function createHarness(options) {
   const scanQueue = ((options && options.scans) || []).slice();
   const profileQueue = ((options && options.profiles) || []).slice();
   const requestCalls = [];
+  const loginCalls = [];
   const navigationCalls = [];
   const toastCalls = [];
   const previewCalls = [];
@@ -59,6 +60,16 @@ function createHarness(options) {
     });
   }
 
+  function completeLogin(call, response) {
+    queueMicrotask(() => {
+      if (response && response.networkError) {
+        call.fail({ errMsg: 'login failed' });
+        return;
+      }
+      call.success({ code: response && Object.hasOwn(response, 'code') ? response.code : '' });
+    });
+  }
+
   function navigate(type, request) {
     navigationCalls.push({ type, url: request && request.url, delta: request && request.delta });
     if (request && request.success) request.success();
@@ -71,6 +82,11 @@ function createHarness(options) {
   global.getApp = () => appInstance;
   global.getCurrentPages = () => [];
   global.wx = {
+    login(request) {
+      loginCalls.push(request);
+      const response = loginQueue.length ? loginQueue.shift() : { networkError: true };
+      completeLogin(request, response);
+    },
     request(request) {
       requestCalls.push(request);
       const response = requestQueue.length ? requestQueue.shift() : { networkError: true };
@@ -200,6 +216,7 @@ function createHarness(options) {
 
   return {
     miniprogramRoot,
+    loginCalls,
     requestCalls,
     navigationCalls,
     toastCalls,

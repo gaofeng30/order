@@ -7,6 +7,7 @@ App({
   globalData: {
     apiBaseUrl: '',
     runtimeEndpoint: { state: 'idle', envVersion: '', origin: '', errorCode: '' },
+    session: { state: 'idle', accessToken: '', expiresAt: '' },
 
     // ---- 屏幕适配信息（各机型自适应核心）----
     statusBarHeight: 20, // 状态栏高度 px
