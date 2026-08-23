@@ -215,7 +215,7 @@ func run() int {
 			return 1
 		}
 	} else {
-		provider := refund.NewFakeProvider(paymentConfig.MerchantID)
+		provider := newLocalRefundProvider(paymentConfig.MerchantID, time.Now)
 		refundProvider, refundParser = provider, provider
 		refundNotifyURL = "http://127.0.0.1:8080/api/v1/refunds/wechat/notify"
 	}
