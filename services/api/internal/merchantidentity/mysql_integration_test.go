@@ -58,6 +58,12 @@ func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 		t.Run("resolved login audit branches retain exact durable facts", func(t *testing.T) {
 			assertResolvedLoginAuditBranches(t, db)
 		})
+		t.Run("provider-free already-bound audit cannot confirm a rejected code", func(t *testing.T) {
+			assertAlreadyBoundCannotConfirmRejectedLogin(t, db)
+		})
+		t.Run("existing same primary phone completes first merchant binding", func(t *testing.T) {
+			assertExistingPrimaryPhoneCompletesFirstBinding(t, db)
+		})
 		t.Run("rollback audit failure and commit unknown preserve recoverable facts", func(t *testing.T) {
 			assertMerchantTransactionRecovery(t, db)
 		})

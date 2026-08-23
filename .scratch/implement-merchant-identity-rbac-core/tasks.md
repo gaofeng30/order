@@ -23,6 +23,101 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-recovery-proof and existing-primary branch focused plus race; fresh MySQL 8.0.46; repository-wide test plus race; vet; controlled build; smoke; format, diff, ownership, migration, structure, lifecycle, evidence, PII, container and artifact checks
+exit_result: PASS
+sanitized_summary: ALREADY_BOUND is excluded from rejected-code success proof and the existing-same-primary FIRST_BINDING path has exact durable facts plus a mutation kill; every declared Writer Gate passed with no partial write, sensitive output or unmanaged artifact
+artifact_or_environment: final replacement WIP tree before commit; disposable MySQL credentials and containers cleaned and build output confined to the controlled temporary directory
+unverified_boundary: replacement clean WIP SHA, fresh fixed-base Standards and Spec review, controller approval and detached exact-SHA verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the complete replacement, externally pin reviews to the clean HEAD, and prohibit verifier until controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: da380627dc7cffc29cce80eb1c9e669225fe33c9
+phase: red
+command_or_action: fresh MySQL three-request proof sequence with a rejected attempt, an independent FIRST_BINDING and a later provider-free ALREADY_BOUND audit using the rejected hash
+exit_result: FAIL
+sanitized_summary: RecoverRejectedLogin accepted the ALREADY_BOUND audit as success proof and returned nil instead of PHONE_CODE_REJECTED, invalidating the clean WIP SHA and both old reviews
+artifact_or_environment: exact externally pinned WIP SHA da380627dc7cffc29cce80eb1c9e669225fe33c9; disposable MySQL container cleaned
+unverified_boundary: reason-restricted recovery, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: accept only provider-validated binding success reasons for same-code recovery and rerun the exact sequence
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same three-request proof sequence after restricting success evidence to FIRST_BINDING or CONCURRENT_BINDING_CONFIRMED
+exit_result: PASS
+sanitized_summary: provider-free ALREADY_BOUND can no longer confirm a rejected code; the rejection is durably audited with all account snapshots null while the independent binding and primary phone remain unchanged
+artifact_or_environment: owned repository reason predicate and fresh MySQL 8.0.46 suite; container and credentials cleaned
+unverified_boundary: full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: preserve the provider-validated reason allowlist in every recovery query change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: da380627dc7cffc29cce80eb1c9e669225fe33c9
+phase: red
+command_or_action: structural branch checker plus controller disposable mutation that rejects any already-present primary phone before FIRST_BINDING
+exit_result: FAIL
+sanitized_summary: no explicit real-MySQL proof existed for an unbound enabled merchant account when the current user already held the same primary phone; the mutation passed the old W3 suite and exposed a 503 regression blind spot
+artifact_or_environment: exact invalid WIP SHA da380627dc7cffc29cce80eb1c9e669225fe33c9; controller disposable copy was cleaned
+unverified_boundary: exact success audit, unchanged primary binding, account version update, mutation kill and full Writer Gate remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: add the missing real-MySQL FIRST_BINDING branch proof before changing production behavior
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL existing-same-primary FIRST_BINDING scenario, reversible currentPhone.Valid failure mutation, then restored-source fresh rerun
+exit_result: PASS
+sanitized_summary: the exact SUBACCOUNT/auth_version projection, FIRST_BINDING account and audit snapshots, domain-separated idempotency hash and version increments pass while the original primary phone timestamp remains exact; the targeted mutation now fails the new branch and restored source passes
+artifact_or_environment: owned login-audit branch test and integration entry; temporary mutation fully restored and disposable containers cleaned
+unverified_boundary: full Writer Gate, replacement review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the mutation kill after any CompleteLogin current-primary branch change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: c3fb54ba9b72ee1c586eae669a4f2aee70d7732e
 phase: red
 command_or_action: branch-map checker for ALREADY_BOUND, enabled same/different-phone CompleteLogin and confirmed RecoverRejectedLogin, correlated with controller mutation evidence

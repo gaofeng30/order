@@ -304,6 +304,7 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 			  AND idempotency_key_hash=?
 			  AND action='merchant.login'
 			  AND result='SUCCEEDED'
+			  AND reason IN ('FIRST_BINDING','CONCURRENT_BINDING_CONFIRMED')
 			  AND occurred_at>=?
 			ORDER BY id DESC
 			LIMIT 1
