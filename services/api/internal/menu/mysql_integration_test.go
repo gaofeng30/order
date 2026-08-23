@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +25,7 @@ var menuOwnedSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestMenuMySQLIntegration(t *testing.T) {
 	withMenuSchema(t, func(db *sql.DB) {
-		set := loadHistoricalMigrations(t, 10)
+		set := loadHistoricalMigrations(t, 13)
 		if first, err := migrate.Run(context.Background(), db, set[:3]); err != nil || first.ToVersion != 3 || first.AppliedCount != 3 {
 			t.Fatal("establish v3 menu baseline failed")
 		}
@@ -34,8 +35,8 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents) VALUES (99,99,'Legacy Product',900)"); err != nil {
 			t.Fatal("insert legacy product before v4 failed")
 		}
-		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 10 || upgrade.AppliedCount != 7 {
-			t.Fatal("upgrade v3 to v10 failed")
+		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 13 || upgrade.AppliedCount != 10 {
+			t.Fatal("upgrade v3 to v13 failed")
 		}
 		var legacyMeal string
 		if err := db.QueryRowContext(context.Background(), "SELECT meal_period FROM products WHERE id=99").Scan(&legacyMeal); err != nil || legacyMeal != "all" {
@@ -47,14 +48,20 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "DELETE FROM categories WHERE id=99"); err != nil {
 			t.Fatal("remove legacy category fixture failed")
 		}
-		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 10 || repeat.ToVersion != 10 || repeat.AppliedCount != 0 {
-			t.Fatal("repeat v10 migration was not zero-write")
+		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 13 || repeat.ToVersion != 13 || repeat.AppliedCount != 0 {
+			t.Fatal("repeat v13 migration was not zero-write")
 		}
 
 		insertMenuFixture(t, db)
 		repository := NewRepository(db)
 		now := time.Date(2026, 8, 20, 10, 30, 0, 0, shanghai)
 		handler := NewHandler(repository, func() time.Time { return now })
+		defaultConfiguration := mealConfigurationSnapshot(t, repository)
+		assertRealMenuResponse(t, handler, "/api/v1/menu/pickup-options", http.StatusOK,
+			`{"timezone":"Asia/Shanghai","dates":[{"date":"2026-08-20","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-20T11:30:00+08:00","orderable":true,"pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"code":"dinner","cutoff_at":"2026-08-20T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-21T11:30:00+08:00","orderable":true,"pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"code":"dinner","cutoff_at":"2026-08-21T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
+		if afterGET := mealConfigurationSnapshot(t, repository); afterGET != defaultConfiguration {
+			t.Fatal("pickup options GET changed default meal_periods")
+		}
 
 		assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-20&time=12:00", http.StatusOK,
 			`{"selection":{"date":"2026-08-20","time":"12:00","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-20T11:30:00+08:00","orderable":true},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","price_cents":200,"sold_out":true,"orderable":false},{"id":"1","category_id":"1","name":"All","description":"","specification":"","price_cents":100,"sold_out":false,"orderable":true}]}]}`)
@@ -64,8 +71,21 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "UPDATE meal_periods SET cutoff_time='10:45:00',pickup_start_time='11:00:00',pickup_end_time='12:00:00',interval_minutes=20 WHERE code='lunch'"); err != nil {
 			t.Fatal("write non-default legal meal configuration failed")
 		}
+		customConfiguration := mealConfigurationSnapshot(t, repository)
+		assertRealMenuResponse(t, handler, "/api/v1/menu/pickup-options", http.StatusOK,
+			`{"timezone":"Asia/Shanghai","dates":[{"date":"2026-08-20","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":true,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-20T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-21T10:45:00+08:00","orderable":true,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-21T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
+		if afterGET := mealConfigurationSnapshot(t, repository); afterGET != customConfiguration {
+			t.Fatal("pickup options GET changed custom meal_periods")
+		}
 		assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-20&time=11:40", http.StatusOK,
 			`{"selection":{"date":"2026-08-20","time":"11:40","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":true},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","price_cents":200,"sold_out":true,"orderable":false},{"id":"1","category_id":"1","name":"All","description":"","specification":"","price_cents":100,"sold_out":false,"orderable":true}]}]}`)
+
+		now = time.Date(2026, 8, 20, 10, 44, 59, 0, shanghai)
+		assertRealPickupOptionsOrderability(t, handler, true, true, true, true)
+		now = time.Date(2026, 8, 20, 10, 45, 0, 0, shanghai)
+		assertRealPickupOptionsOrderability(t, handler, false, true, true, true)
+		now = time.Date(2026, 8, 20, 17, 0, 0, 0, shanghai)
+		assertRealPickupOptionsOrderability(t, handler, false, false, false, true)
 
 		invalidStatements := []string{
 			"UPDATE meal_periods SET pickup_end_time='12:10:00' WHERE code='lunch'",
@@ -78,9 +98,38 @@ func TestMenuMySQLIntegration(t *testing.T) {
 			}
 			assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-20&time=11:40", http.StatusServiceUnavailable,
 				`{"error":{"code":"MENU_UNAVAILABLE","message":"menu temporarily unavailable"}}`)
+			assertRealMenuResponse(t, handler, "/api/v1/menu/pickup-options", http.StatusServiceUnavailable,
+				`{"error":{"code":"MENU_UNAVAILABLE","message":"menu temporarily unavailable"}}`)
 			restoreMenuConfiguration(t, db)
 		}
 	})
+}
+
+func mealConfigurationSnapshot(t *testing.T, repository *Repository) string {
+	t.Helper()
+	records, err := repository.MealPeriods(context.Background())
+	if err != nil {
+		t.Fatal("read meal_periods snapshot failed")
+	}
+	return fmt.Sprintf("%#v", records)
+}
+
+func assertRealPickupOptionsOrderability(t *testing.T, handler *Handler, lunch, dinner, date, tomorrow bool) {
+	t.Helper()
+	response := httptest.NewRecorder()
+	menuTestRouter(handler).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/menu/pickup-options", nil))
+	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("pickup options boundary status = %d cache=%q body=%q", response.Code, response.Header().Get("Cache-Control"), response.Body.String())
+	}
+	var body pickupOptionsTestBody
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatal("decode real pickup options failed")
+	}
+	if len(body.Dates) != 2 || len(body.Dates[0].Meals) != 2 ||
+		body.Dates[0].Meals[0].Orderable != lunch || body.Dates[0].Meals[1].Orderable != dinner ||
+		body.Dates[0].Orderable != date || body.Dates[1].Orderable != tomorrow {
+		t.Fatalf("real pickup options orderability = %#v", body.Dates)
+	}
 }
 
 func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {

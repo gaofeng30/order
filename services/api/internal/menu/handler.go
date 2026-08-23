@@ -37,9 +37,10 @@ func NewHandler(reader Reader, now func() time.Time) *Handler {
 	return &Handler{reader: reader, now: now}
 }
 
-// RegisterRoutes adds only the versioned anonymous menu GET route.
+// RegisterRoutes adds the versioned anonymous menu read routes.
 func (handler *Handler) RegisterRoutes(engine *gin.Engine) {
 	engine.GET("/api/v1/menu", handler.get)
+	engine.GET("/api/v1/menu/pickup-options", handler.getPickupOptions)
 }
 
 type menuResponse struct {
