@@ -27,7 +27,6 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/staffdiscount"
 	"github.com/gaofeng30/order/services/api/internal/storefront"
 	"github.com/gaofeng30/order/services/api/internal/subscription"
-	"github.com/gaofeng30/order/services/api/internal/wechat"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
 
@@ -60,12 +59,16 @@ func run() int {
 		return httpapi.ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
 	identityRepository := identity.NewRepository(db)
+	loginProvider, phoneProvider, productionPhoneProvider, err := composeWeChatProviders(cfg.Environment, cfg.MiniProgram)
+	if err != nil {
+		logger.Error("wechat provider composition error")
+		return 1
+	}
 	sessionService := identity.NewService(
-		wechat.NewCode2SessionClient(cfg.MiniProgram),
+		loginProvider,
 		identityRepository,
 	)
 	identityHandler := identity.NewHandler(sessionService)
-	phoneProvider := wechat.NewPhoneNumberClient(cfg.MiniProgram)
 	phoneHandler := identity.NewPhoneHandler(
 		sessionService,
 		identity.NewPhoneService(phoneProvider, identityRepository),
@@ -142,7 +145,7 @@ func run() int {
 				return http.ErrUseLastResponse
 			},
 		}
-		provider, providerErr := newProductionWeChatSubscriptionProvider(providerHTTPClient, phoneProvider, identityRepository, providerConfig)
+		provider, providerErr := newProductionWeChatSubscriptionProvider(providerHTTPClient, productionPhoneProvider, identityRepository, providerConfig)
 		if providerErr != nil {
 			logger.Error("wechat subscription provider configuration error")
 			return 1
