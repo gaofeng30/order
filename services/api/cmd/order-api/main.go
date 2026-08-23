@@ -150,7 +150,11 @@ func run() int {
 		productionPaymentRuntime = runtime
 		paymentProvider, paymentParser, paymentConfig = runtime.payment, runtime.payment, runtime.config
 	} else {
-		provider := newLocalPaymentProvider(time.Now)
+		provider, providerErr := newConfiguredLocalPaymentProvider(os.LookupEnv, time.Now)
+		if providerErr != nil {
+			logger.Error("local payment provider configuration error")
+			return 1
+		}
 		paymentProvider, paymentParser = provider, provider
 		paymentConfig = paymentorder.Config{
 			AppID: cfg.MiniProgram.AppID, MerchantID: "order-local-mch", Description: "预约点餐",
