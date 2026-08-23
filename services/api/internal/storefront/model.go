@@ -2,14 +2,10 @@ package storefront
 
 import (
 	"math"
-	"net/url"
-	"path"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 )
 
-// BusinessStatus is the public storefront operating state.
 type BusinessStatus string
 
 const (
@@ -18,7 +14,6 @@ const (
 	BusinessCutoff BusinessStatus = "cutoff"
 )
 
-// Settings is the public singleton storefront configuration.
 type Settings struct {
 	StoreName      string
 	StoreAddress   string
@@ -26,30 +21,45 @@ type Settings struct {
 	Announcement   string
 	BusinessStatus BusinessStatus
 	LaunchLayer    *LaunchLayer
+	Flavors        []string
 }
 
-// LaunchLayer is one complete positioned PNG configuration.
+// LaunchLayer contains durable object-store facts only. Public URLs are
+// resolved at the HTTP read boundary and are never persisted in MySQL.
 type LaunchLayer struct {
-	PNGURL      string
-	CenterX     float64
-	CenterY     float64
-	WidthRatio  float64
-	AspectRatio float64
+	ImageObjectKey string
+	CenterX        float64
+	CenterY        float64
+	WidthRatio     float64
+	AspectRatio    float64
 }
 
 func (settings Settings) valid() bool {
 	if !validRequiredText(settings.StoreName) || !validRequiredText(settings.StoreAddress) || !validRequiredText(settings.PickupPoint) {
 		return false
 	}
-	if !utf8.ValidString(settings.Announcement) || utf8.RuneCountInString(settings.Announcement) > 1000 {
+	if !utf8.ValidString(settings.Announcement) || utf8.RuneCountInString(settings.Announcement) > 1000 || settings.Flavors == nil {
 		return false
 	}
 	switch settings.BusinessStatus {
 	case BusinessOpen, BusinessClosed, BusinessCutoff:
-		return settings.LaunchLayer == nil || settings.LaunchLayer.valid()
 	default:
 		return false
 	}
+	if settings.LaunchLayer != nil && !settings.LaunchLayer.valid() {
+		return false
+	}
+	seen := make(map[string]struct{}, len(settings.Flavors))
+	for _, flavor := range settings.Flavors {
+		if !validRequiredText(flavor) {
+			return false
+		}
+		if _, duplicate := seen[flavor]; duplicate {
+			return false
+		}
+		seen[flavor] = struct{}{}
+	}
+	return true
 }
 
 func validRequiredText(value string) bool {
@@ -63,26 +73,13 @@ func (layer LaunchLayer) valid() bool {
 			return false
 		}
 	}
-	return validLaunchPNGURL(layer.PNGURL) &&
+	return validObjectKey(layer.ImageObjectKey) &&
 		layer.CenterX >= 0 && layer.CenterX <= 1 &&
 		layer.CenterY >= 0 && layer.CenterY <= 1 &&
 		layer.WidthRatio > 0 && layer.WidthRatio <= 1 &&
 		layer.AspectRatio > 0
 }
 
-func validLaunchPNGURL(value string) bool {
-	if value == "" || !utf8.ValidString(value) || strings.Contains(value, "#") {
-		return false
-	}
-	parsed, err := url.Parse(value)
-	if err != nil || !strings.EqualFold(parsed.Scheme, "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.Fragment != "" {
-		return false
-	}
-	if port := parsed.Port(); port != "" {
-		value, err := strconv.ParseUint(port, 10, 16)
-		if err != nil || value == 0 {
-			return false
-		}
-	}
-	return strings.EqualFold(path.Ext(parsed.Path), ".png")
+func validObjectKey(value string) bool {
+	return utf8.ValidString(value) && len(value) >= 1 && len(value) <= 1024
 }

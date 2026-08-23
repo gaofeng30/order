@@ -13,136 +13,120 @@ import (
 	"testing"
 )
 
-func TestMenuRepositoryUsesTwoFixedQueriesAndFoldsSoldOutRows(t *testing.T) {
+func TestMenuRepositoryReadsOneTransactionalCurrentSnapshot(t *testing.T) {
 	queryCount := 0
 	db := openMenuScriptedDB(t, func(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 		queryCount++
 		normalized := strings.Join(strings.Fields(query), " ")
 		switch queryCount {
 		case 1:
-			if len(args) != 0 || !strings.Contains(normalized, "SELECT code, cutoff_time, pickup_start_time, pickup_end_time, interval_minutes FROM meal_periods ORDER BY code") {
-				t.Fatalf("configuration query = %q args=%v", normalized, args)
+			if !strings.Contains(normalized, "FROM storefront_settings AS settings LEFT JOIN service_dates AS dates") || len(args) != 1 || args[0].Value != "2026-08-25" {
+				t.Fatalf("facts query = %s args=%#v", normalized, args)
 			}
-			return &menuScriptedRows{
-				columns: []string{"code", "cutoff_time", "pickup_start_time", "pickup_end_time", "interval_minutes"},
-				values: [][]driver.Value{
-					{"lunch", "10:45:00", "11:00:00", "12:00:00", int64(20)},
-					{"dinner", "17:00:00", "17:00:00", "19:00:00", int64(30)},
-				},
-			}, nil
+			return &menuScriptedRows{columns: make([]string, 3), values: [][]driver.Value{{"open", "2026-08-25", true}}}, nil
 		case 2:
-			for _, fragment := range []string{
-				"FROM categories AS c INNER JOIN products AS p",
-				"p.is_listed = TRUE",
-				"p.meal_period IN ('all', ?)",
-				"LEFT JOIN product_sold_out_dates AS s ON s.product_id = p.id AND s.service_date = ?",
-				"WHERE c.is_active = TRUE",
-				"ORDER BY c.sort_order ASC, c.id ASC, p.sort_order ASC, p.id ASC",
-			} {
+			if !strings.Contains(normalized, "FROM meal_periods") {
+				t.Fatalf("meal query = %s", normalized)
+			}
+			return &menuScriptedRows{columns: make([]string, 5), values: [][]driver.Value{
+				{"lunch", "11:30:00", "11:30:00", "13:30:00", int64(30)},
+				{"dinner", "17:00:00", "17:00:00", "19:00:00", int64(30)},
+			}}, nil
+		case 3:
+			for _, fragment := range []string{"p.meal_period", "p.images_json", "p.is_listed", "product_sold_out_dates", "sold.service_date = ?"} {
 				if !strings.Contains(normalized, fragment) {
 					t.Fatalf("menu query missing %q: %s", fragment, normalized)
 				}
 			}
-			if len(args) != 2 || args[0].Value != "lunch" || args[1].Value != "2026-08-20" {
-				t.Fatalf("menu args = %#v", args)
-			}
-			return &menuScriptedRows{
-				columns: []string{"category_id", "category_name", "product_id", "product_category_id", "product_name", "description", "specification", "price_cents", "sold_out"},
-				values: [][]driver.Value{
-					{uint64(5), "Meals", uint64(10), uint64(5), "Rice", "", "Large", uint64(1250), false},
-					{uint64(5), "Meals", uint64(11), uint64(5), "Soup", "Warm", "", uint64(300), true},
-				},
-			}, nil
+			return &menuScriptedRows{columns: make([]string, 12), values: [][]driver.Value{
+				{uint64(2), "晚餐", uint64(7), uint64(2), "红烧肉", "慢炖", "份", "dinner", []byte(`[{"object_key":"p/1.png"}]`), true, uint64(1800), false},
+			}}, nil
 		default:
-			t.Fatalf("unexpected query %d: %s", queryCount, normalized)
+			t.Fatalf("unexpected query %d", queryCount)
 			return nil, errors.New("unexpected query")
 		}
 	})
 
-	repository := NewRepository(db)
-	periods, err := repository.MealPeriods(context.Background())
-	wantPeriods := []MealPeriodRecord{
-		{Code: "lunch", CutoffTime: "10:45:00", PickupStartTime: "11:00:00", PickupEndTime: "12:00:00", IntervalMinutes: 20},
-		{Code: "dinner", CutoffTime: "17:00:00", PickupStartTime: "17:00:00", PickupEndTime: "19:00:00", IntervalMinutes: 30},
+	got, err := NewRepository(db).ReadMenu(context.Background(), "2026-08-25")
+	want := MenuSnapshot{
+		BusinessStatus: "open", ServiceDatePresent: true, ServiceDateOpen: true,
+		MealPeriods: defaultMealPeriodRecords(),
+		Categories: []Category{{ID: 2, Name: "晚餐", Products: []Product{{
+			ID: 7, CategoryID: 2, Name: "红烧肉", Description: "慢炖", Specification: "份", MealPeriod: "dinner",
+			ImageObjectKeys: []string{"p/1.png"}, Listed: true, OriginalUnitPriceCents: 1800,
+		}}}},
 	}
-	if err != nil || !reflect.DeepEqual(periods, wantPeriods) {
-		t.Fatalf("MealPeriods() = %#v, %v", periods, err)
-	}
-
-	categories, err := repository.List(context.Background(), "2026-08-20", MealLunch)
-	wantCategories := []Category{{ID: 5, Name: "Meals", Products: []Product{
-		{ID: 10, CategoryID: 5, Name: "Rice", Description: "", Specification: "Large", PriceCents: 1250, SoldOut: false},
-		{ID: 11, CategoryID: 5, Name: "Soup", Description: "Warm", Specification: "", PriceCents: 300, SoldOut: true},
-	}}}
-	if err != nil || !reflect.DeepEqual(categories, wantCategories) || queryCount != 2 {
-		t.Fatalf("List() = %#v, %v queries=%d", categories, err, queryCount)
+	if err != nil || !reflect.DeepEqual(got, want) || queryCount != 3 {
+		t.Fatalf("ReadMenu() = %#v, %v queries=%d", got, err, queryCount)
 	}
 }
 
-func TestMenuRepositoryReturnsNonNilEmptySlicesAndFailsClosed(t *testing.T) {
-	emptyDB := openMenuScriptedDB(t, func(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-		columns := []string{"code", "cutoff_time", "pickup_start_time", "pickup_end_time", "interval_minutes"}
-		if strings.Contains(query, "FROM categories") {
-			columns = []string{"category_id", "category_name", "product_id", "product_category_id", "product_name", "description", "specification", "price_cents", "sold_out"}
+func TestMenuRepositoryReadsMissingDateAsClosed(t *testing.T) {
+	queryCount := 0
+	db := openMenuScriptedDB(t, func(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+		queryCount++
+		switch queryCount {
+		case 1:
+			return &menuScriptedRows{columns: make([]string, 3), values: [][]driver.Value{{"open", nil, nil}}}, nil
+		case 2:
+			return &menuScriptedRows{columns: make([]string, 5), values: [][]driver.Value{
+				{"lunch", "11:30:00", "11:30:00", "13:30:00", int64(30)},
+				{"dinner", "17:00:00", "17:00:00", "19:00:00", int64(30)},
+			}}, nil
+		default:
+			return &menuScriptedRows{columns: make([]string, 12)}, nil
 		}
-		return &menuScriptedRows{columns: columns}, nil
 	})
-	repository := NewRepository(emptyDB)
-	if got, err := repository.MealPeriods(context.Background()); err != nil || got == nil || len(got) != 0 {
-		t.Fatalf("empty MealPeriods() = %#v, %v", got, err)
+	got, err := NewRepository(db).ReadMenu(context.Background(), "2026-08-25")
+	if err != nil || got.ServiceDatePresent || got.ServiceDateOpen {
+		t.Fatalf("missing date = %#v, %v", got, err)
 	}
-	if got, err := repository.List(context.Background(), "2026-08-21", MealDinner); err != nil || got == nil || len(got) != 0 {
-		t.Fatalf("empty List() = %#v, %v", got, err)
-	}
+}
 
-	for _, test := range []struct {
-		name string
-		rows *menuScriptedRows
-	}{
-		{name: "configuration-scan", rows: &menuScriptedRows{columns: make([]string, 5), values: [][]driver.Value{{"lunch", "bad", "11:00:00", "12:00:00", "not-number"}}}},
-		{name: "product-scan", rows: &menuScriptedRows{columns: make([]string, 9), values: [][]driver.Value{{"bad", "Meals", uint64(1), uint64(1), "Rice", "", "", uint64(100), false}}}},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			db := openMenuScriptedDB(t, func(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-				if test.name == "product-scan" && !strings.Contains(query, "FROM categories") {
-					return &menuScriptedRows{columns: make([]string, 5)}, nil
-				}
-				return test.rows, nil
-			})
-			repository := NewRepository(db)
-			var err error
-			if test.name == "configuration-scan" {
-				_, err = repository.MealPeriods(context.Background())
-			} else {
-				_, err = repository.List(context.Background(), "2026-08-20", MealLunch)
-			}
-			if err == nil {
-				t.Fatal("repository accepted invalid row")
-			}
-		})
+func TestMenuRepositoryFailsClosedForMalformedImages(t *testing.T) {
+	queryCount := 0
+	db := openMenuScriptedDB(t, func(context.Context, string, []driver.NamedValue) (driver.Rows, error) {
+		queryCount++
+		switch queryCount {
+		case 1:
+			return &menuScriptedRows{columns: make([]string, 3), values: [][]driver.Value{{"open", "2026-08-25", true}}}, nil
+		case 2:
+			return &menuScriptedRows{columns: make([]string, 5), values: [][]driver.Value{
+				{"lunch", "11:30:00", "11:30:00", "13:30:00", int64(30)},
+				{"dinner", "17:00:00", "17:00:00", "19:00:00", int64(30)},
+			}}, nil
+		default:
+			return &menuScriptedRows{columns: make([]string, 12), values: [][]driver.Value{{
+				uint64(2), "晚餐", uint64(7), uint64(2), "红烧肉", "", "份", "dinner", []byte(`[{"object_key":"same"},{"object_key":"same"}]`), true, uint64(1800), false,
+			}}}, nil
+		}
+	})
+	if _, err := NewRepository(db).ReadMenu(context.Background(), "2026-08-25"); err == nil {
+		t.Fatal("ReadMenu accepted malformed images")
 	}
 }
 
 type menuScriptedResponder func(context.Context, string, []driver.NamedValue) (driver.Rows, error)
-
 type menuScriptedDriver struct{ responder menuScriptedResponder }
+type menuScriptedConnection struct{ responder menuScriptedResponder }
+type menuScriptedTx struct{}
 
 func (value menuScriptedDriver) Open(string) (driver.Conn, error) {
 	return &menuScriptedConnection{responder: value.responder}, nil
 }
-
-type menuScriptedConnection struct{ responder menuScriptedResponder }
-
 func (connection *menuScriptedConnection) Prepare(string) (driver.Stmt, error) {
 	return nil, errors.New("prepare not supported")
 }
-func (connection *menuScriptedConnection) Close() error { return nil }
-func (connection *menuScriptedConnection) Begin() (driver.Tx, error) {
-	return nil, errors.New("begin not supported")
+func (connection *menuScriptedConnection) Close() error              { return nil }
+func (connection *menuScriptedConnection) Begin() (driver.Tx, error) { return menuScriptedTx{}, nil }
+func (connection *menuScriptedConnection) BeginTx(context.Context, driver.TxOptions) (driver.Tx, error) {
+	return menuScriptedTx{}, nil
 }
 func (connection *menuScriptedConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	return connection.responder(ctx, query, args)
 }
+func (menuScriptedTx) Commit() error   { return nil }
+func (menuScriptedTx) Rollback() error { return nil }
 
 type menuScriptedRows struct {
 	columns []string
@@ -165,8 +149,8 @@ var menuScriptedSequence atomic.Uint64
 
 func openMenuScriptedDB(t *testing.T, responder menuScriptedResponder) *sql.DB {
 	t.Helper()
-	name := fmt.Sprintf("menu-scripted-%d", menuScriptedSequence.Add(1))
 	driverValue := menuScriptedDriver{responder: responder}
+	name := fmt.Sprintf("menu-frozen-%d", menuScriptedSequence.Add(1))
 	sql.Register(name, driverValue)
 	db := sql.OpenDB(menuScriptedConnector{driver: driverValue})
 	t.Cleanup(func() { _ = db.Close() })

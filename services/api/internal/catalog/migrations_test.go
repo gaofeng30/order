@@ -34,8 +34,8 @@ func TestCatalogMigrationSet(t *testing.T) {
 		"000016_create_quotes.sql",
 		"000017_create_quote_items.sql",
 	}
-	if len(loaded) != len(wantNames) {
-		t.Fatalf("migration count = %d, want %d", len(loaded), len(wantNames))
+	if len(loaded) < len(wantNames) {
+		t.Fatalf("migration count = %d, want at least historical prefix %d", len(loaded), len(wantNames))
 	}
 	for index, wantName := range wantNames {
 		if loaded[index].Name != wantName || loaded[index].Version != uint64(index+1) {

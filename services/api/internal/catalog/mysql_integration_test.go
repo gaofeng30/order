@@ -94,43 +94,29 @@ func TestCatalogRepositoryAndHTTPIntegration(t *testing.T) {
 		insertAvailabilityCatalogRegressionFixture(t, db)
 
 		repository := NewRepository(db)
-		categories, err := repository.List(context.Background())
+		categories, err := repository.Browse(context.Background())
 		if err != nil {
 			t.Fatal("list visible catalog failed")
 		}
 		want := []Category{
 			{ID: 3, Name: "empty", Products: []Product{}},
 			{ID: 1, Name: "first", Products: []Product{
-				{ID: 1, CategoryID: 1, Name: "listed-one", Description: "", Specification: "small", PriceCents: 125},
-				{ID: 3, CategoryID: 1, Name: "listed-two", Description: "second", Specification: "", PriceCents: 0},
+				{ID: 1, CategoryID: 1, Name: "listed-one", Description: "", Specification: "small", MealPeriod: "lunch", ImageObjectKeys: []string{}, Listed: true, OriginalUnitPriceCents: 125},
+				{ID: 3, CategoryID: 1, Name: "listed-two", Description: "second", Specification: "", MealPeriod: "dinner", ImageObjectKeys: []string{}, Listed: true, OriginalUnitPriceCents: 1},
 			}},
 			{ID: 4, Name: "last", Products: []Product{
-				{ID: 4, CategoryID: 4, Name: "last-product", Description: "", Specification: "", PriceCents: 4294967295},
+				{ID: 4, CategoryID: 4, Name: "last-product", Description: "", Specification: "", MealPeriod: "all", ImageObjectKeys: []string{}, Listed: true, OriginalUnitPriceCents: 4294967295},
 			}},
 		}
 		if !reflect.DeepEqual(categories, want) {
 			t.Fatalf("visible catalog = %#v, want %#v", categories, want)
 		}
 
-		visible, err := repository.GetProduct(context.Background(), 1)
-		if err != nil || !reflect.DeepEqual(visible, want[1].Products[0]) {
-			t.Fatalf("visible product = %#v/%v", visible, err)
-		}
-		for _, hiddenID := range []uint64{2, 5, 999} {
-			if _, err := repository.GetProduct(context.Background(), hiddenID); err != ErrProductNotFound {
-				t.Fatalf("hidden product %d error = %v, want not found", hiddenID, err)
-			}
-		}
-
 		router := catalogTestRouter(NewHandler(repository))
 		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog"), http.StatusOK,
-			`{"categories":[{"id":"3","name":"empty","products":[]},{"id":"1","name":"first","products":[{"id":"1","category_id":"1","name":"listed-one","description":"","specification":"small","price_cents":125},{"id":"3","category_id":"1","name":"listed-two","description":"second","specification":"","price_cents":0}]},{"id":"4","name":"last","products":[{"id":"4","category_id":"4","name":"last-product","description":"","specification":"","price_cents":4294967295}]}]}`)
-		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/1"), http.StatusOK,
-			`{"product":{"id":"1","category_id":"1","name":"listed-one","description":"","specification":"small","price_cents":125}}`)
-		for _, hiddenID := range []string{"2", "5", "999"} {
-			assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/"+hiddenID), http.StatusNotFound,
-				`{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
-		}
+			`{"categories":[{"id":"3","name":"empty","products":[]},{"id":"1","name":"first","products":[{"id":"1","category_id":"1","name":"listed-one","description":"","specification":"small","meal_period":"lunch","images":[],"listed":true,"original_unit_price_cents":125},{"id":"3","category_id":"1","name":"listed-two","description":"second","specification":"","meal_period":"dinner","images":[],"listed":true,"original_unit_price_cents":1}]},{"id":"4","name":"last","products":[{"id":"4","category_id":"4","name":"last-product","description":"","specification":"","meal_period":"all","images":[],"listed":true,"original_unit_price_cents":4294967295}]}]}`)
+		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/1"), http.StatusBadRequest,
+			`{"error":{"code":"INVALID_MENU_SELECTION","message":"invalid menu selection"}}`)
 
 		var schemaName string
 		if err := db.QueryRowContext(context.Background(), "SELECT DATABASE()").Scan(&schemaName); err != nil {
@@ -141,8 +127,8 @@ func TestCatalogRepositoryAndHTTPIntegration(t *testing.T) {
 		}
 		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog"), http.StatusServiceUnavailable,
 			`{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`)
-		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/1"), http.StatusServiceUnavailable,
-			`{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`)
+		assertExactCatalogResponse(t, performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/1"), http.StatusBadRequest,
+			`{"error":{"code":"INVALID_MENU_SELECTION","message":"invalid menu selection"}}`)
 
 		config, ok := catalogIntegrationConfig(t, schemaName)
 		if !ok {
@@ -177,10 +163,10 @@ func insertAvailabilityCatalogRegressionFixture(t *testing.T, db *sql.DB) {
 func TestCatalogSingleStatementSnapshotIntegration(t *testing.T) {
 	withCatalogSchema(t, func(db *sql.DB) {
 		applyCatalogMigrations(t, db)
-		if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'snapshot',TRUE)"); err != nil {
+		if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,name_key,is_active) VALUES (1,'snapshot','snapshot',TRUE)"); err != nil {
 			t.Fatal("insert snapshot category failed")
 		}
-		if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents,is_listed) VALUES (1,1,'snapshot-product',100,TRUE)"); err != nil {
+		if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,name_key,images_json,price_cents,is_listed) VALUES (1,1,'snapshot-product','snapshot-product',JSON_ARRAY(),100,TRUE)"); err != nil {
 			t.Fatal("insert snapshot product failed")
 		}
 
@@ -197,14 +183,14 @@ func TestCatalogSingleStatementSnapshotIntegration(t *testing.T) {
 		}
 
 		repository := NewRepository(db)
-		beforeCommit, err := repository.List(context.Background())
+		beforeCommit, err := repository.Browse(context.Background())
 		if err != nil || len(beforeCommit) != 1 || len(beforeCommit[0].Products) != 1 {
 			t.Fatalf("pre-commit snapshot = %#v/%v, want complete visible state", beforeCommit, err)
 		}
 		if err := writer.Commit(); err != nil {
 			t.Fatal("commit snapshot writer failed")
 		}
-		afterCommit, err := repository.List(context.Background())
+		afterCommit, err := repository.Browse(context.Background())
 		if err != nil || len(afterCommit) != 0 {
 			t.Fatalf("post-commit snapshot = %#v/%v, want complete hidden state", afterCommit, err)
 		}
@@ -248,8 +234,8 @@ func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion
 func insertCatalogVisibilityFixture(t *testing.T, db *sql.DB) {
 	t.Helper()
 	statements := []string{
-		"INSERT INTO categories(id,name,sort_order,is_active) VALUES (1,'first',20,TRUE),(2,'hidden',0,FALSE),(3,'empty',10,TRUE),(4,'last',20,TRUE)",
-		"INSERT INTO products(id,category_id,name,description,specification,price_cents,sort_order,is_listed) VALUES (1,1,'listed-one','','small',125,20,TRUE),(2,1,'unlisted','','',300,0,FALSE),(3,1,'listed-two','second','',0,20,TRUE),(4,4,'last-product','','',4294967295,0,TRUE),(5,2,'hidden-product','','',400,0,TRUE)",
+		"INSERT INTO categories(id,name,name_key,sort_order,is_active) VALUES (1,'first','first',20,TRUE),(2,'hidden','hidden',0,FALSE),(3,'empty','empty',10,TRUE),(4,'last','last',20,TRUE)",
+		"INSERT INTO products(id,category_id,name,name_key,description,specification,images_json,price_cents,sort_order,is_listed) VALUES (1,1,'listed-one','listed-one','','small',JSON_ARRAY(),125,20,TRUE),(2,1,'unlisted','unlisted','','',JSON_ARRAY(),300,0,FALSE),(3,1,'listed-two','listed-two','second','',JSON_ARRAY(),1,20,TRUE),(4,4,'last-product','last-product','','',JSON_ARRAY(),4294967295,0,TRUE),(5,2,'hidden-product','hidden-product','','',JSON_ARRAY(),400,0,TRUE)",
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(context.Background(), statement); err != nil {

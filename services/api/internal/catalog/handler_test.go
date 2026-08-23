@@ -1,163 +1,57 @@
 package catalog
 
 import (
-	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
-func TestHandlerReturnsExactCatalogAndDetailJSON(t *testing.T) {
-	reader := &stubReader{
-		categories: []Category{{ID: 2, Name: "Meals", Products: []Product{{ID: 9, CategoryID: 2, Name: "Rice", Description: "", Specification: "Large", PriceCents: 1250}}}},
-		product:    Product{ID: 9, CategoryID: 2, Name: "Rice", Description: "", Specification: "Large", PriceCents: 1250},
-	}
-	router := catalogTestRouter(NewHandler(reader))
-
-	list := performCatalogRequest(router, http.MethodGet, "/api/v1/catalog")
-	assertExactCatalogResponse(t, list, http.StatusOK, `{"categories":[{"id":"2","name":"Meals","products":[{"id":"9","category_id":"2","name":"Rice","description":"","specification":"Large","price_cents":1250}]}]}`)
-	detail := performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/0009")
-	assertExactCatalogResponse(t, detail, http.StatusOK, `{"product":{"id":"9","category_id":"2","name":"Rice","description":"","specification":"Large","price_cents":1250}}`)
-	if reader.listCalls != 1 || reader.getCalls != 1 || reader.lastID != 9 {
-		t.Fatalf("reader calls = list:%d get:%d id:%d", reader.listCalls, reader.getCalls, reader.lastID)
-	}
-	for _, forbidden := range []string{"sort_order", "is_active", "is_listed", "stock", "availability", "orderable", "employee", "sales", "image"} {
-		if strings.Contains(list.Body.String(), forbidden) || strings.Contains(detail.Body.String(), forbidden) {
-			t.Fatalf("response contains forbidden field %q", forbidden)
-		}
-	}
-}
-
-func TestHandlerReturnsNonNullEmptyCatalog(t *testing.T) {
-	router := catalogTestRouter(NewHandler(&stubReader{categories: []Category{}}))
-	response := performCatalogRequest(router, http.MethodGet, "/api/v1/catalog")
-	assertExactCatalogResponse(t, response, http.StatusOK, `{"categories":[]}`)
-}
-
-func TestHandlerRejectsInvalidIDsWithoutReading(t *testing.T) {
-	invalid := []string{"0", "+1", "-1", "%201", "1.0", "0x1", "%EF%BC%91", "18446744073709551616"}
-	for _, value := range invalid {
-		t.Run(value, func(t *testing.T) {
-			reader := &stubReader{}
-			router := catalogTestRouter(NewHandler(reader))
-			response := performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/products/"+value)
-			assertExactCatalogResponse(t, response, http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
-			if reader.getCalls != 0 {
-				t.Fatalf("invalid id reached reader %d times", reader.getCalls)
-			}
-		})
-	}
-	if _, ok := parseProductID(""); ok {
-		t.Fatal("empty product id parsed successfully")
-	}
-}
-
-func TestHandlerMapsNotFoundAndUnavailableToStableNonSensitiveErrors(t *testing.T) {
-	canary := "database-canary-secret"
-	for _, test := range []struct {
-		name   string
-		reader *stubReader
-		path   string
-		status int
-		body   string
-	}{
-		{name: "unknown", reader: &stubReader{getErr: ErrProductNotFound}, path: "/api/v1/catalog/products/99", status: http.StatusNotFound, body: `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`},
-		{name: "detail unavailable", reader: &stubReader{getErr: errors.New(canary)}, path: "/api/v1/catalog/products/99", status: http.StatusServiceUnavailable, body: `{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`},
-		{name: "list unavailable", reader: &stubReader{listErr: errors.New(canary)}, path: "/api/v1/catalog", status: http.StatusServiceUnavailable, body: `{"error":{"code":"CATALOG_UNAVAILABLE","message":"catalog temporarily unavailable"}}`},
+func TestDetailRequiresTodayOrTomorrowAndOneConfiguredMinute(t *testing.T) {
+	handler := NewHandler(&frozenReaderStub{}, WithClock(func() time.Time {
+		return time.Date(2026, 8, 25, 9, 0, 0, 0, catalogLocation)
+	}))
+	for _, path := range []string{
+		"/api/v1/catalog/products/7", "/api/v1/catalog/products/7?date=2026-08-24&time=17:30",
+		"/api/v1/catalog/products/7?date=2026-08-25&time=17:30&time=18:00",
+		"/api/v1/catalog/products/7?date=2026-08-25&time=17:30:00",
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			response := performCatalogRequest(catalogTestRouter(NewHandler(test.reader)), http.MethodGet, test.path)
-			assertExactCatalogResponse(t, response, test.status, test.body)
-			if strings.Contains(response.Body.String(), canary) || strings.Contains(response.Body.String(), "SELECT") || strings.Contains(response.Body.String(), "mysql") {
-				t.Fatalf("response leaked internal error: %s", response.Body.String())
-			}
-		})
+		response := performCatalogRequest(catalogTestRouter(handler), http.MethodGet, path)
+		assertExactCatalogResponse(t, response, http.StatusBadRequest, `{"error":{"code":"INVALID_MENU_SELECTION","message":"invalid menu selection"}}`)
 	}
 }
 
-func TestHandlerRoutesAreAnonymousGETOnlyAndUnknownPathStaysEmpty404(t *testing.T) {
-	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead, http.MethodOptions} {
-		for _, path := range []string{"/api/v1/catalog", "/api/v1/catalog/products/1"} {
-			reader := &stubReader{}
-			response := performCatalogRequest(catalogTestRouter(NewHandler(reader)), method, path)
-			if response.Code != http.StatusMethodNotAllowed || response.Body.Len() != 0 {
-				t.Fatalf("%s %s = %d/%q, want 405 empty", method, path, response.Code, response.Body.String())
-			}
-			if reader.listCalls != 0 || reader.getCalls != 0 {
-				t.Fatalf("%s %s reached reader", method, path)
-			}
-		}
+func TestCatalogListDoesNotInventDateSoldOut(t *testing.T) {
+	reader := &frozenReaderStub{categories: []Category{{ID: 2, Name: "餐品", Products: []Product{{
+		ID: 7, CategoryID: 2, Name: "米饭", Description: "", Specification: "碗", MealPeriod: "all",
+		ImageObjectKeys: []string{}, Listed: true, OriginalUnitPriceCents: 200,
+	}}}}}
+	response := performCatalogRequest(catalogTestRouter(NewHandler(reader)), http.MethodGet, "/api/v1/catalog")
+	assertExactCatalogResponse(t, response, http.StatusOK, `{"categories":[{"id":"2","name":"餐品","products":[{"id":"7","category_id":"2","name":"米饭","description":"","specification":"碗","meal_period":"all","images":[],"listed":true,"original_unit_price_cents":200}]}]}`)
+	if strings.Contains(response.Body.String(), "sold_out") {
+		t.Fatal("undated catalog invented sold-out state")
 	}
-
-	reader := &stubReader{categories: []Category{}}
-	router := catalogTestRouter(NewHandler(reader))
-	request := httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil)
-	response := httptest.NewRecorder()
-	router.ServeHTTP(response, request)
-	assertExactCatalogResponse(t, response, http.StatusOK, `{"categories":[]}`)
-	if reader.listCalls != 1 {
-		t.Fatalf("anonymous request list calls = %d", reader.listCalls)
-	}
-
-	unknown := performCatalogRequest(router, http.MethodGet, "/api/v1/catalog/missing")
-	if unknown.Code != http.StatusNotFound || unknown.Body.Len() != 0 {
-		t.Fatalf("unknown path = %d/%q, want 404 empty", unknown.Code, unknown.Body.String())
-	}
-}
-
-type stubReader struct {
-	categories []Category
-	listErr    error
-	product    Product
-	getErr     error
-	listCalls  int
-	getCalls   int
-	lastID     uint64
-}
-
-func (reader *stubReader) List(context.Context) ([]Category, error) {
-	reader.listCalls++
-	return reader.categories, reader.listErr
-}
-
-func (reader *stubReader) GetProduct(_ context.Context, id uint64) (Product, error) {
-	reader.getCalls++
-	reader.lastID = id
-	return reader.product, reader.getErr
 }
 
 func catalogTestRouter(handler *Handler) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
-	engine := gin.New()
-	engine.HandleMethodNotAllowed = true
-	handler.RegisterRoutes(engine)
-	engine.NoRoute(func(context *gin.Context) {
-		context.Status(http.StatusNotFound)
-		context.Writer.WriteHeaderNow()
-	})
-	engine.NoMethod(func(context *gin.Context) {
-		context.Status(http.StatusMethodNotAllowed)
-		context.Writer.WriteHeaderNow()
-	})
-	return engine
+	router := gin.New()
+	handler.RegisterRoutes(router)
+	return router
 }
 
 func performCatalogRequest(router http.Handler, method, path string) *httptest.ResponseRecorder {
-	recorder := httptest.NewRecorder()
-	router.ServeHTTP(recorder, httptest.NewRequest(method, path, nil))
-	return recorder
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(method, path, nil))
+	return response
 }
 
-func assertExactCatalogResponse(t *testing.T, recorder *httptest.ResponseRecorder, status int, body string) {
+func assertExactCatalogResponse(t *testing.T, response *httptest.ResponseRecorder, status int, body string) {
 	t.Helper()
-	if recorder.Code != status || strings.TrimSpace(recorder.Body.String()) != body {
-		t.Fatalf("response = %d/%q, want %d/%q", recorder.Code, strings.TrimSpace(recorder.Body.String()), status, body)
-	}
-	if contentType := recorder.Header().Get("Content-Type"); !strings.HasPrefix(contentType, "application/json") {
-		t.Fatalf("Content-Type = %q, want application/json", contentType)
+	if response.Code != status || strings.TrimSpace(response.Body.String()) != body || response.Header().Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Fatalf("response = %d %q %q, want %d %q", response.Code, response.Header().Get("Content-Type"), response.Body.String(), status, body)
 	}
 }

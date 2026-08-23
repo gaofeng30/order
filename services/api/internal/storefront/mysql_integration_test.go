@@ -232,7 +232,8 @@ func validPersistedSettings() Settings {
 	return Settings{
 		StoreName: "绥安食品", StoreAddress: "党政办公中心后院老食堂", PickupPoint: "党政办公中心后院老食堂北门",
 		Announcement: "今日公告", BusinessStatus: BusinessOpen,
-		LaunchLayer: &LaunchLayer{PNGURL: "https://static.example.com:65535/launch.PNG?revision=1", CenterX: 0, CenterY: 1, WidthRatio: 1, AspectRatio: 2},
+		LaunchLayer: &LaunchLayer{ImageObjectKey: "launch/test.png", CenterX: 0, CenterY: 1, WidthRatio: 1, AspectRatio: 2},
+		Flavors:     []string{},
 	}
 }
 

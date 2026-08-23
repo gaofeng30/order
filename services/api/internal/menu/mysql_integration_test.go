@@ -125,11 +125,22 @@ func assertRealPickupOptionsOrderability(t *testing.T, handler *Handler, lunch, 
 	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 		t.Fatal("decode real pickup options failed")
 	}
-	if len(body.Dates) != 2 || len(body.Dates[0].Meals) != 2 ||
-		body.Dates[0].Meals[0].Orderable != lunch || body.Dates[0].Meals[1].Orderable != dinner ||
-		body.Dates[0].Orderable != date || body.Dates[1].Orderable != tomorrow {
+	if len(body.Dates) != 2 || len(body.Dates[0].MealPeriods) != 2 ||
+		body.Dates[0].MealPeriods[0].Available != lunch || body.Dates[0].MealPeriods[1].Available != dinner ||
+		body.Dates[0].Available != date || body.Dates[1].Available != tomorrow {
 		t.Fatalf("real pickup options orderability = %#v", body.Dates)
 	}
+}
+
+type pickupOptionsTestBody struct {
+	Dates []struct {
+		Date        string `json:"date"`
+		Available   bool   `json:"available"`
+		MealPeriods []struct {
+			MealPeriod string `json:"meal_period"`
+			Available  bool   `json:"available"`
+		} `json:"meal_periods"`
+	} `json:"dates"`
 }
 
 func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
