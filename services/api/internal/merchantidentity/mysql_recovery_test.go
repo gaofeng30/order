@@ -135,6 +135,84 @@ func assertConcurrentDifferentCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	}
 }
 
+func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
+	t.Helper()
+	ctx := context.Background()
+	now := time.Date(2026, time.August, 23, 5, 45, 0, 353535000, time.UTC)
+	userID := insertMerchantTestUser(t, db, "opaque-provider-subject-concurrent-phones", now)
+	firstAccountID := insertMerchantTestAccount(t, db, "+43", RoleOwner, true, nil, now)
+	secondAccountID := insertMerchantTestAccount(t, db, "+44", RoleSubaccount, true, nil, now)
+
+	var providerMu sync.Mutex
+	providerCalls := 0
+	bothAtProvider := make(chan struct{})
+	provider := phoneProviderFunc(func(_ context.Context, code, _ string) (string, error) {
+		providerMu.Lock()
+		providerCalls++
+		if providerCalls == 2 {
+			close(bothAtProvider)
+		}
+		providerMu.Unlock()
+		<-bothAtProvider
+		if code == "first-valid-phone-code" {
+			return "+43", nil
+		}
+		return "+44", nil
+	})
+	service := newService(NewRepository(db), provider, func() time.Time { return now })
+
+	type loginResult struct {
+		identity Identity
+		err      error
+	}
+	results := make(chan loginResult, 2)
+	for index, code := range []string{"first-valid-phone-code", "second-valid-phone-code"} {
+		requestID := "internal-concurrent-phone-" + strconv.Itoa(index)
+		go func() {
+			identity, err := service.Login(ctx, userID, code, requestID)
+			results <- loginResult{identity: identity, err: err}
+		}()
+	}
+	successes := 0
+	mismatches := 0
+	for index := 0; index < 2; index++ {
+		result := <-results
+		switch {
+		case result.err == nil && result.identity.Merchant != nil:
+			successes++
+		case errors.Is(result.err, ErrPrimaryPhoneMismatch):
+			mismatches++
+		default:
+			t.Fatalf("concurrent different-phone result invalid: %v", result.err)
+		}
+	}
+	if successes != 1 || mismatches != 1 || providerCalls != 2 {
+		t.Fatalf("concurrent different-phone successes=%d mismatches=%d provider_calls=%d", successes, mismatches, providerCalls)
+	}
+
+	var primaryPhone string
+	if err := db.QueryRowContext(ctx, "SELECT primary_phone FROM miniprogram_users WHERE id=?", userID).Scan(&primaryPhone); err != nil {
+		t.Fatal("read concurrent primary phone failed")
+	}
+	var boundAccountID uint64
+	if err := db.QueryRowContext(ctx, "SELECT id FROM merchant_accounts WHERE bound_user_id=?", userID).Scan(&boundAccountID); err != nil {
+		t.Fatal("read concurrent bound account failed")
+	}
+	if (primaryPhone == "+43" && boundAccountID != firstAccountID) || (primaryPhone == "+44" && boundAccountID != secondAccountID) {
+		t.Fatal("concurrent primary phone and merchant binding diverged")
+	}
+	var auditSuccesses, auditMismatches int
+	if err := db.QueryRowContext(ctx, `
+		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED' AND reason='PRIMARY_PHONE_MISMATCH')
+		FROM merchant_action_audits WHERE request_id IN (?,?)
+	`, []byte("internal-concurrent-phone-0"), []byte("internal-concurrent-phone-1")).Scan(&auditSuccesses, &auditMismatches); err != nil {
+		t.Fatal("read concurrent different-phone audits failed")
+	}
+	if auditSuccesses != 1 || auditMismatches != 1 {
+		t.Fatal("concurrent different-phone audits did not retain one success and one mismatch")
+	}
+}
+
 type signalingCompleteStore struct {
 	Store
 	committed chan struct{}

@@ -87,6 +87,12 @@ func (provider staticPhoneProvider) Exchange(context.Context, string, string) (s
 	return provider.phone, provider.err
 }
 
+type phoneProviderFunc func(context.Context, string, string) (string, error)
+
+func (provider phoneProviderFunc) Exchange(ctx context.Context, code, openID string) (string, error) {
+	return provider(ctx, code, openID)
+}
+
 func withMerchantSchema(t *testing.T, run func(*sql.DB)) {
 	t.Helper()
 	serverConfig, ok := merchantIntegrationConfig(t, "mysql")

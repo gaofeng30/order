@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: b1a2d5a64c0d92559d01ba11a49f17ed544701f1
+phase: red
+command_or_action: fresh MySQL 8.0.46 race with two initially unbound merchant-login requests whose successful provider exchanges resolve different normalized phones
+exit_result: FAIL
+sanitized_summary: both requests incorrectly returned success because the second CompleteLogin accepted a concurrent binding without comparing its provider phone to the newly bound primary phone; the WIP SHA and both reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: minimal consistency check, Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: require the provider phone to equal the current primary phone only in the concurrent-binding completion branch and retain a durable mismatch rejection otherwise
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 concurrent successful-provider race after adding the completion-time primary-phone comparison
+exit_result: PASS
+sanitized_summary: exactly one account and its primary phone bind atomically; the competing different phone returns PRIMARY_PHONE_MISMATCH with one durable rejection, while existing pre-request binding remains provider-free and does not recompare phone
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun successful-provider mismatch together with same-code rejection recovery after any CompleteLogin change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-concurrent-phone focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exactly one atomic binding and one durable PRIMARY_PHONE_MISMATCH for concurrent successful provider exchanges returning different phones; same-code rejection recovery and all existing contracts remained green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: a6e88d87c27c99a87a4c29c42cd018c15889a42a
 phase: red
 command_or_action: fresh MySQL 8.0.46 race scenario with two concurrent merchant-login requests using different provider codes

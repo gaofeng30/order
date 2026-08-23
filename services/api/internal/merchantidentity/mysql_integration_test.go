@@ -52,6 +52,9 @@ func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 		t.Run("different codes do not converge to the same binding result", func(t *testing.T) {
 			assertConcurrentDifferentCodeMerchantLogin(t, db)
 		})
+		t.Run("concurrent provider successes preserve primary phone identity", func(t *testing.T) {
+			assertConcurrentSuccessfulPhoneMismatch(t, db)
+		})
 		t.Run("rollback audit failure and commit unknown preserve recoverable facts", func(t *testing.T) {
 			assertMerchantTransactionRecovery(t, db)
 		})
