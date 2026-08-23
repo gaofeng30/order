@@ -28,11 +28,11 @@ func Normalize(expected Expectation, input Input) (Observation, error) {
 	if !ok {
 		return Observation{}, &Error{kind: ErrorUnsupportedTradeState}
 	}
-	if input.Source == SourceCallback && state != StatePaid {
-		return Observation{}, &Error{kind: ErrorUnsupportedSourceState}
-	}
 	if malformedStateFacts(transaction, state) {
 		return Observation{}, &Error{kind: ErrorMalformedInput}
+	}
+	if input.Source == SourceCallback && state != StatePaid {
+		return Observation{}, &Error{kind: ErrorUnsupportedSourceState}
 	}
 	successTime := canonicalSuccessTime(transaction.SuccessTime)
 	validation := ValidationAccepted

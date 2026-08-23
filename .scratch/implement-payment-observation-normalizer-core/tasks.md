@@ -12,6 +12,10 @@
 - [ ] `$code-review` Standards/Spec 双轴 PASS。
 - [ ] fresh clean detached exact-SHA independent verification PASS。
 
+首次 candidate `25af340...5415` 的 Standards 为 0 finding，Spec 报告 1 个真实 P2：malformed
+transaction 被 callback/state 错误遮蔽。已先用组合测试取得 RED，再最小修复并从 focused 到 fresh
+MySQL/full/race/vet/build/smoke 全量重跑；旧 candidate 与两份 review 均失效，新双审仍待执行。
+
 恢复声明：主控已在新 exact base 集成 dependency foundation；旧 FAIL 仍为历史证据，不复用旧
 RED/PASS。Candidate、`$code-review` 与 detached verifier 仍须按新 SHA 顺序执行。
 
