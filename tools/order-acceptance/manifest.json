@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "4eceab6c33baf1d87b057edddce1e4b39b24e5fb"
+    "inventory_base_sha": "a56d1257258b0db4cba030876510cb0a08b71e9e"
   },
   "policy": {
     "exact_counts": {
@@ -4021,6 +4021,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-01:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-01:menu_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -4045,11 +4059,16 @@
           }
         },
         {
-          "evidence_id": "BE-01:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-01 against the composed local API, fresh MySQL and deterministic fake providers: perform \"休息/全截时浏览并尝试下单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-01:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -4070,6 +4089,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-02:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-02:menu_mysql_l2",
           "level": "L2",
@@ -4095,11 +4128,16 @@
           }
         },
         {
-          "evidence_id": "BE-02:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选已截餐段\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-02:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -4120,6 +4158,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-03:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-03:catalog_mysql_l2",
           "level": "L2",
@@ -4157,11 +4209,16 @@
           }
         },
         {
-          "evidence_id": "BE-03:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-03 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看售罄/下架与已加购项\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-03:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -4183,6 +4240,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-04:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-04:catalog_mysql_l2",
           "level": "L2",
@@ -4208,18 +4279,16 @@
           }
         },
         {
-          "evidence_id": "BE-04:missing:L2",
+          "evidence_id": "BE-04:composed_user_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-04: execute menu/detail/quotes, assert products.meal, expected \"用户端不展示，商户可见\", and the failure shield."
-        },
-        {
-          "evidence_id": "BE-04:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选择不匹配餐段商品\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -4240,6 +4309,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-05:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-05:quote_mysql_l2",
           "level": "L2",
@@ -4265,11 +4348,16 @@
           }
         },
         {
-          "evidence_id": "BE-05:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"截单瞬间提交\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-05:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -4292,6 +4380,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-06:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-06:quote_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -4304,11 +4406,16 @@
           }
         },
         {
-          "evidence_id": "BE-06:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
+          "evidence_id": "BE-06:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-06 against the composed local API, fresh MySQL and deterministic fake providers: perform \"Quote 后变价/售罄\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -5419,6 +5526,20 @@
           }
         },
         {
+          "evidence_id": "BE-22:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-22:identity_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -5455,6 +5576,18 @@
           }
         },
         {
+          "evidence_id": "BE-22:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
+        },
+        {
           "evidence_id": "BE-22:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -5488,6 +5621,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-23:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-23:quote_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -5500,18 +5647,16 @@
           }
         },
         {
-          "evidence_id": "BE-23:missing:L2",
+          "evidence_id": "BE-23:composed_user_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-23: execute extra-phone/identity, assert users、staff, expected \"不授员工，提示核对\", and the failure shield."
-        },
-        {
-          "evidence_id": "BE-23:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-23 against the composed local API, fresh MySQL and deterministic fake providers: perform \"附加 phone 命中但姓名错\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -5532,6 +5677,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-24:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-24:quote_mysql_l2",
           "level": "L2",
@@ -5557,11 +5716,16 @@
           }
         },
         {
-          "evidence_id": "BE-24:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-24 against the composed local API, fresh MySQL and deterministic fake providers: perform \"进入确认页\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-24:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -5583,6 +5747,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-25:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-25:mini_checkout_ui0",
           "level": "UI0",
           "status": "AVAILABLE",
@@ -5595,11 +5773,16 @@
           }
         },
         {
-          "evidence_id": "BE-25:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-25 against the composed local API, fresh MySQL and deterministic fake providers: perform \"空购物车点结算\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "evidence_id": "BE-25:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
+          }
         }
       ],
       "external_evidence": []
@@ -5620,6 +5803,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-26:mini_composed_user_boundaries_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-26:order_query_l1",
           "level": "L1",
@@ -5654,6 +5851,18 @@
             "kind": "node-test",
             "file": "apps/wechat-miniprogram/tests/overnight-user-orders-profile-ui0.test.js",
             "name_pattern": ".*"
+          }
+        },
+        {
+          "evidence_id": "BE-26:composed_user_boundaries_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceUserBoundariesAreFailClosed"
           }
         },
         {
@@ -7813,5 +8022,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "cf90236fad2490514d274e8190401ae25dd69f8267121900e594b051aed6a034"
+  "manifest_sha256": "480bbc373afb38c65382f6104d04646fb8c55e61c7a976f0efb5c1254ec0b4e1"
 }

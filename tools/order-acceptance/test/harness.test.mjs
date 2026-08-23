@@ -101,7 +101,7 @@ test('committed inventory keeps every case explicit and preserves current gaps',
     localReady: summary.local_ready,
     localMissing: summary.local_missing,
     externalBlocked: summary.external_blocked,
-  }, { total: 95, localReady: 6, localMissing: 89, externalBlocked: 23 });
+  }, { total: 95, localReady: 15, localMissing: 80, externalBlocked: 23 });
   assert.equal(manifest.cases.every(entry => entry.local_evidence.length > 0), true);
 });
 

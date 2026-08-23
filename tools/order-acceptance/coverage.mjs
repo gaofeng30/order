@@ -23,6 +23,8 @@ export const profiles = Object.freeze({
     command('env', 'ORDER_COMPOSED_PAYMENT_EXPECTATION=pending', 'npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
   mini_composed_merchant_ui1_l3: evidence('L3', 'One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.',
     command('env', 'ORDER_COMPOSED_FLOW=merchant', 'npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
+  mini_composed_user_boundaries_ui1_l3: evidence('L3', 'One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.',
+    command('node', 'tools/miniprogram-ui/run-ui1-composed-boundaries.mjs')),
   web_contract_ui0: evidence('UI0', 'PC Admin contract suite proves twelve-page wiring and no browser truth, not rendered full-flow E2E.',
     node('apps/web-admin/tests/http-contract.test.js')),
   web_chrome_ui1_fixture: evidence('UI1', 'PC Chrome smoke renders login/nav against a local fixture, not the composed MySQL API.',
@@ -40,6 +42,8 @@ export const profiles = Object.freeze({
     go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund')),
   composed_import_boundaries_l2: evidence('L2', 'One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.',
     go('./services/api/cmd/order-api', 'TestAcceptanceImportBoundariesAreDurable')),
+  composed_user_boundaries_l2: evidence('L2', 'One root-composed HTTP selector uses a fresh v1-v44 MySQL schema and deterministic local providers to prove BE-01--06 and BE-22--26 server facts and failure shields. It exactly closes the required L2 rows for meal mismatch, Quote current-fact drift, and byte-exact extra-phone plus name staff identity; the remaining rows use it as supporting server evidence only.',
+    go('./services/api/cmd/order-api', 'TestAcceptanceUserBoundariesAreFailClosed')),
 
   schema_no_inventory_l1: evidence('L1', 'Frozen migration ledger rejects PRD-out-of-scope inventory/member/coupon/summary tables.',
     go('./services/api/migrations', 'TestFrozenV18ToV44LedgerContracts')),
@@ -181,6 +185,9 @@ assign(['AC-09', 'AC-10', 'AC-11', 'AC-13', 'AC-16'], ['mini_composed_merchant_u
 assign(['BE-10', 'BE-15', 'BE-20'], ['mini_composed_merchant_ui1_l3']);
 assign(['INV-05', 'INV-07', 'INV-08', 'INV-13', 'INV-16'], ['mini_composed_merchant_ui1_l3']);
 
+assign(['BE-01', 'BE-02', 'BE-03', 'BE-04', 'BE-05', 'BE-06', 'BE-23', 'BE-24', 'BE-25'], [['mini_composed_user_boundaries_ui1_l3', true]]);
+assign(['BE-22', 'BE-26'], ['mini_composed_user_boundaries_ui1_l3']);
+
 assign(['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC08', 'PAGE-PC09'], ['web_composed_reads_ui1_l3']);
 assign(['PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC09'], ['web_composed_writes_ui1_l3']);
 assign(['PAGE-PC11', 'PAGE-PC12'], ['web_composed_imports_ui1_l3']);
@@ -216,9 +223,9 @@ assign(['AC-05', 'AC-06', 'AC-09', 'AC-10', 'AC-11', 'AC-14', 'AC-15', 'AC-16'],
 
 assign(['BE-01', 'BE-02'], ['menu_mysql_l2', 'mini_menu_ui0']);
 assign(['BE-03'], ['catalog_mysql_l2', 'quote_mysql_l2', 'mini_menu_ui0']);
-assign(['BE-04'], ['catalog_mysql_l2', 'quote_mysql_l2']);
+assign(['BE-04'], ['catalog_mysql_l2', 'quote_mysql_l2', ['composed_user_boundaries_l2', true]]);
 assign(['BE-05'], ['quote_mysql_l2', 'mini_checkout_ui0']);
-assign(['BE-06'], [['quote_mysql_l2', true]]);
+assign(['BE-06'], [['quote_mysql_l2', true], ['composed_user_boundaries_l2', true]]);
 assign(['BE-07', 'BE-08', 'BE-09'], ['payment_mysql_l2', 'mini_checkout_ui0']);
 assign(['BE-10'], ['payment_rules_l1', 'payment_mysql_l2']);
 assign(['BE-11'], [['production_mysql_l2', true], ['composed_order_refund_l2', true]]);
@@ -231,10 +238,11 @@ assign(['BE-19'], ['order_query_l1', 'refund_mysql_l2']);
 assign(['BE-20'], ['soldout_mysql_l2', 'mini_merchant_ui0']);
 assign(['BE-21'], ['subscription_l1', 'mini_orders_ui0']);
 assign(['BE-22'], ['identity_mysql_l2', 'mini_checkout_ui0']);
-assign(['BE-23'], ['quote_mysql_l2']);
+assign(['BE-23'], ['quote_mysql_l2', ['composed_user_boundaries_l2', true]]);
 assign(['BE-24'], ['quote_mysql_l2', 'mini_checkout_ui0']);
 assign(['BE-25'], ['mini_checkout_ui0']);
 assign(['BE-26'], ['order_query_l1', 'mini_orders_ui0']);
+assign(['BE-01', 'BE-02', 'BE-03', 'BE-05', 'BE-22', 'BE-24', 'BE-25', 'BE-26'], ['composed_user_boundaries_l2']);
 assign(['BE-27', 'BE-28', 'BE-29', 'BE-30', 'BE-31', 'BE-32', 'BE-33'], ['import_l1', 'web_contract_ui0']);
 assign(['BE-27', 'BE-28', 'BE-29', 'BE-30', 'BE-31', 'BE-32', 'BE-33'], [['composed_import_boundaries_l2', true]]);
 assign(['BE-34', 'BE-35'], ['catalog_mysql_l2', 'mini_menu_ui0']);
