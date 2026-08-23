@@ -53,6 +53,13 @@ if missing := sorted(required.difference(changed)):
 production = "\n".join(
     (ROOT / PACKAGE / filename).read_text() for filename in ("types.go", "normalize.go")
 )
+observation_body = re.search(r"type Observation struct \{(?P<body>.*?)\n\}", production, re.S)
+if observation_body is None or "Source" in observation_body.group("body"):
+    fail("source-leaked-into-observation")
+canonical_parts = production.split("func canonicalBytes(", 1)
+if len(canonical_parts) != 2:
+    fail("canonical-function-missing")
+persistence_surface = observation_body.group("body") + canonical_parts[1]
 for token in (
     "Payer",
     "OpenID",
@@ -65,7 +72,7 @@ for token in (
     "BankType",
     "Attach",
 ):
-    if re.search(rf"\b{re.escape(token)}\b", production):
+    if re.search(rf"\b{re.escape(token)}\b", persistence_surface):
         fail("forbidden-observation-data-surface")
 
 for required_token in (
@@ -79,10 +86,6 @@ for required_token in (
 ):
     if required_token not in production:
         fail("missing-frozen-interface-token")
-
-observation_body = re.search(r"type Observation struct \{(?P<body>.*?)\n\}", production, re.S)
-if observation_body is None or "Source" in observation_body.group("body"):
-    fail("source-leaked-into-observation")
 
 status = git("status", "--porcelain")
 if status:

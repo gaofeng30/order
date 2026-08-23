@@ -16,6 +16,10 @@
 transaction 被 callback/state 错误遮蔽。已先用组合测试取得 RED，再最小修复并从 focused 到 fresh
 MySQL/full/race/vet/build/smoke 全量重跑；旧 candidate 与两份 review 均失效，新双审仍待执行。
 
+第二个 candidate `30537be...85dc` 的 Standards 为 0 finding，Spec 报告 1 个真实 P2：未检查
+typed Transaction 中所有字符串的 NUL。已用 12 字段表驱动测试取得 RED，补齐结构校验并证明
+excluded provider/PII 字段不改变 Observation/dedupe；再次全量重跑。该 candidate/review 也已失效。
+
 恢复声明：主控已在新 exact base 集成 dependency foundation；旧 FAIL 仍为历史证据，不复用旧
 RED/PASS。Candidate、`$code-review` 与 detached verifier 仍须按新 SHA 顺序执行。
 

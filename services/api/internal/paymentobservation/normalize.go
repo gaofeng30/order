@@ -64,8 +64,14 @@ func malformedBaseTransaction(transaction wechatpay.Transaction) bool {
 			transaction.MerchantID,
 			transaction.OutTradeNo,
 			transaction.TransactionID,
+			transaction.TradeType,
 			transaction.TradeState,
+			transaction.TradeStateDescription,
+			transaction.BankType,
+			transaction.Attach,
+			transaction.Payer.OpenID,
 			transaction.Amount.Currency,
+			transaction.Amount.PayerCurrency,
 		)
 }
 

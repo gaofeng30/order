@@ -47,6 +47,37 @@ func TestNormalizeCanonicalizesSuccessfulCallbackAndQueryIdentically(t *testing.
 	}
 }
 
+func TestNormalizeExcludesNonDomainProviderFields(t *testing.T) {
+	t.Parallel()
+
+	expected := paymentobservation.Expectation{
+		AppID: "app", MerchantID: "mch", OutTradeNo: "out", TotalAmount: 1, Currency: "CNY",
+	}
+	base := wechatpay.Transaction{
+		AppID: "app", MerchantID: "mch", OutTradeNo: "out", TransactionID: "transaction",
+		TradeState: "SUCCESS", SuccessTime: time.Date(2026, 8, 23, 8, 0, 0, 0, time.UTC),
+		Amount: wechatpay.TransactionAmount{Total: 1, Currency: "CNY"},
+	}
+	enriched := base
+	enriched.TradeType = "JSAPI"
+	enriched.TradeStateDescription = "provider description"
+	enriched.BankType = "provider bank"
+	enriched.Attach = "provider attachment"
+	enriched.Payer.OpenID = "synthetic payer identifier"
+	enriched.Amount.PayerTotal = 1
+	enriched.Amount.PayerCurrency = "CNY"
+
+	minimal, minimalErr := paymentobservation.Normalize(expected, paymentobservation.Input{
+		Source: paymentobservation.SourceActiveQuery, Transaction: base,
+	})
+	withExcludedFields, enrichedErr := paymentobservation.Normalize(expected, paymentobservation.Input{
+		Source: paymentobservation.SourceActiveQuery, Transaction: enriched,
+	})
+	if minimalErr != nil || enrichedErr != nil || !reflect.DeepEqual(minimal, withExcludedFields) {
+		t.Fatalf("excluded provider fields changed the durable observation: minimal_err=%v enriched_err=%v", minimalErr, enrichedErr)
+	}
+}
+
 func TestNormalizeRejectsMalformedExpectation(t *testing.T) {
 	t.Parallel()
 
@@ -107,6 +138,48 @@ func TestNormalizeReturnsStableTypedErrorsForUnusableProviderInput(t *testing.T)
 			if observation != (paymentobservation.Observation{}) || !errors.As(err, &normalizationError) ||
 				normalizationError.Kind() != test.kind || err.Error() != "paymentobservation: "+string(test.kind) {
 				t.Fatalf("provider input error contract mismatch: observation=%+v err=%v", observation, err)
+			}
+		})
+	}
+}
+
+func TestNormalizeRejectsNULInEveryTransactionString(t *testing.T) {
+	expected := paymentobservation.Expectation{
+		AppID: "app", MerchantID: "mch", OutTradeNo: "out", TotalAmount: 1, Currency: "CNY",
+	}
+	valid := wechatpay.Transaction{
+		AppID: "app", MerchantID: "mch", OutTradeNo: "out", TransactionID: "transaction",
+		TradeState: "SUCCESS", SuccessTime: time.Date(2026, 8, 23, 8, 0, 0, 0, time.UTC),
+		Amount: wechatpay.TransactionAmount{Total: 1, Currency: "CNY"},
+	}
+	tests := []struct {
+		name   string
+		mutate func(*wechatpay.Transaction)
+	}{
+		{name: "app id", mutate: func(transaction *wechatpay.Transaction) { transaction.AppID = "app\x00suffix" }},
+		{name: "merchant id", mutate: func(transaction *wechatpay.Transaction) { transaction.MerchantID = "mch\x00suffix" }},
+		{name: "out trade number", mutate: func(transaction *wechatpay.Transaction) { transaction.OutTradeNo = "out\x00suffix" }},
+		{name: "transaction id", mutate: func(transaction *wechatpay.Transaction) { transaction.TransactionID = "transaction\x00suffix" }},
+		{name: "trade type", mutate: func(transaction *wechatpay.Transaction) { transaction.TradeType = "JSAPI\x00suffix" }},
+		{name: "trade state", mutate: func(transaction *wechatpay.Transaction) { transaction.TradeState = "SUCCESS\x00suffix" }},
+		{name: "trade state description", mutate: func(transaction *wechatpay.Transaction) { transaction.TradeStateDescription = "description\x00suffix" }},
+		{name: "bank type", mutate: func(transaction *wechatpay.Transaction) { transaction.BankType = "bank\x00suffix" }},
+		{name: "attach", mutate: func(transaction *wechatpay.Transaction) { transaction.Attach = "attach\x00suffix" }},
+		{name: "payer identifier", mutate: func(transaction *wechatpay.Transaction) { transaction.Payer.OpenID = "payer\x00suffix" }},
+		{name: "currency", mutate: func(transaction *wechatpay.Transaction) { transaction.Amount.Currency = "CNY\x00suffix" }},
+		{name: "payer currency", mutate: func(transaction *wechatpay.Transaction) { transaction.Amount.PayerCurrency = "CNY\x00suffix" }},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			transaction := valid
+			test.mutate(&transaction)
+			observation, err := paymentobservation.Normalize(expected, paymentobservation.Input{
+				Source: paymentobservation.SourceActiveQuery, Transaction: transaction,
+			})
+			var normalizationError *paymentobservation.Error
+			if observation != (paymentobservation.Observation{}) || !errors.As(err, &normalizationError) ||
+				normalizationError.Kind() != paymentobservation.ErrorMalformedInput {
+				t.Fatalf("NUL-bearing transaction string was not rejected as malformed: observation=%+v err=%v", observation, err)
 			}
 		})
 	}
