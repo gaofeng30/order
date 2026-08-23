@@ -85,7 +85,20 @@ func run() int {
 	pricingApplication := staffdiscount.NewMySQLPricing(db)
 	var objectService *objectstore.Service
 	var localObjects httpapi.RouteRegistrar
-	if cfg.Environment != config.Production {
+	if cfg.Environment == config.Production {
+		material, materialErr := config.ParseCOSMaterial(
+			os.Getenv("ORDER_COS_BUCKET"), os.Getenv("ORDER_TENCENT_REGION"), os.Getenv("ORDER_COS_PUBLIC_ORIGIN"),
+		)
+		if materialErr != nil {
+			logger.Error("cos object store configuration error", "reason", config.Reason(materialErr))
+			return 1
+		}
+		objectService, err = composeProductionObjectStore(context.Background(), material)
+		if err != nil {
+			logger.Error("cos object store provider configuration error")
+			return 1
+		}
+	} else {
 		const localObjectRoot = "/private/tmp/order-local-objects"
 		fileAdapter, fileAdapterErr := objectstore.NewFileAdapter(localObjectRoot, "/api/v1/objects")
 		if fileAdapterErr != nil {
@@ -219,26 +232,24 @@ func run() int {
 		billProvider = billing.NewFakeBillProvider()
 	}
 	billingService := billing.New(db, billProvider)
-	if cfg.Environment != config.Production {
-		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
-		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
-		importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
-		adminOrderReader := adminreport.NewMySQLApplication(db, nil)
-		adminCommands := newAdminCommandAdapter(paymentApplication, refundService, adminOrderReader)
-		adminFeatureRoutes := []adminGroupRegistrar{
-			catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
-			storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
-			staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
-			importHandler,
-			adminreport.NewHandler(adminreport.NewMySQLApplication(db, adminCommands)),
-			audit.NewHandler(audit.NewMySQLSearcher(db)),
-		}
-		ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
-		registrars = append(registrars,
-			newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
-			localObjects,
-		)
+	merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
+	merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
+	importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
+	adminOrderReader := adminreport.NewMySQLApplication(db, nil)
+	adminCommands := newAdminCommandAdapter(paymentApplication, refundService, adminOrderReader)
+	adminFeatureRoutes := []adminGroupRegistrar{
+		catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
+		storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
+		staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
+		importHandler,
+		adminreport.NewHandler(adminreport.NewMySQLApplication(db, adminCommands)),
+		audit.NewHandler(audit.NewMySQLSearcher(db)),
 	}
+	ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
+	registrars = append(registrars,
+		newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
+		localObjects,
+	)
 	orderProductionService := orderadvance.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
