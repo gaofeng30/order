@@ -184,11 +184,14 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 	now := time.Date(2026, time.August, 23, 3, 0, 0, 100000000, time.UTC)
 
 	type rejectionCase struct {
-		name       string
-		phone      string
-		wantErr    error
-		wantReason string
-		setup      func(*testing.T, *sql.DB, uint64, time.Time) uint64
+		name               string
+		phone              string
+		wantErr            error
+		wantReason         string
+		existingPhone      string
+		boundToOther       bool
+		unresolvedSnapshot bool
+		setup              func(*testing.T, *sql.DB, uint64, time.Time) uint64
 	}
 	tests := []rejectionCase{
 		{
@@ -198,7 +201,7 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 			},
 		},
 		{
-			name: "account bound to another user", phone: "+22", wantErr: ErrMerchantAccountNotAvailable, wantReason: "ACCOUNT_NOT_AVAILABLE",
+			name: "account bound to another user", phone: "+22", wantErr: ErrMerchantAccountNotAvailable, wantReason: "ACCOUNT_NOT_AVAILABLE", boundToOther: true,
 			setup: func(t *testing.T, db *sql.DB, _ uint64, at time.Time) uint64 {
 				otherUser := insertMerchantTestUser(t, db, "opaque-provider-subject-rejection-other", at)
 				bindPrimaryPhoneFixture(t, db, otherUser, "+22", at)
@@ -206,10 +209,33 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 			},
 		},
 		{
-			name: "primary phone mismatch", phone: "+24", wantErr: ErrPrimaryPhoneMismatch, wantReason: "PRIMARY_PHONE_MISMATCH",
+			name: "primary phone mismatch", phone: "+24", wantErr: ErrPrimaryPhoneMismatch, wantReason: "PRIMARY_PHONE_MISMATCH", existingPhone: "+23",
 			setup: func(t *testing.T, db *sql.DB, caller uint64, at time.Time) uint64 {
 				bindPrimaryPhoneFixture(t, db, caller, "+23", at)
 				return insertMerchantTestAccount(t, db, "+24", RoleOwner, true, nil, at)
+			},
+		},
+		{
+			name: "primary phone mismatch without merchant account", phone: "+27", wantErr: ErrPrimaryPhoneMismatch, wantReason: "PRIMARY_PHONE_MISMATCH", existingPhone: "+26", unresolvedSnapshot: true,
+			setup: func(t *testing.T, db *sql.DB, caller uint64, at time.Time) uint64 {
+				bindPrimaryPhoneFixture(t, db, caller, "+26", at)
+				return 0
+			},
+		},
+		{
+			name: "primary phone mismatch with disabled account", phone: "+29", wantErr: ErrPrimaryPhoneMismatch, wantReason: "PRIMARY_PHONE_MISMATCH", existingPhone: "+28",
+			setup: func(t *testing.T, db *sql.DB, caller uint64, at time.Time) uint64 {
+				bindPrimaryPhoneFixture(t, db, caller, "+28", at)
+				return insertMerchantTestAccount(t, db, "+29", RoleOwner, false, nil, at)
+			},
+		},
+		{
+			name: "primary phone mismatch with account bound to another user", phone: "+39", wantErr: ErrPrimaryPhoneMismatch, wantReason: "PRIMARY_PHONE_MISMATCH", existingPhone: "+38", boundToOther: true,
+			setup: func(t *testing.T, db *sql.DB, caller uint64, at time.Time) uint64 {
+				bindPrimaryPhoneFixture(t, db, caller, "+38", at)
+				otherUser := insertMerchantTestUser(t, db, "opaque-provider-subject-mismatch-other", at)
+				bindPrimaryPhoneFixture(t, db, otherUser, "+39", at)
+				return insertMerchantTestAccount(t, db, "+39", RoleSubaccount, true, &merchantBindingFixture{UserID: otherUser, BoundAt: at}, at)
 			},
 		},
 		{
@@ -235,32 +261,34 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 			if provider.calls != 1 {
 				t.Fatalf("provider calls = %d", provider.calls)
 			}
-			var boundUserID sql.NullInt64
-			var boundAt sql.NullTime
-			if err := db.QueryRowContext(ctx, "SELECT bound_user_id,bound_at FROM merchant_accounts WHERE id=?", accountID).Scan(&boundUserID, &boundAt); err != nil {
-				t.Fatal("read rejected merchant account failed")
-			}
-			if test.name == "account bound to another user" {
-				if !boundUserID.Valid || !boundAt.Valid || uint64(boundUserID.Int64) == caller {
-					t.Fatal("other-user binding changed during rejection")
+			if accountID > 0 {
+				var boundUserID sql.NullInt64
+				var boundAt sql.NullTime
+				if err := db.QueryRowContext(ctx, "SELECT bound_user_id,bound_at FROM merchant_accounts WHERE id=?", accountID).Scan(&boundUserID, &boundAt); err != nil {
+					t.Fatal("read rejected merchant account failed")
 				}
-			} else if boundUserID.Valid || boundAt.Valid {
-				t.Fatal("business rejection wrote merchant binding")
+				if test.boundToOther {
+					if !boundUserID.Valid || !boundAt.Valid || uint64(boundUserID.Int64) == caller {
+						t.Fatal("other-user binding changed during rejection")
+					}
+				} else if boundUserID.Valid || boundAt.Valid {
+					t.Fatal("business rejection wrote merchant binding")
+				}
 			}
 			var phone sql.NullString
 			var phoneBoundAt sql.NullTime
 			if err := db.QueryRowContext(ctx, "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", caller).Scan(&phone, &phoneBoundAt); err != nil {
 				t.Fatal("read rejected caller phone failed")
 			}
-			if test.name == "primary phone mismatch" {
-				if !phone.Valid || phone.String != "+23" || !phoneBoundAt.Valid {
+			if test.existingPhone != "" {
+				if !phone.Valid || phone.String != test.existingPhone || !phoneBoundAt.Valid {
 					t.Fatal("primary mismatch changed the existing phone")
 				}
 			} else if phone.Valid || phoneBoundAt.Valid {
 				t.Fatal("business rejection wrote caller primary phone")
 			}
-			var snapshotID, snapshotAuth uint64
-			var snapshotRole Role
+			var snapshotID, snapshotAuth sql.NullInt64
+			var snapshotRole sql.NullString
 			var result, reason string
 			if err := db.QueryRowContext(ctx, `
 				SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
@@ -268,7 +296,14 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 			`, []byte(requestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 				t.Fatal("read resolved rejection audit failed")
 			}
-			if snapshotID != accountID || !validRole(snapshotRole) || snapshotAuth == 0 || result != "REJECTED" || reason != test.wantReason {
+			if result != "REJECTED" || reason != test.wantReason {
+				t.Fatal("resolved rejection audit result was incorrect")
+			}
+			if test.unresolvedSnapshot {
+				if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid {
+					t.Fatal("unresolved mismatch audit retained an account snapshot")
+				}
+			} else if !snapshotID.Valid || uint64(snapshotID.Int64) != accountID || !snapshotRole.Valid || !validRole(Role(snapshotRole.String)) || !snapshotAuth.Valid || snapshotAuth.Int64 <= 0 {
 				t.Fatal("resolved rejection audit snapshot was incomplete")
 			}
 		})

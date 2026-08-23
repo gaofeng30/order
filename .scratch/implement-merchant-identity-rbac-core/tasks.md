@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 168265551f912647bbda1dd5e92ada83c4d102fe
+phase: red
+command_or_action: fresh MySQL 8.0.46 business-rejection matrix for an existing primary phone that differs from the provider phone across unresolved, disabled, bound-other and enabled-unbound merchant states
+exit_result: FAIL
+sanitized_summary: unresolved, disabled and bound-other provider phones returned MERCHANT_ACCOUNT_NOT_AVAILABLE while enabled-unbound returned PRIMARY_PHONE_MISMATCH, exposing list-state-dependent errors; the WIP SHA and both reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: stable precedence, snapshot classification, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: keep the account lookup for durable snapshot classification but decide primary-phone mismatch before all normal account availability states
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 mismatch matrix after making the error independent of merchant list state
+exit_result: PASS
+sanitized_summary: every existing-primary mismatch now returns durable PRIMARY_PHONE_MISMATCH without changing phone or binding; unresolved provider phones retain empty snapshots and every actually resolved account retains a complete internal snapshot
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the full mismatch state matrix after any account lookup or login error-precedence change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-error-precedence focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with PRIMARY_PHONE_MISMATCH stable across unresolved, disabled, bound-other and enabled-unbound merchant states while durable snapshots remain empty only when no account was resolved
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact precedence fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: b1a2d5a64c0d92559d01ba11a49f17ed544701f1
 phase: red
 command_or_action: fresh MySQL 8.0.46 race with two initially unbound merchant-login requests whose successful provider exchanges resolve different normalized phones

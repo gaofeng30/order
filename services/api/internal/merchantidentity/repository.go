@@ -198,24 +198,33 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		return Identity{}, err
 	}
 	if !found {
+		if currentPhone.Valid && currentPhone.String != phone {
+			return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, nil, "REJECTED", "PRIMARY_PHONE_MISMATCH", "UNRESOLVED", "UNRESOLVED", at, Identity{}, ErrPrimaryPhoneMismatch)
+		}
 		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, nil, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNRESOLVED", "UNRESOLVED", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 	if !validAccount(account) {
 		return Identity{}, ErrUnavailable
-	}
-	if !account.Enabled {
-		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNBOUND_DISABLED", "UNBOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 
 	var accountBoundUser sql.NullInt64
 	if err := transaction.QueryRowContext(ctx, "SELECT bound_user_id FROM merchant_accounts WHERE id=?", account.ID).Scan(&accountBoundUser); err != nil {
 		return Identity{}, err
 	}
+	if currentPhone.Valid && currentPhone.String != phone {
+		state := "UNBOUND"
+		if accountBoundUser.Valid {
+			state = "BOUND_OTHER"
+		} else if !account.Enabled {
+			state = "UNBOUND_DISABLED"
+		}
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "PRIMARY_PHONE_MISMATCH", state, state, at, Identity{}, ErrPrimaryPhoneMismatch)
+	}
+	if !account.Enabled {
+		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "UNBOUND_DISABLED", "UNBOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
+	}
 	if accountBoundUser.Valid {
 		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_OTHER", "BOUND_OTHER", at, Identity{}, ErrMerchantAccountNotAvailable)
-	}
-	if currentPhone.Valid && currentPhone.String != phone {
-		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "PRIMARY_PHONE_MISMATCH", "UNBOUND", "UNBOUND", at, Identity{}, ErrPrimaryPhoneMismatch)
 	}
 	if !currentPhone.Valid {
 		if _, err := transaction.ExecContext(ctx, `
