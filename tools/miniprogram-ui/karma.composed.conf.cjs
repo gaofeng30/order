@@ -6,6 +6,7 @@ module.exports = function configure(config) {
   const dependencyRequire = createRequire(path.join(dependencyRoot, 'package.json'));
   const webpack = dependencyRequire('webpack');
   const proxyOrigin = process.env.ORDER_COMPOSED_PROXY_ORIGIN;
+  const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION;
   config.set({
     basePath: path.resolve(__dirname, '../..'),
     frameworks: ['mocha', 'webpack'],
@@ -21,7 +22,10 @@ module.exports = function configure(config) {
       devtool: false,
       module: { rules: [{ test: /\.wxml$/, type: 'asset/source' }] },
       plugins: [
-        new webpack.DefinePlugin({ ORDER_COMPOSED_PROXY_ORIGIN: JSON.stringify(proxyOrigin) }),
+        new webpack.DefinePlugin({
+          ORDER_COMPOSED_PROXY_ORIGIN: JSON.stringify(proxyOrigin),
+          ORDER_COMPOSED_PAYMENT_EXPECTATION: JSON.stringify(paymentExpectation),
+        }),
         new webpack.NormalModuleReplacementPlugin(
           /runtimeEndpointConfig\.js$/,
           path.join(__dirname, 'test/browser/composed-runtime-endpoint-config.cjs'),

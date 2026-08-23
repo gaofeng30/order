@@ -1,4 +1,4 @@
-/* global App, Behavior, Component, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+/* global App, Behavior, Component, ORDER_COMPOSED_PAYMENT_EXPECTATION, Page, describe, getApp, getCurrentPages, it, simulate, wx */
 const homeTemplate = require('../../../../apps/wechat-miniprogram/pages/home/home.wxml');
 const launchTemplate = require('../../../../apps/wechat-miniprogram/pages/launch/launch.wxml');
 const menuTemplate = require('../../../../apps/wechat-miniprogram/pages/menu/menu.wxml');
@@ -24,6 +24,9 @@ const pageDefinitions = {};
 let registeringPage;
 let lastNavigation = null;
 const paymentCalls = [];
+const confirmRequestKeys = [];
+const confirmResponseStatuses = [];
+const paymentExpectation = ORDER_COMPOSED_PAYMENT_EXPECTATION;
 
 globalThis.App = definition => { appDefinition = definition; };
 globalThis.Behavior = definition => definition;
@@ -41,6 +44,10 @@ globalThis.wx = {
   navigateBack: () => {},
   request: options => {
     const requestURL = new URL(options.url);
+    const isConfirmRequest = requestURL.pathname === '/api/v1/orders/confirm';
+    if (isConfirmRequest) {
+      confirmRequestKeys.push((options.header || {})['Idempotency-Key'] || '');
+    }
     if (globalThis.__ui1ComposedHTTPFault || requestURL.pathname === globalThis.__ui1ComposedHTTPFaultPath) {
       requestURL.pathname = `${requestURL.pathname}/__composed_ui1_http_error__`;
     }
@@ -50,6 +57,7 @@ globalThis.wx = {
       body: options.data === undefined ? undefined : JSON.stringify(options.data),
     })
       .then(async response => {
+        if (isConfirmRequest) confirmResponseStatuses.push(response.status);
         const raw = await response.text();
         let data = {};
         if (raw) {
@@ -153,6 +161,8 @@ async function openCheckout(suffix, contactName, note) {
   document.body.innerHTML = '';
   lastNavigation = null;
   paymentCalls.length = 0;
+  confirmRequestKeys.length = 0;
+  confirmResponseStatuses.length = 0;
   app.globalData.cart = {};
   app.globalData.pickup = null;
   app.onLaunch();
@@ -216,7 +226,7 @@ async function openCheckout(suffix, contactName, note) {
   return confirm;
 }
 
-describe('mini-program UI1 against composed local API and MySQL', () => {
+if (paymentExpectation === 'success') describe('mini-program UI1 against composed local API and MySQL', () => {
   it('lets an anonymous user browse the storefront, pickup menu, categories, and products', async () => {
     document.body.innerHTML = '';
     lastNavigation = null;
@@ -431,5 +441,48 @@ describe('mini-program UI1 against composed local API and MySQL', () => {
     } finally {
       globalThis.__ui1ComposedHTTPFaultPath = '';
     }
+  });
+});
+
+if (paymentExpectation === 'pending') describe('mini-program UI1 against composed local API and MySQL in pending mode', () => {
+  it('keeps the cart, suppresses success, and rotates the confirm key after real pending responses', async () => {
+    const suffix = `composed-pending-${Date.now()}`;
+    const confirm = await openCheckout(suffix, 'UI1待确认用户', 'pending expectation');
+    const pay = confirm.querySelector('.pay-btn');
+
+    pay.dispatchEvent('touchstart');
+    pay.dispatchEvent('touchend');
+    await waitFor(
+      () => confirmResponseStatuses.length === 1 && (confirm.instance.data.paymentState === 'pending' || lastNavigation !== null),
+      () => `first confirm remained ${confirm.instance.data.paymentState}`,
+    );
+    if (confirmResponseStatuses[0] !== 202) throw new Error(`first confirm returned ${confirmResponseStatuses[0]}`);
+    if (confirm.instance.data.paymentState !== 'pending') {
+      throw new Error(`first confirm rendered ${confirm.instance.data.paymentState}`);
+    }
+    if (lastNavigation !== null) throw new Error(`first pending confirm navigated to ${lastNavigation}`);
+    if (Object.keys(app.globalData.cart).length !== 1 || confirm.instance.data.count !== 1) {
+      throw new Error('first pending confirm cleared the cart');
+    }
+    if (paymentCalls.length !== 1) throw new Error(`pending requestPayment calls were ${paymentCalls.length}`);
+    if (confirmRequestKeys.length !== 1 || !confirmRequestKeys[0]) {
+      throw new Error(`first confirm key count was ${confirmRequestKeys.length}`);
+    }
+
+    pay.dispatchEvent('touchstart');
+    pay.dispatchEvent('touchend');
+    await waitFor(
+      () => confirmResponseStatuses.length === 2 && confirm.instance.data.paymentState === 'pending',
+      () => `second confirm count/state was ${confirmResponseStatuses.length}/${confirm.instance.data.paymentState}`,
+    );
+    if (confirmResponseStatuses[1] !== 202) throw new Error(`second confirm returned ${confirmResponseStatuses[1]}`);
+    if (!confirmRequestKeys[1] || confirmRequestKeys[1] === confirmRequestKeys[0]) {
+      throw new Error('second pending confirm did not use a fresh idempotency key');
+    }
+    if (lastNavigation !== null) throw new Error(`second pending confirm navigated to ${lastNavigation}`);
+    if (Object.keys(app.globalData.cart).length !== 1 || confirm.instance.data.count !== 1) {
+      throw new Error('second pending confirm cleared the cart');
+    }
+    if (paymentCalls.length !== 1) throw new Error(`retry repeated requestPayment ${paymentCalls.length} times`);
   });
 });

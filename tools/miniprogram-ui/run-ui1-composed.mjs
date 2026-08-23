@@ -12,12 +12,16 @@ const karma = dependencyRequire('karma');
 const { chromium } = dependencyRequire('playwright');
 const browserPath = chromium.executablePath();
 const upstreamOrigin = process.env.ORDER_COMPOSED_API_ORIGIN;
+const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION || 'success';
 
 if (!existsSync(browserPath)) {
   throw new Error('locked Chromium is missing; reuse the configured MINIPROGRAM_UI_DEPS cache');
 }
 if (!/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(upstreamOrigin || '')) {
   throw new Error('ORDER_COMPOSED_API_ORIGIN must be an explicit http://127.0.0.1:<port> origin');
+}
+if (!['success', 'pending'].includes(paymentExpectation)) {
+  throw new Error('ORDER_COMPOSED_PAYMENT_EXPECTATION must be success or pending');
 }
 
 process.env.CHROME_BIN = browserPath;
@@ -82,12 +86,14 @@ async function startTransparentProxy(origin) {
 
 const proxy = await startTransparentProxy(upstreamOrigin);
 process.env.ORDER_COMPOSED_PROXY_ORIGIN = proxy.origin;
+process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION = paymentExpectation;
 console.log('UI1_COMPOSED_ENV', JSON.stringify({
   runner: 'order-miniprogram-ui-gates@1.0.0',
   simulator: 'miniprogram-simulate@1.6.2',
   browser: browserVersion,
   upstream: upstreamOrigin,
   proxy: `${proxy.origin} (random loopback)`,
+  payment_expectation: paymentExpectation,
 }));
 
 let exitCode;
@@ -107,7 +113,7 @@ try {
 
 console.log('UI1_COMPOSED_RESULT', JSON.stringify({
   status: exitCode === 0 ? 'PASS' : 'FAIL',
-  scenarios: 4,
+  scenarios: paymentExpectation === 'pending' ? 1 : 4,
   evidence_level: 'L3_LOCAL_COMPOSED',
   upstream_requests: proxy.requests,
 }));
