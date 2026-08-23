@@ -22,6 +22,9 @@ export const profiles = Object.freeze({
   web_chrome_ui1_fixture: evidence('UI1', 'PC Chrome smoke renders login/nav against a local fixture, not the composed MySQL API.',
     command('node', 'apps/web-admin/tests/ui1-chrome-runner.js')),
 
+  composed_order_refund_l2: evidence('L2', 'One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.',
+    go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund')),
+
   schema_no_inventory_l1: evidence('L1', 'Frozen migration ledger rejects PRD-out-of-scope inventory/member/coupon/summary tables.',
     go('./services/api/migrations', 'TestFrozenV18ToV44LedgerContracts')),
   menu_rules_l1: multi('L1', 'Pure menu rules enforce Shanghai discrete points, fixed cutoff and invalid-schedule fail closed.', [
@@ -144,6 +147,11 @@ assign(['PAGE-PC09'], ['quote_mysql_l2']);
 assign(['PAGE-PC10'], ['merchant_mysql_l2']);
 assign(['PAGE-PC11', 'PAGE-PC12'], ['import_l1']);
 
+// This first composed release selector is useful supporting evidence for the
+// broader rows below, but only the five exact L2 scenarios explicitly marked
+// true are closed by what the selector actually asserts.
+assign(['PAGE-U05', 'PAGE-U06', 'PAGE-U07', 'PAGE-M03', 'PAGE-M04', 'PAGE-PC02', 'PAGE-PC10'], ['composed_order_refund_l2']);
+
 assign(['AC-01'], ['mini_entry_ui0', 'mini_ui1_fixture', 'identity_mysql_l2']);
 assign(['AC-02'], [['quote_mysql_l2', true], 'mini_orders_ui0']);
 assign(['AC-03'], [['menu_mysql_l2', true], 'mini_menu_ui0']);
@@ -163,6 +171,7 @@ assign(['AC-16'], ['merchant_mysql_l2', 'web_contract_ui0']);
 assign(['AC-17'], ['catalog_mysql_l2', 'storefront_mysql_l2_legacy', 'web_contract_ui0']);
 assign(['AC-18'], ['order_query_l1', 'billing_l1']);
 assign(['AC-19'], ['schema_no_inventory_l1']);
+assign(['AC-05', 'AC-06', 'AC-09', 'AC-10', 'AC-11', 'AC-14', 'AC-15', 'AC-16'], ['composed_order_refund_l2']);
 
 assign(['BE-01', 'BE-02'], ['menu_mysql_l2', 'mini_menu_ui0']);
 assign(['BE-03'], ['catalog_mysql_l2', 'quote_mysql_l2', 'mini_menu_ui0']);
@@ -171,9 +180,9 @@ assign(['BE-05'], ['quote_mysql_l2', 'mini_checkout_ui0']);
 assign(['BE-06'], [['quote_mysql_l2', true]]);
 assign(['BE-07', 'BE-08', 'BE-09'], ['payment_mysql_l2', 'mini_checkout_ui0']);
 assign(['BE-10'], ['payment_rules_l1', 'payment_mysql_l2']);
-assign(['BE-11'], [['production_mysql_l2', true]]);
+assign(['BE-11'], [['production_mysql_l2', true], ['composed_order_refund_l2', true]]);
 assign(['BE-12', 'BE-13', 'BE-14'], ['refund_rules_l1', 'refund_mysql_l2']);
-assign(['BE-15'], ['order_query_l1', 'mini_orders_ui0']);
+assign(['BE-15'], ['order_query_l1', 'mini_orders_ui0', ['composed_order_refund_l2', true]]);
 assign(['BE-16'], [['fulfillment_mysql_l2', true], 'mini_merchant_ui0']);
 assign(['BE-17'], ['fulfillment_mysql_l2']);
 assign(['BE-18'], [['fulfillment_mysql_l2', true], 'mini_merchant_ui0']);
@@ -204,6 +213,8 @@ assign(['INV-13'], ['merchant_mysql_l2', 'web_contract_ui0']);
 assign(['INV-14'], ['payment_mysql_l2', 'fulfillment_mysql_l2']);
 assign(['INV-15'], ['subscription_l1']);
 assign(['INV-16'], ['schema_no_inventory_l1', 'payment_mysql_l2', 'mini_ui1_fixture']);
+assign(['INV-05', 'INV-07', 'INV-11', 'INV-15', 'INV-16'], ['composed_order_refund_l2']);
+assign(['INV-08', 'INV-10', 'INV-13'], [['composed_order_refund_l2', true]]);
 
 export function coverageFor(caseID) {
   return (caseProfiles.get(caseID) || []).map(([profileID, satisfies]) => ({

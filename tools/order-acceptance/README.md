@@ -27,4 +27,6 @@ The runner starts no Docker container and installs no dependency. It inherits th
 
 ## Base inventory
 
-At integration base `250c35f36143a62077bcb798871bbdcd7fd2adb3`, structural mapping finds 95/95 cases and 23 separate L4 blocks. Only `BE-11`, `INV-03`, `INV-08`, and `INV-12` have complete executable selectors for every local level assigned by the matrix, and those four are still `AVAILABLE_NOT_RUN` until an exact-SHA run. The other 91 cases remain `MISSING`; most require composed MySQL-backed UI1, while the manifest preserves narrower L1/L2 gaps where present.
+At integration base `74e160a490fcdf60b4c66b6221ef701b4d0ba16b`, structural mapping finds 95/95 cases and 23 separate L4 blocks. `TestAcceptanceLocalThreeRoleOrderToRefund` adds one real L2 selector across the root HTTP router, workers, a fresh v1-v44 MySQL schema and deterministic local providers. It closes the exact L2 requirements for `BE-11`, `BE-15`, `INV-08`, `INV-10`, and `INV-13`; it does not claim UI1/L3 or broader boundary variants.
+
+Only `BE-11`, `INV-03`, `INV-08`, and `INV-12` have complete executable selectors for every local level assigned by the matrix, and those four are still `AVAILABLE_NOT_RUN` until an exact-SHA run. The other 91 cases remain `MISSING`; most require composed MySQL-backed UI1, while the manifest preserves narrower L1/L2 gaps where present.

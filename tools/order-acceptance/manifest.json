@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "250c35f36143a62077bcb798871bbdcd7fd2adb3"
+    "inventory_base_sha": "74e160a490fcdf60b4c66b6221ef701b4d0ba16b"
   },
   "policy": {
     "exact_counts": {
@@ -307,6 +307,18 @@
           }
         },
         {
+          "evidence_id": "PAGE-U05:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "PAGE-U05:missing:L2",
           "level": "L2",
           "status": "MISSING",
@@ -411,6 +423,18 @@
           ]
         },
         {
+          "evidence_id": "PAGE-U06:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "PAGE-U06:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -508,6 +532,18 @@
               "test": "TestRunDueClassifiesProviderFailuresWithoutPersistingRawError"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-U07:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         },
         {
           "evidence_id": "PAGE-U07:missing:L3",
@@ -826,6 +862,18 @@
           ]
         },
         {
+          "evidence_id": "PAGE-M03:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "PAGE-M03:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -873,6 +921,18 @@
             "kind": "go-test",
             "package": "./services/api/internal/fulfillment",
             "test": "TestFulfillmentMySQLVerticalSlice"
+          }
+        },
+        {
+          "evidence_id": "PAGE-M04:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         },
         {
@@ -1120,6 +1180,18 @@
               "test": "TestActionsAreDerivedWithoutAdvancingState"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-PC02:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         },
         {
           "evidence_id": "PAGE-PC02:missing:L3",
@@ -1759,6 +1831,18 @@
           }
         },
         {
+          "evidence_id": "PAGE-PC10:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "PAGE-PC10:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -2218,6 +2302,18 @@
           }
         },
         {
+          "evidence_id": "AC-05:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "AC-05:missing:L2",
           "level": "L2",
           "status": "MISSING",
@@ -2289,6 +2385,18 @@
             "kind": "node-test",
             "file": "apps/wechat-miniprogram/tests/overnight-checkout-ui0.test.js",
             "name_pattern": ".*"
+          }
+        },
+        {
+          "evidence_id": "AC-06:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         },
         {
@@ -2495,6 +2603,18 @@
           }
         },
         {
+          "evidence_id": "AC-09:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "AC-09:missing:L2",
           "level": "L2",
           "status": "MISSING",
@@ -2635,6 +2755,18 @@
           ]
         },
         {
+          "evidence_id": "AC-10:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "AC-10:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -2682,6 +2814,18 @@
             "kind": "node-test",
             "file": "apps/wechat-miniprogram/tests/overnight-user-orders-profile-ui0.test.js",
             "name_pattern": ".*"
+          }
+        },
+        {
+          "evidence_id": "AC-11:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         },
         {
@@ -2855,6 +2999,18 @@
           ]
         },
         {
+          "evidence_id": "AC-14:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "AC-14:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -2923,6 +3079,18 @@
           }
         },
         {
+          "evidence_id": "AC-15:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "AC-15:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -2977,6 +3145,18 @@
             "kind": "node-test",
             "file": "apps/web-admin/tests/http-contract.test.js",
             "name_pattern": ".*"
+          }
+        },
+        {
+          "evidence_id": "AC-16:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         },
         {
@@ -3830,6 +4010,18 @@
             "package": "./services/api/internal/orderadvance",
             "test": "TestRunProductionDueMySQL8AdvancesBoundaryAndLateOrdersOnce"
           }
+        },
+        {
+          "evidence_id": "BE-11:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         }
       ],
       "external_evidence": []
@@ -4095,11 +4287,16 @@
           }
         },
         {
-          "evidence_id": "BE-15:missing:L2",
+          "evidence_id": "BE-15:composed_order_refund_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-15: execute GET order, assert orders, expected \"不渲染 QR\", and the failure shield."
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         },
         {
           "evidence_id": "BE-15:missing:L3",
@@ -5576,6 +5773,18 @@
           ]
         },
         {
+          "evidence_id": "INV-05:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "INV-05:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -5791,6 +6000,18 @@
           ]
         },
         {
+          "evidence_id": "INV-07:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "INV-07:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -5861,6 +6082,18 @@
             "kind": "go-test",
             "package": "./services/api/internal/orderadvance",
             "test": "TestRunProductionDueMySQL8AdvancesBoundaryAndLateOrdersOnce"
+          }
+        },
+        {
+          "evidence_id": "INV-08:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         }
       ],
@@ -6009,11 +6242,16 @@
           ]
         },
         {
-          "evidence_id": "INV-10:missing:L2",
+          "evidence_id": "INV-10:composed_order_refund_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-10: execute refund ingress/query, assert refunds/observations/orders, expected \"全额；confirmed success 才 REFUNDED\", and the failure shield."
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         },
         {
           "evidence_id": "INV-10:missing:L3",
@@ -6076,6 +6314,18 @@
             "kind": "go-test",
             "package": "./services/api/internal/quote",
             "test": "TestQuoteMySQL8Integration"
+          }
+        },
+        {
+          "evidence_id": "INV-11:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
           }
         },
         {
@@ -6204,11 +6454,16 @@
           }
         },
         {
-          "evidence_id": "INV-13:missing:L2",
+          "evidence_id": "INV-13:composed_order_refund_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-13: execute merchant/admin routes, assert accounts/pcsessions/audit, expected \"OWNER/SUBACCOUNT 两角色；服务端权限\", and the failure shield."
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
         },
         {
           "evidence_id": "INV-13:missing:L3",
@@ -6343,6 +6598,18 @@
           ]
         },
         {
+          "evidence_id": "INV-15:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "INV-15:missing:L2",
           "level": "L2",
           "status": "MISSING",
@@ -6442,6 +6709,18 @@
           }
         },
         {
+          "evidence_id": "INV-16:composed_order_refund_l2",
+          "level": "L2",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+          }
+        },
+        {
           "evidence_id": "INV-16:missing:L1",
           "level": "L1",
           "status": "MISSING",
@@ -6466,5 +6745,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "498ad94cda4f82e8a3c38d91a1c177a1216d71d01731cc8aa000157766673d18"
+  "manifest_sha256": "a310a0973d1e08c3f4ffc50ba620edd3b804e18edfc1366834933d79058e0db5"
 }
