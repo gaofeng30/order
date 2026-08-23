@@ -2,6 +2,8 @@
 
 唯一产品基线：[online-ordering-system-prd-0818.md](../product/online-ordering-system-prd-0818.md)。冻结设计：[order-mvp-domain-schema-interfaces.md](../architecture/order-mvp-domain-schema-interfaces.md)。本矩阵只定义验收闭环，不把模块测试、mock、设计或 `BLOCKED_EXTERNAL` 冒充完整提测。
 
+矩阵 revision `ORDER-MVP-R2.1`；candidate lineage：parent `8ef6f8f1281af4a3e1df6abc8685ebdde0f3b53d` → 本次定点修正文档所在 commit。
+
 证据等级：`L1` 单元/纯规则；`L2` HTTP + fresh MySQL；`L3` UI1 + fake-provider 本地 E2E；`L4` 微信 DevTools 真机/真实支付资产。当前所有行均未绑定最终 Candidate SHA，故状态只能是 `NOT_RUN`；L4 另列 `BLOCKED_EXTERNAL`，不阻塞可替代的 L1–L3 本地证据。
 
 每行固定列：CaseID、角色、UI 操作、HTTP、MySQL 事实、预期、失败保护、证据等级、状态。
@@ -10,16 +12,16 @@
 
 | CaseID | 角色 | UI 操作 | HTTP | MySQL 事实 | 预期 | 失败保护 | 证据等级 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PAGE-U01 | 用户 | 身份选择；进入员工/访客；已绑定商户可切商户 | GET `/me/identity`; GET `/storefront/settings` | users、staff、merchant_accounts、storefront | 只展示服务端可用身份与开屏层 | 未知身份不猜；不提前请求手机号 | L3; L4 UI3 | NOT_RUN; L4 BLOCKED_EXTERNAL |
+| PAGE-U01 | 用户/商户 | 已绑定商户在「用户端/商户端」二选一；普通用户冷启动直达首页 | GET `/me/identity`; GET `/storefront/settings`; POST `/me/merchant-login` | users、merchant_accounts、storefront | 只选择端，不选择员工/访客；员工身份始终服务端派生 | 拒绝商户手机号授权停留本页但不阻断用户端 | L3; L4 phone/UI3 | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | PAGE-U02 | 用户 | 首页看门店/公告/进行中单；点菜单、订单、取餐码 | GET `/storefront/settings`; GET `/orders?active=true` | storefront、service_dates、orders | 服务端门店事实；进行中条准确 | 读失败不显示可下单/伪订单 | L3 | NOT_RUN |
 | PAGE-U03 | 用户 | 选今天/明天与离散时间；搜索；加购 | GET `/menu/pickup-options`; GET `/menu?date=&time=` | service_dates、meal_periods、products、soldout、discount | 餐段过滤；截单折叠；员工价正确 | 缺日期事实/售罄未知即不可加购 | L3 | NOT_RUN |
 | PAGE-U04 | 用户 | 看图片、说明、只读规格、口味与价格 | GET `/catalog/products/:id?date=&time=` | products.images_json/specification、soldout、staff | 强制 date/time；0–3 图；spec 只读 | 缺 date/time 400；当前事实不可读 503 | L3 | NOT_RUN |
 | PAGE-U05 | 用户 | 编辑联系人/附加号、时间、口味、备注；提交 Quote | POST `/me/bind-phone`; POST `/me/extra-phone`; POST `/quotes` | users、staff、quotes、quote_items | 服务端手机号快照与算价；封面 key 入 digest | 未绑定/截单/漂移不支付且购物车保留 | L2+L3; L4 phone | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | PAGE-U06 | 用户 | 调起支付；等待确认；请求待取餐订阅 | POST `/orders/prepay`; POST `/orders/confirm`; POST `/orders/:id/subscriptions` | prepayments、observations、orders、consents | 仅服务端确认支付才出现订单 | 客户端 success 不建单；未知仅 loading | L3 fake; L4 real pay | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | PAGE-U07 | 用户 | 看订单/取餐码；补订阅；规则内取消 | GET `/orders/:id`; POST `/orders/:id/cancel`; POST `/orders/:id/subscriptions` | orders、refunds、consents/outbox | QR 仅待取餐；取消进入退款中 | token 不明文落库；重复/非法转换拒绝 | L3; L4 subscription | NOT_RUN; L4 BLOCKED_EXTERNAL |
-| PAGE-U08 | 用户 | 按六态筛选订单并翻页 | GET `/orders?state=&after_id=&limit=` | orders | 只显示六态与 owner 数据 | 无待支付/取消/异常伪状态；越权统一 404 | L3 | NOT_RUN |
-| PAGE-U09 | 用户 | 看/绑主手机号；设附加号；商户登录；切身份 | GET `/me/identity`; POST `/me/bind-phone`; POST `/me/extra-phone`; POST `/me/merchant-login` | users、staff、merchant_accounts、audit | masked PII；身份实时重算 | 客户端手机号/角色不可信；失败不授权 | L2+L3; L4 phone | NOT_RUN; L4 BLOCKED_EXTERNAL |
-| PAGE-M02 | 商户 | 看四泳道/搜索；切营业状态；返回用户身份 | GET `/merchant/orders`; PUT `/merchant/store-status` | accounts、orders、storefront、audit | live RBAC；订单与状态同源 | 子账号仅现场动作；写失败不假成功 | L3 | NOT_RUN |
+| PAGE-U08 | 用户 | 固定筛选「全部/已预约/制作中/待取餐/已完成/已退款」并翻页；退款中只在全部出现 | GET `/orders?state=&after_id=&limit=` | orders | 固定六个筛选项与 owner 数据；不单列退款中筛选 | 无待支付/取消/异常伪状态；越权统一 404 | L3 | NOT_RUN |
+| PAGE-U09 | 用户 | 看头像/昵称/脱敏手机号；进我的订单/客服；绑主号、设附加号、商户登录/切端 | GET `/me/identity`; GET `/orders`; phone/extra/merchant writes；客服 `open-type="contact"` 无 HTTP | users、staff、merchant_accounts、audit；cosmetic 不落库 | cosmetic 仅用户主动触发后的微信当次 profile，缺失用中性占位且不参与身份；客服走微信原生 | cosmetic/客服失败不改变身份/定价/订单；真实客服会话只验 L4 | L2+L3 fallback/business; L4 profile/contact | NOT_RUN; L4 BLOCKED_EXTERNAL |
+| PAGE-M02 | 商户 | 看五泳道「已预约/制作中/待取餐/已完成/已退款」与搜索；切营业状态；返回身份选择 | GET `/merchant/orders`; PUT `/merchant/store-status` | accounts、orders、storefront、audit | live RBAC；五泳道订单与状态同源 | REFUNDING 不造第六商户泳道；子账号仅现场动作；写失败不假成功 | L3 | NOT_RUN |
 | PAGE-M03 | 商户 | 看订单详情；标记备好 | GET `/merchant/orders/:id`; POST `/merchant/orders/:id/ready` | orders、outbox、audit | 仅 PREPARING→READY；生成加密 token | 非法态 409；通知失败不回滚订单 | L3 | NOT_RUN |
 | PAGE-M04 | 商户 | 扫 QR；输当日 4 位码；跨日逐单核销 | POST `/verify/scan`; POST `/verify/code`; POST `/merchant/orders/:id/redeem` | orders token hash/ciphertext、audit | 核销一次；跨日同号不误命中 | 非 READY/退款单拒绝；token 不进日志 | L3; L4 camera | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | PAGE-M05 | 商户 | 对商品切今日可售/售罄 | PUT `/merchant/products/:id/soldout` | product_sold_out_dates、audit | 只影响指定日期，次日自然恢复 | 读写未知按售罄；不建库存 | L3 | NOT_RUN |
@@ -58,7 +60,7 @@
 | AC-16 | 主/子账号 | 尝试各权限及 PC 扫码 | merchant/admin auth routes | accounts、pc_sessions、audit | server RBAC；PC 仅 OWNER | client guard 不授权；最后 owner 保护 | L2+L3; L4 | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | AC-17 | 主账号/用户 | 改分类/开屏后换设备看 | admin config; public reads | categories/products/storefront | 改动落同一 MySQL 并三端可见 | 不读 window/globalData mock | L3 | NOT_RUN |
 | AC-18 | 主账号 | 查未取餐与营收 | GET admin orders/stats | READY orders、refunds | 未取餐可筛且不算完成/有效营收 | 不引入第七状态 | L2+L3 | NOT_RUN |
-| AC-19 | 验证者 | 执行各阶段 Gate 并查台账 | n/a | sanitized audit/evidence | Gate 仅对应阶段生效，无敏感数据 | BLOCKED_EXTERNAL 不冒充本地 PASS | L1+L2+L3+L4 | NOT_RUN |
+| AC-19 | 验证者 | `AC-19-LOCAL` 执行 L1–L3 governance/Gate；`AC-19-L4` 独立查看真实微信/资金状态 | n/a | LOCAL sanitized audit/evidence；L4 不写本地假回执 | LOCAL Gate 仅对应阶段生效且无敏感数据；L4 单独列状态 | L4 `BLOCKED_EXTERNAL` 绝不冒充 LOCAL 通过或完整提测 | L1+L2+L3 LOCAL; L4 external | LOCAL NOT_RUN; L4 BLOCKED_EXTERNAL |
 
 ## C. PRD §15.8 边界与异常（35）
 
@@ -134,4 +136,6 @@
 
 - Red（修改前）：结构检查 exit 1，缺少 acceptance matrix，并缺 AEAD ciphertext、Billing reconcile、detail date/time、product reorder、2m/12h、导入硬上限、bounded VARBINARY、三范围索引、Quote image-key digest 等冻结词。
 - Green（当前内容结构，不代表设计 Review PASS）：架构 requirements `15/15`；CaseID `95/95` 且唯一；页面 `25=U9+M4+PC12`、§14 `19`、§15.8 `35`、§12 `16`；每个 case 9 列且状态含 `NOT_RUN`；两个相对链接存在；`git diff --check` 无输出；变更路径仅两份 owned 文档。
+- R2.1 Red（parent candidate `8ef6f8f...`）：定点检查 exit 1，MySQL/Product 本轮 `12/12` 要求均缺失。
+- R2.1 Green（仅内容/结构）：定点 requirements `12/12`；原 95 CaseID、25/19/35/16 计数、9 列、`NOT_RUN` 与 L4 `BLOCKED_EXTERNAL` 规则保持不变；不构成双轴 Review 结论。
 - 下一 Gate：Product/Spec 与 Standards/MySQL 双轴只读 Review；任一 finding 修改文档后上述结构证据重跑，旧 review receipt 失效。

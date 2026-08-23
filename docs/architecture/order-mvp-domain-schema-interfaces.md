@@ -7,6 +7,7 @@
 | 产品唯一基线 | `docs/product/online-ordering-system-prd-0818.md` |
 | 设计固定点 | artifact base `9b96c64177f88bb0c148df20f91054a2ffc367c5`；authoritative integration `01cc4896c3c6c8531b1a2f08778deeccab3dd43b` |
 | Schema / Interface 版本 | `ORDER-MVP-R2` |
+| R2 revision / candidate lineage | `R2.1`；parent candidate `8ef6f8f1281af4a3e1df6abc8685ebdde0f3b53d` → 本次定点修正文档所在 commit（exact SHA 由提交回执绑定） |
 | 当前状态 | `REVIEW_CANDIDATE`；两轴 Review 均为 0 finding 后才冻结 |
 | 已集成迁移 | v1–v13 |
 | TX-02 checkpoint | `eddf796454085ad0253a6db4a2f776ece8f51ea8`；v14–v17，WIP / NOT_CANDIDATE / NOT_INTEGRATED |
@@ -59,6 +60,7 @@
 | PRD 场景 | 持久化事实 | 派生，不落表 | 外部资产 / fail-closed 点 |
 | --- | --- | --- | --- |
 | 匿名浏览、会话 | 用户 openid；短期 session hash/expiry | 匿名展示态 | code 换取失败不伪造用户 |
+| 个人中心 cosmetic / 客服 | 不新增业务字段 | 头像/昵称只取用户主动触发后微信客户端当次返回的 cosmetic profile；未取得时用中性默认头像/“微信用户”，不持久化、不参与身份/定价/RBAC/audit | 客服固定微信原生 `open-type="contact"`，真实会话仅 L4；cosmetic/客服失败不影响任何业务身份或订单 |
 | 主手机号 | 微信可信主手机号及绑定时间 | masked phone | 客户端明文不可信；拒绝不写入 |
 | 附加手机号 | 单组手机号、原始姓名、归一姓名、设置时间 | 是否命中员工 | 手机 + 姓名必须同时命中 |
 | 员工折扣 | 白名单、启用、版本；全局折扣率/版本 | 已绑定、累计消费/单量 | 名单真实内容为 UAT 资产，不进 Gate 文档 |
@@ -133,16 +135,16 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 
 ### 4.2 v18–v44 唯一 ledger
 
-旧 TX-03 对 v18–v23 的预留作废；Review 冻结后由 migration-ledger 单 writer 按下列顺序创建。现有 runner 把每个 migration 文件作为一次 `Exec` 执行且 DSN 不开放 multi-statements，因此每个版本只能有一个 `ALTER`、`UPDATE`、`RENAME TABLE` 或 `CREATE TABLE` 语句；API 只在最终 schema version ready 后启动，中间版本均 fail closed。
+旧 TX-03 对 v18–v23 的预留作废；Review 冻结后由 migration-ledger 单 writer 按下列顺序创建。现有 runner 把每个 migration 文件作为一次 `Exec` 执行且 DSN 不开放 multi-statements，因此每个版本只能有一个 `ALTER`、`UPDATE`、`RENAME TABLE` 或 `CREATE TABLE` 语句；API 只在最终 schema version ready 后启动，中间版本均 fail closed。v20/v23 另注册只读 Go preflight hook：runner 已持有同一 connection-scoped migration lock、但尚未 `insertDirty` 时执行；任一失败直接返回稳定 `migration_preflight_failed`，不写 dirty/history、也不执行 SQL。
 
 | 版本 | DDL 责任 |
 | --- | --- |
 | v18 | ALTER `miniprogram_users`：附加手机号/姓名/`extra_name_key VARBINARY(400)`/设置时间/版本；新增列初始全 NULL |
 | v19 | ALTER `categories`：新增 nullable `name_key VARBINARY(400)` 与 `record_version` |
-| v20 | UPDATE `categories`：按冻结归一规则 backfill；非法/重复值使后续版本失败，不猜测合并 |
+| v20 | Go preflight 用冻结 NFKC 算法逐 id 证明 legacy category name 已经等于 canonical（NFKC + Unicode trim）、UTF-8 bytes `1..400` 且 canonical key 无重复；随后 SQL 仅 `name_key=CONVERT(name USING binary)` 复制原 bytes，不在 SQL 内归一/改名 |
 | v21 | ALTER `categories`：`name_key NOT NULL`、UNIQUE、trim/version CHECK |
 | v22 | ALTER `products`：新增 nullable `name_key VARBINARY(400)`、record version、`images_json` |
-| v23 | UPDATE `products`：backfill name key，已有图片保持空数组；不从 URL 猜 object key |
+| v23 | 同 migration-lock / pre-dirty Go preflight 证明 legacy product name canonical、bounded、无重复；随后 SQL 仅复制原 name bytes 到 key 并把已有图片置空数组，不从 URL 猜 object key |
 | v24 | ALTER `products`：name key NOT NULL/UNIQUE、price/name/JSON 约束 |
 | v25 | ALTER `storefront_settings`：新增 nullable launch object key、flavors JSON、record version |
 | v26 | UPDATE `storefront_settings`：把旧 `launch_png_url` 及其几何字段全部清空；旧 URL 不转换、不继续展示，fail closed |
@@ -161,11 +163,11 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 | v39 | CREATE `notification_outbox` |
 | v40 | CREATE `import_batches` |
 | v41 | RENAME TABLE `merchant_action_audits` TO `action_audits`；旧读写路径在应用切换前保持 schema-behind，不能启动 |
-| v42 | ALTER `action_audits`：旧列 rename 到通用列并新增 actor kind/scope hash/operation key/JSON 列，暂允许 NULL |
-| v43 | UPDATE `action_audits`：旧行映射为 MERCHANT/USER actor，request/idempotency 计算 hash，旧 state 包装为最小 JSON；逐行保留原 id/occurred_at/result/reason |
-| v44 | ALTER `action_audits`：通用列 NOT NULL、exact actor CHECK、UNIQUE operation key、补齐 user/account RESTRICT FK，删除已迁移旧列 |
+| v42 | ALTER `action_audits`：旧列 rename 到通用列并新增 `entry_kind LEGACY_EVIDENCE|COMMAND_RECEIPT|SYSTEM_EVIDENCE`、actor kind/scope、nullable operation key、response/JSON 列；live account 与 account snapshot 保持为两个独立概念 |
+| v43 | UPDATE `action_audits`：旧行标 `LEGACY_EVIDENCE`，request 计算 hash；已有 idempotency hash 才复制为 operation key，否则保持 NULL；允许 `actor_account_id` NULL 而 account id/role/auth version snapshot 非空，逐行保留原 id/occurred_at/result/reason |
+| v44 | ALTER `action_audits`：exact entry-kind/actor/snapshot CHECK、nullable-key UNIQUE、live user/account 列各自补 RESTRICT FK；仅新 `COMMAND_RECEIPT` 强制 operation key + replayable response，legacy 不补造 live FK/幂等键 |
 
-迁移 runner 继续单连接 `GET_LOCK`；任一 dirty、schema-behind 或 v41–v43 中间态阻止 API 启动。不得并行分配迁移号。v20/v23 的归一 backfill 只接受当前值可无损映射的数据库；冲突时迁移失败并人工修正源数据，禁止静默改名。
+迁移 runner 继续单连接 `GET_LOCK`；任一 dirty、schema-behind 或 v41–v43 中间态阻止 API 启动。不得并行分配迁移号。v20/v23 preflight 必须在同一 migration lock 下、写 dirty 前完成；SQL 只复制已证明 canonical 的 bytes。归一改变、越界或重复都拒绝迁移并人工修正源数据，禁止静默改名。
 
 ## 5. 冻结 MySQL 数据模型
 
@@ -209,24 +211,24 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 
 - identity：`id, user_id RESTRICT FK, quote_id UNIQUE RESTRICT FK, idempotency_key_hash, out_trade_no UNIQUE`；`UNIQUE(user_id,idempotency_key_hash)`。
 - immutable expected facts：`expected_appid, expected_mchid, expected_amount_cents, currency='CNY', provider_create_request_json, provider_create_request_digest, effective_deadline`。
-- provider result：`provider_state ENUM('READY','CREATE_UNKNOWN','PAYMENT_REQUESTED','NOT_PAID','PAID','CLOSED')`，`create_attempted_at`，`wx_request_payment_json`，`provider_prepay_id`，`last_queried_at`。
+- provider result：`provider_state ENUM('READY','CREATE_CLAIMED','CREATE_UNKNOWN','PAYMENT_REQUESTED','NOT_PAID','PAID','CLOSED')`，`create_attempted_at`，`wx_request_payment_json`，`provider_prepay_id`，`last_queried_at`。
 - materialization：`materialization_state ENUM('AWAITING_PAYMENT','READY','APPLIED','PENDING_MANUAL','REFUNDED_WITHOUT_ORDER')`，`pending_reason_code, materialized_at nullable`。
 - concurrency：`lease_kind ENUM('CREATE','QUERY') nullable, lease_owner BINARY(16), lease_expires_at, record_version, next_reconcile_at, created_at, updated_at`；lease 三字段全空或全非空；version>0；仅建范围索引 R1 `(next_reconcile_at,id)`，claim 后再按 state/CAS 筛选。
 
-规则：第一次持久化 Create request 后不可修改；`create_attempted_at` 一旦非空永不再次调用 Create。Create 超时写 `CREATE_UNKNOWN`，随后只能 Query。只有距离 effective deadline 至少 1 分钟才可首次 Create。Provider/Observation 状态只能按可信度与终态单调前进，乱序 callback/query 不得把 `PAID` 回退为 `NOT_PAID/CLOSED`。
+规则：第一次持久化 Create request 后不可修改。唯一 Create claim transaction 以 CAS 同时完成 `READY→CREATE_CLAIMED`、写 `create_attempted_at`、设置 CREATE lease、递增 version 后提交，才允许 lease owner 在事务外调用 Create；这一步一旦提交就视为可能已外调。进程在外调前/中崩溃、lease 过期或 Create 超时都只能 Query，分别从 `CREATE_CLAIMED/CREATE_UNKNOWN` 收敛，永不再次 Create。只有距离 effective deadline 至少 1 分钟才可 claim。Provider/Observation 状态只能按可信度与终态单调前进，乱序 callback/query 不得把 `PAID` 回退为 `NOT_PAID/CLOSED`。
 
 `payment_observations`：
 
 - `id, prepayment_id FK, dedupe_key UNIQUE, source CALLBACK|ACTIVE_QUERY, provider_event_id nullable, out_trade_no, transaction_id nullable, provider_state PAID|NOT_PAID|CLOSED`。
 - `validation MATCH|MISMATCH`、稳定 `mismatch_code`、`amount_cents, currency, success_time nullable, received_at`。
-- `materialization_mode AUTO|DELAYED_MANUAL`：仅 MATCH + PAID + trusted `success_time < effective_deadline` 为 AUTO；等于/晚于、字段不匹配或快照异常均为 DELAYED_MANUAL。
+- `materialization_mode AUTO|DELAYED_MANUAL`。Observation DDL CHECK 只约束同表 nullable group：AUTO 必须 MATCH+PAID 且 success_time 非空；它不能跨表比较 deadline。ingress/apply transaction 必须先 `prepayments ... FOR UPDATE`，再以该锁行的 `effective_deadline` 判定 trusted `success_time < deadline`；等于/晚于、字段不匹配或快照异常均为 DELAYED_MANUAL，且不得使用 `received_at`。fresh MySQL 测试固定覆盖 `< / = / >` 三边界及乱序重放。
 - `apply_state NEW|APPLIED|DEFERRED, apply_reason_code, applied_at, record_version`；UNIQUE non-null transaction id；FK prepayment `ON UPDATE/DELETE RESTRICT`；不增加范围索引。
 
 不保存 raw callback、签名头、解密明文或证书。无效签名/解密失败不形成可信 Observation；已验证但字段 mismatch 必须 durable 并进入 shield。
 
 ### 5.5 Order、履约与取餐序列
 
-`pickup_sequences(service_date PK, last_number, updated_at)`，CHECK `0<=last_number<=9999`。仅在订单事务中 `SELECT ... FOR UPDATE` 后加一；事务回滚即不占号。
+`pickup_sequences(service_date PK, last_number, updated_at)`，CHECK `0<=last_number<=9999`。订单创建事务在锁完 Observation/Prepayment 后，用同一连接原子执行 `INSERT ... VALUES(service_date,LAST_INSERT_ID(1),now) ON DUPLICATE KEY UPDATE last_number=LAST_INSERT_ID(last_number+1),updated_at=VALUES(updated_at)`，随即在同 transaction 读取 `LAST_INSERT_ID()` 并插入 order/items；首次日期初始化为 1，并发日期行由主键串行化，超过 9999 触发 CHECK 整笔回滚。sequence 与 order 同 tx，事务回滚不烧号；禁止先建 sequence 行再另事务建单。
 
 `orders`：
 
@@ -245,7 +247,7 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 `refunds`：
 
 - `id, prepayment_id UNIQUE RESTRICT FK, order_id UNIQUE nullable RESTRICT FK, out_refund_no UNIQUE, idempotency_key_hash, amount_cents, currency='CNY', reason_code, requested_by_user/account nullable RESTRICT FK, created_at`。
-- 不可变 `provider_request_json/digest`；`provider_state READY|CREATE_UNKNOWN|PROCESSING|SUCCESS|CLOSED`；`create_attempted_at, provider_refund_id nullable`。
+- 不可变 `provider_request_json/digest`；`provider_state READY|CREATE_CLAIMED|CREATE_UNKNOWN|PROCESSING|SUCCESS|CLOSED`；`create_attempted_at, provider_refund_id nullable`。唯一 Create claim transaction 同时 CAS `READY→CREATE_CLAIMED`、写 attempted_at、CREATE lease/version 后提交；其后 provider 在 tx 外调用，任何崩溃/超时/过期 lease 恢复都只 Query，永不第二次 Create。
 - `materialization_state AWAITING_PROVIDER|APPLIED|PENDING_MANUAL`、`pending_reason_code, materialized_at nullable`；Create/Query lease 三字段、record version、next query、updated_at；不增加范围索引，MVP 退款行按 PK 小批 CAS 扫描。
 - CHECK 恰有 user 或 merchant requester；order 存在时 amount 必须等于 order payable，支付待处理退款则等于 prepayment expected amount，由事务校验；一笔 prepayment 最多一笔全额退款。
 
@@ -261,12 +263,12 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 
 v41–v44 将 `merchant_action_audits` 分阶段原地变为唯一 `action_audits`：
 
-- `id, actor_kind USER|MERCHANT|SYSTEM|PROVIDER, actor_scope_hash, actor_user_id nullable, actor_account_id nullable, actor_role_snapshot nullable, actor_auth_version nullable`。
+- `id, entry_kind LEGACY_EVIDENCE|COMMAND_RECEIPT|SYSTEM_EVIDENCE, actor_kind USER|MERCHANT|SYSTEM|PROVIDER, actor_scope_hash, actor_user_id nullable, actor_account_id nullable, actor_account_id_snapshot nullable, actor_role_snapshot nullable, actor_auth_version nullable`。
 - `action, target_type, target_id nullable, target_key_hash nullable, operation_key_hash, request_id_hash nullable, result SUCCEEDED|REJECTED, reason_code, before_state_json, after_state_json, response_json, occurred_at`。
-- UNIQUE `(actor_scope_hash,action,operation_key_hash)`；actor user/account 均 RESTRICT FK；不增加范围索引，按 PK cursor + exact target/actor 过滤。
-- CHECK：USER 只需 user；MERCHANT 需 user+account；SYSTEM/PROVIDER 两者均空。JSON 只含最小状态和可幂等重放的非 PII 结果；不保存手机号、姓名、openid、raw provider payload。
+- UNIQUE `(actor_scope_hash,action,operation_key_hash)`；NULL operation key 只允许 legacy/system evidence且不参与去重；live actor user/account 非空时各自为 RESTRICT FK，snapshot 不是 live FK；不增加范围索引，按 PK cursor + exact target/actor 过滤。
+- CHECK：新 COMMAND_RECEIPT 的 USER 需 live user，新 MERCHANT 需 live user+account，且 operation key/response 均非空；LEGACY_EVIDENCE 允许 operation key NULL，也允许只有 account snapshot 而无 live account；SYSTEM/PROVIDER live user/account 均空。snapshot 三字段全空或全非空。JSON 只含最小状态和可重放的非 PII 结果；不保存手机号、姓名、openid、raw provider payload。
 
-Audit 只用于证据查询；各 aggregate 当前表仍是唯一业务状态源，幂等结果保存在该业务 aggregate，不得先锁 audit 再锁业务行，也禁止用 audit 重建订单或配置。
+`action_audits` 同时是统一证据流与 authenticated business command 的 durable receipt，但不是 aggregate 状态源。业务 mutator 先锁/修改 aggregate，最后 insert `COMMAND_RECEIPT`；若 `(actor_scope,action,operation_key)` duplicate，整个业务 transaction 必须 rollback，随后在无业务锁的新只读 transaction 读取既有 `response_json` 并原样 replay。禁止先锁 receipt 再锁业务行；认证/provider intrinsic dedupe 仍由各自事实表承担。订单、配置、退款等当前状态永远从 aggregate 读取，禁止用 audit/receipt 重建。
 
 ### 5.8 状态 / nullable CHECK 真值表
 
@@ -278,6 +280,7 @@ DDL 的 CHECK 必须逐行等价于下表，不能只检查“若干字段一起
 | PC `APPROVED` | approval account/user/auth version/time | consume、access 全 N；`approved_at<=login_expires_at` |
 | PC `CONSUMED` | approval 全组、consumed_at、access hash/issued/expiry | 无 refresh/remember 字段；`consumed_at<=login_expires_at`，`access_expires_at=access_issued_at+12h` |
 | Prepayment `READY` | immutable request/deadline/version | create_attempted/prepay id/wx payment N |
+| Prepayment `CREATE_CLAIMED` | create_attempted_at、CREATE lease owner/expiry | prepay id/wx payment N；恢复路径只允许 Query |
 | Prepayment `CREATE_UNKNOWN` | create_attempted_at | prepay id/wx payment N |
 | Prepayment `PAYMENT_REQUESTED` | create_attempted_at、prepay id、wx payment | 三者不可部分存在 |
 | Prepayment `NOT_PAID/PAID/CLOSED` | create_attempted_at | prepay id 与 wx payment 为 PAIR；`PAID/CLOSED` 不可回退 |
@@ -285,7 +288,7 @@ DDL 的 CHECK 必须逐行等价于下表，不能只检查“若干字段一起
 | Prepayment materialization `APPLIED/REFUNDED_WITHOUT_ORDER` | materialized_at | pending_reason N |
 | Prepayment materialization `PENDING_MANUAL` | pending_reason | materialized_at N |
 | Payment/Refund Observation `validation=MATCH` | normalized identity fields | mismatch_code N；`MISMATCH` 则 mismatch_code NN |
-| Payment Observation `PAID` | transaction_id、amount、currency、success_time | 非 PAID 的 transaction_id/success_time N；AUTO 还必须 MATCH 且 `success_time<deadline` |
+| Payment Observation `PAID` | transaction_id、amount、currency、success_time | 非 PAID 的 transaction_id/success_time N；DDL 对 AUTO 只检查 MATCH/PAID/success_time 同表组，deadline 由锁 prepayment 的 ingress/apply tx 判定 |
 | Observation `NEW` | — | apply_reason/applied_at N |
 | Observation `APPLIED` | applied_at | apply_reason N |
 | Observation `DEFERRED` | apply_reason | applied_at N |
@@ -295,6 +298,7 @@ DDL 的 CHECK 必须逐行等价于下表，不能只检查“若干字段一起
 | Order `COMPLETED` | preparing/ready/completed、token hash/issued、redeemed account/time | ciphertext/key version/refund times N |
 | Order `REFUNDING/REFUNDED` | refunding_at；REFUNDED 再要求 refunded_at | ciphertext/key version N；hash/issued 为 PAIR；redeemed account/time/completed 为三列同空同非空；历史 `ready=>preparing`，`completed=>ready` |
 | Refund `READY` | immutable request | create_attempted/provider refund id N |
+| Refund `CREATE_CLAIMED` | create_attempted_at、CREATE lease owner/expiry | provider refund id N；恢复路径只允许 Query |
 | Refund `CREATE_UNKNOWN` | create_attempted_at | provider refund id N |
 | Refund `PROCESSING/SUCCESS/CLOSED` | create_attempted_at、provider refund id | 终态不可回退；PENDING_MANUAL iff pending_reason NN，APPLIED iff materialized_at NN |
 | Outbox `PENDING` | next_attempt_at | lease/sent_at/provider_message N |
@@ -304,6 +308,8 @@ DDL 的 CHECK 必须逐行等价于下表，不能只检查“若干字段一起
 | Import `PREVIEWED` | preview JSON/expiry | commit key/skip/result/committed N |
 | Import `COMMITTED` | commit key/skip/result/committed | staff preview JSON 必须清空；committed_at<=expiry |
 | Import `EXPIRED` | state | preview/commit/skip/result/committed 全 N |
+| Audit `LEGACY_EVIDENCE` | actor kind/scope、action/result/reason/time | operation key/response 可 N；live account 可 N；account snapshot 三列全空或全非空，且可在无 live account 时 NN |
+| Audit `COMMAND_RECEIPT` | authenticated live actor、operation key、response、action/result/time | USER 的 account N；MERCHANT 的 live account NN+RESTRICT FK；snapshot 可选但成组 |
 
 除 v1–v17 已集成目录读取索引及 PK、UNIQUE、FK 所需定点索引外，v18–v44 只新增三个非唯一范围索引：R1 `prepayments(next_reconcile_at,id)`、R2 `orders(state,pickup_at,id)`、R3 `notification_outbox(state,next_attempt_at,id)`。4000–5000 用户量级的财务、退款、审计、销量和导入过期查询用主键 cursor 小批扫描/日期条件，不为报表增加写放大索引。
 
@@ -336,9 +342,10 @@ type WriteMeta struct {
 type PageQuery struct { AfterID uint64; Limit uint16 } // Limit 1..100
 ```
 
+`WriteMeta` 是所有已认证、用户触发业务 mutator 的唯一元数据；Module 必须验证 `ActorUserID` 与认证 principal 一致，并以 `(actor scope, command, IdempotencyKey)` 在 action receipt 持久化首次非 PII 响应。认证 code exchange/QR consume 不接受客户端幂等键，分别以 provider code digest、`login_id+secret_hash` intrinsic dedupe；provider ingress 以 event/transaction intrinsic dedupe；worker 以 row id+record version/lease intrinsic dedupe。这三类例外不得伪造 `WriteMeta`。
+
 | Module | 冻结入口 |
 | --- | --- |
-`WriteMeta` 是所有已认证、用户触发业务 mutator 的唯一元数据；Module 必须验证 `ActorUserID` 与认证 principal 一致，并以 `(actor scope, command, IdempotencyKey)` 持久化首次结果。认证 code exchange/QR consume 不接受客户端幂等键，分别以 provider code digest、`login_id+secret_hash` intrinsic dedupe；provider ingress 以 event/transaction intrinsic dedupe；worker 以 row id+record version/lease intrinsic dedupe。这三类例外不得伪造 `WriteMeta`。
 
 | `Identity` | `IssueSession(ctx, LoginCode) (Session,error)`；`Authenticate(ctx, Token) (UserID,error)`；`View(ctx, UserID) (UserIdentity,error)`；`BindPrimaryPhone(ctx, UserID, PhoneCode) (UserIdentity,error)`；`SetExtraPhone(ctx, WriteMeta, ExtraPhoneClaim) (UserIdentity,error)`；前两项 mutation 使用 provider-code intrinsic dedupe |
 | `MerchantAuth` | `Identity(ctx,UserID)`；`LoginMini(ctx,UserID,PhoneCode)`；`BeginPCLogin(ctx)`；`ApprovePCLogin(ctx,UserID,LoginID,ApprovalSecret,PhoneCode)`；`PollPCLogin(ctx,LoginID,PollSecret)`；`AuthenticatePC(ctx,Token)`；`ExecuteAccount(ctx,WriteMeta,AccountCommand)`；`AuthorizeInTx(ctx,tx,UserID,Action,Target)`；auth/QR 用 intrinsic dedupe，账号业务命令必须 WriteMeta |
@@ -352,13 +359,13 @@ type PageQuery struct { AfterID uint64; Limit uint16 } // Limit 1..100
 | `Refund` | `RequestOrder(ctx,WriteMeta,OrderID,Reason)`；`RequestPaidPrepayment(ctx,WriteMeta,PrepaymentID,Reason)`；`IngestRefund(ctx,VerifiedRefund)`；`RunDue(ctx,Now,Limit)`；`ListPending` |
 | `Subscription` | `RecordConsent(ctx,WriteMeta,ConsentInput)`；`EnqueueInTx(ctx,tx,NotificationIntent)`；`RunDue(ctx,Now,Limit)` |
 | `Import` | `Preview(ctx,WriteMeta,ImportKind,XLSX)`；`Commit(ctx,WriteMeta,PreviewToken,SkipInvalid)` |
-| `Audit` | `AppendInTx(ctx,tx,AuditEntry)`；`Search(ctx,OwnerUserID,AuditFilter,PageQuery)` |
+| `Audit` | `AppendReceiptInTx(ctx,tx,WriteMeta,CommandResult)`，必须 insert-last；`ReplayReceipt(ctx,ActorScope,Action,OperationKey)`；`AppendEvidenceInTx(ctx,tx,AuditEntry)`；`Search(ctx,OwnerUserID,AuditFilter,PageQuery)` |
 | `Billing` | `Summary(ctx,OwnerUserID,BillingRange)`；`ListPayments(ctx,OwnerUserID,BillingQuery,PageQuery)`；`ListRefunds(...)`；`ExportCSV(...)`；`RunReconcile(ctx,BillDate,Limit)`；前三项只读派生，reconcile 以 bill date+provider bill digest intrinsic dedupe，把单边账投影到既有 prepayment/refund pending 事实并写 audit，不建账单/汇总表 |
 
 仅三个真实外部 seam，各自必须有 production adapter 与 deterministic fake adapter：
 
 1. `MiniProgramAdapter`：ExchangeLoginCode、ExchangePhoneCode、SendSubscription。
-2. `WeChatPayAdapter`：CreateJSAPI、QueryTransaction、CloseTransaction、ParsePaymentNotification、CreateRefund、QueryRefund、ParseRefundNotification、DownloadTransactionBill；下载账单返回受限 stream+provider digest，由 Billing 当次派生核对。
+2. `WeChatPayAdapter`：CreateJSAPI、QueryTransaction、CloseTransaction、ParsePaymentNotification、CreateRefund、QueryRefund、ParseRefundNotification、DownloadTransactionBill；下载账单返回受限 stream+provider digest，由 Billing 当次派生核对。deterministic fake 的 `DownloadTransactionBill` 按 bill date 返回稳定排序/稳定 digest，并可显式注入微信侧单边账或系统侧单边账，禁止用随机行掩盖 reconcile 错误。
 3. `ObjectStoreAdapter`：PutImage、PublicURL；MySQL 只保存 object key。
 
 Module-owned 稳定错误：通用 `ErrInvalidInput / ErrUnauthenticated / ErrForbidden / ErrNotFound / ErrIdempotencyConflict / ErrUnavailable`；Quote 另有 `ErrExpired / ErrQuoteStale / ErrItemUnavailable / ErrPickupCutoffPassed / ErrPaymentAmountTooSmall / ErrSnapshotInvalid`；MerchantAuth 有 `ErrLastOwner / ErrAccountNotAvailable / ErrPCLoginExpired / ErrPCSessionExpired`；Fulfillment 有 `ErrTransitionNotAllowed / ErrRedemptionInvalid`；Import 有 `ErrInvalidFile / ErrInvalidTemplate / ErrFileTooLarge / ErrTooManyRows / ErrPreviewExpired`；Billing 有 `ErrBillUnavailable / ErrBillMismatch`。错误不得携带 PII。Payment Apply 遇 `ErrUnavailable` 保留 durable Observation 并重试；遇 `ErrSnapshotInvalid` 把 Observation/Prepayment 置 `DEFERRED/PENDING_MANUAL`，绝不伪造新 Pending 记录或丢失外部事实。
@@ -519,6 +526,6 @@ Review 规则：任一 finding 修改本稿即使旧 Review 失效；最终 `FRO
 
 ## 13. 外部资产与本地可完成边界
 
-本地 fake-provider 必须完成：openid/phone exchange seam、JSAPI Create/Query/callback、退款 Create/Query/callback、订阅发送、对象存储 object key/URL、PC QR approve/poll、fresh MySQL 全链路与三端 UI1。
+本地 fake-provider 必须完成：openid/phone exchange seam、JSAPI Create/Query/callback、退款 Create/Query/callback、订阅发送、对象存储 object key/URL、PC QR approve/poll、deterministic transaction bill download（稳定 digest/排序）及支付/退款单边账 reconcile、fresh MySQL 全链路与三端 UI1。
 
 只列 `TODO/BLOCKED_EXTERNAL`：真实 appid/mchid、AppSecret、APIv3 key、商户私钥/平台证书、真实支付/退款资金、微信订阅模板审批、真实手机号/商户/员工名单、COS bucket/CAM/域名、DevTools 登录与 UI3、提审/发布。秘密、证书内容、DSN、真实 PII 不入业务表、客户端、日志、Gate 台账或本文档。
