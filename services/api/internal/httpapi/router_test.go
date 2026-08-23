@@ -22,6 +22,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gaofeng30/order/services/api/internal/menu"
+	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/migrations"
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,7 @@ var catalogSmokeSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestRouterMiniProgramSessionIsVersionedAndCatalogMenuRemainAnonymous(t *testing.T) {
 	issuer := &routerIdentityIssuer{issued: identity.IssuedSession{AccessToken: "router-token", ExpiresAt: time.Date(2026, 8, 21, 0, 0, 0, 0, time.UTC)}}
-	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), identity.NewHandler(issuer), testPhoneHandler())
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), identity.NewHandler(issuer), testPhoneHandler(), testMerchantIdentityHandler())
 
 	session := httptest.NewRecorder()
 	sessionRequest := httptest.NewRequest(http.MethodPost, "/api/v1/auth/miniprogram/session", strings.NewReader(`{"code":"router-code"}`))
@@ -81,7 +82,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		calls++
 		return ReadinessResult{Ready: false, Reason: "database_unreachable"}
-	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 
 	recorder := httptest.NewRecorder()
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/live", nil))
@@ -95,7 +96,7 @@ func TestHealthLivenessDoesNotCallReadiness(t *testing.T) {
 func TestHealthReadinessReturnsCurrent(t *testing.T) {
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Ready: true}
-	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -116,7 +117,7 @@ func TestHealthReadinessReturnsStableFailureReasons(t *testing.T) {
 		t.Run(reason, func(t *testing.T) {
 			router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 				return ReadinessResult{Reason: reason}
-			}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+			}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 			recorder := httptest.NewRecorder()
 
 			router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -130,7 +131,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 	const canary = "health-canary-secret-must-not-leak"
 	router := NewRouter(discardLogger(), func(context.Context) ReadinessResult {
 		return ReadinessResult{Reason: canary}
-	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	}, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 	recorder := httptest.NewRecorder()
 
 	router.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/health/ready", nil))
@@ -142,7 +143,7 @@ func TestHealthReadinessDoesNotExposeUnknownReason(t *testing.T) {
 }
 
 func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
-	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		recorder := httptest.NewRecorder()
@@ -167,7 +168,7 @@ func TestHealthRoutesRejectWrongMethodAndUnknownPath(t *testing.T) {
 
 func TestCatalogRoutesAreRegisteredWithoutChangingRoot404And405(t *testing.T) {
 	reader := &catalogReaderStub{categories: []catalog.Category{}}
-	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	router := NewRouter(discardLogger(), alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 
 	list := httptest.NewRecorder()
 	router.ServeHTTP(list, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -203,6 +204,7 @@ func TestMenuRoutesAreVersionedAndPreserveCatalogContract(t *testing.T) {
 		menu.NewHandler(menuReader, func() time.Time { return now }),
 		testIdentityHandler(),
 		testPhoneHandler(),
+		testMerchantIdentityHandler(),
 	)
 
 	valid := httptest.NewRecorder()
@@ -240,7 +242,7 @@ func TestCatalogUnavailableDoesNotLeakRepositoryErrorToBodyOrAccessLog(t *testin
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	reader := &catalogReaderStub{listErr: errors.New(canary)}
-	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	router := NewRouter(logger, alwaysReady, catalog.NewHandler(reader), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/catalog", nil))
@@ -298,7 +300,7 @@ func TestFoundationAndCatalogIntegration(t *testing.T) {
 		state := migrate.Check(ctx, db, migrationSet)
 		return ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
-	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)), testMenuHandler(), testIdentityHandler(), testPhoneHandler())
+	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 	assertSmokeResponse(t, router, "/health/ready", http.StatusOK, `{"status":"ok"}`)
 	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[]}`)
 
@@ -486,11 +488,106 @@ func testPhoneHandler() *identity.PhoneHandler {
 	return identity.NewPhoneHandler(&routerPhoneAuthenticator{userID: 42}, &routerPhoneBinder{err: identity.ErrUnavailable})
 }
 
+func testMerchantIdentityHandler() *merchantidentity.Handler {
+	return merchantidentity.NewHandler(
+		&routerPhoneAuthenticator{userID: 42},
+		&routerMerchantApplication{err: merchantidentity.ErrUnavailable},
+	)
+}
+
+func TestRouterRegistersOnlyVersionedMerchantIdentityRoutes(t *testing.T) {
+	application := &routerMerchantApplication{identity: merchantidentity.Identity{
+		PrimaryPhoneBound: true,
+		Merchant:          &merchantidentity.MerchantProjection{Role: merchantidentity.RoleOwner, AuthVersion: 7},
+	}}
+	merchantHandler := merchantidentity.NewHandler(&routerPhoneAuthenticator{userID: 42}, application)
+	router := NewRouter(
+		discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), merchantHandler,
+	)
+
+	identityResponse := httptest.NewRecorder()
+	identityRequest := httptest.NewRequest(http.MethodGet, "/api/v1/me/identity", nil)
+	identityRequest.Header.Set("Authorization", "Bearer router-merchant-session")
+	router.ServeHTTP(identityResponse, identityRequest)
+	assertJSONResponse(t, identityResponse, http.StatusOK, `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":7}}`)
+
+	loginResponse := httptest.NewRecorder()
+	loginRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/merchant-login", strings.NewReader(`{"code":"router-merchant-code"}`))
+	loginRequest.Header.Set("Content-Type", "application/json")
+	loginRequest.Header.Set("Authorization", "Bearer router-merchant-session")
+	router.ServeHTTP(loginResponse, loginRequest)
+	assertJSONResponse(t, loginResponse, http.StatusOK, `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":7}}`)
+
+	for _, route := range []struct {
+		method string
+		path   string
+	}{
+		{http.MethodGet, "/me/identity"},
+		{http.MethodPost, "/api/v1/merchant-login"},
+		{http.MethodPost, "/api/v1/me/merchant-login/anything"},
+	} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequest(route.method, route.path, nil))
+		if response.Code != http.StatusNotFound || response.Body.Len() != 0 {
+			t.Fatalf("unexpected merchant compatibility route %s %s", route.method, route.path)
+		}
+	}
+	if application.identityCalls != 1 || application.loginCalls != 1 || application.loginCode != "router-merchant-code" {
+		t.Fatal("merchant routes were not isolated to their intended operation")
+	}
+}
+
+func TestMerchantIdentityDoesNotLeakInputOrFailureToResponseOrAccessLog(t *testing.T) {
+	const inputCanary = "merchant-login-input-canary"
+	const failureCanary = "merchant-persistence-failure-canary"
+	var output bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&output, nil))
+	merchantHandler := merchantidentity.NewHandler(
+		&routerPhoneAuthenticator{userID: 42},
+		&routerMerchantApplication{err: errors.New(failureCanary)},
+	)
+	router := NewRouter(
+		logger, alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), merchantHandler,
+	)
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/me/merchant-login", strings.NewReader(`{"code":"`+inputCanary+`"}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer merchant-session-canary")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	assertJSONResponse(t, response, http.StatusServiceUnavailable, `{"error":{"code":"MERCHANT_IDENTITY_UNAVAILABLE","message":"merchant identity temporarily unavailable"}}`)
+	combined := response.Body.String() + output.String()
+	for _, canary := range []string{inputCanary, failureCanary, "merchant-session-canary"} {
+		if strings.Contains(combined, canary) {
+			t.Fatal("merchant identity response or access log leaked a canary")
+		}
+	}
+}
+
+type routerMerchantApplication struct {
+	identity      merchantidentity.Identity
+	err           error
+	identityCalls int
+	loginCalls    int
+	loginCode     string
+}
+
+func (application *routerMerchantApplication) Identity(context.Context, uint64) (merchantidentity.Identity, error) {
+	application.identityCalls++
+	return application.identity, application.err
+}
+
+func (application *routerMerchantApplication) Login(_ context.Context, _ uint64, code, _ string) (merchantidentity.Identity, error) {
+	application.loginCalls++
+	application.loginCode = code
+	return application.identity, application.err
+}
+
 func TestRouterPhoneBindingIsRouteSpecificAndVersioned(t *testing.T) {
 	authenticator := &routerPhoneAuthenticator{userID: 42}
 	binder := &routerPhoneBinder{result: identity.PhoneBinding{MaskedPhone: "+*********5678"}}
 	phoneHandler := identity.NewPhoneHandler(authenticator, binder)
-	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), phoneHandler)
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), phoneHandler, testMerchantIdentityHandler())
 
 	phone := httptest.NewRecorder()
 	phoneRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/bind-phone", strings.NewReader(`{"code":"router-phone-code"}`))
@@ -529,6 +626,7 @@ func TestRouterPrimaryPhoneStatusIsRouteSpecificAndVersioned(t *testing.T) {
 	router := NewRouter(
 		discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(),
 		identity.NewPhoneHandler(authenticator, binder),
+		testMerchantIdentityHandler(),
 	)
 
 	statusResponse := httptest.NewRecorder()

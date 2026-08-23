@@ -1,0 +1,1527 @@
+# implement-merchant-identity-rbac-core evidence
+
+## Checklist
+
+- [x] fixed base/worktree/branch、v12/v13/merchantidentity 缺失、规则/PRD/skills/冻结 reference provenance 已只读核验。
+- [x] shared router/main ownership 无当前冲突；冻结 `T1 -> T4` 顺序已记录。
+- [x] DRAFT 已声明 W3/UI0、依赖、owned/read-only/non-goals、HTTP/schema/transaction/PII、seams、RGR、三阶段命令、外部资产与恢复。
+- [x] strict HTTP vertical slices 完成真实 Red→Green。
+- [x] v12/v13 migration chain/schema 完成真实 Red→Green。
+- [x] merchant-login/identity transaction、audit、concurrency/fault recovery 完成真实 Red→Green。
+- [x] transaction-bound AuthorizeInTx 与实时账号变化完成真实 Red→Green。
+- [x] Refactor 后 focused/race/fresh MySQL/full/vet/build/smoke/gofmt/diff/owned/PII Gate PASS。
+- [ ] 中文功能提交后 fixed-base Standards/Spec 双轴 Review PASS；finding replacement SHA 从头重验。
+- [ ] 主控独立审计批准后，fresh detached exact-SHA verifier PASS。
+
+## Evidence
+
+仅追加已实际发生的脱敏决定性证据；禁止记录请求原文、手机号、姓名、openid、code/token、provider body、认证材料或数据库凭据。
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-audit-target focused plus race; fresh MySQL 8.0.46; repository-wide test plus race; vet; controlled build; smoke; format, diff, ownership, migration, structure, lifecycle, evidence, PII, container and artifact checks
+exit_result: PASS
+sanitized_summary: all exact resolved and unresolved merchant-login audit paths now enforce the frozen target pair, both targeted mutations are killed, and every declared Writer Gate passed without a production-code change in this cycle
+artifact_or_environment: replacement WIP test and task tree before commit; disposable MySQL credentials and containers cleaned and build output confined to the controlled temporary directory
+unverified_boundary: replacement clean WIP SHA, fresh fixed-base Standards and Spec review, controller approval and detached exact-SHA verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: rerun the complete Gate after this evidence change, commit the replacement, and externally pin both reviews to clean HEAD
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 5b42e015da7ec4688553536a47b2ab2c975d14af
+phase: red
+command_or_action: structural exact-audit checker plus controller disposable resolved-target deletion mutation against fresh MySQL W3
+exit_result: FAIL
+sanitized_summary: no merchant-login exact audit assertion read target_type or target_id, so deleting both resolved production assignments still passed the prior W3 suite; the clean WIP SHA and both in-flight reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 5b42e015da7ec4688553536a47b2ab2c975d14af; controller disposable copy and interrupted reviewer copy cleaned
+unverified_boundary: resolved and unresolved target assertions, two mutation kills, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: assert the frozen target pair on every exact resolved and unresolved merchant-login audit path
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL exact target assertions, followed by sequential reversible resolved-target deletion and unresolved-target injection mutations, then restored-source rerun
+exit_result: PASS
+sanitized_summary: resolved merchant-login audits now require target_type merchant_account and exact account ID while unresolved audits require both target columns null; deleting resolved assignments and injecting unresolved targets each fail multiple W3 cases, and restored production code passes unchanged
+artifact_or_environment: shared MySQL fixture assertion used by first binding, idempotent and concurrent success, resolved rejection, unresolved rejection, deadlock and PII scenarios; both production mutations fully restored and disposable containers cleaned
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun both mutation kills after any merchant_action_audits target-writing change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-recovery-proof and existing-primary branch focused plus race; fresh MySQL 8.0.46; repository-wide test plus race; vet; controlled build; smoke; format, diff, ownership, migration, structure, lifecycle, evidence, PII, container and artifact checks
+exit_result: PASS
+sanitized_summary: ALREADY_BOUND is excluded from rejected-code success proof and the existing-same-primary FIRST_BINDING path has exact durable facts plus a mutation kill; every declared Writer Gate passed with no partial write, sensitive output or unmanaged artifact
+artifact_or_environment: final replacement WIP tree before commit; disposable MySQL credentials and containers cleaned and build output confined to the controlled temporary directory
+unverified_boundary: replacement clean WIP SHA, fresh fixed-base Standards and Spec review, controller approval and detached exact-SHA verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the complete replacement, externally pin reviews to the clean HEAD, and prohibit verifier until controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: da380627dc7cffc29cce80eb1c9e669225fe33c9
+phase: red
+command_or_action: fresh MySQL three-request proof sequence with a rejected attempt, an independent FIRST_BINDING and a later provider-free ALREADY_BOUND audit using the rejected hash
+exit_result: FAIL
+sanitized_summary: RecoverRejectedLogin accepted the ALREADY_BOUND audit as success proof and returned nil instead of PHONE_CODE_REJECTED, invalidating the clean WIP SHA and both old reviews
+artifact_or_environment: exact externally pinned WIP SHA da380627dc7cffc29cce80eb1c9e669225fe33c9; disposable MySQL container cleaned
+unverified_boundary: reason-restricted recovery, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: accept only provider-validated binding success reasons for same-code recovery and rerun the exact sequence
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same three-request proof sequence after restricting success evidence to FIRST_BINDING or CONCURRENT_BINDING_CONFIRMED
+exit_result: PASS
+sanitized_summary: provider-free ALREADY_BOUND can no longer confirm a rejected code; the rejection is durably audited with all account snapshots null while the independent binding and primary phone remain unchanged
+artifact_or_environment: owned repository reason predicate and fresh MySQL 8.0.46 suite; container and credentials cleaned
+unverified_boundary: full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: preserve the provider-validated reason allowlist in every recovery query change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: da380627dc7cffc29cce80eb1c9e669225fe33c9
+phase: red
+command_or_action: structural branch checker plus controller disposable mutation that rejects any already-present primary phone before FIRST_BINDING
+exit_result: FAIL
+sanitized_summary: no explicit real-MySQL proof existed for an unbound enabled merchant account when the current user already held the same primary phone; the mutation passed the old W3 suite and exposed a 503 regression blind spot
+artifact_or_environment: exact invalid WIP SHA da380627dc7cffc29cce80eb1c9e669225fe33c9; controller disposable copy was cleaned
+unverified_boundary: exact success audit, unchanged primary binding, account version update, mutation kill and full Writer Gate remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: add the missing real-MySQL FIRST_BINDING branch proof before changing production behavior
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL existing-same-primary FIRST_BINDING scenario, reversible currentPhone.Valid failure mutation, then restored-source fresh rerun
+exit_result: PASS
+sanitized_summary: the exact SUBACCOUNT/auth_version projection, FIRST_BINDING account and audit snapshots, domain-separated idempotency hash and version increments pass while the original primary phone timestamp remains exact; the targeted mutation now fails the new branch and restored source passes
+artifact_or_environment: owned login-audit branch test and integration entry; temporary mutation fully restored and disposable containers cleaned
+unverified_boundary: full Writer Gate, replacement review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the mutation kill after any CompleteLogin current-primary branch change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: c3fb54ba9b72ee1c586eae669a4f2aee70d7732e
+phase: red
+command_or_action: branch-map checker for ALREADY_BOUND, enabled same/different-phone CompleteLogin and confirmed RecoverRejectedLogin, correlated with controller mutation evidence
+exit_result: FAIL
+sanitized_summary: no explicit branch proofs existed; controller mutations showed enabled same-phone failure, enabled different-phone empty snapshot and confirmed-recovery empty snapshot could each pass the old W3 suite, invalidating the WIP and in-flight phase-only cycle
+artifact_or_environment: exact WIP SHA c3fb54ba9b72ee1c586eae669a4f2aee70d7732e; controller disposable mutation copy was already cleaned
+unverified_boundary: real branch tests, exact idempotency and audit facts, zero-write proofs, mutation kills, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: add one focused real-MySQL branch map without altering business outcomes, then require all three mutations to fail independently
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL 8.0.46 exact branch tests, followed by three sequential reversible mutations and a clean restoration run
+exit_result: PASS
+sanitized_summary: ALREADY_BOUND and both CONCURRENT_BINDING_CONFIRMED sources now prove exact result, reason, account, role, auth version and domain-separated idempotency hash with zero identity/account writes; forced same-phone failure and both empty-snapshot mutations each fail W3, while the restored source passes
+artifact_or_environment: owned 91-line login-audit branch test and integration entry; three temporary repository mutations were applied and restored with no remaining repository diff; every disposable merchant MySQL container was cleaned
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun all three mutation kills after any resolved-login audit or concurrent completion change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-resolved-login-branch-map focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; phase/structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after adding exact ALREADY_BOUND, enabled same/different-phone completion and confirmed recovery audit proofs; all three targeted mutations are killed and restored production source remains unchanged
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the branch tests and evidence-only phase correction, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: c3fb54ba9b72ee1c586eae669a4f2aee70d7732e
+phase: red
+command_or_action: evidence phase-enum checker against docs/quality/change-quality-gates.md
+exit_result: FAIL
+sanitized_summary: one combined green_refactor value was outside the allowed red, green, refactor, writer, verifier and integration vocabulary; the WIP SHA and both review axes were invalidated
+artifact_or_environment: exact externally pinned WIP SHA c3fb54ba9b72ee1c586eae669a4f2aee70d7732e
+unverified_boundary: split evidence, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: preserve the actual behavioral Green and later structure-only Refactor as two chronological records
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same phase-enum checker after splitting the combined record
+exit_result: PASS
+sanitized_summary: every evidence phase now belongs to the documented vocabulary and the two records preserve the real behavior-first then fixture-refactor chronology without changing code or test claims
+artifact_or_environment: owned task evidence only
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject any future evidence phase outside the documented enum
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-evidence-phase focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the evidence-only phase split; all product, concurrency, audit and privacy behavior remained unchanged and green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the corrected task evidence and lifecycle invalidation, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 436913842081ba4b3cfcf97cbd5d24c0736b801b
+phase: red
+command_or_action: static coverage checker for the concurrent-bound disabled same-phone CompleteLogin branch
+exit_result: FAIL
+sanitized_summary: the suite covered provider-free StartLogin rejection and different-phone completion but never reached same-phone CompleteLogin after a concurrent binding was disabled; wrong snapshot data in that branch could pass, so the WIP SHA and both reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 436913842081ba4b3cfcf97cbd5d24c0736b801b
+unverified_boundary: real MySQL branch coverage, exact snapshot and zero-write assertions, structural refactor, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: complete the disabled concurrent binding with its unchanged primary phone and assert the 403 audit plus every persisted state remains exact
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL 8.0.46 same-phone completion after bind-disable before test-fixture refactor
+exit_result: PASS
+sanitized_summary: the branch returns provider-free ACCOUNT_NOT_AVAILABLE with exact account, role and auth snapshot; primary phone/time, binding/time/state/versions and peer account remain unchanged
+artifact_or_environment: owned recovery/concurrency MySQL test at the behavioral Green point; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: recovery test was temporarily 672 lines before fixture refactor; structure Gate, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain the same-phone and different-phone disabled concurrent-binding scenarios through the structure-only refactor
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: refactor
+command_or_action: mechanically move the existing concurrent phone-provider fixture to shared helpers, then rerun structure checks and the same fresh MySQL scenario
+exit_result: PASS
+sanitized_summary: no assertion or business behavior changed; recovery/concurrency and shared-helper files finish at 641/10 and 193/10 lines/functions and the same behavior remains green
+artifact_or_environment: owned recovery/concurrency and shared fixture MySQL tests; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: keep fixtures under shared helper ownership and rerun identical behavior after any future move
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-disabled-same-phone-completion focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with both phone-equal and phone-mismatch completion paths after a concurrent binding is disabled, each proving exact durable audit facts and zero partial identity or account writes
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the branch coverage and fixture-only refactor, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 415450bb67e3cd0920bf670f4d710007be0c39fa
+phase: red
+command_or_action: static disabled-existing-binding audit snapshot checker
+exit_result: FAIL
+sanitized_summary: the real MySQL scenario read only account_id_snapshot, result and reason, so an incorrect role_snapshot or auth_version_snapshot could pass despite the broad resolved-rejection evidence claim; the WIP SHA and both reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 415450bb67e3cd0920bf670f4d710007be0c39fa
+unverified_boundary: exact disabled snapshot assertion, fresh MySQL Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: read the disabled account role and auth version immediately before merchant-login and compare both durable audit fields exactly after rejection
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static checker plus fresh MySQL 8.0.46 disabled existing-binding login rejection
+exit_result: PASS
+sanitized_summary: account_id_snapshot, role_snapshot and auth_version_snapshot now each equal the exact account facts read before login; result and reason remain exact, provider remains bypassed, and no business implementation change was needed
+artifact_or_environment: owned authorization/live-state MySQL test; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain exact disabled-binding audit snapshot comparisons after future authorization test changes
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-disabled-snapshot focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the disabled existing-binding audit gained exact pre-call role and auth-version comparisons; all identity, recovery, authorization and privacy behavior remained unchanged and green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the strengthened test and lifecycle evidence, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: dd56e01ba56984c79ab08fbc05acb9840a00c977
+phase: red
+command_or_action: static exact-audit-snapshot checker over resolved rejection scenarios
+exit_result: FAIL
+sanitized_summary: audit assertions accepted any valid role and, in the general rejection matrix, any positive auth version; swapped or stale snapshots could pass, so the WIP SHA and both review axes were invalidated
+artifact_or_environment: exact externally pinned WIP SHA dd56e01ba56984c79ab08fbc05acb9840a00c977
+unverified_boundary: exact role/version assertions, fresh MySQL Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: read the expected account role and auth version before the login attempt and compare both snapshot fields exactly after rejection
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same exact-audit-snapshot checker plus fresh MySQL 8.0.46 resolved-rejection matrix
+exit_result: PASS
+sanitized_summary: every resolved rejection now proves role_snapshot and auth_version_snapshot exactly match the pre-call account facts; unresolved snapshots remain all empty and recovery/concurrency test sizes remain within limits
+artifact_or_environment: owned merchantidentity MySQL tests; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain exact role and version comparisons after any rejection-matrix or audit-fixture refactor
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-exact-audit-snapshot focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact pre-call role and auth-version comparisons for every resolved rejection while all HTTP, migration, concurrency, authorization and privacy contracts remained green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the strengthened snapshot assertions and lifecycle evidence, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 4366df80fbe88832e1246e6d124fbccb017a2cf7
+phase: red
+command_or_action: static zero-partial-write proof checker over the bind-disable-different-phone fresh-MySQL scenario
+exit_result: FAIL
+sanitized_summary: the scenario did not read primary_phone_bound_at or merchant bound_at after rejection and therefore could not prove the claimed complete before-after state preservation; the WIP SHA and both review axes were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 4366df80fbe88832e1246e6d124fbccb017a2cf7
+unverified_boundary: strengthened state assertions, fresh MySQL Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: capture the disabled binding before completion and compare every binding timestamp, state and version after rejection, while also re-reading the primary-phone timestamp and provider-phone account
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static proof checker plus fresh MySQL 8.0.46 bind-disable-different-phone scenario with complete before-after state assertions
+exit_result: PASS
+sanitized_summary: the rejection now proves primary phone and bound time unchanged, bound account user/time/enabled/versions byte-for-state equal to the pre-call snapshot, and the provider-phone account still unbound at initial versions; the test remains within 646 lines and 12 functions
+artifact_or_environment: owned recovery/concurrency MySQL test; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain both the static proof checker and the real MySQL scenario after any future test restructuring
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-zero-partial-write-assertions focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact post-rejection primary phone and bound-time assertions plus the existing account, version, peer-account and durable-audit checks; no implementation change was needed
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the strengthened test and lifecycle evidence, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 6a40d0fe70602163983cb9f7373a0a0e293d8ae3
+phase: red
+command_or_action: fresh MySQL 8.0.46 sequence that binds an account, disables it, and then completes an already-started provider exchange with a different valid normalized phone
+exit_result: FAIL
+sanitized_summary: the concurrent-bound branch returned MERCHANT_ACCOUNT_NOT_AVAILABLE before evaluating the primary-phone mismatch; the WIP SHA and both review axes were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: minimal branch-order Green, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: decide the completion-time phone mismatch before enabled only in the concurrent-bound branch, retaining the resolved account snapshot and disabled state summary
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 bind-disable-different-phone completion sequence after swapping mismatch and enabled precedence
+exit_result: PASS
+sanitized_summary: the already-started completion now returns durable PRIMARY_PHONE_MISMATCH with a complete internal snapshot of the disabled bound account; primary phone, binding, versions and the provider-phone account receive no partial writes
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: complete Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun both enabled and disabled concurrent-bound phone mismatch scenarios after any completion precedence change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-disabled-concurrent-mismatch focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the concurrent-bound branch made completion-time phone mismatch precede enabled state; all existing login, recovery, authorization and privacy contracts stayed green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact branch-order fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 168265551f912647bbda1dd5e92ada83c4d102fe
+phase: red
+command_or_action: fresh MySQL 8.0.46 business-rejection matrix for an existing primary phone that differs from the provider phone across unresolved, disabled, bound-other and enabled-unbound merchant states
+exit_result: FAIL
+sanitized_summary: unresolved, disabled and bound-other provider phones returned MERCHANT_ACCOUNT_NOT_AVAILABLE while enabled-unbound returned PRIMARY_PHONE_MISMATCH, exposing list-state-dependent errors; the WIP SHA and both reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: stable precedence, snapshot classification, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: keep the account lookup for durable snapshot classification but decide primary-phone mismatch before all normal account availability states
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 mismatch matrix after making the error independent of merchant list state
+exit_result: PASS
+sanitized_summary: every existing-primary mismatch now returns durable PRIMARY_PHONE_MISMATCH without changing phone or binding; unresolved provider phones retain empty snapshots and every actually resolved account retains a complete internal snapshot
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the full mismatch state matrix after any account lookup or login error-precedence change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-error-precedence focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with PRIMARY_PHONE_MISMATCH stable across unresolved, disabled, bound-other and enabled-unbound merchant states while durable snapshots remain empty only when no account was resolved
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact precedence fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: b1a2d5a64c0d92559d01ba11a49f17ed544701f1
+phase: red
+command_or_action: fresh MySQL 8.0.46 race with two initially unbound merchant-login requests whose successful provider exchanges resolve different normalized phones
+exit_result: FAIL
+sanitized_summary: both requests incorrectly returned success because the second CompleteLogin accepted a concurrent binding without comparing its provider phone to the newly bound primary phone; the WIP SHA and both reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: minimal consistency check, Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: require the provider phone to equal the current primary phone only in the concurrent-binding completion branch and retain a durable mismatch rejection otherwise
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 concurrent successful-provider race after adding the completion-time primary-phone comparison
+exit_result: PASS
+sanitized_summary: exactly one account and its primary phone bind atomically; the competing different phone returns PRIMARY_PHONE_MISMATCH with one durable rejection, while existing pre-request binding remains provider-free and does not recompare phone
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun successful-provider mismatch together with same-code rejection recovery after any CompleteLogin change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-concurrent-phone focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exactly one atomic binding and one durable PRIMARY_PHONE_MISMATCH for concurrent successful provider exchanges returning different phones; same-code rejection recovery and all existing contracts remained green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: a6e88d87c27c99a87a4c29c42cd018c15889a42a
+phase: red
+command_or_action: fresh MySQL 8.0.46 race scenario with two concurrent merchant-login requests using different provider codes
+exit_result: FAIL
+sanitized_summary: different codes incorrectly produced two successful responses because recovery proved only user, account, auth_version and time; WIP SHA and both review axes were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: same-code hash proof, Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: domain-separate and hash each accepted code, persist only its hash with the success audit, and require the same hash during restricted recovery
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 race scenario after adding domain-separated code-hash proof to every merchant-login database phase
+exit_result: PASS
+sanitized_summary: same code still converges after exact committed proof; different codes now retain exactly one success and one PHONE_CODE_REJECTED with empty account snapshot; audit stores only the 32-byte domain-separated hash and never the raw code
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun same-code, different-code, version-drift, disable and PII scenarios after any recovery-proof change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-code-proof focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact same-code convergence, different-code rejection, version-drift and disable rejection, commit-unknown recovery and raw-code exclusion all green
+artifact_or_environment: final replacement WIP tree before commit; MySQL/build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact proof change, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b
+phase: red
+command_or_action: clean-gate inspection and controlled-build static assertion
+exit_result: FAIL
+sanitized_summary: one untracked worktree-root order-api Mach-O matched the repository order-api main package and was created after the WIP commit during review; it was moved to Trash and no other change remained, then the checker proved build output was not yet forced into controlled temporary storage
+artifact_or_environment: exact externally pinned WIP SHA d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b and its worktree
+unverified_boundary: controlled build wrapper, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer/reviewer/verifier/integration runners
+  missing: enforced worktree-clean build output boundary
+  recovery: route every build through one mktemp directory with exit cleanup and assert the worktree stays clean
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same controlled-build static assertion and verify-build.sh producing both API binaries under mktemp
+exit_result: PASS
+sanitized_summary: Writer, verifier and any future authorized integration build now share one wrapper; both binaries are executable only under controlled temporary output, the directory is moved to Trash on exit, and the worktree remains clean
+artifact_or_environment: owned verify-build.sh and controlled private temporary directory
+unverified_boundary: complete Writer Gate, replacement clean WIP SHA, two-axis review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject any build command that bypasses the wrapper or leaves a worktree artifact
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-build-boundary focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled verify-build.sh; smoke; structure/content/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with both binaries confined to temporary output and removed from the active path; build preserved Git status exactly and every product/test regression stayed green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh two-axis review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the build boundary, externally pin fresh reviews to clean HEAD, and prohibit direct go build output in every later stage
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 90d3792c485d833aac25b947160ccd082a13f2b5
+phase: red
+command_or_action: structure checker counting lines, top-level functions and mixed MySQL test concerns in mysql_integration_test.go
+exit_result: FAIL
+sanitized_summary: one test file contained 1244 lines and 27 functions or methods across migration, binding, recovery, concurrency, authorization, schema and PII; WIP SHA and reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 90d3792c485d833aac25b947160ccd082a13f2b5
+unverified_boundary: mechanical split, content integrity, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: split recovery/concurrency, authorization, schema/PII and shared fixtures without changing the test entry, scenarios, assertions or product behavior
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same per-file line/function budget plus exact sorted function signatures, t.Run scenarios and Fatal/Fatalf assertion-text comparison against 90d3792c; focused package test
+exit_result: PASS
+sanitized_summary: five concern files are 270/4, 436/10, 243/3, 182/3 and 153/7 lines/functions; all 27 signatures, scenario names and assertion texts are unchanged and focused tests pass
+artifact_or_environment: mechanically split merchantidentity MySQL tests; one-time AST splitter removed
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, both reviews, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun content-integrity comparison after any future test move
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-test-split focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; structure/content/format/diff/ownership/PII/evidence checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the test-only responsibility split; every MySQL scenario and repository regression stayed green with unchanged test entry and assertions
+artifact_or_environment: final replacement WIP tree before commit; disposable database assets cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the mechanical split, externally pin fresh reviews to that clean HEAD, and prohibit verifier until controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 8f9937f38a72f0f9b744baed1e779c49993738a6
+phase: red
+command_or_action: fresh MySQL 8.0.46 race suite with provider rejection held while another transaction bound the account, followed by either auth_version drift or immediate disable
+exit_result: FAIL
+sanitized_summary: both real concurrent scenarios returned PHONE_CODE_REJECTED but their durable rejection audits retained current account snapshots despite lacking same-account same-version success proof; WIP SHA and reviews were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: nil-snapshot fix, Green, full Writer Gate, replacement WIP review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: pass no account snapshot for every unconfirmed provider rejection; preserve snapshots only in the confirmed success branch
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 race suite after passing nil snapshot to unconfirmed PHONE_CODE_REJECTED audit
+exit_result: PASS
+sanitized_summary: version-drift and disabled concurrent rejection audits now have null merchant account reference and all-null account snapshot fields; confirmed same-version recovery still returns durable success with complete snapshot
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, both reviews, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the fresh-container suite after any login recovery or audit change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-recovery-fix focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; format/diff/ownership/PII/evidence checks
+exit_result: PASS
+sanitized_summary: full Writer Gate passed with both unconfirmed-rejection concurrency cases, existing same-code confirmed recovery, every prior transaction/authorization scenario and all repository regressions green
+artifact_or_environment: final replacement WIP tree before commit; disposable database assets cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verification remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the replacement WIP tree, externally pin both reviews to that clean HEAD, and do not start verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: e89a7561382b486c4958cceb455eb698736d129c
+phase: red
+command_or_action: static evidence-format checker requiring every candidate_sha to be either one complete SHA or not-yet-created
+exit_result: FAIL
+sanitized_summary: evidence contained non-canonical invalid-suffix and replacement-pending values; WIP SHA e89a7561382b486c4958cceb455eb698736d129c and its reviews were invalidated, with invalidity retained only in summaries
+artifact_or_environment: exact externally pinned WIP SHA e89a7561382b486c4958cceb455eb698736d129c
+unverified_boundary: evidence normalization, corrected migration Red/Green, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: retain pure complete SHA for committed historical records and use only not-yet-created before a replacement is formed
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same evidence-format checker after canonicalizing all candidate_sha fields
+exit_result: PASS
+sanitized_summary: every evidence candidate_sha is now either a pure 40-character committed SHA or not-yet-created; invalid status remains only in sanitized summaries
+artifact_or_environment: replacement Writer evidence
+unverified_boundary: complete Writer Gate, replacement WIP SHA, review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun the format checker after every evidence edit
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-evidence-remediation focused and race; anchored migration Green; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; static gates
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after authenticating the migration Red and canonicalizing every evidence SHA; all product and failure scenarios stayed green and temporary assets were cleaned
+artifact_or_environment: final replacement WIP tree before commit
+unverified_boundary: replacement clean HEAD still required two fresh review axes and controller review before Candidate designation; verifier remained prohibited
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the unchanged product plus corrected evidence, pin reviews externally to clean HEAD, and do not modify files after approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 9cd2ffa330e40af05e91e5424b9ad252327b15f1
+phase: red
+command_or_action: static lifecycle assertion comparing the committed clean HEAD with ticket status and candidate declaration
+exit_result: FAIL
+sanitized_summary: ticket still claimed CANDIDATE_PENDING_COMMIT after the review target had already been committed; both review axes and SHA were invalidated before verifier
+artifact_or_environment: exact WIP SHA 9cd2ffa330e40af05e91e5424b9ad252327b15f1
+unverified_boundary: corrected WIP lifecycle, complete Writer Gate, replacement WIP SHA, both reviews and detached verification remained pending
+external_asset:
+  owner: Writer and controller
+  missing: N/A
+  recovery: declare IMPLEMENTING / REVIEWING_WIP with candidate not yet created; externally bind reviews to clean HEAD and designate that same HEAD only after both reviews and controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static lifecycle assertion after removing the premature Candidate claim and recording the commit self-reference boundary
+exit_result: PASS
+sanitized_summary: ticket now truthfully remains IMPLEMENTING / REVIEWING_WIP; review targets are externally pinned to clean HEAD, and no commit is asked to contain its own hash
+artifact_or_environment: replacement Writer lifecycle artifacts
+unverified_boundary: full Writer Gate, replacement WIP commit, two-axis review, controller designation and detached verification remained pending
+external_asset:
+  owner: controller
+  missing: final Candidate designation after reviews
+  recovery: if reviews pass, designate the unchanged clean HEAD as Candidate and only then authorize exact-SHA verifier
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-lifecycle focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; format/diff/ownership/PII cleanup checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after correcting the WIP review lifecycle; product behavior remained unchanged and every disposable MySQL asset was cleaned
+artifact_or_environment: final replacement WIP tree before commit
+unverified_boundary: replacement clean HEAD still required fresh two-axis review and controller review before external Candidate designation; detached verifier did not start
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the WIP tree, pin reviews externally to that clean HEAD, and leave the tree unchanged if approved
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: dbdb508194a7e5524c3f5abdb98c60e5fb0b9878
+phase: red
+command_or_action: fixed-base zero-context shared-file ownership checker allowing only the v12/v13 wantNames additions in catalog/migrations_test.go
+exit_result: FAIL
+sanitized_summary: checker rejected an extra 78-line merchant schema and PII contract test in the shared catalog file; the old Candidate and both in-flight reviews were invalidated and stopped
+artifact_or_environment: Writer tree and fixed-base catalog diff
+unverified_boundary: replacement move, complete Writer Gate, replacement SHA, two-axis review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: move the test unchanged into owned merchantidentity/migration_test.go, retain only two exact-list additions in catalog, then rerun every Writer Gate and both reviews
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fixed-base shared-file ownership checker plus focused TestMerchantIdentityMigrationContracts and TestCatalogMigrationSet after moving the contract test
+exit_result: PASS
+sanitized_summary: catalog/migrations_test.go now differs from fixed base only by the two permitted v12/v13 wantNames additions; the unchanged schema and PII assertions pass from owned merchantidentity/migration_test.go
+artifact_or_environment: replacement Writer tree
+unverified_boundary: complete fresh MySQL/full/race/vet/build/smoke/static Gate, replacement commit, review and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun every declared Writer Gate before creating replacement SHA
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: replacement focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; build; smoke; gofmt; fixed-base shared-file and owned-path checks
+exit_result: PASS
+sanitized_summary: moved migration contract retained behavior while catalog stayed within its exact two-line authorization; all focused/full/race/MySQL/tooling/smoke checks passed and disposable assets were cleaned
+artifact_or_environment: replacement Writer tree after ownership correction
+unverified_boundary: replacement commit, fresh fixed-base Standards/Spec review and approved detached exact-SHA verification remained pending
+external_asset:
+  owner: Writer/Verifier
+  missing: none for local W3
+  recovery: any further product/test/task/SHA change invalidates this run and requires the complete Gate again
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: exact base, worktree branch, staging shared-path conflict, rules, PRD, skills, frozen exact-SHA T1 contract and missing-capability audit
+exit_result: PASS
+sanitized_summary: detached exact base was switched only in the visible worktree to the unique Writer branch; staging stayed clean; migration chain ended at v11 and neither v12/v13 nor merchantidentity existed; no current shared router/main delta conflicted
+artifact_or_environment: /Users/vivix/.codex/worktrees/aa63/order
+unverified_boundary: no product code, Red, Green, MySQL, review, candidate, detached verification, integration or external operation has run
+external_asset:
+  owner: Writer and workflow owner
+  missing: fresh local MySQL execution and Matt tracker linkage
+  recovery: run each TDD slice and a new isolated MySQL 8.0.46 container; configure tracker only after explicit user confirmation
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestMerchantLoginRejectsInvalidUTF8BeforeAuthentication focused command after pre-decode UTF-8 validation
+exit_result: PASS
+sanitized_summary: invalid UTF-8 now returns exact INVALID_REQUEST before authentication or application access; accepted code bytes remain untrimmed
+artifact_or_environment: Writer strict HTTP final slice
+unverified_boundary: full Refactor and Writer gates were still required after this behavior fix
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun every focused, race, fresh-MySQL and repository-wide Writer check
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: refactor
+command_or_action: gofmt; focused merchantidentity/httpapi/order-api/migrations/catalog tests; same focused race set; fresh verify-mysql.sh
+exit_result: PASS
+sanitized_summary: domain types and transaction authorizer were separated from HTTP and login persistence; strict HTTP, exact v1-v13, schema constraints, first/rejected/idempotent binding, same-code concurrency, live role/state, rollback, real deadlock, commit-unknown, caller-tx ordering and PII scenarios all stayed green
+artifact_or_environment: final Writer product tree and disposable loopback MySQL 8.0.46 container; container and credential were cleaned
+unverified_boundary: fixed-base commit, two-axis review and detached exact-SHA verification remained pending
+external_asset:
+  owner: Writer/Verifier
+  missing: none for local W3
+  recovery: rerun the same fresh-container suite for every product, test or candidate change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: go test ./services/api/...; go test -race ./services/api/...; go vet ./services/api/...; go build ./services/api/...; clean rerun of services/api/scripts/smoke.sh; gofmt; cached diff/owned/migration/PII/high-risk-material audits
+exit_result: PASS
+sanitized_summary: all Go packages passed normal and race tests; vet/build exited zero; clean smoke reported PASS; formatting/diff passed; v12/v13 remained one CREATE TABLE each with no v14 occupation; only declared owned paths changed; v13 audit had no sensitive fields and high-risk material count was zero
+artifact_or_environment: final staged Writer tree; no Docker container, temporary credential, server process or smoke artifact remained
+unverified_boundary: functional commit, fixed-base Standards/Spec review and fresh detached exact-SHA verification remained pending; no integration, push, PR, deploy, WeChat, Tencent Cloud or production action ran
+external_asset:
+  owner: workflow owner and external UAT owners
+  missing: Matt tracker linkage and all T2/T5 platform assets, neither required for T1 Candidate
+  recovery: configure tracker only after user confirmation; run external integration/UAT only under separate authorization
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity -run '^TestMerchantLoginRejectsInvalidUTF8BeforeAuthentication$' -count=1
+exit_result: FAIL
+sanitized_summary: invalid UTF-8 inside code was replacement-decoded and reached the application, returning 200 instead of exact INVALID_REQUEST
+artifact_or_environment: Writer strict JSON self-review tracer
+unverified_boundary: the defect changed provider input bytes even though all prior valid-UTF8 scenarios remained green
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject non-UTF8 body bytes before JSON decoding and rerun the complete Refactor gate
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/httpapi -run '^TestRouterRegistersOnlyVersionedMerchantIdentityRoutes$' -count=1
+exit_result: FAIL
+sanitized_summary: root NewRouter accepted only the existing handlers and could not compile with the new merchant identity provider
+artifact_or_environment: Writer router tracer at fixed base plus merchantidentity package
+unverified_boundary: runtime dependency composition was still absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add exactly one merchant handler dependency and register only its two versioned routes
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestRouterRegistersOnlyVersionedMerchantIdentityRoutes focused command after root router registration
+exit_result: PASS
+sanitized_summary: root router exposed exact GET identity and POST merchant-login while unversioned, broad and trailing paths remained 404
+artifact_or_environment: Writer shared-router slice
+unverified_boundary: order-api main had not yet composed repository, service and provider dependencies
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: use the router signature change as the main composition Red
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/cmd/order-api -count=1
+exit_result: FAIL
+sanitized_summary: cmd/order-api no longer compiled because main had not supplied the required merchant identity handler to NewRouter
+artifact_or_environment: Writer runtime-composition tracer
+unverified_boundary: no service startup or external listener was attempted
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: compose merchant repository/service/handler with the existing session authenticator and primary-phone provider
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh loopback MySQL 8.0.46 running the same race-enabled TestMerchantIdentityMySQL8Integration after the v13 FK/CHECK compatibility fix
+exit_result: PASS
+sanitized_summary: v1-v13 first/repeat migration and first merchant binding passed; primary-phone, account binding, record/auth version increments and full resolved success audit committed together; disposable assets were cleaned
+artifact_or_environment: disposable mysql:8.0.46-oraclelinux9 schema and container
+unverified_boundary: business rejection matrix, concurrency, authorization locks, recovery, router/main and complete gates remained pending
+external_asset:
+  owner: Writer/Verifier
+  missing: none for local W3
+  recovery: rerun the fresh-container script after every product or test change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestMerchantLoginBypassesPhoneProviderForExistingEnabledBinding focused command after minimal service/store/provider orchestration
+exit_result: PASS
+sanitized_summary: an existing enabled audited binding returned the current OWNER projection with zero provider, completion or recovery calls
+artifact_or_environment: Writer application-service slice
+unverified_boundary: concrete database transaction and fresh MySQL remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: establish the repository behavior in a fresh MySQL tracer
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: fresh loopback mysql:8.0.46-oraclelinux9 running go test -race ./services/api/internal/merchantidentity -run '^TestMerchantIdentityMySQL8Integration$' -count=1
+exit_result: FAIL
+sanitized_summary: the W3 tracer stopped at compile because NewRepository was absent; the disposable container and credential were cleaned
+artifact_or_environment: fresh Docker MySQL 8.0.46 and fixed-base Writer tree
+unverified_boundary: migration application and first binding had not executed because persistence capability did not compile
+external_asset:
+  owner: Writer
+  missing: none for local W3
+  recovery: implement only the repository transaction required by first binding, then rerun the same fresh-container command
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestMerchantLoginRejectsWhitespaceOnlyCodeBeforeAuthentication focused command after whitespace validation without trimming accepted codes
+exit_result: PASS
+sanitized_summary: whitespace-only code now returned exact INVALID_REQUEST before authentication while accepted codes remained byte-for-byte unchanged
+artifact_or_environment: Writer strict HTTP slice
+unverified_boundary: complete malformed-input matrix and durable login behavior remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: proceed to the provider-bypass transaction orchestration tracer
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity -run '^TestMerchantLoginBypassesPhoneProviderForExistingEnabledBinding$' -count=1
+exit_result: FAIL
+sanitized_summary: LoginStart and Service did not exist, so provider-bypass orchestration did not compile
+artifact_or_environment: Writer application-service tracer
+unverified_boundary: repository transactions, audits, concurrency and failures remained absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add the minimal store/provider orchestration that returns an audited existing binding without provider access
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestMerchantLoginEndpointReturnsExactBoundSubaccountProjection focused command after registering the strict POST route
+exit_result: PASS
+sanitized_summary: merchant-login accepted exact JSON and one bearer, passed the unmodified code and internal request ID, and returned only the SUBACCOUNT/auth_version projection with no-store
+artifact_or_environment: Writer second HTTP vertical slice
+unverified_boundary: strict invalid matrix and persistence remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: drive malformed inputs independently before adding database behavior
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity -run '^TestMerchantLoginRejectsWhitespaceOnlyCodeBeforeAuthentication$' -count=1
+exit_result: FAIL
+sanitized_summary: a whitespace-only code reached authentication and returned 200 instead of exact INVALID_REQUEST
+artifact_or_environment: Writer strict-request tracer
+unverified_boundary: other malformed JSON, bearer failures and stable business errors were not covered by this tracer
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reject whitespace-only input without modifying any accepted nonempty code
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity -run '^TestMerchantLoginEndpointReturnsExactBoundSubaccountProjection$' -count=1
+exit_result: FAIL
+sanitized_summary: POST /api/v1/me/merchant-login returned 404 because the route and operation were absent
+artifact_or_environment: Writer tree after identity GET Green
+unverified_boundary: request strictness, error mapping, provider and database transactions remained unimplemented
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: register only the frozen POST route with exact decoder, bearer and response mapping
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestIdentityEndpointReturnsExactBoundOwnerProjection focused command after minimal protected handler implementation
+exit_result: PASS
+sanitized_summary: one strict bearer resolved the internal user and returned only exact primary_phone_bound plus OWNER/auth_version with no-store
+artifact_or_environment: Writer first HTTP vertical slice
+unverified_boundary: merchant-login, strict invalid matrices, persistence and W3 remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add the missing merchant-login route as the next independent tracer
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/merchantidentity -run '^TestIdentityEndpointReturnsExactBoundOwnerProjection$' -count=1
+exit_result: FAIL
+sanitized_summary: the merchantidentity package had no production Go files, so the public identity endpoint capability did not compile on the fixed base
+artifact_or_environment: Writer tree with one public HTTP tracer
+unverified_boundary: strict error cases, merchant-login, persistence, audit, authorization and MySQL remained absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add the minimal handler/types for exact identity success and rerun the identical tracer
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same TestMerchantIdentityMigrationContracts focused command after adding frozen v12/v13 columns, uniqueness, FK, pair/version and snapshot-retention constraints
+exit_result: PASS
+sanitized_summary: the schema files matched the frozen account, binding, version, audit snapshot, target and PII-exclusion contract while remaining one CREATE TABLE each
+artifact_or_environment: Writer migration contract slice
+unverified_boundary: MySQL execution and runtime behavior remained pending
+external_asset:
+  owner: Writer
+  missing: fresh MySQL run not yet started
+  recovery: proceed to HTTP/runtime slices, then exercise all DDL constraints on disposable MySQL 8.0.46
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/catalog -run '^TestMerchantIdentityMigrationContracts$' -count=1
+exit_result: FAIL
+sanitized_summary: the minimal v12 table lacked the first frozen account field, proving the schema contract was not implemented
+artifact_or_environment: Writer tree after exact-chain Green and before schema expansion
+unverified_boundary: DDL constraints and all real MySQL/runtime behavior remained unverified
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add only frozen account/audit columns, constraints and retention foreign key, then rerun the identical contract test
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/migrations ./services/api/internal/catalog -run '^(TestEmbeddedMigrationChainIsExactAndRecoverable|TestCatalogMigrationSet)$' -count=1 after adding one minimal forward CREATE TABLE in each assigned v12/v13 file
+exit_result: PASS
+sanitized_summary: embedded and loaded migration sets were exact contiguous v1-v13 and each new file was one LF-terminated CREATE TABLE statement
+artifact_or_environment: Writer first migration vertical slice
+unverified_boundary: merchant columns, constraints and real MySQL behavior were intentionally still absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: drive the frozen schema with a separate contract Red before expanding either table
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: red
+command_or_action: fixed-base temporary export with only the v12/v13 expectations overlaid, then GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/migrations ./services/api/internal/catalog -run '^(TestEmbeddedMigrationChainIsExactAndRecoverable|TestCatalogMigrationSet)$' -count=1
+exit_result: FAIL
+sanitized_summary: both matching tests executed and failed because embedded and loaded migration sets each contained 11 files while the test-only expectations required 13; the temporary export was moved to Trash after capture
+artifact_or_environment: disposable archive export of exact fixed base with only the two test expectation additions
+unverified_boundary: schema columns, constraints, real MySQL application and all runtime behavior remained absent
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: add only one forward CREATE TABLE file for each assigned v12/v13 version and rerun the identical anchored-regex focused command
+```
+
+## Writer C/T/V/R
+
+- C = 9：HTTP/schema/action/transaction/PII/非目标与现有三接口不变均有可追溯契约；T2/T3/T4 consumer 与外部 UI 不属于本 Candidate。
+- T = 10：真实 vertical RGR、严格错误矩阵、fresh MySQL 8.0.46 v1-v13、约束/FK/unique、并发、真实 deadlock、rollback、commit-unknown、审计不可用、锁顺序与 PII 全部闭环。
+- V = 8：Writer Gate 完整，可形成提交；fixed-base 双轴 Review 与主控批准后的 exact-SHA detached verifier 尚待执行。
+- R = 10：失败零部分写、同 code/commit-unknown 受限恢复、deadlock 单次 provider、caller rollback、临时 schema/container/credential/process 清理均有可复现证据。
+- 总分：37；当前 Writer 产品 Gate 硬阻断为 0，Review/Verifier 生命周期步骤仍待执行。

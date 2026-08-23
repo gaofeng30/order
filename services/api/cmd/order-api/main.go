@@ -16,6 +16,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
 	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gaofeng30/order/services/api/internal/menu"
+	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/wechat"
 	"github.com/gaofeng30/order/services/api/migrations"
@@ -57,15 +58,21 @@ func run() int {
 		identityRepository,
 	)
 	identityHandler := identity.NewHandler(sessionService)
+	phoneProvider := wechat.NewPhoneNumberClient(cfg.MiniProgram)
 	phoneHandler := identity.NewPhoneHandler(
 		sessionService,
-		identity.NewPhoneService(wechat.NewPhoneNumberClient(cfg.MiniProgram), identityRepository),
+		identity.NewPhoneService(phoneProvider, identityRepository),
+	)
+	merchantIdentityRepository := merchantidentity.NewRepository(db)
+	merchantIdentityHandler := merchantidentity.NewHandler(
+		sessionService,
+		merchantidentity.NewService(merchantIdentityRepository, phoneProvider),
 	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler, phoneHandler), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler, phoneHandler, merchantIdentityHandler), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}
