@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gaofeng30/order/services/api/internal/httpdto"
 	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +26,7 @@ type Reader interface {
 	ReadPickupFacts(context.Context, []string) (PickupFacts, error)
 }
 type Authenticator interface {
-	Authenticate(context.Context, string) (uint64, error)
+	AuthenticateRequest(context.Context, *http.Request) (uint64, error)
 }
 type PricingResolver interface {
 	ResolvePrices(context.Context, uint64, []uint32) ([]*uint32, error)
@@ -164,16 +163,11 @@ func (handler *Handler) optionalUser(ctx *gin.Context) (uint64, bool) {
 	if len(ctx.Request.Header.Values("Authorization")) == 0 {
 		return 0, true
 	}
-	token, err := httpdto.BearerToken(ctx.Request)
-	if err != nil {
-		writeMenuUnauthenticated(ctx)
-		return 0, false
-	}
 	if handler.auth == nil {
 		writeMenuUnavailable(ctx)
 		return 0, false
 	}
-	userID, err := handler.auth.Authenticate(ctx.Request.Context(), token)
+	userID, err := handler.auth.AuthenticateRequest(ctx.Request.Context(), ctx.Request)
 	if errors.Is(err, identity.ErrUnauthenticated) {
 		writeMenuUnauthenticated(ctx)
 		return 0, false

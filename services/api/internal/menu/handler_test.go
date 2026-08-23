@@ -14,7 +14,9 @@ import (
 
 type failingMenuAuth struct{ err error }
 
-func (stub failingMenuAuth) Authenticate(context.Context, string) (uint64, error) { return 0, stub.err }
+func (stub failingMenuAuth) AuthenticateRequest(context.Context, *http.Request) (uint64, error) {
+	return 0, stub.err
+}
 
 func TestMenuKnownUnavailableFactsNeverBecomeAvailable(t *testing.T) {
 	for _, mutate := range []func(*MenuSnapshot){

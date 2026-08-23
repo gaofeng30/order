@@ -29,7 +29,7 @@ func (stub menuPricingStub) ResolvePrices(context.Context, uint64, []uint32) ([]
 
 type menuAuthStub struct{ userID uint64 }
 
-func (stub menuAuthStub) Authenticate(context.Context, string) (uint64, error) {
+func (stub menuAuthStub) AuthenticateRequest(context.Context, *http.Request) (uint64, error) {
 	return stub.userID, nil
 }
 

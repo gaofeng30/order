@@ -32,7 +32,7 @@ type catalogAuthStub struct {
 	err    error
 }
 
-func (stub catalogAuthStub) Authenticate(context.Context, string) (uint64, error) {
+func (stub catalogAuthStub) AuthenticateRequest(context.Context, *http.Request) (uint64, error) {
 	return stub.userID, stub.err
 }
 
