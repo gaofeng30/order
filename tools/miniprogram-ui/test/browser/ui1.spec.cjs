@@ -144,6 +144,14 @@ function globalComponents(componentSuffix, includeMenuComponents = false) {
   return components;
 }
 
+async function waitFor(predicate, message) {
+  const deadline = Date.now() + 500;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error(message);
+    await simulate.sleep(5);
+  }
+}
+
 describe('mini-program UI1 in real Chromium simulator', () => {
   it('cold-starts into anonymous browse and exposes the menu entry without phone authorization', async () => {
     document.body.innerHTML = '';
@@ -167,6 +175,12 @@ describe('mini-program UI1 in real Chromium simulator', () => {
     }
     const userEntry = launch.querySelector('.id-card.primary');
     if (!userEntry) throw new Error('rendered launch page has no user entry');
+    const loadingResult = pageDefinitions.launch.go.call(launch.instance, { currentTarget: { dataset: { to: 'home' } } });
+    if (loadingResult !== false || lastNavigation !== null) throw new Error(`loading entry navigated to ${lastNavigation}`);
+    await waitFor(
+      () => launch.instance.data.storefrontState === 'ready',
+      `storefront did not become ready: ${launch.instance.data.storefrontState}`,
+    );
     userEntry.dispatchEvent('touchstart');
     userEntry.dispatchEvent('touchend');
     await simulate.sleep(10);
@@ -180,6 +194,14 @@ describe('mini-program UI1 in real Chromium simulator', () => {
       id: `home-page-${componentSuffix}`,
       usingComponents: components,
     });
+    const loadingMenuResult = pageDefinitions.home.toMenu.call(home.instance);
+    if (loadingMenuResult !== false || lastNavigation !== '/pages/home/home') {
+      throw new Error(`loading home navigated to ${lastNavigation || 'nothing'}`);
+    }
+    await waitFor(
+      () => home.instance.data.settingsState === 'ready',
+      `home storefront did not become ready: ${home.instance.data.settingsState}`,
+    );
 
     const visibleText = home.dom.textContent;
     if (!visibleText.includes('你好，欢迎光临')) throw new Error(`home greeting was not rendered: ${visibleText}`);

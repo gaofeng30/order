@@ -1,24 +1,27 @@
 import http from 'node:http';
 
 const storefront = {
-  settings: {
-    store_name: '绥安食品', store_address: '党政办公中心后院老食堂', pickup_point: '北门',
+  storefront: {
+    name: '绥安食品', address: '党政办公中心后院老食堂', pickup_point: '北门',
     announcement: '今日供应以服务端为准', business_status: 'open', launch_layer: null,
+    flavors: [],
   },
 };
 const pickupOptions = {
   timezone: 'Asia/Shanghai',
   dates: [{
-    date: '2026-08-25', orderable: true,
-    meals: [{ code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true, pickup_times: ['17:30'] }],
+    date: '2026-08-25', available: true,
+    meal_periods: [{ meal_period: 'dinner', cutoff_time: '17:00', available: true, pickup_times: ['17:30'] }],
   }],
 };
 const menu = {
-  selection: { date: '2026-08-25', time: '17:30', timezone: 'Asia/Shanghai' },
-  meal: { code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true },
+  selection: { date: '2026-08-25', time: '17:30', meal_period: 'dinner' },
+  store_status: {
+    business_status: 'open', service_date_available: true, meal_available: true, cutoff_passed: false,
+  },
   categories: [
-    { id: '101', name: '主食', products: [{ id: '1001', category_id: '101', name: '恢复后的热菜', description: '由 loopback fixture 返回', specification: '份', price_cents: 1800, sold_out: false, orderable: true }] },
-    { id: '102', name: '饮品', products: [{ id: '1002', category_id: '102', name: '无糖热饮', description: '用于菜单分类交互', specification: '杯', price_cents: 600, sold_out: false, orderable: true }] },
+    { id: '101', name: '主食', products: [{ id: '1001', category_id: '101', name: '恢复后的热菜', description: '由 loopback fixture 返回', specification: '份', meal_period: 'all', images: [], listed: true, sold_out: false, original_unit_price_cents: 1800 }] },
+    { id: '102', name: '饮品', products: [{ id: '1002', category_id: '102', name: '无糖热饮', description: '用于菜单分类交互', specification: '杯', meal_period: 'all', images: [], listed: true, sold_out: false, original_unit_price_cents: 600 }] },
   ],
 };
 

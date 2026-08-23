@@ -1,13 +1,38 @@
 {
   "schema_version": 1,
-  "change": "overnight-miniprogram-real-http-v1",
-  "base_sha": "1657aa9451f612e4605fabd084ccab07542ac81a",
-  "branch": "codex/order-delivery-integration",
-  "gate_type": "W3",
-  "ui_level_target": "UI3",
+  "change": "fix-miniprogram-ui1-frozen-fixture-v1",
+  "base_sha": "edd109e73cbaee2ba50504badb9be414ecc1bd7a",
+  "branch": "codex/fix-mini-ui1-regression",
+  "gate_type": "UI1",
+  "ui_level_target": "UI2",
   "ui_level_actual": "UI1",
-  "candidate_sha": "not-created-at-writer-gate",
-  "status": "INTEGRATION_CHECKPOINT_NODE_PASS_UI1_UI2_RERUN_PENDING_UI3_EXTERNAL",
+  "candidate_sha": "pending-post-commit-binding",
+  "status": "LOCAL_READY_UI1_PASS_UI2_UI3_BLOCKED_EXTERNAL",
+  "ui1_regression_change": {
+    "root_cause": "the loopback fixture still emitted pre-freeze storefront, pickup-options, menu and product DTOs; the browser test also required navigation while server facts were still loading",
+    "red": {
+      "command": "MINIPROGRAM_UI_DEPS=/Users/vivix/.codex/worktrees/a61d/order/tools/miniprogram-ui npm --prefix tools/miniprogram-ui run ui1",
+      "result": "UI1_RESULT status=FAIL scenarios=3; 0/3 on the exact base",
+      "first_error": "user entry navigated to nothing"
+    },
+    "checkpoint": "after changing only the fixture to the frozen DTOs, 2/3 passed and the remaining failure was the loading-state navigation expectation",
+    "green": {
+      "command": "MINIPROGRAM_UI_DEPS=/Users/vivix/.codex/worktrees/a61d/order/tools/miniprogram-ui npm --prefix tools/miniprogram-ui run ui1",
+      "result": "UI1_RESULT status=PASS scenarios=3",
+      "browser": "Google Chrome for Testing 151.0.7922.34",
+      "dependencies": "reused existing Karma, miniprogram-simulate, Playwright and browser caches; no install"
+    },
+    "fail_closed": [
+      "launch and home navigation remain blocked until their server storefront facts are ready",
+      "pickup-options 503 renders an error and only an explicit user retry loads the menu",
+      "unknown or non-ready runtime endpoint still performs zero login and zero request in the full Node gate"
+    ],
+    "refactor": {
+      "node_and_wxml": "92/92 PASS",
+      "wx_lint": "PASS",
+      "app_business_files_changed": false
+    }
+  },
   "tdd": {
     "red": {
       "status": "FAIL_AS_EXPECTED",
@@ -22,8 +47,8 @@
     "green": {
       "status": "PASS",
       "command": "npm --prefix apps/wechat-miniprogram test",
-      "tests": 91,
-      "passed": 91,
+      "tests": 92,
+      "passed": 92,
       "failed": 0,
       "skipped": 0,
       "screen_contracts": [
@@ -34,7 +59,7 @@
     },
     "refactor": {
       "status": "PASS",
-      "all_node_glob": "91/91",
+      "all_node_glob": "92/92",
       "wxml_wxss_compile": "1/1",
       "public_read_frozen_contracts": "12/12 including storefront, pickup/menu, product images, staff pricing and presentation",
       "local_business_truth_scan": "0 references to orders/aOrders/menu/soldOut/store/lastOrder seeds or mock API",
@@ -96,26 +121,14 @@
     "merchant_mutations": "server response only",
     "local_orders_or_seed_truth": false
   },
-  "root_followup": {
-    "change": "runtime-subscription-template-and-frozen-public-read",
-    "status": "NODE_PASS_CURRENT_TREE_UI1_UI2_RERUN_PENDING",
-    "red": "3/3 failed because runtime template config/resolver did not exist",
-    "green": "91/91 Node tests pass on the current tree; prior Chrome 151 UI1 3/3 evidence predates the public-read tree and is not reused as current-SHA proof",
-    "external_values": "develop/trial/release READY and REFUND_RESULT template IDs remain empty until approved assets are supplied"
-  },
   "ui1": {
-    "status": "STALE_AFTER_TREE_CHANGE_RERUN_PENDING",
+    "status": "PASS_CURRENT_TREE",
     "command": "MINIPROGRAM_UI_DEPS=/Users/vivix/.codex/worktrees/a61d/order/tools/miniprogram-ui npm --prefix tools/miniprogram-ui run ui1",
     "scenarios": 3,
     "browser": "Google Chrome for Testing 151.0.7922.34",
     "result": "UI1_RESULT status=PASS scenarios=3",
     "dependency_policy": "reused existing Karma/Playwright cache; no install"
   },
-  "missing_code_boundary": [
-    "integration root now composes storefront, frozen catalog/menu pricing, Quote and Subscription",
-    "PaymentOrder, user Order, Refund and merchant fulfillment HTTP routes are not yet root-composed",
-    "therefore this client candidate is not a complete local end-to-end candidate until CP root composition lands"
-  ],
   "blocked_external": {
     "ui2": "current-tree WeChat Developer Tools automation rerun pending; do not reuse prior UI1 as UI2",
     "ui3": [
