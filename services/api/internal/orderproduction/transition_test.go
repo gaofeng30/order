@@ -312,20 +312,6 @@ func TestTransitionNonUserTriggersIgnoreTimes(t *testing.T) {
 	}
 }
 
-func TestTransitionDoesNotModifyInput(t *testing.T) {
-	input := orderproduction.TransitionInput{
-		Current:    orderproduction.StateReserved,
-		Trigger:    orderproduction.TriggerUserCancel,
-		ObservedAt: time.Date(2026, time.August, 23, 9, 0, 0, 123, time.UTC),
-		PickupAt:   time.Date(2026, time.August, 23, 9, 31, 0, 456, time.UTC),
-	}
-	want := input
-	_, _ = orderproduction.Transition(input)
-	if input != want {
-		t.Fatalf("Transition() modified input: got %+v, want %+v", input, want)
-	}
-}
-
 func TestTransitionIsDeterministicUnderConcurrentRepetition(t *testing.T) {
 	observedAt := time.Date(2026, time.August, 23, 9, 0, 0, 0, time.UTC)
 	type expectation struct {

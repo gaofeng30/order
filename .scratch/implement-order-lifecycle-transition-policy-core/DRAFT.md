@@ -3,7 +3,7 @@
 ## 固定点与治理状态
 
 - change: `implement-order-lifecycle-transition-policy-core`
-- status: `CANDIDATE_BY_EXTERNAL_POST_COMMIT_RECEIPT`
+- status: `REPLACEMENT_CANDIDATE_BY_EXTERNAL_POST_COMMIT_RECEIPT`
 - `base_sha`: `8bcdf3d6b1ea41529adaa54f463cc118c69e0e25`
 - owner: 当前 delegated 独立 writer Session
 - writer branch: `codex/implement-order-lifecycle-transition-policy-core`
@@ -15,6 +15,8 @@
 - tracker: `GOVERNANCE_PENDING`；仓库没有 `docs/agents/issue-tracker.md`，本 change 由已确认 delegated 指令与本目录 `spec.md` 冻结，不配置 tracker、不伪造 issue。
 
 初始证据：worktree 以 detached exact base 启动且 clean；目标 branch 原先不存在，已在当前 worktree 创建并切换，未创建第二个 writer worktree。
+
+首个 candidate `2cfc0e4954ea80c07680ae56b1d055ff6c627731` 已因 Standards review 的两项 finding 作废：tasks 缺少逐 task 完整 Gate receipt，且按值输入的运行时“不修改”断言属于无法因实现变化失败的 tautological test。旧 Gate/review 不继承；replacement 以编译期 `time.Time` 值字段约束替代该断言，并从头重跑全部 Gate/review。
 
 ## 唯一目标与深 Module
 
