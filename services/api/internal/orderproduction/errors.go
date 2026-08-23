@@ -4,8 +4,10 @@ package orderproduction
 type ErrorKind string
 
 const (
-	ErrorInvalidTime  ErrorKind = "INVALID_TIME"
-	ErrorInvalidState ErrorKind = "INVALID_STATE"
+	ErrorInvalidTime          ErrorKind = "INVALID_TIME"
+	ErrorInvalidState         ErrorKind = "INVALID_STATE"
+	ErrorInvalidTrigger       ErrorKind = "INVALID_TRIGGER"
+	ErrorTransitionNotAllowed ErrorKind = "TRANSITION_NOT_ALLOWED"
 )
 
 // Error exposes only a stable policy failure category.
