@@ -1,4 +1,6 @@
 const { nav } = require('../../utils/util.js');
+const api = require('../../utils/apiClient.js');
+const storefrontStore = require('../../utils/storefrontStore.js');
 
 /* 身份选择页 —— 入口页（项目方 2026-08-22 决策，已回写 §4.4）。
 
@@ -11,25 +13,43 @@ const { nav } = require('../../utils/util.js');
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    store: require('../../utils/data.js').STORE,
+    storefrontState: 'loading',
+    storeName: '',
+    launchLayer: null,
     hint: '',
   },
+  async onShow() {
+    this.setData({ storefrontState: 'loading', storeName: '', launchLayer: null });
+    try {
+      const settings = await storefrontStore.load();
+      getApp().globalData.storefrontFlavors = settings.flavors;
+      this.setData({ storefrontState: 'ready', storeName: settings.name, launchLayer: settings.launchLayer });
+    } catch (error) {
+      this.setData({ storefrontState: 'error' });
+    }
+  },
+  retryStorefront() { return this.onShow(); },
   back() { nav.back(); },
   go(e) { nav.go(e.currentTarget.dataset.to); },
 
   /* 微信手机号授权回调。允许时 detail 带 code / encryptedData，拒绝时只有 errMsg。 */
-  onMerchantPhone(e) {
+  async onMerchantPhone(e) {
     const d = (e && e.detail) || {};
-    if (!d.code && !d.encryptedData) {
+    if (typeof d.code !== 'string' || !d.code.trim()) {
       // 拒绝是合法选择，不渲染成失败，也不拦路
       this.setData({ hint: '商户端需要验证手机号身份。未授权时仍可从上方进入用户端浏览。' });
-      return;
+      return false;
     }
-    this.setData({ hint: '' });
-    /* 拿到的是加密数据，比对商户账号名单需服务端换取明文（§4.4）。
-       此处如实告知校验尚未发生 —— 省掉这句，演示现场看到的就是一个
-       「验证通过」的假象，而实际上什么都没验。 */
-    wx.showToast({ title: '已授权 · 身份校验待服务端接入', icon: 'none', duration: 2600 });
-    nav.go('admin-orders');
+    this.setData({ hint: '正在核验商户身份…' });
+    try {
+      const result = await api.intrinsic('/api/v1/me/merchant-login', { code: d.code.trim() });
+      if (!result || !result.merchant || !result.merchant.role) throw new api.APIError('MERCHANT_IDENTITY_UNAVAILABLE');
+      this.setData({ hint: '' });
+      nav.go('admin-orders');
+      return true;
+    } catch (error) {
+      this.setData({ hint: '商户身份未核验，请重试；用户端入口仍可使用。' });
+      return false;
+    }
   },
 });

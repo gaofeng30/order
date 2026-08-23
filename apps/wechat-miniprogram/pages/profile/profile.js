@@ -1,20 +1,54 @@
+const identityStore = require('../../utils/identityStore.js');
+const phoneStore = require('../../utils/phoneStore.js');
+const api = require('../../utils/apiClient.js');
 const { nav } = require('../../utils/util.js');
-const data = require('../../utils/data.js');
-
-const maskPhone = p => (p && p.length === 11 ? p.slice(0, 3) + '****' + p.slice(7) : p);
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    pend: 0,
-    nick: data.ME.nick,
-    phoneMask: maskPhone(data.ME.phone),
+    identityState: 'loading', pend: 0, nick: '微信用户', avatarText: '客', avatarUrl: '',
+    phoneMask: '', extraPhoneMask: '', pricingKind: 'VISITOR', merchantBound: false,
+    extraForm: { phone: '', name: '' },
   },
-  onShow() {
-    this.setData({ pend: getApp().globalData.orders.filter(o => o.status === '待取餐' || o.status === '已预约').length });
+  async onShow() {
+    this.setData({ identityState: 'loading', pend: 0 });
+    const identityTask = identityStore.load().then(identity => {
+      this.setData({
+        identityState: 'ready', phoneMask: identity.primary_phone.masked_phone || '',
+        extraPhoneMask: identity.extra_phone.masked_phone || '', pricingKind: identity.pricing_identity.kind,
+        merchantBound: identity.merchant.bound,
+      });
+    }).catch(() => this.setData({ identityState: 'error' }));
+    const ordersTask = api.get('/api/v1/orders?active=true', true).then(body => {
+      if (!body || !Array.isArray(body.orders)) throw new Error('orders');
+      this.setData({ pend: body.orders.length });
+    }).catch(() => this.setData({ pend: 0 }));
+    await Promise.all([identityTask, ordersTask]);
+  },
+  chooseProfile() {
+    if (!wx.getUserProfile) return Promise.resolve(false);
+    return new Promise(resolve => wx.getUserProfile({ desc: '仅用于本次显示头像昵称',
+      success: result => {
+        const info = result && result.userInfo || {};
+        const nick = typeof info.nickName === 'string' && info.nickName.trim() ? info.nickName.trim() : '微信用户';
+        this.setData({ nick, avatarText: nick.slice(0, 1), avatarUrl: typeof info.avatarUrl === 'string' ? info.avatarUrl : '' });
+        resolve(true);
+      }, fail: () => resolve(false) }));
+  },
+  async onGetPhoneNumber(e) {
+    const code = e && e.detail && e.detail.code;
+    if (!code) return false;
+    try { const status = await phoneStore.bind(code); this.setData({ phoneMask: status.maskedPhone }); return true; }
+    catch (error) { return false; }
+  },
+  onExtraInput(e) { this.setData({ [`extraForm.${e.currentTarget.dataset.k}`]: e.detail.value }); },
+  async saveExtraPhone() {
+    try {
+      const result = await phoneStore.setExtra(this.data.extraForm.phone.trim(), this.data.extraForm.name.trim(), api.newIdempotencyKey('extra-phone'));
+      this.setData({ extraPhoneMask: result.extraPhone.masked_phone, pricingKind: result.pricingIdentity && result.pricingIdentity.kind || this.data.pricingKind });
+      return true;
+    } catch (error) { return false; }
   },
   toOrders() { nav.tabTo('orders'); },
-  toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
-  service() { this.toast('正在拨打 0596-388 1688', 'phone'); },
   reset() { nav.reset(); },
 });

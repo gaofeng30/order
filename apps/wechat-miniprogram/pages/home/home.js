@@ -1,69 +1,58 @@
-const data = require('../../utils/data.js');
+const api = require('../../utils/apiClient.js');
+const storefrontStore = require('../../utils/storefrontStore.js');
 const { nav } = require('../../utils/util.js');
 
-// §5.1：存在这三态订单时首页顶部常驻提示条
-const ONGOING = ['已预约', '制作中', '待取餐'];
+const ACTIVE = new Set(['RESERVED', 'PREPARING', 'READY_FOR_PICKUP']);
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    store: {},
-    notice: '',
-    bizStatus: '',
-    ongoing: null,
+    storeName: '', storeAddress: '', pickupPoint: '', notice: '', bizStatus: '',
+    settingsState: 'loading', ordersState: 'loading', ongoing: null,
     grid: [
       { k: 'reserve', icon: 'calendarClock', cn: '预约点餐' },
       { k: 'orders', icon: 'receipt', cn: '我的订单' },
       { k: 'pickup', icon: 'ticket', cn: '取餐码' },
     ],
   },
-  onShow() { this.build(); },
-  build() {
-    /* 公告与营业状态都读配置，首页不持有事实。营业状态不从截单时刻派生：
-       §6.9 允许主账号手动覆盖营业时间规则，派生值只是默认值。 */
-    const g = getApp().globalData;
-    const store = g.store && g.store.name ? g.store : data.STORE;
-    this.setData({
-      store,
-      notice: store.notice || '',
-      bizStatus: store.status || '',
-      ongoing: this.buildOngoing((g.orders || []).filter(o => ONGOING.includes(o.status))),
-    });
+  async onShow() {
+    this.setData({ settingsState: 'loading', ordersState: 'loading', ongoing: null });
+    const settingsTask = storefrontStore.load().then(settings => {
+      getApp().globalData.storefrontFlavors = settings.flavors;
+      this.setData({
+        settingsState: 'ready', storeName: settings.name, storeAddress: settings.address,
+        pickupPoint: settings.pickupPoint, notice: settings.announcement,
+        bizStatus: settings.businessStatusLabel,
+      });
+    }).catch(() => this.setData({ settingsState: 'error' }));
+    const ordersTask = api.get('/api/v1/orders?active=true', true).then(body => {
+      if (!body || !Array.isArray(body.orders)) throw new api.APIError('ORDERS_UNAVAILABLE');
+      this.setData({ ordersState: 'ready', ongoing: this.buildOngoing(body.orders) });
+    }).catch(() => this.setData({ ordersState: 'error', ongoing: null }));
+    await Promise.all([settingsTask, ordersTask]);
   },
-  /* 提示条同时是 §5.10 的兜底：订阅消息需用户主动授权且只能一次性订阅，
-     拒绝授权的用户只能靠这条提示得知餐已备好。 */
-  buildOngoing(live) {
+  retrySettings() { return this.onShow(); },
+  buildOngoing(orders) {
+    const live = orders.filter(order => order && ACTIVE.has(order.state));
     if (!live.length) return null;
-    // 按取餐时刻排序，不按下单时间 —— 用户关心的是下一顿什么时候能拿
     const sorted = live.slice().sort((a, b) =>
-      `${a.pickupDate} ${a.pickupTime}`.localeCompare(`${b.pickupDate} ${b.pickupTime}`));
-    const ready = sorted.find(o => o.status === '待取餐');
-    if (ready) {
-      // 此刻用户需要的动作是现在就去窗口，文案不再重复单数以免稀释行动号召
-      return { ready: true, count: live.length, orderId: ready.id,
-               text: `已备好，可取餐 · 取餐号 ${ready.code}` };
-    }
-    const next = sorted[0];
-    return { ready: false, count: live.length, orderId: next.id,
-             text: `你有 ${live.length} 单进行中 · ${data.orderPickupLabel(next)} 取餐` };
+      `${a.pickup_date} ${a.pickup_time}`.localeCompare(`${b.pickup_date} ${b.pickup_time}`));
+    const next = sorted.find(order => order.state === 'READY_FOR_PICKUP') || sorted[0];
+    return {
+      ready: next.state === 'READY_FOR_PICKUP', count: live.length, orderId: next.id,
+      text: next.state === 'READY_FOR_PICKUP'
+        ? `已备好，可取餐 · 取餐号 ${next.pickup_number}`
+        : `你有 ${live.length} 单进行中 · ${next.pickup_date} ${next.pickup_time} 取餐`,
+    };
   },
-  tapOngoing() {
-    if (this.data.ongoing) nav.go('order-detail', { id: this.data.ongoing.orderId });
-  },
+  tapOngoing() { if (this.data.ongoing) nav.go('order-detail', { id: this.data.ongoing.orderId }); },
   toMenu() { nav.tabTo('menu'); },
-  toast(msg, icon) { this.selectComponent('#toast').show(msg, { icon: icon || 'check' }); },
+  toast(message, icon) { this.selectComponent('#toast').show(message, { icon: icon || 'check' }); },
   gridTap(e) {
-    const k = e.currentTarget.dataset.k;
-    switch (k) {
-      case 'reserve': nav.tabTo('menu'); break;
-      case 'orders': nav.tabTo('orders'); break;
-      case 'pickup': {
-        const t = getApp().globalData.orders.find(o => o.status === '待取餐' || o.status === '已预约');
-        if (t) nav.go('order-detail', { id: t.id });
-        else this.toast('暂无可取餐订单', 'warn');
-        break;
-      }
-      default: break;
-    }
+    const key = e.currentTarget.dataset.k;
+    if (key === 'reserve') nav.tabTo('menu');
+    else if (key === 'orders') nav.tabTo('orders');
+    else if (key === 'pickup' && this.data.ongoing) nav.go('order-detail', { id: this.data.ongoing.orderId });
+    else if (key === 'pickup') this.toast('暂无可取餐订单', 'warn');
   },
 });

@@ -1,11 +1,12 @@
 const path = require('node:path');
 
 module.exports = function configure(config) {
+  const dependencyRoot = process.env.MINIPROGRAM_UI_DEPS || __dirname;
   config.set({
     basePath: path.resolve(__dirname, '../..'),
     frameworks: ['mocha', 'webpack'],
     files: [
-      'tools/miniprogram-ui/node_modules/miniprogram-simulate/build.js',
+      path.join(dependencyRoot, 'node_modules/miniprogram-simulate/build.js'),
       'tools/miniprogram-ui/test/browser/ui1.spec.cjs',
     ],
     preprocessors: {

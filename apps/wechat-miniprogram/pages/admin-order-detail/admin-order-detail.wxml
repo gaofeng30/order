@@ -38,8 +38,8 @@
 
       <view class="card sec-card">
         <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">用户与履约</text></view>
-        <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contact}}</text></view>
-        <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.phone}}</text></view>
+        <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}}</text></view>
+        <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.maskedPhone}}</text></view>
         <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">备注</text><text class="ir-val">{{o.orderNote}}</text></view>
         <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
       </view>
@@ -51,7 +51,7 @@
     <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="print"><icon name="printer" size="17" color="#0b2f63" />打印</view>
     <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="call"><icon name="phone" size="16" color="#0b2f63" /></view>
     <view wx:if="{{meta.isView}}" class="btn btn--mute foot-main">{{o.status}}</view>
-    <view wx:else class="btn {{meta.cls}} foot-main" bindtap="advance"><icon wx:if="{{meta.scan}}" name="scan" size="18" color="#ffffff" />{{meta.label}}</view>
+    <view wx:else class="btn btn--primary foot-main" bindtap="advance">{{meta.label}}</view>
   </view>
 
   <toast id="toast" />

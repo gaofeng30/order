@@ -1,5 +1,4 @@
-/* 绥安食品 — 通用工具: 路由 / 状态语义 / 购物车 / 订单推进 */
-const data = require('./data.js');
+/* 绥安食品 — 通用工具: 路由 / 状态语义 / 客户端购物车 */
 const catalogStore = require('./catalogStore.js');
 
 // ---- 状态 → 胶囊语义 (颜色统一来源) ----
@@ -48,13 +47,14 @@ const nav = {
 
 // ---- 取餐时间 (跨页共享；菜单顶部条选择，结算页只读) ----
 const pickup = {
-  get() {
-    const g = getApp().globalData;
-    if (!g.pickup) g.pickup = data.defaultPickup();
-    return g.pickup;
-  },
+  get() { return getApp().globalData.pickup || null; },
   set(pk) { getApp().globalData.pickup = pk; },
-  label() { return data.pickupLabel(this.get()); },
+  label() {
+    const selected = this.get();
+    if (!selected) return '';
+    const period = selected.mealPeriod === 'lunch' ? '午餐' : '晚餐';
+    return `${selected.date.slice(5)} ${period} ${selected.time}`;
+  },
 };
 
 // ---- 购物车 (操作 globalData.cart) ----
@@ -154,93 +154,4 @@ const cart = {
   },
 };
 
-/* ---- 六态订单状态机 (生效 spec: Orders use one six-state production state machine) ----
-   已预约 ──取餐前 30 分钟，服务端定时推进──▶ 制作中 ──备好──▶ 待取餐 ──核销──▶ 已完成
-   旁路：  任一已支付态 ──退款──▶ 退款中 ──微信确认──▶ 已退款
-
-   NEXT 只包含商户可执行的转换。`已预约 → 制作中` 由服务端定时任务驱动，
-   前端不得提供该转换；退款由 PC 后台发起，不在商户端推进链路上。
-   生产禁止撤销或回退已完成的转换，因此不提供任何回退入口。 */
-const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
-const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
-
-/* ---- 取餐号解析与订单检索（PRD §7.8、§6.6）----
-   §7.8：取餐号按取餐日期从 0001 累计，跨营业日可能重复，因此按号定位
-   必须限定当前营业日。这条规则只实现一次 —— 搜索与手工核销共用 findByCode，
-   分开实现两处必然漂移。 */
-const CODE_RE = /^\d{4}$/;
-
-// 按取餐号定位当前营业日的订单；不在本营业日的号一律不解析。
-function findByCode(code) {
-  const key = String(code == null ? '' : code).trim();
-  if (!CODE_RE.test(key)) return null;
-  const list = getApp().globalData.aOrders;
-  return list.find(o => o.code === key && o.pickupDate === data.BUSINESS_DAY) || null;
-}
-
-/* 该号在当前营业日无果、却存在于别的营业日时，报出这个事实和替代定位方式。
-   空列表是最差的反馈：它和「这个号不存在」不可区分，而两者处置完全不同。 */
-function codeHint(code) {
-  const key = String(code == null ? '' : code).trim();
-  if (!CODE_RE.test(key) || findByCode(key)) return '';
-  const others = getApp().globalData.aOrders.filter(o => o.code === key);
-  if (!others.length) return '';
-  const days = [...new Set(others.map(o => o.pickupDate))].sort().join('、');
-  return `取餐号「${key}」属于 ${days} 的订单，不在当前营业日 ${data.BUSINESS_DAY}。请改用订单号或手机号定位该单。`;
-}
-
-/* 商户端订单检索：取餐号 / 订单号 / 手机号 / 联系人，跨全部状态泳道。
-   4 位纯数字同时按手机号片段匹配 —— 跨营业日歧义只是取餐号的属性，
-   手机尾号没有这个问题；只按取餐号解释会让输入手机尾号的商户得到空列表。 */
-function searchOrders(keyword) {
-  const key = String(keyword == null ? '' : keyword).trim();
-  if (!key) return [];
-  const list = getApp().globalData.aOrders;
-  if (CODE_RE.test(key)) {
-    const byPhone = list.filter(o => String(o.phone).includes(key));
-    const hit = findByCode(key);
-    if (hit && !byPhone.some(o => o.id === hit.id)) return [hit].concat(byPhone);
-    return byPhone;
-  }
-  const up = key.toUpperCase();
-  return list.filter(o =>
-    String(o.no).toUpperCase().includes(up) ||
-    String(o.phone).includes(key) ||
-    String(o.contact).includes(key) ||
-    String(o.code).includes(key));
-}
-
-/* 菜品摘要串。名称取自订单自身的快照（§15.6.2），不按 id 回查菜品表 ——
-   订单是历史记录，商品改名或删除后它必须仍复述下单当时的事实。 */
-function itemsSummary(items) {
-  return items.map(([, name, q]) => name + '×' + q).join('，');
-}
-
-// 商户端单向推进订单状态。不可回退：生效 spec 禁止生产撤销。
-function advanceOrder(id, toastComp, refresh) {
-  const g = getApp().globalData;
-  const o = g.aOrders.find(x => x.id === id);
-  if (!o) return;
-  const nx = NEXT[o.status];
-  if (!nx) return;
-  const act = ACT[o.status];
-  o.status = nx;
-  if (refresh) refresh();
-  if (toastComp) toastComp.show(`已${act}「${o.code}」`, { icon: 'check' });
-}
-
-// 推进按钮的展示元信息
-function advanceMeta(status) {
-  const isView = !NEXT[status];
-  return {
-    label: ACT[status],
-    isView,
-    cls: isView ? 'btn--ghost-blue' : (status === '待取餐' ? 'btn--blue' : 'btn--primary'),
-    scan: status === '待取餐',
-  };
-}
-
-module.exports = {
-  STATUS_MAP, statusTone, nav, buildUrl, pickup, cart, NEXT, ACT, itemsSummary, advanceOrder, advanceMeta,
-  findByCode, codeHint, searchOrders,
-};
+module.exports = { STATUS_MAP, statusTone, nav, buildUrl, pickup, cart };

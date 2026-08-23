@@ -10,10 +10,10 @@
       <view class="ring r2"></view>
       <view class="hero-inner">
         <view class="greet">你好，欢迎光临</view>
-        <view class="store-name serif">{{store.name}}</view>
+        <view class="store-name serif">{{storeName}}</view>
         <view class="store-meta">
           <icon name="pin" size="13" color="#b79a55" />
-          <text class="addr">{{store.addr}}</text>
+          <text class="addr">{{storeAddress}}</text>
           <text class="biz biz--{{bizStatus === '营业中' ? 'open' : 'closed'}}">　·　{{bizStatus}}</text>
         </view>
         <view class="search" bindtap="toMenu">

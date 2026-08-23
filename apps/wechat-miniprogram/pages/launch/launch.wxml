@@ -50,7 +50,8 @@
 
     <view wx:if="{{hint}}" class="id-hint">{{hint}}</view>
 
-    <view class="ver">{{store.name}}　小程序 v1.0</view>
+    <view wx:if="{{storefrontState === 'error'}}" class="id-hint" bindtap="retryStorefront">门店信息加载失败，点此重试</view>
+    <view class="ver">{{storeName || '门店'}}　小程序 v1.0</view>
   </view>
 
 

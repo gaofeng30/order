@@ -30,9 +30,21 @@ function createHarness(options) {
   clearMiniprogramModules();
 
   const requestQueue = ((options && options.requests) || []).slice();
+  const loginQueue = ((options && options.logins) || []).slice();
+  const paymentQueue = ((options && options.payments) || []).slice();
+  const subscribeQueue = ((options && options.subscriptions) || []).slice();
+  const scanQueue = ((options && options.scans) || []).slice();
+  const profileQueue = ((options && options.profiles) || []).slice();
   const requestCalls = [];
   const navigationCalls = [];
   const toastCalls = [];
+  const previewCalls = [];
+  const paymentCalls = [];
+  const subscribeCalls = [];
+  const scanCalls = [];
+  const profileCalls = [];
+  const clipboardCalls = [];
+  const nativeToastCalls = [];
   let appDefinition = null;
   let appInstance = null;
   let pageDefinition = null;
@@ -65,6 +77,47 @@ function createHarness(options) {
       completeRequest(request, response);
       return { abort() {} };
     },
+    getRandomValues(bytes) {
+      for (let index = 0; index < bytes.length; index += 1) bytes[index] = (index + 17) % 256;
+      return bytes;
+    },
+    requestPayment(request) {
+      paymentCalls.push(clone(request));
+      const response = paymentQueue.length ? paymentQueue.shift() : { networkError: true };
+      queueMicrotask(() => {
+        if (response && response.ok) request.success({ errMsg: 'requestPayment:ok' });
+        else request.fail({ errMsg: (response && response.errMsg) || 'requestPayment:fail' });
+      });
+    },
+    requestSubscribeMessage(request) {
+      subscribeCalls.push(clone(request));
+      const response = subscribeQueue.length ? subscribeQueue.shift() : { networkError: true };
+      queueMicrotask(() => {
+        if (response && !response.networkError) request.success(clone(response));
+        else request.fail({ errMsg: 'requestSubscribeMessage:fail' });
+      });
+    },
+    scanCode(request) {
+      scanCalls.push(clone(request));
+      const response = scanQueue.length ? scanQueue.shift() : { networkError: true };
+      queueMicrotask(() => {
+        if (response && !response.networkError) request.success(clone(response));
+        else request.fail({ errMsg: 'scanCode:fail' });
+      });
+    },
+    getUserProfile(request) {
+      profileCalls.push(clone(request));
+      const response = profileQueue.length ? profileQueue.shift() : { networkError: true };
+      queueMicrotask(() => {
+        if (response && !response.networkError) request.success(clone(response));
+        else request.fail({ errMsg: 'getUserProfile:fail' });
+      });
+    },
+    setClipboardData(request) {
+      clipboardCalls.push(clone(request));
+      if (request.success) request.success();
+    },
+    showToast(request) { nativeToastCalls.push(clone(request)); },
     getWindowInfo() {
       return {
         statusBarHeight: 20,
@@ -79,7 +132,7 @@ function createHarness(options) {
     redirectTo(request) { navigate('redirectTo', request); },
     reLaunch(request) { navigate('reLaunch', request); },
     navigateBack(request) { navigate('navigateBack', request || {}); },
-    previewImage() {},
+    previewImage(request) { previewCalls.push(clone(request)); },
   };
 
   function loadApp() {
@@ -150,6 +203,14 @@ function createHarness(options) {
     requestCalls,
     navigationCalls,
     toastCalls,
+    previewCalls,
+    paymentCalls,
+    subscribeCalls,
+    scanCalls,
+    profileCalls,
+    clipboardCalls,
+    nativeToastCalls,
+    enqueueLogin(response) { loginQueue.push(response); },
     enqueueRequest(response) { requestQueue.push(response); },
     loadApp,
     loadPage,

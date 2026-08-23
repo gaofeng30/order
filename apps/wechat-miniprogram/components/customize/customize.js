@@ -1,5 +1,4 @@
 /* 口味偏好 + 备注 选择弹层 (菜品级, 复用于菜单/详情/确认订单) */
-const data = require('../../utils/data.js');
 const catalogStore = require('../../utils/catalogStore.js');
 
 Component({
@@ -8,6 +7,7 @@ Component({
     visible: { type: Boolean, value: false },
     init: { type: Object, value: null },           // { qty, flavors, note }
     confirmLabel: { type: String, value: '加入购物车' },
+    flavorOptions: { type: Array, value: [] },
   },
   data: {
     chips: [],            // [{ name, on }]
@@ -35,7 +35,7 @@ Component({
     },
   },
   methods: {
-    _chips(flavors) { return data.FLAVORS.map(f => ({ name: f, on: flavors.indexOf(f) > -1 })); },
+    _chips(selected) { return this.data.flavorOptions.map(name => ({ name, on: selected.indexOf(name) > -1 })); },
     toggleFlavor(e) {
       const f = e.currentTarget.dataset.f;
       const flavors = this.data.flavors.slice();

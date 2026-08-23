@@ -11,9 +11,9 @@
         <view class="ticket-code serif">{{o.code}}</view>
         <view class="ticket-rsv"><icon name="calendarClock" size="15" color="#9fd3ff" /><text>{{pickupText}} 取餐</text></view>
         <!-- 核销二维码只在订单进入 待取餐 后展示（生效 spec §5.8） -->
-        <view wx:if="{{o.status === '待取餐'}}" class="qr-white"><qrcode size="300" dark="#0b2f63" /></view>
+        <view wx:if="{{showQr}}" class="qr-white"><qrcode value="{{qrToken}}" size="300" dark="#0b2f63" /></view>
         <view class="ticket-pill"><pill s="{{o.status}}" ondark /></view>
-        <view class="ticket-hint">{{o.status === '待取餐' ? '出示二维码或报取餐号，到窗口即可取餐' : '备好后将推送提醒，届时凭二维码或取餐号领取'}}</view>
+        <view class="ticket-hint">{{showQr ? '出示二维码或报取餐号，到窗口即可取餐' : '订单未备好时不会展示核销二维码'}}</view>
         <view class="ticket-copy" bindtap="copy"><icon name="copy" size="16" color="#ffffff" /><text>复制取餐号</text></view>
       </view>
     </view>
@@ -22,7 +22,6 @@
       <view class="card sec-card">
         <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">商品明细</text><text class="faint" style="font-size:24rpx">订单号 {{o.no}}</text></view>
         <view wx:for="{{rows}}" wx:key="id" class="od-item">
-          <imageph item="{{item.m}}" h="92" w="92" radius="22" tag="{{false}}" />
           <view class="od-item-info">
             <view class="od-item-name">{{item.name}}</view>
             <view class="od-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
@@ -40,7 +39,7 @@
         <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">取餐信息</text><view class="pill pill--info">预约单</view></view>
         <view class="info-row"><view class="ir-label">取餐地点</view><text class="ir-val">{{o.pickupPoint}}</text></view>
         <view class="info-row"><view class="ir-label">预约取餐</view><text class="ir-val">{{pickupText}}</text></view>
-        <view class="info-row {{!flavorsStr && !o.orderNote ? 'last' : ''}}"><view class="ir-label">联系人</view><text class="ir-val">{{o.contact}} · {{o.phone}}</text></view>
+        <view class="info-row {{!flavorsStr && !o.orderNote ? 'last' : ''}}"><view class="ir-label">联系人</view><text class="ir-val">{{o.contactName}} · {{o.maskedPhone}}</text></view>
         <view wx:if="{{flavorsStr}}" class="info-row {{!o.orderNote ? 'last' : ''}}"><view class="ir-label">口味偏好</view><text class="ir-val">{{flavorsStr}}</text></view>
         <view wx:if="{{o.orderNote}}" class="info-row last"><view class="ir-label">备注</view><text class="ir-val">{{o.orderNote}}</text></view>
       </view>
@@ -51,10 +50,15 @@
           <icon name="{{canCancel ? 'calendar' : 'warn'}}" size="18" color="{{canCancel ? '#2a5fa6' : '#a4873f'}}" />
           <view class="cancel-text">
             <view class="cancel-title">取消预约</view>
-            <view class="cancel-desc {{canCancel ? '' : 'warn'}}">{{canCancel ? ('取餐前 ' + cancelMin + ' 分钟外可取消，款项原路退回。') : ('距取餐不足 ' + cancelMin + ' 分钟（约 ' + minsLeft + ' 分钟后取餐），已无法取消。')}}</view>
+            <view class="cancel-desc {{canCancel ? '' : 'warn'}}">{{canCancel ? '服务端确认当前仍可取消，款项原路退回。' : '当前状态不允许自助取消。'}}</view>
           </view>
         </view>
         <view class="cancel-btn {{canCancel ? 'on' : 'off'}}" bindtap="openCancel">{{canCancel ? '取消预约' : '不可取消'}}</view>
+      </view>
+
+      <view wx:if="{{canSubscribeReady}}" class="card cancel-card">
+        <view class="cancel-title">待取餐提醒</view>
+        <view class="cancel-btn on" bindtap="subscribeReady">订阅提醒</view>
       </view>
 
       <view style="height:{{safeBottom + 30}}px"></view>

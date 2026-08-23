@@ -1,14 +1,16 @@
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import karma from 'karma';
-import { chromium } from 'playwright';
-
 import { startCatalogFixture } from './fixture-server.mjs';
 
 const toolRoot = path.dirname(fileURLToPath(import.meta.url));
+const dependencyRoot = process.env.MINIPROGRAM_UI_DEPS || toolRoot;
+const dependencyRequire = createRequire(path.join(dependencyRoot, 'package.json'));
+const karma = dependencyRequire('karma');
+const { chromium } = dependencyRequire('playwright');
 const browserPath = chromium.executablePath();
 
 if (!existsSync(browserPath)) {

@@ -1,4 +1,4 @@
-const { HUES } = require('../../utils/data.js');
+const HUES = [['#5b8f3f', '#3d6b2f'], ['#b79a55', '#8c7038'], ['#2a5fa6', '#173b6d']];
 
 Component({
   properties: {
@@ -19,7 +19,8 @@ Component({
     calc() {
       const it = this.data.item || {};
       const hasImg = !!it.img;
-      const hue = HUES[it.cat] || ['#5b8f3f', '#3d6b2f'];
+      const index = Array.from(String(it.name || '')).reduce((sum, char) => sum + char.codePointAt(0), 0) % HUES.length;
+      const hue = HUES[index];
       const bg = `linear-gradient(150deg, ${hue[0]}, ${hue[1]})`;
       const ch = this.data.char || (it.name ? it.name[0] : '食');
       const fs = this.data.fontsize || Math.round(this.data.h * 0.42);

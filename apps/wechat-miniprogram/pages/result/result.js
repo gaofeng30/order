@@ -1,34 +1,20 @@
-const data = require('../../utils/data.js');
+const orderStore = require('../../utils/orderStore.js');
 const { nav } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: { o: null, store: data.STORE },
-  onLoad() {
-    const o = getApp().globalData.lastOrder || data.USER_ORDERS[0];
-    // 一期只有预约单，不再按订单类型分支
-    this.setData({
-      o,
-      navTitle: '预约结果',
-      ringIcon: 'calendar',
-      ringSize: 38,
-      mainTitle: '预约成功',
-      sub: '备好后会推送提醒，凭取餐码到窗口领取',
-      codeLbl: '取餐号',
-      footIcon: 'calendarClock',
-      // 取餐文案现算：§15.6.2 删除了 pickupLabel 字段
-      footText: `${data.orderPickupLabel(o)} 取 · ${o.pickupPoint}`,
-      viewBtn: '查看取餐码',
-    });
-    // 预约成功后停留 5s，自动跳转到取餐码页
-    this._autoTimer = setTimeout(() => this.viewCode(), 5000);
+  data: { state: 'loading', o: null, navTitle: '支付结果', mainTitle: '订单已创建', sub: '服务端已确认支付并创建订单' },
+  async onLoad(opts) {
+    this._id = String(opts.id || '');
+    try {
+      const order = await orderStore.detail(this._id);
+      this.setData({
+        state: 'ready', o: order, codeLbl: '取餐号', footText: `${order.pickupDate} ${order.pickupTime} 取 · ${order.pickupPoint}`,
+        viewBtn: order.state === 'READY_FOR_PICKUP' ? '查看取餐码' : '查看订单', ringIcon: 'calendar', ringSize: 38,
+      });
+      return true;
+    } catch (error) { this.setData({ state: 'error', o: null }); return false; }
   },
-  onUnload() { clearTimeout(this._autoTimer); },
-  goHome() { clearTimeout(this._autoTimer); nav.tabTo('home'); },
-  viewCode() {
-    if (this._navigated) return;        // 防止自动跳转与手动点击重复触发
-    this._navigated = true;
-    clearTimeout(this._autoTimer);
-    nav.replace('order-detail', { id: this.data.o.id });
-  },
+  goHome() { nav.tabTo('home'); },
+  viewCode() { if (this.data.o) nav.replace('order-detail', { id: this.data.o.id }); },
 });

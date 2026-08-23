@@ -3,6 +3,7 @@
 
   <view wx:if="{{detailState === 'loading'}}" class="detail-state">商品加载中…</view>
   <view wx:elif="{{detailState === 'not_found'}}" class="detail-state">商品不存在</view>
+  <view wx:elif="{{detailState === 'selection_required'}}" class="detail-state">请先从菜单选择取餐时间</view>
   <view wx:elif="{{detailState === 'error'}}" class="detail-state">
     <text>商品加载失败</text>
     <view class="btn btn--ghost-blue btn--sm" bindtap="retryProduct">重试</view>
@@ -11,6 +12,9 @@
   <block wx:elif="{{detailState === 'ready'}}">
     <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
       <view class="detail-body">
+        <scroll-view wx:if="{{m.images.length}}" scroll-x class="detail-images">
+          <image wx:for="{{m.images}}" wx:key="objectKey" src="{{item.url}}" mode="aspectFill" data-url="{{item.url}}" bindtap="previewImage" />
+        </scroll-view>
         <view class="card info-card">
           <view class="info-name serif">{{m.name}}</view>
           <view class="info-price"><money v="{{m.price_text}}" size="60" /></view>
@@ -24,7 +28,7 @@
 
         <view class="card local-card">
           <icon name="cart" size="16" color="#467a32" />
-          <text>目录仅供浏览与本地选择</text>
+          <text>{{m.orderable ? '当前取餐时间可选择' : '当前取餐时间不可下单'}}</text>
         </view>
       </view>
       <view style="height:40rpx"></view>
@@ -32,11 +36,11 @@
 
     <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
       <stepper wx:if="{{qty > 0}}" value="{{qty}}" bind:sub="sub" bind:add="add" />
-      <view wx:else class="have-qty">尚未选择</view>
-      <view class="btn btn--block btn--primary addcart-btn" bindtap="openCustomize">选择 · <money v="{{m.price_text}}" color="#ffffff" size="30" /></view>
+      <view wx:else class="have-qty">{{m.orderable ? '尚未选择' : '不可下单'}}</view>
+      <view class="btn btn--block {{m.orderable ? 'btn--primary' : 'btn--mute'}} addcart-btn" bindtap="openCustomize">{{m.orderable ? '选择' : '不可下单'}} · <money v="{{m.price_text}}" color="#ffffff" size="30" /></view>
     </view>
 
-    <customize visible="{{czVisible}}" item="{{m}}" init="{{czInit}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
+    <customize visible="{{czVisible}}" item="{{m}}" init="{{czInit}}" flavor-options="{{flavors}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
   </block>
 
   <toast id="toast" />

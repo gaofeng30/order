@@ -1,123 +1,140 @@
-const data = require('../../utils/data.js');
-const { nav, cart, pickup } = require('../../utils/util.js');
+const api = require('../../utils/apiClient.js');
+const phoneStore = require('../../utils/phoneStore.js');
+const transaction = require('../../utils/transactionStore.js');
 const catalogStore = require('../../utils/catalogStore.js');
-
+const { nav, cart, pickup } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
-    store: data.STORE,
-    pickupPoint: data.PICKUP_POINT,
-    cancelMin: data.CANCEL_LIMIT_MIN,
-    // 取餐时间在菜单顶部选定，结算页只读展示（生效 spec §5.5）
-    pickup: {},
-    items: [],
-    count: 0,
-    form: { contact: '', phone: '' },
-    payLabel: '应付金额',
-    payBtn: '确认支付',
-    // 编辑口味/备注
-    czVisible: false,
-    czItem: null,
-    czInit: null,
-    // 一期没有任何优惠机制，应付金额等于商品小计（生效 spec：员工折扣由全局折扣率承担，尚未实现）
-    subtotal_cents: 0,
-    subtotal_text: '0.00',
-    payable_cents: 0,
-    payable_text: '0.00',
+    pickup: null, items: [], count: 0, form: { contact: '', orderNote: '', extraPhone: '' },
+    phoneState: 'loading', maskedPhone: '', paymentState: 'idle', quote: null,
+    payLabel: '服务端应付金额', payBtn: '确认支付', czVisible: false, czItem: null, czInit: null, flavors: [],
+    subtotal_cents: 0, subtotal_text: '0.00', payable_cents: 0, payable_text: '0.00',
   },
-  onLoad() { this.syncPickup(); this.refreshItems(); },
-  onShow() { this.syncPickup(); },
+  onLoad() { this.setData({ flavors: (getApp().globalData.storefrontFlavors || []).slice() }); this.syncPickup(); this.refreshItems(); },
+  async onShow() { this.syncPickup(); return this.refreshPhone(); },
   syncPickup() {
-    const pk = pickup.get();
-    this.setData({
-      pickup: Object.assign({}, pk, {
-        label: data.pickupLabel(pk),
-        cutOff: data.isPeriodCutOff(pk.off, pk.period),
-      }),
-      payLabel: `预约 ${data.pickupLabel(pk)} 取`,
-      payBtn: '提交预约',
-    });
+    const selected = pickup.get();
+    this.setData({ pickup: selected ? Object.assign({}, selected, { label: pickup.label() }) : null });
   },
-  // 改取餐时间回菜单顶部条选择，结算页不重复提供选择器
+  async refreshPhone() {
+    this.setData({ phoneState: 'loading', maskedPhone: '' });
+    try {
+      const status = await phoneStore.status();
+      this.setData({ phoneState: status.bound ? 'bound' : 'unbound', maskedPhone: status.maskedPhone });
+      return status.bound;
+    } catch (error) {
+      this.setData({ phoneState: error && error.statusCode === 401 ? 'unauthenticated' : 'unavailable' });
+      return false;
+    }
+  },
+  async onGetPhoneNumber(e) {
+    const detail = (e && e.detail) || {};
+    if (typeof detail.code !== 'string' || !detail.code.trim()) return false;
+    this.setData({ phoneState: 'binding' });
+    try {
+      const status = await phoneStore.bind(detail.code);
+      this.setData({ phoneState: 'bound', maskedPhone: status.maskedPhone });
+      return true;
+    } catch (error) {
+      this.setData({ phoneState: 'unavailable', maskedPhone: '' });
+      return false;
+    }
+  },
+  async saveExtraPhone() {
+    const phone = this.data.form.extraPhone.trim();
+    const name = this.data.form.contact.trim();
+    if (!phone || !name) return false;
+    try {
+      const result = await phoneStore.setExtra(phone, name, api.newIdempotencyKey('extra-phone'));
+      this.setData({ maskedPhone: result.extraPhone.masked_phone });
+      return true;
+    } catch (error) { return false; }
+  },
   editPickup() { nav.tabTo('menu'); },
   refreshItems() {
     const items = cart.list();
     const subtotal = cart.totalCents();
     this.setData({
-      items,
-      count: items.reduce((a, b) => a + b.q, 0),
-      subtotal_cents: subtotal,
-      subtotal_text: catalogStore.formatCents(subtotal),
-      payable_cents: subtotal,
-      payable_text: catalogStore.formatCents(subtotal),
+      items, count: items.reduce((sum, item) => sum + item.q, 0),
+      subtotal_cents: subtotal, subtotal_text: catalogStore.formatCents(subtotal),
+      payable_cents: subtotal, payable_text: catalogStore.formatCents(subtotal),
     });
   },
-
-  setMode(e) { this.setData({ mode: e.currentTarget.dataset.m }); },
-  onInput(e) { this.setData({ ['form.' + e.currentTarget.dataset.k]: e.detail.value }); },
+  onInput(e) { this.setData({ [`form.${e.currentTarget.dataset.k}`]: e.detail.value }); },
   editItem(e) {
-    const id = e.currentTarget.dataset.id;
-    const entry = cart.entry(id);
-    this.setData({
-      czVisible: true,
-      czItem: entry.product,
-      czInit: entry ? { qty: entry.qty, flavors: entry.flavors, note: entry.note } : null,
-    });
+    const entry = cart.entry(e.currentTarget.dataset.id);
+    if (!entry) return;
+    this.setData({ czVisible: true, czItem: entry.product,
+      czInit: { qty: entry.qty, flavors: entry.flavors, note: entry.note } });
   },
   onCzClose() { this.setData({ czVisible: false }); },
-  onCzConfirm(e) {
-    cart.setPrefs(this.data.czItem, e.detail);
-    this.setData({ czVisible: false });
-    this.refreshItems();
-  },
-  pay() {
-    const g = getApp().globalData;
-    const list = cart.list();
-    if (!list.length) return;
-    const pk = pickup.get();
-    // 提交时重新校验目标取餐时间所属餐段是否仍在截单前；已截则拦截支付并保留购物车
-    if (data.isPeriodCutOff(pk.off, pk.period)) {
-      this.syncPickup();
-      this.selectComponent('#toast').show('该餐段已截单，请重选取餐时间', { icon: 'warn' });
-      return;
-    }
-    const minsToPickup = data.slotMins(pk.off, pk.time);
-    // 取餐号为 4 位数字，按取餐日期累计；即时单已删除，不再有前缀
-    const code = String(130 + Math.floor(Math.random() * 60)).padStart(4, '0');
-    /* 金额一律整数分（§5.6）。直接取目录快照的 price_cents，不经过
-       Number(price_text) 这一次元的往返 —— 那次往返正是浮点尾数的来源。 */
-    const subtotal = this.data.subtotal_cents;
-    const order = {
-      id: 'o' + Date.now(),
-      no: 'SA24061001' + (40 + Math.floor(Math.random() * 50)),
-      code,
-      // 支付成功即建单。距取餐不足 30 分钟时直接进 制作中（生效 spec §7.4）
-      status: minsToPickup <= data.CANCEL_LIMIT_MIN ? '制作中' : '已预约',
-      pickupDate: data.pickupDateOf(pk),
-      pickupTime: pk.time,
-      mealPeriod: pk.period,
-      // 与种子订单写同一个常量：同一字段不能在两条写入路径上装不同语义的值
-      pickupPoint: data.PICKUP_POINT,
-      paidAt: data.nowStamp(),
-      subtotal,
-      /* 身份识别链路尚未接后端（§16.5），一期在手机号授权就位前所有人按
-         访客原价结算（§5.6「访客按原价结算」）。这不是占位符，是当前真实状态。 */
-      discountRate: 100,
-      discountCut: 0,
-      total: subtotal,
-      isStaff: false,
-      orderNote: '',
-      contact: this.data.form.contact || '林先生',
-      phone: this.data.form.phone || '138****6620',
-      /* 名称在此刻固化（§15.6.2）：订单是历史记录，商品改名或删除后
-         它必须仍复述下单当时的事实。折后价等于原价，同上。 */
-      items: list.map(({ item, q, flavors, note }) =>
-        [item.id, item.name, q, item.price_cents, item.price_cents, flavors, note]),
+  onCzConfirm(e) { cart.setPrefs(this.data.czItem, e.detail); this.setData({ czVisible: false }); this.refreshItems(); },
+  quoteRequest() {
+    const selected = pickup.get();
+    return {
+      contact_name: this.data.form.contact.trim(),
+      pickup_date: selected.date,
+      pickup_time: selected.time,
+      order_note: this.data.form.orderNote.trim(),
+      items: cart.list().map(line => ({
+        product_id: line.item.id, quantity: line.q, flavors: line.flavors.slice(), note: line.note,
+      })),
     };
-    g.orders = [order, ...g.orders];
-    g.lastOrder = order;
-    cart.clear();
-    nav.replace('result');
+  },
+  async confirmExisting() {
+    try {
+      const confirmed = await transaction.confirm(this._prepayment.id, this._confirmKey);
+      if (confirmed.state !== 'ORDER_CREATED') {
+        this.setData({ paymentState: 'pending', payBtn: '重新确认支付结果' });
+        return false;
+      }
+      cart.clear();
+      this._prepayment = null;
+      this.setData({ paymentState: 'created' });
+      nav.replace('result', { id: confirmed.orderID });
+      return true;
+    } catch (error) {
+      this.setData({ paymentState: 'error', payBtn: '重试' });
+      return false;
+    }
+  },
+  async pay() {
+    if (this._paying) return this._paying;
+    const action = this.payOnce();
+    this._paying = action;
+    return action.finally(() => { if (this._paying === action) this._paying = null; });
+  },
+  async payOnce() {
+    if (!cart.count() || !pickup.get()) return false;
+    if (this._prepayment) return this.confirmExisting();
+    if (this.data.phoneState !== 'bound') {
+      this.selectComponent('#toast').show('请先绑定手机号', { icon: 'warn' });
+      return false;
+    }
+    if (!this.data.form.contact.trim()) {
+      this.selectComponent('#toast').show('请填写取餐人姓名', { icon: 'warn' });
+      return false;
+    }
+    this.setData({ paymentState: 'quoting', payBtn: '正在核价…' });
+    try {
+      const quote = await transaction.createQuote(this.quoteRequest(), api.newIdempotencyKey('quote'));
+      this.setData({
+        quote, payable_cents: quote.payable_cents,
+        payable_text: catalogStore.formatCents(quote.payable_cents), paymentState: 'preparing', payBtn: '正在创建支付…',
+      });
+      this._prepayment = await transaction.createPrepayment(quote.id, api.newIdempotencyKey('prepay'));
+      this._confirmKey = api.newIdempotencyKey('confirm');
+      this.setData({ paymentState: 'paying', payBtn: '等待微信支付…' });
+      await transaction.requestPayment(this._prepayment.wx_request_payment);
+      this.setData({ paymentState: 'confirming', payBtn: '正在确认支付结果…' });
+      return this.confirmExisting();
+    } catch (error) {
+      this._prepayment = null;
+      this.setData({ paymentState: 'error', payBtn: '重试', quote: null,
+        payable_cents: this.data.subtotal_cents, payable_text: this.data.subtotal_text });
+      return false;
+    }
   },
 });

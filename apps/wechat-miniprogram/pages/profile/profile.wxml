@@ -7,11 +7,11 @@
       <view class="ring r1"></view>
       <view class="ring r2"></view>
       <view class="id-inner">
-        <view class="avatar serif">林</view>
+        <view class="avatar serif" bindtap="chooseProfile">{{avatarText}}</view>
         <view class="id-body">
           <view class="id-head">
             <text class="serif id-name">{{nick}}</text>
-            <pill s="已授权" tone="ok" />
+            <pill s="{{phoneMask ? '已绑定' : '未绑定'}}" tone="{{phoneMask ? 'ok' : 'mute'}}" />
           </view>
           <view class="id-sub">{{phoneMask}}</view>
         </view>
@@ -28,19 +28,23 @@
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
         </view>
+        <button wx:if="{{!phoneMask}}" class="prow" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+          <view class="prow-main"><view class="prow-label">绑定主手机号</view></view>
+        </button>
         <view class="prow">
-          <view class="prow-ico" style="background:var(--bg2)"><icon name="truck" size="19" color="#9a9e8c" /></view>
-          <view class="prow-main"><view class="prow-label">外卖配送</view></view>
-          <view class="pill pill--mute">暂未开放</view>
+          <view class="prow-main"><view class="prow-label">附加手机号</view><view class="prow-sub">{{extraPhoneMask || '未设置'}}</view></view>
+          <input data-k="phone" bindinput="onExtraInput" placeholder="手机号" />
+          <input data-k="name" bindinput="onExtraInput" placeholder="姓名" />
+          <view bindtap="saveExtraPhone">保存</view>
         </view>
-        <view class="prow last" bindtap="service">
+        <button class="prow last" open-type="contact">
           <view class="prow-ico" style="background:var(--bg2)"><icon name="headset" size="19" color="#2a5fa6" /></view>
           <view class="prow-main">
             <view class="prow-label">联系客服</view>
             <view class="prow-sub">0596-388 1688</view>
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
-        </view>
+        </button>
       </view>
 
       <view class="switch-id" bindtap="reset">切换身份入口 ›</view>

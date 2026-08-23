@@ -1,5 +1,7 @@
 // 绥安食品 · 点餐小程序 — App 入口
-const data = require('./utils/data.js');
+const runtimeEndpointConfig = require('./utils/runtimeEndpointConfig.js');
+const { isRuntimeOrigin, resolveRuntimeEndpoint } = require('./utils/runtimeEndpoint.js');
+const sessionApi = require('./utils/sessionApi.js');
 
 App({
   globalData: {
@@ -13,28 +15,57 @@ App({
     safeBottom: 0,       // 底部安全区 px（全面屏 home 条）
     screenWidth: 375,
 
-    // ---- 业务状态（跨页共享，模拟后端）----
-    store: {},              // 门店信息与营业状态（商户可配置，§6.9）
-    cart: {},               // { [id]: { product, qty, flavors:[], note:'' } } 商品为首次选择时的目录快照
-    orderMode: 'now',       // 下单模式 'now'尽快 | 'reserve'预约
-    orders: [],             // 用户端订单
-    lastOrder: null,        // 最近一笔下单
-    aOrders: [],            // 商户端订单
-    menu: [],               // 菜品表（status 只表达上下架，商户端可编辑）
-    soldOut: [],            // 当日售罄记录 { productId, serviceDate }（§6.5）
+    // 购物车和当前选择只负责跨页交互；目录、价格、订单、营业与售罄均由服务端持有。
+    cart: {},
+    pickup: null,
 
   },
 
   onLaunch() {
     this.initSystemInfo();
     const g = this.globalData;
-    // 深拷贝种子数据，避免污染原始 mock
-    g.orders = JSON.parse(JSON.stringify(data.USER_ORDERS));
-    g.aOrders = JSON.parse(JSON.stringify(data.ADMIN_ORDERS));
-    // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面（列表/购物车/订单只用封面）
-    g.menu = JSON.parse(JSON.stringify(data.MENU)).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] }));
-    g.soldOut = JSON.parse(JSON.stringify(data.PRODUCT_SOLD_OUT_DATES));
-    g.store = JSON.parse(JSON.stringify(data.STORE));
+    g.runtimeEndpoint = resolveRuntimeEndpoint(wx, runtimeEndpointConfig);
+    g.apiBaseUrl = g.runtimeEndpoint.state === 'ready' ? g.runtimeEndpoint.origin : '';
+    if (this.isSessionEndpointReady()) {
+      this.startSession();
+    } else {
+      g.session = { state: 'error', accessToken: '', expiresAt: '' };
+    }
+  },
+
+  isSessionEndpointReady() {
+    const g = this.globalData;
+    const endpoint = g.runtimeEndpoint;
+    return endpoint
+      && endpoint.state === 'ready'
+      && endpoint.origin === g.apiBaseUrl
+      && isRuntimeOrigin(endpoint.envVersion, endpoint.origin);
+  },
+
+  startSession() {
+    const g = this.globalData;
+    if (!this.isSessionEndpointReady()) {
+      g.session = { state: 'error', accessToken: '', expiresAt: '' };
+      return Promise.resolve(g.session);
+    }
+    if (g.session.state === 'loading' && this.sessionPromise) return this.sessionPromise;
+
+    g.session = { state: 'loading', accessToken: '', expiresAt: '' };
+    const pending = sessionApi.createSession(g.apiBaseUrl).then(session => {
+      g.session = {
+        state: 'ready',
+        accessToken: session.accessToken,
+        expiresAt: session.expiresAt,
+      };
+      return g.session;
+    }).catch(() => {
+      g.session = { state: 'error', accessToken: '', expiresAt: '' };
+      return g.session;
+    });
+    this.sessionPromise = pending;
+    return pending.finally(() => {
+      if (this.sessionPromise === pending) this.sessionPromise = null;
+    });
   },
 
   initSystemInfo() {

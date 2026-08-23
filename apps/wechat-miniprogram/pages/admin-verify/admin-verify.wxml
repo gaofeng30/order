@@ -4,6 +4,7 @@
   <view class="verify-body">
     <view class="verify-center">
       <view class="verify-tip">将取餐二维码对准框内，自动识别核销</view>
+      <view class="btn btn--primary" bindtap="scan">打开相机扫码</view>
       <!-- 取景框 -->
       <view class="finder">
         <view class="finder-bg"><view class="scan-line"></view></view>
@@ -11,13 +12,6 @@
         <view class="corner tr"></view>
         <view class="corner bl"></view>
         <view class="corner br"></view>
-      </view>
-      <!-- 模拟扫码 -->
-      <view class="sim">
-        <view class="sim-tip">演示：点击模拟扫到</view>
-        <view class="sim-codes">
-          <view wx:for="{{sims}}" wx:key="*this" class="sim-code" data-c="{{item}}" bindtap="simTap">{{item}}</view>
-        </view>
       </view>
     </view>
 
@@ -55,7 +49,7 @@
         </view>
       </view>
       <view class="vr-summary">
-        <text class="vr-contact">{{match.o.contact}} · {{match.o.count}} 件</text>
+        <text class="vr-contact">{{match.o.contactName}}</text>
         <money cents="{{match.o.total}}" blue size="36" />
       </view>
       <view class="vr-actions">

@@ -24,6 +24,7 @@ globalThis.Behavior = definition => definition;
 globalThis.Component = definition => { componentDefinition = definition; };
 globalThis.Page = definition => { pageDefinitions[registeringPage] = definition; };
 globalThis.wx = {
+  login: options => queueMicrotask(() => options.success({ code: 'ui1-login-code' })),
   getWindowInfo: () => ({ statusBarHeight: 20, screenWidth: 375, screenHeight: 812, safeArea: { bottom: 778 } }),
   getSystemInfoSync: () => ({ statusBarHeight: 20, screenWidth: 375, screenHeight: 812, safeArea: { bottom: 778 } }),
   getMenuButtonBoundingClientRect: () => ({ top: 24, left: 278, width: 87, height: 32 }),
@@ -32,12 +33,20 @@ globalThis.wx = {
   navigateTo: options => { lastNavigation = options.url; },
   navigateBack: () => {},
   request: options => {
-    fetch(options.url, { method: options.method || 'GET' })
+    fetch(options.url, {
+      method: options.method || 'GET',
+      headers: options.header || {},
+      body: options.data === undefined ? undefined : JSON.stringify(options.data),
+    })
       .then(async response => {
         const data = await response.json();
         options.success({ statusCode: response.status, data });
       })
       .catch(error => options.fail(error));
+  },
+  getRandomValues: bytes => {
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = index + 1;
+    return bytes;
   },
 };
 

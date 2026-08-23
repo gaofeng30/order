@@ -10,7 +10,7 @@
           class="seg {{tab === item ? 'on' : ''}}"
           data-t="{{item}}"
           bindtap="switchTab"
-        >{{item}}<text wx:if="{{counts[item] > 0}}" class="cnt">{{counts[item]}}</text></view>
+        >{{item}}</view>
       </view>
     </scroll-view>
   </view>
@@ -44,6 +44,7 @@
       </view>
     </view>
     <view style="height:{{safeBottom + 30}}px"></view>
+    <view wx:if="{{nextAfterID}}" class="btn btn--ghost-blue btn--sm" bindtap="loadMore">加载更多</view>
   </scroll-view>
 
   <tabbar variant="user" active="orders" />

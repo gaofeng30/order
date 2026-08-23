@@ -24,19 +24,17 @@ Component({
       const g = getApp().globalData;
       let items, activeColor;
       if (this.data.variant === 'admin') {
-        const pend = g.aOrders.filter(o => o.status === '制作中').length;
         items = [
-          { id: 'admin-orders', icon: 'layers', label: '订单', badge: pend },
+          { id: 'admin-orders', icon: 'layers', label: '订单' },
           { id: 'admin-verify', icon: 'scan', label: '核销' },
           { id: 'admin-products', icon: 'box', label: '菜品' },
         ];
         activeColor = '#2a5fa6';
       } else {
-        const pend = g.orders.filter(o => ['已预约', '制作中', '待取餐'].includes(o.status)).length;
         items = [
           { id: 'home', icon: 'home', label: '首页' },
           { id: 'menu', icon: 'list', label: '菜单' },
-          { id: 'orders', icon: 'receipt', label: '订单', badge: pend },
+          { id: 'orders', icon: 'receipt', label: '订单' },
           { id: 'profile', icon: 'user', label: '我的' },
         ];
         activeColor = '#467a32';

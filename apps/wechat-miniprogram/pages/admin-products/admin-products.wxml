@@ -3,16 +3,8 @@
 
   <view class="pad top-area">
     <view class="search-box">
-      <icon name="search" size="16" color="#8f9384" /><text class="search-ph">搜索菜品名称</text>
+      <icon name="search" size="16" color="#8f9384" /><input class="search-in" placeholder="搜索菜品名称" value="{{search}}" bindinput="onSearch" />
     </view>
-  </view>
-
-  <view class="cat-nav">
-    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
-      <view class="segs">
-        <view wx:for="{{cats}}" wx:key="*this" class="seg {{cat === item ? 'on' : ''}}" data-c="{{item}}" bindtap="switchCat">{{item}}</view>
-      </view>
-    </scroll-view>
   </view>
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">

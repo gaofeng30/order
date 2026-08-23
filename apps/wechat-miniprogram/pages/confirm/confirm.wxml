@@ -12,8 +12,8 @@
           <text class="rsv-picked-t">{{pickup.label}}</text>
           <text class="rsv-picked-edit">修改</text>
         </view>
-        <view wx:if="{{pickup.cutOff}}" class="rsv-warn"><icon name="warn" size="13" color="#f0c674" /><text>该餐段已截单，请重选取餐时间</text></view>
-        <view wx:else class="rsv-warn"><icon name="warn" size="13" color="#9fd3ff" /><text>备好后推送提醒，取餐前 {{cancelMin}} 分钟外可随时取消</text></view>
+        <view wx:if="{{!pickup}}" class="rsv-warn"><icon name="warn" size="13" color="#f0c674" /><text>请返回菜单选择取餐时间</text></view>
+        <view wx:else class="rsv-warn"><icon name="warn" size="13" color="#9fd3ff" /><text>支付前由服务端重新核验餐段与可售状态</text></view>
       </view>
     </view>
 
@@ -23,8 +23,8 @@
       <view class="win-row">
         <view class="win-ico"><icon name="store" size="19" color="#467a32" /></view>
         <view class="win-info">
-          <view class="win-name">{{pickupPoint}}</view>
-          <view class="win-sub">{{store.addr}}</view>
+          <view class="win-name">{{quote ? quote.pickup.point : '以服务端报价为准'}}</view>
+          <view class="win-sub">{{quote ? quote.store.address : ''}}</view>
         </view>
       </view>
     </view>
@@ -32,7 +32,7 @@
     <!-- 商品明细 -->
     <view class="card sec-card">
       <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">商品明细</text><text class="faint" style="font-size:23rpx">共 {{count}} 件 · 口味/备注按菜品填写</text></view>
-      <view class="snapshot-notice faint" style="padding:18rpx 0;line-height:1.6;border-bottom:1rpx solid #ececdf">目录商品为本地快照，不锁定价格或库存；真实结算与下单需服务端再次校验。</view>
+      <view class="snapshot-notice faint" style="padding:18rpx 0;line-height:1.6;border-bottom:1rpx solid #ececdf">购物车只保存选择；价格、员工身份、售罄与截单均以服务端 Quote 为准。</view>
       <view wx:for="{{items}}" wx:for-item="ci" wx:key="item.id" class="ci-item">
         <view class="ci-info">
           <view class="ci-top">
@@ -50,11 +50,13 @@
       </view>
     </view>
 
-    <!-- 一期没有优惠机制：应付金额等于商品小计（员工折扣由全局折扣率承担，尚未实现） -->
     <view class="card sec-card amount-card">
       <view class="pm-row">
         <text class="pm-k">商品小计</text>
         <text class="pm-v tnum">¥{{subtotal_text}}</text>
+      </view>
+      <view wx:if="{{quote && quote.discount_cents > 0}}" class="pm-row">
+        <text class="pm-k">员工折扣</text><text class="pm-v tnum">-¥{{quote.discount_cents}}</text>
       </view>
     </view>
 
@@ -67,8 +69,11 @@
       </view>
       <view class="field last">
         <text class="field-lbl">手机号</text>
-        <input class="field-in" type="number" placeholder="便于到店核对" placeholder-class="ph" data-k="phone" value="{{form.phone}}" bindinput="onInput" />
+        <text class="field-in">{{maskedPhone || '未绑定'}}</text>
       </view>
+      <button wx:if="{{phoneState !== 'bound'}}" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">绑定微信手机号</button>
+      <view class="field"><text class="field-lbl">附加手机号</text><input class="field-in" type="number" data-k="extraPhone" value="{{form.extraPhone}}" bindinput="onInput" /><view bindtap="saveExtraPhone">保存</view></view>
+      <view class="field last"><text class="field-lbl">整单备注</text><input class="field-in" data-k="orderNote" value="{{form.orderNote}}" bindinput="onInput" /></view>
     </view>
     <view style="height:24rpx"></view>
   </scroll-view>
@@ -88,6 +93,7 @@
     visible="{{czVisible}}"
     item="{{czItem}}"
     init="{{czInit}}"
+    flavor-options="{{flavors}}"
     confirm-label="保存"
     bind:close="onCzClose"
     bind:confirm="onCzConfirm"

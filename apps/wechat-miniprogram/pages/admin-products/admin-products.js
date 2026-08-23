@@ -1,44 +1,46 @@
-const data = require('../../utils/data.js');
-const api = require('../../utils/api.js');
-const { nav } = require('../../utils/util.js');
+const api = require('../../utils/apiClient.js');
+const merchantStore = require('../../utils/merchantStore.js');
+const menuStore = require('../../utils/reservationMenuStore.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: {
-    cats: ['全部'].concat(data.CATS),
-    cat: '全部',
-    list: [],
+  data: { listState: 'loading', list: [], search: '' },
+  onShow() { return this.load(); },
+  async load() {
+    this.setData({ listState: 'loading', list: [] });
+    try {
+      const options = await menuStore.loadPickupOptions();
+      const day = options.dates[0];
+      const meal = day && day.meals.find(item => item.times.length);
+      if (!day || !meal) throw new Error('no merchant product selection');
+      this._serviceDate = day.date;
+      const menu = await menuStore.loadMenu({ date: day.date, mealPeriod: meal.code, time: meal.times[0] });
+      this._all = menu.categories.flatMap(category => category.products.map(product => Object.assign({}, product, {
+        cat: category.name, price: product.price_text, soldoutLabel: product.soldOut ? '恢复售卖' : '标记售罄',
+        pillLabel: product.soldOut ? '售罄' : '可售', pillTone: product.soldOut ? 'mute' : 'ok',
+      })));
+      this.applySearch();
+      return true;
+    } catch (error) { this._all = []; this.setData({ listState: 'error', list: [] }); return false; }
   },
-  onShow() { this.build(); },
-  build() {
-    /* 上下架与当日售罄是两个独立维度（§6.5）：status 只表达上下架，
-       售罄按取餐日期查记录。展示标签从两者现算，不再存第三个综合状态。 */
-    const day = data.BUSINESS_DAY;
-    const list = data.menuList().filter(m => this.data.cat === '全部' || m.cat === this.data.cat).map(m => {
-      const shelved = m.status === 'on';
-      const soldOut = data.isSoldOut(m.id, day);
-      return {
-        id: m.id, name: m.name, price: m.price, cat: m.cat, img: m.img,
-        imgCount: (m.imgs || []).length,
-        soldOut,
-        pillLabel: !shelved ? '已下架' : (soldOut ? '售罄' : '可购'),
-        pillTone: shelved && !soldOut ? 'ok' : 'mute',
-        soldoutLabel: soldOut ? '恢复售卖' : '标记售罄',
-        on: shelved,
-      };
-    });
-    this.setData({ list });
+  onSearch(e) { this.setData({ search: (e.detail.value || '').trim() }); this.applySearch(); },
+  applySearch() {
+    const key = this.data.search.toLocaleLowerCase();
+    const list = (this._all || []).filter(product => !key || product.name.toLocaleLowerCase().includes(key));
+    this.setData({ listState: list.length ? 'ready' : 'empty', list });
   },
-  switchCat(e) { this.setData({ cat: e.currentTarget.dataset.c }, () => this.build()); },
-  /* 售罄只写当前营业日的记录，不动 status。商户站在现场，他能判断的只有今天；
-     提前关闭明天的供应属于排产，一期不做。 */
-  toggleSoldout(e) {
+  async toggleSoldout(e) {
     const id = e.currentTarget.dataset.id;
-    const day = data.BUSINESS_DAY;
-    const nx = !data.isSoldOut(id, day);
-    api.setSoldOut(id, day, nx).then(() => {
-      this.build();
-      this.selectComponent('#toast').show(nx ? `已置售罄 · 仅限 ${day}` : '已恢复售卖', { icon: 'tag' });
-    });
+    const product = this._all.find(item => item.id === id);
+    if (!product || !this._serviceDate) return false;
+    try {
+      const result = await merchantStore.setSoldOut(id, this._serviceDate, !product.soldOut, api.newIdempotencyKey('soldout'));
+      product.soldOut = result.sold_out;
+      product.soldoutLabel = product.soldOut ? '恢复售卖' : '标记售罄';
+      product.pillLabel = product.soldOut ? '售罄' : '可售';
+      product.pillTone = product.soldOut ? 'mute' : 'ok';
+      this.applySearch();
+      return true;
+    } catch (error) { return false; }
   },
 });

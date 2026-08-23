@@ -13,6 +13,13 @@
     <icon name="chevron" size="14" color="#8f9384" />
   </view>
 
+  <view class="pad search-wrap">
+    <view class="search-box">
+      <icon name="search" size="16" color="#8f9384" />
+      <input class="search-in" placeholder="搜索商品" value="{{search}}" bindinput="onSearch" />
+    </view>
+  </view>
+
   <view wx:if="{{listState === 'loading'}}" class="catalog-state">目录加载中…</view>
   <view wx:elif="{{listState === 'empty'}}" class="catalog-state">
     <text>当前目录为空</text>
@@ -56,7 +63,7 @@
         <view wx:for="{{g.products}}" wx:for-item="m" wx:key="id" class="dish-row">
           <view class="dish-info">
             <view data-id="{{m.id}}" bindtap="goDetail">
-              <view class="dish-name">{{m.name}}</view>
+              <view class="dish-name">{{m.name}}<text wx:if="{{!m.orderable}}"> · {{m.availabilityLabel}}</text></view>
               <view class="dish-desc ellipsis-2">{{m.description}}</view>
               <view class="dish-spec">{{m.specification}}</view>
             </view>
@@ -70,13 +77,13 @@
                   bind:sub="sub"
                   bind:add="add"
                 />
-                <view wx:else class="btn btn--primary btn--sm act-btn" data-id="{{m.id}}" catchtap="openCustomize">选择</view>
+                <view wx:else class="btn {{m.orderable ? 'btn--primary' : 'btn--mute'}} btn--sm act-btn" data-id="{{m.id}}" catchtap="openCustomize">{{m.orderable ? '选择' : m.availabilityLabel}}</view>
               </view>
             </view>
           </view>
         </view>
       </view>
-      <view class="menu-end">—— 目录浏览 · 本地选择 ——</view>
+      <view class="menu-end">—— 服务端目录 · 购物车待核价 ——</view>
       <view style="height:{{safeBottom + 200}}px"></view>
     </scroll-view>
   </block>
@@ -135,11 +142,11 @@
       <view class="pk-dates">
         <view
           wx:for="{{pickerDates}}"
-          wx:key="off"
-          class="pk-date {{pickerOff === item.off ? 'on' : ''}} {{item.allCutOff ? 'off' : ''}}"
-          data-off="{{item.off}}"
+          wx:key="date"
+          class="pk-date {{pickerDate === item.date ? 'on' : ''}} {{!item.available ? 'off' : ''}}"
+          data-date="{{item.date}}"
           catchtap="pickPickerDate"
-        >{{item.k}}<text wx:if="{{item.allCutOff}}" class="pk-date-sub">今日已截单</text></view>
+        >{{item.label}}<text wx:if="{{!item.available}}" class="pk-date-sub">已截单</text></view>
       </view>
       <scroll-view scroll-y class="pk-body">
         <block wx:for="{{pickerGroups}}" wx:key="key">
@@ -152,7 +159,8 @@
               wx:for="{{item.times}}"
               wx:for-item="t"
               wx:key="*this"
-              class="pk-time tnum {{pickup.time === t && pickup.off === pickerOff ? 'on' : ''}}"
+              class="pk-time tnum {{pickup.time === t && pickup.date === pickerDate ? 'on' : ''}}"
+              data-date="{{item.date}}"
               data-period="{{item.key}}"
               data-t="{{t}}"
               catchtap="pickPickerTime"
@@ -165,5 +173,5 @@
 
   <tabbar variant="user" active="menu" />
   <toast id="toast" />
-  <customize visible="{{czVisible}}" item="{{czItem}}" init="{{czInit}}" confirm-label="{{czLabel}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
+  <customize visible="{{czVisible}}" item="{{czItem}}" init="{{czInit}}" flavor-options="{{flavors}}" confirm-label="{{czLabel}}" bind:close="onCzClose" bind:confirm="onCzConfirm" />
 </view>

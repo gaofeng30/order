@@ -8,10 +8,10 @@
     <view
       wx:for="{{biz}}"
       wx:key="*this"
-      class="biz-seg {{storeStatus === item ? 'on' : ''}}"
-      data-b="{{item}}"
+      class="biz-seg {{storeStatus === item.code ? 'on' : ''}}"
+      data-b="{{item.code}}"
       bindtap="setBiz"
-    >{{item}}</view>
+    >{{item.label}}</view>
   </view>
 
   <!-- 搜索：取餐号 / 订单号 / 手机号，跨泳道（§6.6） -->
