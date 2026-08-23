@@ -49,9 +49,9 @@ func assertResolvedLoginAuditBranches(t *testing.T, db *sql.DB) {
 		var result, reason string
 		var idempotencyHash []byte
 		if err := db.QueryRowContext(ctx, `
-			SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason,idempotency_key_hash
-			FROM merchant_action_audits WHERE request_id=?
-		`, []byte(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &idempotencyHash); err != nil {
+			SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code,target_key_hash
+			FROM action_audits WHERE request_id_hash=?
+		`, merchantRequestIDHash(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &idempotencyHash); err != nil {
 			t.Fatalf("read %s audit failed", requestID)
 		}
 		if merchantAccountID != accountID || snapshotID != accountID || snapshotRole != RoleSubaccount || snapshotAuth != 1 || result != wantResult || reason != wantReason || !bytes.Equal(idempotencyHash, wantHash[:]) {
@@ -114,7 +114,7 @@ func assertAlreadyBoundCannotConfirmRejectedLogin(t *testing.T, db *sql.DB) {
 	}
 	var candidateReason string
 	var candidateHash []byte
-	if err := db.QueryRowContext(ctx, "SELECT reason,idempotency_key_hash FROM merchant_action_audits WHERE request_id=?", []byte("internal-already-proof-candidate")).Scan(&candidateReason, &candidateHash); err != nil || candidateReason != "ALREADY_BOUND" || !bytes.Equal(candidateHash, rejectedHash[:]) {
+	if err := db.QueryRowContext(ctx, "SELECT reason_code,target_key_hash FROM action_audits WHERE request_id_hash=?", merchantRequestIDHash("internal-already-proof-candidate")).Scan(&candidateReason, &candidateHash); err != nil || candidateReason != "ALREADY_BOUND" || !bytes.Equal(candidateHash, rejectedHash[:]) {
 		t.Fatal("ALREADY_BOUND proof candidate was not exact")
 	}
 	assertMerchantLoginAuditTarget(t, db, "internal-already-proof-candidate", accountID)
@@ -127,9 +127,9 @@ func assertAlreadyBoundCannotConfirmRejectedLogin(t *testing.T, db *sql.DB) {
 	var result, reason string
 	var rejectionHash []byte
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason,idempotency_key_hash
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte("internal-already-proof-rejected")).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &rejectionHash); err != nil {
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code,target_key_hash
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash("internal-already-proof-rejected")).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &rejectionHash); err != nil {
 		t.Fatal("read ALREADY_BOUND rejection audit failed")
 	}
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "PHONE_CODE_REJECTED" || !bytes.Equal(rejectionHash, rejectedHash[:]) {
@@ -170,9 +170,9 @@ func assertExistingPrimaryPhoneCompletesFirstBinding(t *testing.T, db *sql.DB) {
 	var result, reason string
 	var idempotencyHash []byte
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason,idempotency_key_hash
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &idempotencyHash); err != nil {
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code,target_key_hash
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason, &idempotencyHash); err != nil {
 		t.Fatal("read FIRST_BINDING_EXISTING_PRIMARY audit failed")
 	}
 	wantHash := hashLoginCode(code)

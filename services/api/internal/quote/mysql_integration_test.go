@@ -27,16 +27,16 @@ var quoteSchemaPattern = regexp.MustCompile(`^order_quote_test_[0-9a-f]{32}$`)
 func TestQuoteMySQL8Integration(t *testing.T) {
 	withQuoteSchema(t, func(db *sql.DB) {
 		migrationSet, err := migrate.Load(migrations.FS)
-		if err != nil || len(migrationSet) != 17 || migrationSet[16].Version != 17 {
-			t.Fatalf("load exact v1-v17 migration set: count=%d err=%v", len(migrationSet), err)
+		if err != nil || len(migrationSet) != 44 || migrationSet[43].Version != 44 {
+			t.Fatalf("load exact v1-v44 migration set: count=%d err=%v", len(migrationSet), err)
 		}
 		applied, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || applied.FromVersion != 0 || applied.ToVersion != 17 || applied.AppliedCount != 17 {
-			t.Fatalf("apply v1-v17 migrations: result=%+v err=%v", applied, err)
+		if err != nil || applied.FromVersion != 0 || applied.ToVersion != 44 || applied.AppliedCount != 44 {
+			t.Fatalf("apply v1-v44 migrations: result=%+v err=%v", applied, err)
 		}
 		repeated, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || repeated.FromVersion != 17 || repeated.ToVersion != 17 || repeated.AppliedCount != 0 {
-			t.Fatalf("repeat v1-v17 migrations: result=%+v err=%v", repeated, err)
+		if err != nil || repeated.FromVersion != 44 || repeated.ToVersion != 44 || repeated.AppliedCount != 0 {
+			t.Fatalf("repeat v1-v44 migrations: result=%+v err=%v", repeated, err)
 		}
 		assertQuoteMigrationHistory(t, db, migrationSet)
 		prepareFrozenQuoteIntegrationSchema(t, db)
@@ -196,24 +196,6 @@ func (store *mysqlQuoteReceiptStore) assertReplayUsedNewTransaction(t *testing.T
 func prepareFrozenQuoteIntegrationSchema(t *testing.T, db *sql.DB) {
 	t.Helper()
 	statements := []string{
-		`ALTER TABLE products ADD COLUMN images_json JSON NOT NULL DEFAULT (JSON_ARRAY())`,
-		`ALTER TABLE miniprogram_users
-  ADD COLUMN extra_phone VARBINARY(16) NULL,
-  ADD COLUMN extra_name TEXT NULL,
-  ADD COLUMN extra_name_key VARBINARY(400) NULL,
-  ADD COLUMN extra_phone_set_at TIMESTAMP(6) NULL,
-  ADD COLUMN record_version BIGINT UNSIGNED NOT NULL DEFAULT 1`,
-		`ALTER TABLE storefront_settings
-  ADD COLUMN flavor_options_json JSON NOT NULL DEFAULT (JSON_ARRAY()),
-  ADD COLUMN record_version BIGINT UNSIGNED NOT NULL DEFAULT 1`,
-		`CREATE TABLE service_dates (
-  service_date DATE NOT NULL,
-  is_open BOOLEAN NOT NULL,
-  record_version BIGINT UNSIGNED NOT NULL DEFAULT 1,
-  PRIMARY KEY (service_date),
-  CONSTRAINT chk_quote_test_service_dates_open CHECK (is_open IN (FALSE,TRUE)),
-  CONSTRAINT chk_quote_test_service_dates_version CHECK (record_version > 0)
-) ENGINE=InnoDB`,
 		`CREATE TABLE quote_operation_receipts_test (
   actor_user_id BIGINT UNSIGNED NOT NULL,
   action VARBINARY(64) NOT NULL,
@@ -361,7 +343,7 @@ func assertMySQLCreateCurrentFactGuards(t *testing.T, db *sql.DB, provider *Prov
 	if _, err := provider.Create(context.Background(), testWriteMeta(userID, "mysql-service-date-missing"), input); !errors.Is(err, ErrSelectionUnavailable) {
 		t.Fatalf("missing service date create error = %v", err)
 	}
-	if _, err := db.ExecContext(context.Background(), `INSERT INTO service_dates(service_date,is_open,record_version) VALUES ('2026-08-24',TRUE,3)`); err != nil {
+	if _, err := db.ExecContext(context.Background(), `INSERT INTO service_dates(service_date,is_open,record_version,updated_by_account_id,updated_at) VALUES ('2026-08-24',TRUE,3,1,UTC_TIMESTAMP(6))`); err != nil {
 		t.Fatal("restore service date fixture failed")
 	}
 	unsupported := input
@@ -735,13 +717,14 @@ func insertQuoteFixtures(t *testing.T, db *sql.DB, now time.Time) (uint64, uint6
 		query string
 		args  []any
 	}{
-		{query: "INSERT INTO categories(id,name,sort_order,is_active) VALUES (1,'分类',1,TRUE)"},
-		{query: `INSERT INTO products(id,category_id,name,price_cents,meal_period,is_listed,images_json)
-VALUES (1,1,'套餐',101,'lunch',TRUE,JSON_ARRAY(JSON_OBJECT('object_key','products/1/cover.webp')))`},
+		{query: "INSERT INTO categories(id,name,name_key,sort_order,is_active) VALUES (1,'分类','分类',1,TRUE)"},
+		{query: `INSERT INTO products(id,category_id,name,name_key,price_cents,meal_period,is_listed,images_json)
+VALUES (1,1,'套餐','套餐',101,'lunch',TRUE,JSON_ARRAY(JSON_OBJECT('object_key','products/1/cover.webp')))`},
 		{query: "INSERT INTO storefront_settings(id,store_name,store_address,pickup_point,announcement,business_status,flavor_options_json) VALUES (1,'绥安食品','党政办公中心后院老食堂','北门','','open',JSON_ARRAY('少饭','加辣'))"},
-		{query: "INSERT INTO service_dates(service_date,is_open,record_version) VALUES ('2026-08-24',TRUE,1)"},
 		{query: "INSERT INTO miniprogram_users(id,openid,created_at,last_login_at,primary_phone,primary_phone_bound_at) VALUES (1,?,?,?,?,?)", args: []any{"staff-openid", now, now, "+1234567890", now}},
 		{query: "INSERT INTO miniprogram_users(id,openid,created_at,last_login_at,primary_phone,primary_phone_bound_at) VALUES (2,?,?,?,?,?)", args: []any{"visitor-openid", now, now, "+10987654321", now}},
+		{query: "INSERT INTO merchant_accounts(id,phone,name,role,enabled,created_at,updated_at) VALUES (1,'+100','Fixture Owner','OWNER',TRUE,?,?)", args: []any{now, now}},
+		{query: "INSERT INTO service_dates(service_date,is_open,record_version,updated_by_account_id,updated_at) VALUES ('2026-08-24',TRUE,1,1,?)", args: []any{now}},
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement.query, statement.args...); err != nil {

@@ -25,7 +25,10 @@ var menuOwnedSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestMenuMySQLIntegration(t *testing.T) {
 	withMenuSchema(t, func(db *sql.DB) {
-		set := loadHistoricalMigrations(t, 13)
+		set, err := migrate.Load(migrations.FS)
+		if err != nil || len(set) != 44 || set[43].Version != 44 {
+			t.Fatalf("load exact v1-v44 migration set: count=%d err=%v", len(set), err)
+		}
 		if first, err := migrate.Run(context.Background(), db, set[:3]); err != nil || first.ToVersion != 3 || first.AppliedCount != 3 {
 			t.Fatal("establish v3 menu baseline failed")
 		}
@@ -35,8 +38,8 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents) VALUES (99,99,'Legacy Product',900)"); err != nil {
 			t.Fatal("insert legacy product before v4 failed")
 		}
-		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 13 || upgrade.AppliedCount != 10 {
-			t.Fatal("upgrade v3 to v13 failed")
+		if upgrade, err := migrate.Run(context.Background(), db, set); err != nil || upgrade.FromVersion != 3 || upgrade.ToVersion != 44 || upgrade.AppliedCount != 41 {
+			t.Fatal("upgrade v3 to v44 failed")
 		}
 		var legacyMeal string
 		if err := db.QueryRowContext(context.Background(), "SELECT meal_period FROM products WHERE id=99").Scan(&legacyMeal); err != nil || legacyMeal != "all" {
@@ -48,8 +51,8 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		if _, err := db.ExecContext(context.Background(), "DELETE FROM categories WHERE id=99"); err != nil {
 			t.Fatal("remove legacy category fixture failed")
 		}
-		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 13 || repeat.ToVersion != 13 || repeat.AppliedCount != 0 {
-			t.Fatal("repeat v13 migration was not zero-write")
+		if repeat, err := migrate.Run(context.Background(), db, set); err != nil || repeat.FromVersion != 44 || repeat.ToVersion != 44 || repeat.AppliedCount != 0 {
+			t.Fatal("repeat v44 migration was not zero-write")
 		}
 
 		insertMenuFixture(t, db)
@@ -58,27 +61,27 @@ func TestMenuMySQLIntegration(t *testing.T) {
 		handler := NewHandler(repository, func() time.Time { return now })
 		defaultConfiguration := mealConfigurationSnapshot(t, repository)
 		assertRealMenuResponse(t, handler, "/api/v1/menu/pickup-options", http.StatusOK,
-			`{"timezone":"Asia/Shanghai","dates":[{"date":"2026-08-20","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-20T11:30:00+08:00","orderable":true,"pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"code":"dinner","cutoff_at":"2026-08-20T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-21T11:30:00+08:00","orderable":true,"pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"code":"dinner","cutoff_at":"2026-08-21T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
+			`{"dates":[{"date":"2026-08-20","available":true,"meal_periods":[{"meal_period":"lunch","available":true,"cutoff_time":"11:30","pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","available":true,"meal_periods":[{"meal_period":"lunch","available":true,"cutoff_time":"11:30","pickup_times":["11:30","12:00","12:30","13:00","13:30"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
 		if afterGET := mealConfigurationSnapshot(t, repository); afterGET != defaultConfiguration {
 			t.Fatal("pickup options GET changed default meal_periods")
 		}
 
 		assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-20&time=12:00", http.StatusOK,
-			`{"selection":{"date":"2026-08-20","time":"12:00","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-20T11:30:00+08:00","orderable":true},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","price_cents":200,"sold_out":true,"orderable":false},{"id":"1","category_id":"1","name":"All","description":"","specification":"","price_cents":100,"sold_out":false,"orderable":true}]}]}`)
+			`{"selection":{"date":"2026-08-20","time":"12:00","meal_period":"lunch"},"store_status":{"business_status":"open","service_date_available":true,"meal_available":true,"cutoff_passed":false},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","meal_period":"lunch","images":[],"listed":true,"sold_out":true,"original_unit_price_cents":200},{"id":"1","category_id":"1","name":"All","description":"","specification":"","meal_period":"all","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":100}]}]}`)
 		assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-21&time=12:00", http.StatusOK,
-			`{"selection":{"date":"2026-08-21","time":"12:00","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-21T11:30:00+08:00","orderable":true},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","price_cents":200,"sold_out":false,"orderable":true},{"id":"1","category_id":"1","name":"All","description":"","specification":"","price_cents":100,"sold_out":false,"orderable":true}]}]}`)
+			`{"selection":{"date":"2026-08-21","time":"12:00","meal_period":"lunch"},"store_status":{"business_status":"open","service_date_available":true,"meal_available":true,"cutoff_passed":false},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","meal_period":"lunch","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":200},{"id":"1","category_id":"1","name":"All","description":"","specification":"","meal_period":"all","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":100}]}]}`)
 
 		if _, err := db.ExecContext(context.Background(), "UPDATE meal_periods SET cutoff_time='10:45:00',pickup_start_time='11:00:00',pickup_end_time='12:00:00',interval_minutes=20 WHERE code='lunch'"); err != nil {
 			t.Fatal("write non-default legal meal configuration failed")
 		}
 		customConfiguration := mealConfigurationSnapshot(t, repository)
 		assertRealMenuResponse(t, handler, "/api/v1/menu/pickup-options", http.StatusOK,
-			`{"timezone":"Asia/Shanghai","dates":[{"date":"2026-08-20","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":true,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-20T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-21T10:45:00+08:00","orderable":true,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-21T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
+			`{"dates":[{"date":"2026-08-20","available":true,"meal_periods":[{"meal_period":"lunch","available":true,"cutoff_time":"10:45","pickup_times":["11:00","11:20","11:40","12:00"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","available":true,"meal_periods":[{"meal_period":"lunch","available":true,"cutoff_time":"10:45","pickup_times":["11:00","11:20","11:40","12:00"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`)
 		if afterGET := mealConfigurationSnapshot(t, repository); afterGET != customConfiguration {
 			t.Fatal("pickup options GET changed custom meal_periods")
 		}
 		assertRealMenuResponse(t, handler, "/api/v1/menu?date=2026-08-20&time=11:40", http.StatusOK,
-			`{"selection":{"date":"2026-08-20","time":"11:40","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":true},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","price_cents":200,"sold_out":true,"orderable":false},{"id":"1","category_id":"1","name":"All","description":"","specification":"","price_cents":100,"sold_out":false,"orderable":true}]}]}`)
+			`{"selection":{"date":"2026-08-20","time":"11:40","meal_period":"lunch"},"store_status":{"business_status":"open","service_date_available":true,"meal_available":true,"cutoff_passed":false},"categories":[{"id":"1","name":"Meals","products":[{"id":"2","category_id":"1","name":"Lunch","description":"","specification":"","meal_period":"lunch","images":[],"listed":true,"sold_out":true,"original_unit_price_cents":200},{"id":"1","category_id":"1","name":"All","description":"","specification":"","meal_period":"all","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":100}]}]}`)
 
 		now = time.Date(2026, 8, 20, 10, 44, 59, 0, shanghai)
 		assertRealPickupOptionsOrderability(t, handler, true, true, true, true)
@@ -182,9 +185,12 @@ func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion
 func insertMenuFixture(t *testing.T, db *sql.DB) {
 	t.Helper()
 	statements := []string{
-		"INSERT INTO categories(id,name,sort_order,is_active) VALUES (1,'Meals',20,TRUE),(2,'Hidden',0,FALSE),(3,'Dinner Only',10,TRUE)",
-		"INSERT INTO products(id,category_id,name,price_cents,sort_order,is_listed,meal_period) VALUES (1,1,'All',100,20,TRUE,'all'),(2,1,'Lunch',200,10,TRUE,'lunch'),(3,1,'Dinner',300,0,TRUE,'dinner'),(4,1,'Unlisted',400,0,FALSE,'lunch'),(5,2,'Hidden Parent',500,0,TRUE,'lunch'),(6,3,'Dinner Category',600,0,TRUE,'dinner')",
+		"INSERT INTO categories(id,name,name_key,sort_order,is_active) VALUES (1,'Meals','Meals',20,TRUE),(2,'Hidden','Hidden',0,FALSE),(3,'Dinner Only','Dinner Only',10,TRUE)",
+		"INSERT INTO products(id,category_id,name,name_key,price_cents,sort_order,is_listed,meal_period,images_json) VALUES (1,1,'All','All',100,20,TRUE,'all',JSON_ARRAY()),(2,1,'Lunch','Lunch',200,10,TRUE,'lunch',JSON_ARRAY()),(3,1,'Dinner','Dinner',300,0,TRUE,'dinner',JSON_ARRAY()),(4,1,'Unlisted','Unlisted',400,0,FALSE,'lunch',JSON_ARRAY()),(5,2,'Hidden Parent','Hidden Parent',500,0,TRUE,'lunch',JSON_ARRAY()),(6,3,'Dinner Category','Dinner Category',600,0,TRUE,'dinner',JSON_ARRAY())",
 		"INSERT INTO product_sold_out_dates(service_date,product_id) VALUES ('2026-08-20',2)",
+		"INSERT INTO storefront_settings(id,store_name,store_address,pickup_point,announcement,business_status) VALUES (1,'绥安食品','党政办公中心后院老食堂','北门','','open')",
+		"INSERT INTO merchant_accounts(id,phone,name,role,enabled,created_at,updated_at) VALUES (1,'+100','Fixture Owner','OWNER',TRUE,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))",
+		"INSERT INTO service_dates(service_date,is_open,updated_by_account_id,updated_at) VALUES ('2026-08-20',TRUE,1,UTC_TIMESTAMP(6)),('2026-08-21',TRUE,1,UTC_TIMESTAMP(6))",
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(context.Background(), statement); err != nil {

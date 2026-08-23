@@ -24,7 +24,7 @@ import (
 var storefrontSchemaPattern = regexp.MustCompile(`^order_storefront_test_[0-9a-f]{32}$`)
 
 func TestStorefrontMySQL8Integration(t *testing.T) {
-	t.Run("v1-v11 singleton reads constraints concurrency database failure and recovery", func(t *testing.T) {
+	t.Run("current singleton reads constraints concurrency database failure and recovery", func(t *testing.T) {
 		withStorefrontSchema(t, func(db *sql.DB, schemaConfig database.ConnectionConfig) {
 			migrationSet := applyStorefrontMigrations(t, db)
 			assertStorefrontSchema(t, db)
@@ -36,7 +36,7 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 			}
 
 			repository := NewRepository(db)
-			router := storefrontTestRouter(NewHandler(repository))
+			router := storefrontTestRouter(NewHandler(repository, publicURLStub{url: "https://static.example.com/launch.png"}))
 			assertStorefrontHTTP(t, router, http.StatusServiceUnavailable, `{"error":{"code":"STOREFRONT_UNAVAILABLE","message":"storefront temporarily unavailable"}}`)
 
 			insertValidStorefront(t, db)
@@ -45,7 +45,7 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 			if err != nil || !reflect.DeepEqual(got, want) {
 				t.Fatalf("repository settings = %#v, err=%v", got, err)
 			}
-			assertStorefrontHTTP(t, router, http.StatusOK, `{"settings":{"store_name":"绥安食品","store_address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","launch_layer":{"png_url":"https://static.example.com:65535/launch.PNG?revision=1","center_x":0,"center_y":1,"width_ratio":1,"aspect_ratio":2}}}`)
+			assertStorefrontHTTP(t, router, http.StatusOK, `{"storefront":{"name":"绥安食品","address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","launch_layer":{"image":{"object_key":"launch/test.png","url":"https://static.example.com/launch.png"},"center_x":0,"center_y":1,"width_ratio":1,"aspect_ratio":2},"flavors":[]}}`)
 			assertConcurrentStorefrontReads(t, repository, want)
 
 			assertConstraintRejects(t, db, "singleton id", "INSERT INTO storefront_settings(id,store_name,store_address,pickup_point,announcement,business_status) VALUES (2,'x','x','x','','open')")
@@ -57,13 +57,13 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 			assertConstraintRejects(t, db, "oversized announcement", "UPDATE storefront_settings SET announcement=REPEAT('公',1001) WHERE id=1")
 			assertConstraintRejects(t, db, "invalid utf8", "UPDATE storefront_settings SET store_name=_binary 0xff WHERE id=1")
 
-			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET launch_png_url='http://static.example.com/launch.png' WHERE id=1"); err != nil {
-				t.Fatal("persist application-invalid launch URL failed")
+			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET launch_image_object_key=_binary 0xff WHERE id=1"); err != nil {
+				t.Fatal("persist application-invalid launch object key failed")
 			}
 			assertRepositoryUnavailable(t, repository)
 			assertStorefrontHTTP(t, router, http.StatusServiceUnavailable, `{"error":{"code":"STOREFRONT_UNAVAILABLE","message":"storefront temporarily unavailable"}}`)
 
-			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET store_name='\u3000',launch_png_url=NULL,center_x=NULL,center_y=NULL,width_ratio=NULL,aspect_ratio=NULL WHERE id=1"); err != nil {
+			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET store_name='\u3000',launch_image_object_key=NULL,center_x=NULL,center_y=NULL,width_ratio=NULL,aspect_ratio=NULL WHERE id=1"); err != nil {
 				t.Fatal("persist application-invalid Unicode whitespace failed")
 			}
 			assertRepositoryUnavailable(t, repository)
@@ -71,7 +71,7 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET store_name='绥安食品' WHERE id=1"); err != nil {
 				t.Fatal("restore valid storefront text failed")
 			}
-			assertStorefrontHTTP(t, router, http.StatusOK, `{"settings":{"store_name":"绥安食品","store_address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","launch_layer":null}}`)
+			assertStorefrontHTTP(t, router, http.StatusOK, `{"storefront":{"name":"绥安食品","address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","flavors":[]}}`)
 
 			if err := db.Close(); err != nil {
 				t.Fatal("close storefront database failed")
@@ -83,7 +83,7 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 				t.Fatal("reopen storefront database failed")
 			}
 			defer recovered.Close()
-			assertStorefrontHTTP(t, storefrontTestRouter(NewHandler(NewRepository(recovered))), http.StatusOK, `{"settings":{"store_name":"绥安食品","store_address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","launch_layer":null}}`)
+			assertStorefrontHTTP(t, storefrontTestRouter(NewHandler(NewRepository(recovered))), http.StatusOK, `{"storefront":{"name":"绥安食品","address":"党政办公中心后院老食堂","pickup_point":"党政办公中心后院老食堂北门","announcement":"今日公告","business_status":"open","flavors":[]}}`)
 		})
 	})
 
@@ -91,7 +91,7 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 		withStorefrontSchema(t, func(db *sql.DB, _ database.ConnectionConfig) {
 			applyStorefrontMigrations(t, db)
 			insertValidStorefront(t, db)
-			if _, err := db.ExecContext(context.Background(), "ALTER TABLE storefront_settings DROP CHECK chk_storefront_settings_launch_group"); err != nil {
+			if _, err := db.ExecContext(context.Background(), "ALTER TABLE storefront_settings DROP CHECK chk_storefront_settings_launch_object_group"); err != nil {
 				t.Fatal("prepare isolated launch-group drift failed")
 			}
 			if _, err := db.ExecContext(context.Background(), "UPDATE storefront_settings SET center_x=NULL WHERE id=1"); err != nil {
@@ -136,16 +136,12 @@ func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
 func applyStorefrontMigrations(t *testing.T, db *sql.DB) []migrate.Migration {
 	t.Helper()
 	migrationSet, err := migrate.Load(migrations.FS)
-	if err != nil {
-		t.Fatalf("load v1-v11 migrations: count=%d err=%v", len(migrationSet), err)
-	}
-	migrationSet, err = historicalMigrationPrefix(migrationSet, 11)
-	if err != nil {
-		t.Fatal(err)
+	if err != nil || len(migrationSet) != 44 || migrationSet[43].Version != 44 {
+		t.Fatalf("load exact v1-v44 migrations: count=%d err=%v", len(migrationSet), err)
 	}
 	result, err := migrate.Run(context.Background(), db, migrationSet)
-	if err != nil || result.FromVersion != 0 || result.ToVersion != 11 || result.AppliedCount != 11 {
-		t.Fatalf("apply v1-v11 migrations: result=%+v err=%v", result, err)
+	if err != nil || result.FromVersion != 0 || result.ToVersion != 44 || result.AppliedCount != 44 {
+		t.Fatalf("apply exact v1-v44 migrations: result=%+v err=%v", result, err)
 	}
 	return migrationSet
 }
@@ -163,8 +159,8 @@ func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion
 func assertMigrationRepeat(t *testing.T, db *sql.DB, migrationSet []migrate.Migration) {
 	t.Helper()
 	result, err := migrate.Run(context.Background(), db, migrationSet)
-	if err != nil || result.FromVersion != 11 || result.ToVersion != 11 || result.AppliedCount != 0 {
-		t.Fatalf("repeat v1-v11 migrations: result=%+v err=%v", result, err)
+	if err != nil || result.FromVersion != 44 || result.ToVersion != 44 || result.AppliedCount != 0 {
+		t.Fatalf("repeat v1-v44 migrations: result=%+v err=%v", result, err)
 	}
 }
 
@@ -206,11 +202,13 @@ func assertStorefrontSchema(t *testing.T, db *sql.DB) {
 		{Name: "pickup_point", Type: "text", Nullable: "NO"},
 		{Name: "announcement", Type: "text", Nullable: "NO"},
 		{Name: "business_status", Type: "enum('open','closed','cutoff')", Nullable: "NO"},
-		{Name: "launch_png_url", Type: "text", Nullable: "YES"},
+		{Name: "launch_image_object_key", Type: "varbinary(1024)", Nullable: "YES"},
 		{Name: "center_x", Type: "double", Nullable: "YES"},
 		{Name: "center_y", Type: "double", Nullable: "YES"},
 		{Name: "width_ratio", Type: "double", Nullable: "YES"},
 		{Name: "aspect_ratio", Type: "double", Nullable: "YES"},
+		{Name: "flavor_options_json", Type: "json", Nullable: "NO"},
+		{Name: "record_version", Type: "bigint unsigned", Nullable: "NO"},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("storefront columns = %#v, want %#v", got, want)
@@ -221,8 +219,8 @@ func insertValidStorefront(t *testing.T, db *sql.DB) {
 	t.Helper()
 	_, err := db.ExecContext(context.Background(), `INSERT INTO storefront_settings(
 id,store_name,store_address,pickup_point,announcement,business_status,
-launch_png_url,center_x,center_y,width_ratio,aspect_ratio
-) VALUES (1,'绥安食品','党政办公中心后院老食堂','党政办公中心后院老食堂北门','今日公告','open','https://static.example.com:65535/launch.PNG?revision=1',0,1,1,2)`)
+launch_image_object_key,center_x,center_y,width_ratio,aspect_ratio
+) VALUES (1,'绥安食品','党政办公中心后院老食堂','党政办公中心后院老食堂北门','今日公告','open','launch/test.png',0,1,1,2)`)
 	if err != nil {
 		t.Fatal("insert valid storefront fixture failed")
 	}

@@ -57,41 +57,37 @@ func assertMerchantSchemaConstraints(t *testing.T, db *sql.DB) {
 		t.Fatal("bound-user foreign key allowed user deletion")
 	}
 
-	if _, err := db.ExecContext(ctx, `
-		INSERT INTO merchant_action_audits(
-			merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			actor_user_id,action,result,reason,target_type,target_id,request_id,occurred_at
-		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-	`, accountID, accountID, RoleSubaccount, 1, userB, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", uint64(91), []byte("internal-request-c"), now); err != nil {
+	if err := insertMerchantAuditFixture(ctx, db, accountID, RoleSubaccount, 1, userB, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", 91, "internal-request-c", now); err != nil {
 		t.Fatal("insert resolved retention audit failed")
 	}
+	partialScopeHash := sha256.Sum256([]byte("partial-snapshot"))
 	if _, err := db.ExecContext(ctx, `
-		INSERT INTO merchant_action_audits(account_id_snapshot,actor_user_id,action,result,reason,request_id,occurred_at)
-		VALUES (?,?,?,?,?,?,?)
-	`, accountID, userB, ActionOrderRead, "REJECTED", "INVALID", []byte("internal-request-d"), now); err == nil {
+		INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_account_id_snapshot,actor_user_id,action,result,reason_code,request_id_hash,occurred_at)
+		VALUES ('LEGACY_EVIDENCE','MERCHANT',?,?,?,?,?,?,?,?)
+	`, partialScopeHash[:], accountID, userB, ActionOrderRead, "REJECTED", "INVALID", merchantRequestIDHash("internal-request-d"), now); err == nil {
 		t.Fatal("audit schema accepted a partial account snapshot")
 	}
-	if _, err := db.ExecContext(ctx, "DELETE FROM merchant_accounts WHERE id=?", accountID); err != nil {
-		t.Fatal("hard delete of audited account failed")
+	if _, err := db.ExecContext(ctx, "DELETE FROM merchant_accounts WHERE id=?", accountID); err == nil {
+		t.Fatal("current audit foreign key allowed hard deletion")
 	}
-	var liveAccount sql.NullInt64
+	if _, err := db.ExecContext(ctx, `UPDATE merchant_accounts SET enabled=FALSE,deleted_at=?,deleted_by_account_id=?,record_version=record_version+1,auth_version=auth_version+1,updated_at=? WHERE id=?`, now.Add(time.Minute), firstBoundID, now.Add(time.Minute), accountID); err != nil {
+		t.Fatal("soft delete of audited account failed")
+	}
+	var liveAccount uint64
 	var snapshotID, snapshotAuth uint64
 	var snapshotRole Role
 	var action, result, reason, targetType string
 	var targetID, actorID uint64
 	var occurredAt time.Time
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-		       actor_user_id,action,result,reason,target_type,target_id,occurred_at
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte("internal-request-c")).Scan(&liveAccount, &snapshotID, &snapshotRole, &snapshotAuth, &actorID, &action, &result, &reason, &targetType, &targetID, &occurredAt); err != nil {
-		t.Fatal("read retained audit after hard delete failed")
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+		       actor_user_id,action,result,reason_code,target_type,target_id,occurred_at
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash("internal-request-c")).Scan(&liveAccount, &snapshotID, &snapshotRole, &snapshotAuth, &actorID, &action, &result, &reason, &targetType, &targetID, &occurredAt); err != nil {
+		t.Fatal("read retained audit after soft delete failed")
 	}
-	if liveAccount.Valid || snapshotID != accountID || snapshotRole != RoleSubaccount || snapshotAuth != 1 || actorID != userB || action != string(ActionOrderRead) || result != "SUCCEEDED" || reason != "AUTHORIZED" || targetType != "order" || targetID != 91 || !occurredAt.Equal(now) {
-		t.Fatal("hard delete did not retain the complete non-PII audit snapshot")
-	}
-	if _, err := db.ExecContext(ctx, "DELETE FROM merchant_accounts WHERE id=?", firstBoundID); err != nil {
-		t.Fatal("cleanup bound schema fixture failed")
+	if liveAccount != accountID || snapshotID != accountID || snapshotRole != RoleSubaccount || snapshotAuth != 1 || actorID != userB || action != string(ActionOrderRead) || result != "SUCCEEDED" || reason != "AUTHORIZED" || targetType != "order" || targetID != 91 || !occurredAt.Equal(now) {
+		t.Fatal("soft delete did not retain the complete non-PII audit snapshot")
 	}
 }
 
@@ -141,8 +137,8 @@ func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
 	identityRequest.Header.Set("Authorization", "Bearer "+sessionToken)
 	identityResponse := httptest.NewRecorder()
 	engine.ServeHTTP(identityResponse, identityRequest)
-	if identityResponse.Code != http.StatusOK || identityResponse.Body.String() != `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":1}}` {
-		t.Fatal("real-session identity response mismatch")
+	if identityResponse.Code != http.StatusOK || identityResponse.Body.String() != `{"identity":{"primary_phone":{"bound":true,"masked_phone":"***"},"extra_phone":{"set":false},"pricing_identity":{"kind":"VISITOR","rate_percent":100},"merchant":{"bound":true,"role":"OWNER"}}}` {
+		t.Fatalf("real-session identity response = %d %s", identityResponse.Code, identityResponse.Body.String())
 	}
 	loginRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/merchant-login", bytes.NewBufferString(`{"code":"`+providerCodeCanary+`"}`))
 	loginRequest.Header.Set("Content-Type", "application/json")
@@ -161,11 +157,11 @@ func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
 	}
 	var auditText string
 	if err := db.QueryRowContext(ctx, `
-		SELECT CONCAT_WS('|',merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-		       actor_user_id,action,result,reason,target_type,target_id,request_id,state_before,state_after,occurred_at)
-		FROM merchant_action_audits
-		WHERE merchant_account_id=? AND request_id=?
-	`, accountID, []byte("internal-pii-request")).Scan(&auditText); err != nil {
+		SELECT CONCAT_WS('|',actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+		       actor_user_id,action,result,reason_code,target_type,target_id,HEX(request_id_hash),before_state_json,after_state_json,occurred_at)
+		FROM action_audits
+		WHERE actor_account_id=? AND request_id_hash=?
+	`, accountID, merchantRequestIDHash("internal-pii-request")).Scan(&auditText); err != nil {
 		t.Fatal("read PII boundary audit failed")
 	}
 	for _, canary := range []string{providerSubjectCanary, accountNameCanary, "+81", providerCodeCanary, sessionToken} {
@@ -176,10 +172,10 @@ func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
 	assertMerchantLoginAuditTarget(t, db, "internal-pii-request", uint64(accountID))
 	var storedCodeHash []byte
 	if err := db.QueryRowContext(ctx, `
-		SELECT idempotency_key_hash
-		FROM merchant_action_audits
-		WHERE merchant_account_id=? AND request_id=?
-	`, accountID, []byte("internal-pii-request")).Scan(&storedCodeHash); err != nil {
+		SELECT target_key_hash
+		FROM action_audits
+		WHERE actor_account_id=? AND request_id_hash=?
+	`, accountID, merchantRequestIDHash("internal-pii-request")).Scan(&storedCodeHash); err != nil {
 		t.Fatal("read merchant login code hash failed")
 	}
 	wantCodeHash := hashLoginCode(providerCodeCanary)

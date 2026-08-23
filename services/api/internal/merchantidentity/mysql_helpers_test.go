@@ -3,6 +3,7 @@ package merchantidentity
 import (
 	"context"
 	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"errors"
@@ -85,20 +86,61 @@ func assertMerchantLoginAuditTarget(t *testing.T, db *sql.DB, requestID string, 
 	t.Helper()
 	var targetType sql.NullString
 	var targetID sql.NullInt64
+	var targetKeyHash []byte
+	var actorAccountID, snapshotAccountID sql.NullInt64
 	if err := db.QueryRowContext(context.Background(), `
-		SELECT target_type,target_id FROM merchant_action_audits WHERE request_id=?
-	`, []byte(requestID)).Scan(&targetType, &targetID); err != nil {
+		SELECT target_type,target_id,target_key_hash,actor_account_id,actor_account_id_snapshot
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash(requestID)).Scan(&targetType, &targetID, &targetKeyHash, &actorAccountID, &snapshotAccountID); err != nil {
 		t.Fatal("read merchant login audit target failed")
 	}
+	if !targetType.Valid || targetType.String != "merchant_login_code" || targetID.Valid || len(targetKeyHash) != sha256.Size {
+		t.Fatal("merchant login audit did not retain the hashed provider-code target")
+	}
 	if accountID == 0 {
-		if targetType.Valid || targetID.Valid {
-			t.Fatal("unresolved merchant login audit retained a target")
+		if actorAccountID.Valid || snapshotAccountID.Valid {
+			t.Fatal("unresolved merchant login audit retained an account")
 		}
 		return
 	}
-	if !targetType.Valid || targetType.String != "merchant_account" || !targetID.Valid || uint64(targetID.Int64) != accountID {
-		t.Fatal("resolved merchant login audit target was not exact")
+	if !actorAccountID.Valid || uint64(actorAccountID.Int64) != accountID || !snapshotAccountID.Valid || uint64(snapshotAccountID.Int64) != accountID {
+		t.Fatal("resolved merchant login audit account was not exact")
 	}
+}
+
+func merchantRequestIDHash(requestID string) []byte {
+	hash := sha256.Sum256([]byte(requestID))
+	return hash[:]
+}
+
+type merchantAuditExecer interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+}
+
+func insertMerchantAuditFixture(ctx context.Context, execer merchantAuditExecer, accountID uint64, role Role, authVersion, userID uint64, action Action, result, reason, targetType string, targetID uint64, requestID string, at time.Time) error {
+	scopeHash := sha256.Sum256([]byte("TEST_MERCHANT_SCOPE\x00" + strconv.FormatUint(userID, 10) + "\x00" + strconv.FormatUint(accountID, 10)))
+	var liveAccount, snapshotID, snapshotRole, snapshotAuth any
+	if accountID != 0 {
+		liveAccount, snapshotID, snapshotRole, snapshotAuth = accountID, accountID, role, authVersion
+	}
+	_, err := execer.ExecContext(ctx, `
+		INSERT INTO action_audits(
+			entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,
+			actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+			action,result,reason_code,target_type,target_id,request_id_hash,occurred_at
+		) VALUES ('LEGACY_EVIDENCE','MERCHANT',?,?,?,?,?,?,?,?,?,?,?,?,?)
+	`, scopeHash[:], userID, liveAccount, snapshotID, snapshotRole, snapshotAuth, action, result, reason, targetType, targetID, merchantRequestIDHash(requestID), at)
+	return err
+}
+
+func insertSystemAuditFixture(ctx context.Context, execer merchantAuditExecer, requestID string, at time.Time) error {
+	scopeHash := sha256.Sum256([]byte("TEST_SYSTEM_SCOPE\x00" + requestID))
+	_, err := execer.ExecContext(ctx, `
+		INSERT INTO action_audits(
+			entry_kind,actor_kind,actor_scope_hash,action,result,reason_code,request_id_hash,occurred_at
+		) VALUES ('SYSTEM_EVIDENCE','SYSTEM',?,'deadlock.fixture','SUCCEEDED','FIXTURE',?,?)
+	`, scopeHash[:], merchantRequestIDHash(requestID), at)
+	return err
 }
 
 type staticPhoneProvider struct {

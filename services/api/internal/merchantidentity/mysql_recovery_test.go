@@ -57,8 +57,8 @@ func assertConcurrentSameCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	var successes, rejections int
 	if err := db.QueryRowContext(ctx, `
 		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED')
-		FROM merchant_action_audits WHERE actor_user_id=? AND request_id IN (?,?)
-	`, userID, []byte("internal-concurrent-0"), []byte("internal-concurrent-1")).Scan(&successes, &rejections); err != nil {
+		FROM action_audits WHERE actor_user_id=? AND request_id_hash IN (?,?)
+	`, userID, merchantRequestIDHash("internal-concurrent-0"), merchantRequestIDHash("internal-concurrent-1")).Scan(&successes, &rejections); err != nil {
 		t.Fatal("read concurrent login audits failed")
 	}
 	if successes != 2 || rejections != 0 {
@@ -117,8 +117,8 @@ func assertConcurrentDifferentCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	var auditSuccesses, auditRejections int
 	if err := db.QueryRowContext(ctx, `
 		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED')
-		FROM merchant_action_audits WHERE request_id IN (?,?)
-	`, []byte("internal-different-code-0"), []byte("internal-different-code-1")).Scan(&auditSuccesses, &auditRejections); err != nil {
+		FROM action_audits WHERE request_id_hash IN (?,?)
+	`, merchantRequestIDHash("internal-different-code-0"), merchantRequestIDHash("internal-different-code-1")).Scan(&auditSuccesses, &auditRejections); err != nil {
 		t.Fatal("read different-code login audits failed")
 	}
 	if auditSuccesses != 1 || auditRejections != 1 {
@@ -126,10 +126,10 @@ func assertConcurrentDifferentCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	}
 	var accountSnapshot, roleSnapshot, authSnapshot sql.NullString
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot
-		FROM merchant_action_audits
-		WHERE request_id IN (?,?) AND result='REJECTED'
-	`, []byte("internal-different-code-0"), []byte("internal-different-code-1")).Scan(&accountSnapshot, &roleSnapshot, &authSnapshot); err != nil {
+		SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot
+		FROM action_audits
+		WHERE request_id_hash IN (?,?) AND result='REJECTED'
+	`, merchantRequestIDHash("internal-different-code-0"), merchantRequestIDHash("internal-different-code-1")).Scan(&accountSnapshot, &roleSnapshot, &authSnapshot); err != nil {
 		t.Fatal("read different-code rejection snapshot failed")
 	}
 	if accountSnapshot.Valid || roleSnapshot.Valid || authSnapshot.Valid {
@@ -207,9 +207,9 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	}
 	var auditSuccesses, auditMismatches int
 	if err := db.QueryRowContext(ctx, `
-		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED' AND reason='PRIMARY_PHONE_MISMATCH')
-		FROM merchant_action_audits WHERE request_id IN (?,?)
-	`, []byte("internal-concurrent-phone-0"), []byte("internal-concurrent-phone-1")).Scan(&auditSuccesses, &auditMismatches); err != nil {
+		SELECT SUM(result='SUCCEEDED'),SUM(result='REJECTED' AND reason_code='PRIMARY_PHONE_MISMATCH')
+		FROM action_audits WHERE request_id_hash IN (?,?)
+	`, merchantRequestIDHash("internal-concurrent-phone-0"), merchantRequestIDHash("internal-concurrent-phone-1")).Scan(&auditSuccesses, &auditMismatches); err != nil {
 		t.Fatal("read concurrent different-phone audits failed")
 	}
 	if auditSuccesses != 1 || auditMismatches != 1 {
@@ -268,9 +268,9 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	var snapshotRole Role
 	var result, reason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte(disabledRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash(disabledRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 		t.Fatal("read disabled concurrent mismatch audit failed")
 	}
 	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
@@ -283,9 +283,9 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 		t.Fatalf("disabled concurrent same-phone error = %v", err)
 	}
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte(samePhoneRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash(samePhoneRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 		t.Fatal("read disabled concurrent same-phone audit failed")
 	}
 	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "ACCOUNT_NOT_AVAILABLE" {
@@ -342,19 +342,19 @@ func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {
 	t.Run("audit unavailable", func(t *testing.T) {
 		userID := insertMerchantTestUser(t, db, "opaque-provider-subject-audit-unavailable", now)
 		accountID := insertMerchantTestAccount(t, db, "+52", RoleSubaccount, true, nil, now)
-		if _, err := db.ExecContext(ctx, "RENAME TABLE merchant_action_audits TO merchant_action_audits_unavailable"); err != nil {
+		if _, err := db.ExecContext(ctx, "RENAME TABLE action_audits TO action_audits_unavailable"); err != nil {
 			t.Fatal("hide audit table failed")
 		}
 		restored := false
 		defer func() {
 			if !restored {
-				_, _ = db.ExecContext(context.Background(), "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits")
+				_, _ = db.ExecContext(context.Background(), "RENAME TABLE action_audits_unavailable TO action_audits")
 			}
 		}()
 		if _, err := NewRepository(db).CompleteLogin(ctx, userID, "+52", hashLoginCode("audit-unavailable-code"), "internal-audit-unavailable", now); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("audit unavailable result = %v", err)
 		}
-		if _, err := db.ExecContext(ctx, "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits"); err != nil {
+		if _, err := db.ExecContext(ctx, "RENAME TABLE action_audits_unavailable TO action_audits"); err != nil {
 			t.Fatal("restore audit table failed")
 		}
 		restored = true
@@ -401,7 +401,7 @@ func assertNoMerchantBindingWrites(t *testing.T, db *sql.DB, userID, accountID u
 		t.Fatal("read rollback account state failed")
 	}
 	var auditCount int
-	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM merchant_action_audits WHERE request_id=?", []byte(requestID)).Scan(&auditCount); err != nil {
+	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM action_audits WHERE request_id_hash=?", merchantRequestIDHash(requestID)).Scan(&auditCount); err != nil {
 		t.Fatal("read rollback audit state failed")
 	}
 	if phone.Valid || phoneBoundAt.Valid || boundUserID.Valid || boundAt.Valid || recordVersion != 1 || authVersion != 1 || auditCount != 0 {
@@ -426,10 +426,7 @@ func assertMerchantDeadlockRecovery(t *testing.T, db *sql.DB) {
 		t.Fatal("lock deadlock account fixture failed")
 	}
 	for index := 0; index < 20; index++ {
-		if _, err := managementTx.ExecContext(ctx, `
-			INSERT INTO merchant_action_audits(actor_user_id,action,result,reason,request_id,occurred_at)
-			VALUES (?,'deadlock.fixture','SUCCEEDED','FIXTURE',?,?)
-		`, userID, []byte("internal-deadlock-fixture-"+strconv.Itoa(index)), now); err != nil {
+		if err := insertSystemAuditFixture(ctx, managementTx, "internal-deadlock-fixture-"+strconv.Itoa(index), now); err != nil {
 			t.Fatal("weight deadlock management transaction failed")
 		}
 	}
@@ -497,7 +494,7 @@ func assertMerchantDeadlockRecovery(t *testing.T, db *sql.DB) {
 		t.Fatal("read deadlock binding result failed")
 	}
 	var loginAuditCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM merchant_action_audits WHERE request_id=?", []byte("internal-deadlock-login")).Scan(&loginAuditCount); err != nil {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM action_audits WHERE request_id_hash=?", merchantRequestIDHash("internal-deadlock-login")).Scan(&loginAuditCount); err != nil {
 		t.Fatal("read deadlock login audit failed")
 	}
 	if boundUserID != userID || recordVersion != 2 || authVersion != 2 || loginAuditCount != 1 {
@@ -522,9 +519,9 @@ func assertRejectedPhoneCodeAudit(t *testing.T, db *sql.DB) {
 	var snapshotID, snapshotRole, snapshotAuth sql.NullString
 	var result, reason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte("internal-rejected-code")).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash("internal-rejected-code")).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 		t.Fatal("read rejected-code audit failed")
 	}
 	if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "PHONE_CODE_REJECTED" {
@@ -623,9 +620,9 @@ func assertRejectedPhoneCodeAfterConcurrentAccountChange(t *testing.T, db *sql.D
 	var merchantAccountID, snapshotID, snapshotRole, snapshotAuth sql.NullString
 	var auditResult, reason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-		FROM merchant_action_audits WHERE request_id=?
-	`, []byte(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &auditResult, &reason); err != nil {
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+		FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash(requestID)).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &auditResult, &reason); err != nil {
 		t.Fatal("read unconfirmed provider rejection audit failed")
 	}
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || auditResult != "REJECTED" || reason != "PHONE_CODE_REJECTED" {

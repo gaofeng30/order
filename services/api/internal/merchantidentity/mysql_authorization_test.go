@@ -58,8 +58,8 @@ func assertLiveMerchantAuthorization(t *testing.T, db *sql.DB) {
 	var disabledAuditAuthVersion uint64
 	var disabledAuditResult, disabledAuditReason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason FROM merchant_action_audits WHERE request_id=?
-	`, []byte("internal-live-disabled")).Scan(&disabledAuditAccountID, &disabledAuditRole, &disabledAuditAuthVersion, &disabledAuditResult, &disabledAuditReason); err != nil {
+		SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code FROM action_audits WHERE request_id_hash=?
+	`, merchantRequestIDHash("internal-live-disabled")).Scan(&disabledAuditAccountID, &disabledAuditRole, &disabledAuditAuthVersion, &disabledAuditResult, &disabledAuditReason); err != nil {
 		t.Fatal("read disabled existing-binding audit failed")
 	}
 	if disabledAuditAccountID != accountID || disabledAuditRole != disabledRole || disabledAuditAuthVersion != disabledAuthVersion || disabledAuditResult != "REJECTED" || disabledAuditReason != "ACCOUNT_NOT_AVAILABLE" {
@@ -101,15 +101,20 @@ func assertLiveMerchantAuthorization(t *testing.T, db *sql.DB) {
 	if err := db.QueryRowContext(ctx, "SELECT primary_phone FROM miniprogram_users WHERE id=?", userID).Scan(&primaryPhone); err != nil || primaryPhone != "+31" {
 		t.Fatal("account phone edit changed or re-compared the existing primary phone")
 	}
-	if _, err := db.ExecContext(ctx, "DELETE FROM merchant_accounts WHERE id=?", accountID); err != nil {
-		t.Fatal("delete live merchant fixture failed")
+	if _, err := db.ExecContext(ctx, `
+		UPDATE merchant_accounts
+		SET enabled=FALSE,bound_user_id=NULL,bound_at=NULL,deleted_at=?,deleted_by_account_id=?,
+		    record_version=record_version+1,auth_version=auth_version+1,updated_at=?
+		WHERE id=?
+	`, now.Add(5*time.Minute), accountID, now.Add(5*time.Minute), accountID); err != nil {
+		t.Fatal("soft delete live merchant fixture failed")
 	}
 	deleted, err := restartedService.Identity(ctx, userID)
 	if err != nil || deleted.Merchant != nil || !deleted.PrimaryPhoneBound {
-		t.Fatal("deleted account did not invalidate merchant identity")
+		t.Fatal("soft-deleted account did not invalidate merchant identity")
 	}
 	if _, err := authorizeTestAction(t, repository, db, userID, ActionOrderRead); !errors.Is(err, ErrMerchantAccountNotAvailable) {
-		t.Fatalf("deleted authorization error = %v", err)
+		t.Fatalf("soft-deleted authorization error = %v", err)
 	}
 }
 
@@ -145,12 +150,7 @@ func assertAuthorizationCommitOrdering(t *testing.T, db *sql.DB) {
 	if err != nil || authorization.MerchantAccountID != accountID || authorization.Actor != ActorMerchantOwner || authorization.AuthVersion != 1 {
 		t.Fatalf("ordered authorization failed: %v", err)
 	}
-	if _, err := authorizationTx.ExecContext(ctx, `
-		INSERT INTO merchant_action_audits(
-			merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			actor_user_id,action,result,reason,target_type,target_id,request_id,occurred_at
-		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-	`, accountID, accountID, RoleOwner, 1, userID, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", uint64(701), []byte("internal-authorized-write"), now); err != nil {
+	if err := insertMerchantAuditFixture(ctx, authorizationTx, accountID, RoleOwner, 1, userID, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", 701, "internal-authorized-write", now); err != nil {
 		t.Fatal("insert ordered authorized write audit failed")
 	}
 
@@ -221,7 +221,7 @@ func assertAuthorizationCommitOrdering(t *testing.T, db *sql.DB) {
 		t.Fatalf("next request did not observe committed role change: %v", err)
 	}
 	var committedAuditCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM merchant_action_audits WHERE request_id=?", []byte("internal-authorized-write")).Scan(&committedAuditCount); err != nil || committedAuditCount != 1 {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM action_audits WHERE request_id_hash=?", merchantRequestIDHash("internal-authorized-write")).Scan(&committedAuditCount); err != nil || committedAuditCount != 1 {
 		t.Fatal("authorized caller write did not commit exactly once before role change")
 	}
 
@@ -233,19 +233,14 @@ func assertAuthorizationCommitOrdering(t *testing.T, db *sql.DB) {
 	if err != nil || rollbackAuthorization.Actor != ActorMerchantSubaccount {
 		t.Fatalf("rollback authorization failed: %v", err)
 	}
-	if _, err := rollbackTx.ExecContext(ctx, `
-		INSERT INTO merchant_action_audits(
-			merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			actor_user_id,action,result,reason,target_type,target_id,request_id,occurred_at
-		) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-	`, accountID, accountID, RoleSubaccount, 2, userID, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", uint64(702), []byte("internal-authorized-rollback"), now); err != nil {
+	if err := insertMerchantAuditFixture(ctx, rollbackTx, accountID, RoleSubaccount, 2, userID, ActionOrderRead, "SUCCEEDED", "AUTHORIZED", "order", 702, "internal-authorized-rollback", now); err != nil {
 		t.Fatal("insert rollback authorized write failed")
 	}
 	if err := rollbackTx.Rollback(); err != nil {
 		t.Fatal("rollback authorized caller transaction failed")
 	}
 	var rolledBackAuditCount int
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM merchant_action_audits WHERE request_id=?", []byte("internal-authorized-rollback")).Scan(&rolledBackAuditCount); err != nil || rolledBackAuditCount != 0 {
+	if err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM action_audits WHERE request_id_hash=?", merchantRequestIDHash("internal-authorized-rollback")).Scan(&rolledBackAuditCount); err != nil || rolledBackAuditCount != 0 {
 		t.Fatal("caller rollback retained a business audit")
 	}
 }

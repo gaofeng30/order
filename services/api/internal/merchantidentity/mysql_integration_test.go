@@ -15,20 +15,23 @@ import (
 func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 	withMerchantSchema(t, func(db *sql.DB) {
 		migrationSet, err := migrate.Load(migrations.FS)
-		if err != nil || len(migrationSet) != 13 {
-			t.Fatal("load exact v1-v13 migration set failed")
+		if err != nil || len(migrationSet) != 44 || migrationSet[43].Version != 44 {
+			t.Fatal("load exact v1-v44 migration set failed")
 		}
 		foundation, err := migrate.Run(context.Background(), db, migrationSet[:1])
 		if err != nil || foundation.ToVersion != 1 || foundation.AppliedCount != 1 {
 			t.Fatal("establish v1 foundation failed")
 		}
 		advanced, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || advanced.FromVersion != 1 || advanced.ToVersion != 13 || advanced.AppliedCount != 12 {
-			t.Fatalf("advance v1 to v13 failed at v%d: %s", migrate.Version(err), migrate.Reason(err))
+		if err != nil || advanced.FromVersion != 1 || advanced.ToVersion != 44 || advanced.AppliedCount != 43 {
+			t.Fatalf("advance v1 to v44 failed at v%d: %s", migrate.Version(err), migrate.Reason(err))
 		}
 		repeat, err := migrate.Run(context.Background(), db, migrationSet)
-		if err != nil || repeat.FromVersion != 13 || repeat.ToVersion != 13 || repeat.AppliedCount != 0 {
-			t.Fatal("repeat v13 migration was not a zero-write success")
+		if err != nil || repeat.FromVersion != 44 || repeat.ToVersion != 44 || repeat.AppliedCount != 0 {
+			t.Fatal("repeat v44 migration was not a zero-write success")
+		}
+		if _, err := db.ExecContext(context.Background(), `INSERT INTO discount_settings(id,rate_percent,discount_version,whitelist_version,updated_at) VALUES (1,100,1,1,UTC_TIMESTAMP(6))`); err != nil {
+			t.Fatal("seed current identity pricing fixture failed")
 		}
 
 		t.Run("first binding and durable audit are atomic", func(t *testing.T) {
@@ -37,7 +40,7 @@ func TestMerchantIdentityMySQL8Integration(t *testing.T) {
 		t.Run("unresolved account rejection is durable without phone writes", func(t *testing.T) {
 			assertUnresolvedMerchantRejection(t, db)
 		})
-		t.Run("schema constraints and hard-delete audit retention", func(t *testing.T) {
+		t.Run("schema constraints and soft-delete audit retention", func(t *testing.T) {
 			assertMerchantSchemaConstraints(t, db)
 		})
 		t.Run("resolved business rejections are audited without partial writes", func(t *testing.T) {
@@ -143,9 +146,9 @@ func assertFirstMerchantBinding(t *testing.T, db *sql.DB) {
 	var snapshotRole Role
 	var action, auditResult, reason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-		       actor_user_id,action,result,reason
-		FROM merchant_action_audits
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+		       actor_user_id,action,result,reason_code
+		FROM action_audits
 		WHERE actor_user_id=?
 	`, userID).Scan(&auditAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &auditActorID, &action, &auditResult, &reason); err != nil {
 		t.Fatal("read first-binding audit failed")
@@ -177,10 +180,10 @@ func assertUnresolvedMerchantRejection(t *testing.T, db *sql.DB) {
 	var merchantAccountID, snapshotID, snapshotRole, snapshotAuth sql.NullString
 	var result, reason string
 	if err := db.QueryRowContext(ctx, `
-		SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-		FROM merchant_action_audits
-		WHERE actor_user_id=? AND request_id=?
-	`, userID, []byte("internal-request-b")).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		SELECT actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+		FROM action_audits
+		WHERE actor_user_id=? AND request_id_hash=?
+	`, userID, merchantRequestIDHash("internal-request-b")).Scan(&merchantAccountID, &snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 		t.Fatal("read unresolved rejection audit failed")
 	}
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "ACCOUNT_NOT_AVAILABLE" {
@@ -309,9 +312,9 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 			var snapshotRole sql.NullString
 			var result, reason string
 			if err := db.QueryRowContext(ctx, `
-				SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
-				FROM merchant_action_audits WHERE request_id=?
-			`, []byte(requestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+				SELECT actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,result,reason_code
+				FROM action_audits WHERE request_id_hash=?
+			`, merchantRequestIDHash(requestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 				t.Fatal("read resolved rejection audit failed")
 			}
 			if result != "REJECTED" || reason != test.wantReason {
