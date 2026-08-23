@@ -3,12 +3,14 @@
 ## 固定点与状态
 
 - change: `implement-quote-pricing-core`
-- status: `CANDIDATE_READY_FOR_EXTERNAL_SHA_HANDOFF`
+- status: `REPLACEMENT_CANDIDATE_READY_FOR_EXTERNAL_SHA_HANDOFF`
 - `base_sha`: `8bcdf3d6b1ea41529adaa54f463cc118c69e0e25`
 - source branch: `codex/order-delivery-integration`
 - writer branch: `codex/implement-quote-pricing-core`
 - writer worktree: `/Users/vivix/.codex/worktrees/9ede/order`
 - `candidate_sha: external-post-commit`；最终完整 SHA 只由 immutable handoff/外部 receipt 绑定，避免把未来 commit SHA 写进自身。
+- invalidated candidate: `7a5412546e9d1c59e1213ea668245e60db52e63e`；主控独立 Standards 审查发现 task evidence 不满足逐 task 统一模板，独立 Spec 审查又发现多重非法输入的 stable error priority 未冻结/未对抗测试。该 SHA 的全部 writer review 与 detached receipt 失效，禁止集成。
+- replacement scope: P1 只修复 `.scratch/implement-quote-pricing-core/**` evidence；P2 追加 Spec、mutation harness 与外部包 public-seam 组合错误测试。除非 fresh Gate 暴露真实业务失败，不修改 `calculator.go`、`errors.go` 或其他业务实现。
 - `gate_type`: `W3`（报价与金额语义）
 - `ui_level_target`: `UI0`
 - `ui_level_actual`: `UI0`
@@ -47,7 +49,8 @@ Calculate(input Input) (Result, error)
 - 每行先计算 `roundedUnit = halfUp(UnitPriceCents * RatePercent / 100)`，其中非负余数 `>=50` 向上到下一整数分；再计算 `originalLine = UnitPriceCents * Quantity`、`payableLine = roundedUnit * Quantity`。
 - 整单 `OriginalSubtotalCents`、`PayableCents` 分别按调用顺序累加逐行结果；`DiscountCents = OriginalSubtotalCents - PayableCents`。禁止先聚合整单原价再折扣。
 - 每个乘法和加法都必须在 `int64` 内可表示；折扣乘法、行数量乘法、跨行合计任一溢出都返回零 `Result` 与稳定 typed/redacted `OVERFLOW`。
-- 空行集、非法 rate、负价格、非正 quantity 分别返回零 `Result` 与稳定 typed/redacted `EMPTY_LINES`、`INVALID_RATE`、`INVALID_PRICE`、`INVALID_QUANTITY`。错误文本不含 input values，错误不得 panic 或 wrap 输入。
+- 非法 rate、空行集、负价格、非正 quantity 分别返回零 `Result` 与稳定 typed/redacted `INVALID_RATE`、`EMPTY_LINES`、`INVALID_PRICE`、`INVALID_QUANTITY`。错误文本不含 input values，错误不得 panic 或 wrap 输入。
+- 多重非法输入的 stable priority 固定为 `INVALID_RATE → EMPTY_LINES → 按输入行顺序逐行 price → quantity → arithmetic`；首个错误立即返回精确零 `Result`，不得继续到低优先级错误或后续行。
 - 相同输入重复/并发确定，race clean，不修改 caller slice，无 I/O/global/random/time。
 
 决定性 worked examples：
@@ -65,7 +68,7 @@ Calculate(input Input) (Result, error)
 2. Public-seam 编译 Red：外部测试只引用已冻结 exported Interface，因实现缺失真实编译失败；再只补齐可编译 surface。
 3. 严格纵向 tracer：每次只加入一个 public-seam 行为测试，取得命名 FAIL/失败断言后写使其通过的最小实现；依次覆盖 worked examples、边界、错误、溢出、顺序/不变性、重复/并发确定性。
 4. 全部行为 Green 后才 Refactor；重跑相同 focused/race/determinism。
-5. mutation harness 在临时副本注入至少九个可逆 mutant，覆盖 half-up、逐商品而非小计、数量在舍入后、rate 边界、空购物车、折扣乘法/行乘法/cross-line sum overflow、错误时零 Result。每个 source pattern 必须恰好一次；只有 target test exit `1` 且出现指定 `--- FAIL: Test...` 才算 killed。infrastructure 非 `1` 或缺少 marker 必须使 harness fail；原 worktree 不改动。
+5. mutation harness 在临时副本注入十一个可逆 mutant，覆盖 half-up、逐商品而非小计、数量在舍入后、rate 边界、rate/empty priority、空购物车、price/quantity priority、折扣乘法/行乘法/cross-line sum overflow、错误时零 Result。每个 source pattern 必须恰好一次；只有 target test exit `1` 且出现指定 `--- FAIL: Test...` 才算 killed。infrastructure 非 `1` 或缺少 marker 必须使 harness fail；原 worktree 不改动。
 
 ## Writer / Review / Verifier / Integration Gate
 
@@ -87,6 +90,6 @@ Calculate(input Input) (Result, error)
 | 真实报价调用方、配置、身份、订单/支付 DB | 后续纵切 owner | `N/A_FOR_THIS_PURE_MODULE` / 未验证 | 未来获授权纵切按各自 Gate 验收 |
 | UI | N/A | backend-only `UI0` | 本 change 不建立或宣称 UI1/UI2/UI3 |
 
-最小成功：全部 public-seam 行为与 fail-closed 语义通过，9 个目标 mutant 被行为断言杀死，focused/race/determinism、fresh MySQL 全 API、vet/build/smoke 与静态范围 Gate 通过；只提交 owned paths，中文完整 commit；双轴零 finding；fresh detached exact-SHA 全 Gate PASS；writer/verifier clean；post-commit review/verifier checklist 在实际外部 receipt 前保持 pending。
+最小成功：全部 public-seam 行为、stable multi-invalid priority 与 fail-closed 语义通过，11 个目标 mutant 被行为断言杀死，focused/race/determinism、fresh MySQL 全 API、vet/build/smoke 与静态范围 Gate 通过；只提交 owned paths，中文完整 replacement commit；双轴零 finding；fresh detached exact-SHA 全 Gate PASS；writer/verifier clean；post-commit review/verifier checklist 在实际外部 receipt 前保持 pending。
 
 Writer C/T/V/R：`C=10, T=10, V=8, R=8, total=36`，每项均不低于 `8`，硬阻断为零。`V=8` 仅表示 exact candidate 可形成；不得冒充尚未发生的 independent verifier PASS。

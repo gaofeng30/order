@@ -72,11 +72,14 @@ type Result struct {
 
 ## 失败语义
 
+- 稳定错误优先级固定为：先校验 `RatePercent`，再校验空 `Lines`，随后严格按输入行顺序逐行执行 `UnitPriceCents`、`Quantity`、该行 arithmetic。任一阶段发现首个错误立即返回精确零值 `Result{}`，不得继续到较低优先级错误或后续行。
+- 因此 `invalid rate + empty lines` 必须返回 `INVALID_RATE`；同一行同时 `negative price + non-positive quantity` 必须返回 `INVALID_PRICE`。
 - 空 `Lines`：`EMPTY_LINES`。
 - `RatePercent <0` 或 `>100`：`INVALID_RATE`。
 - 任一负价格：`INVALID_PRICE`。
 - 任一 `Quantity <=0`：`INVALID_QUANTITY`。
 - 折扣乘法、原价/应付行乘法或跨行原价/应付加法任一溢出：`OVERFLOW`。
+- arithmetic 包含该行折扣乘法/half-up 加法、原价行乘法、应付行乘法及按当前行顺序发生的整单累加；首个 arithmetic overflow 返回 `OVERFLOW`。
 - 任一错误必须返回精确零值 `Result{}`；不得返回 partial lines/totals，不得 panic，不得 wrap/打印 input values。
 
 ## 确定性与边界

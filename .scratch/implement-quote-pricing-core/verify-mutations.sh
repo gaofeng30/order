@@ -94,12 +94,28 @@ run_mutation \
   '--- FAIL: TestCalculateAcceptsZeroAndOneHundredPercent'
 
 run_mutation \
+  empty_lines_precede_invalid_rate \
+  'if input.RatePercent < 0 || input.RatePercent > 100 {' \
+  's#if input\.RatePercent < 0 \|\| input\.RatePercent > 100 \{#if len(input.Lines) == 0 { return Result{}, newError(ErrorEmptyLines) }; if input.RatePercent > 100 || input.RatePercent < 0 {#' \
+  'if len(input.Lines) == 0 { return Result{}, newError(ErrorEmptyLines) }; if input.RatePercent > 100 || input.RatePercent < 0 {' \
+  '^TestCalculateRejectsInvalidRateBeforeEmptyLines$' \
+  '--- FAIL: TestCalculateRejectsInvalidRateBeforeEmptyLines'
+
+run_mutation \
   accept_empty_lines \
   'if len(input.Lines) == 0 {' \
   's#if len\(input\.Lines\) == 0 \{#if len(input.Lines) < 0 {#' \
   'if len(input.Lines) < 0 {' \
   '^TestCalculateRejectsEmptyLines$' \
   '--- FAIL: TestCalculateRejectsEmptyLines'
+
+run_mutation \
+  quantity_precedes_negative_price \
+  'if line.UnitPriceCents < 0 {' \
+  's#if line\.UnitPriceCents < 0 \{#if line.Quantity <= 0 { return Result{}, newError(ErrorInvalidQuantity) }; if 0 > line.UnitPriceCents {#' \
+  'if line.Quantity <= 0 { return Result{}, newError(ErrorInvalidQuantity) }; if 0 > line.UnitPriceCents {' \
+  '^TestCalculateRejectsNegativePriceBeforeNonPositiveQuantity$' \
+  '--- FAIL: TestCalculateRejectsNegativePriceBeforeNonPositiveQuantity'
 
 run_mutation \
   unchecked_original_line_multiplication \

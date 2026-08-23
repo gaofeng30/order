@@ -235,6 +235,21 @@ func TestCalculateRejectsEmptyLines(t *testing.T) {
 	requirePricingError(t, got, err, quotepricing.ErrorEmptyLines)
 }
 
+func TestCalculateRejectsInvalidRateBeforeEmptyLines(t *testing.T) {
+	got, err := quotepricing.Calculate(quotepricing.Input{RatePercent: -1})
+	requirePricingError(t, got, err, quotepricing.ErrorInvalidRate)
+}
+
+func TestCalculateRejectsNegativePriceBeforeNonPositiveQuantity(t *testing.T) {
+	got, err := quotepricing.Calculate(quotepricing.Input{
+		RatePercent: 50,
+		Lines: []quotepricing.Line{
+			{UnitPriceCents: -1, Quantity: 0},
+		},
+	})
+	requirePricingError(t, got, err, quotepricing.ErrorInvalidPrice)
+}
+
 func TestCalculateRejectsOriginalLineMultiplicationOverflow(t *testing.T) {
 	got, err := quotepricing.Calculate(quotepricing.Input{
 		RatePercent: 0,

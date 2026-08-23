@@ -1,61 +1,19 @@
 # Tasks: implement-quote-pricing-core
 
-- [x] 核验 exact base、clean detached start、目标 branch 不存在后创建独立 writer branch。
-  - Evidence: initial `HEAD=8bcdf3d6b1ea41529adaa54f463cc118c69e0e25`; clean detached; target branch absent; `codex/implement-quote-pricing-core` created without overwrite.
-- [x] 完整读取适用 AGENTS/CONTEXT、canonical PRD §5.6/§6.4/§15.6.2/§15.6.5、质量 Gate、`$codebase-design`（含 `DEEPENING.md`）、`$tdd` 与 `$code-review`。
-  - Evidence: `DRAFT.md`/`spec.md` 固定唯一 in-process `Calculate` seam、调用方时机与 read-only 范围。
-- [x] 冻结 W3/UI0、Interface、公式/half-up/顺序/溢出/错误、owned/read-only、依赖/非目标、RGR、review/verifier/integration 命令与外部资产。
-  - Evidence: `DRAFT.md` and `spec.md`; tracker 缺失如实标记 `GOVERNANCE_PENDING`，未越权配置。
-- [x] 完成冲突审计。
-  - Evidence: exact base 上两个 owned 目录均不存在；仓库内无 `quotepricing` Module 或同名 Interface。
-- [x] 取得首个 public-seam 编译 Red，再只补齐可编译 surface。
-  - Red evidence: `go test ./services/api/internal/quotepricing -run '^$' -count=1` exit `1`; external seam test reported only undefined `Input`, `Result`, and `Calculate`.
-  - Green evidence: the same compile-only command passed after adding only the frozen types and zero-value `Calculate` surface.
-- [x] 逐 tracer 完成 `101×85%, qty2`、逐商品非整单舍入、数量在舍入后相乘的 Red/Green。
-  - Red evidence: three named focused tests separately exited `1` with zero Result, one missing output line, and payable `8` from subtotal rounding versus required `9`.
-  - Green evidence: the same focused tests passed with `202/172/30`, two `1分×50%` lines totaling `2`, and `5分×50%=3分` then quantity `3` totaling `9`.
-- [x] 逐 tracer 完成 `100%`、`0%`、`0元` 与非法 rate/price/quantity/空购物车的 Red/Green。
-  - Red evidence: named focused tests separately exposed missing typed errors, rejected legal `0/100%`, rejected legal zero price, accepted non-positive quantity, and returned a nonzero-shape Result for empty lines; each exited `1`.
-  - Green evidence: the same tests now accept both rate boundaries and zero-price lines while returning zero Result plus stable redacted `INVALID_RATE`/`INVALID_PRICE`/`INVALID_QUANTITY`/`EMPTY_LINES` errors for invalid inputs.
-- [x] 逐 tracer 完成折扣乘法、行乘法、cross-line sum overflow 与零 Result typed/redacted error 的 Red/Green。
-  - Red evidence: named focused tests separately exited `1` after unchecked arithmetic wrapped `MaxInt64×2` to a negative line subtotal, discount multiplication to a wrong zero, and `MaxInt64+1` to `MinInt64`.
-  - Green evidence: the same tests now return exact zero `Result` plus stable redacted `OVERFLOW`; original/payable line multiplication and original/payable cross-line additions all use checked arithmetic.
-- [x] 覆盖输出顺序、输入不变、重复/并发确定性并完成 Refactor focused/race Gate。
-  - Evidence: distinct-line order/caller-slice test, 100-repeat determinism, 32-worker concurrency test, focused `-count=1`, and race `-count=20` all passed after Refactor; no implementation change was needed for the purity checks because the prior ordered loop already satisfied them.
-- [x] mutation infrastructure shield 拒绝非行为失败，至少九个指定可逆 mutant 全部由命名 target test exit `1` 杀死。
-  - Evidence: injected `go` exit `2` caused harness exit `82` and was accepted only as shield PASS; all nine real mutants then exited exactly `1` with their named `--- FAIL: Test...` marker.
-- [x] fresh loopback-only MySQL 8.0.46 跑全 `services/api` test/race；另跑 vet/build/smoke/gofmt/diff/owned/protected/sensitive。
-  - Evidence: fresh pinned image reported version `8.0.46` and loopback-only ephemeral binding; full `services/api` test/race passed; vet/build exited `0`; smoke printed `smoke: PASS`; gofmt, shell syntax, owned/protected and high-confidence sensitive-pattern audits passed. Exact base diff checks are repeated post-commit.
-- [ ] 只提交 owned paths，中文完整 commit；通过 immutable external handoff 绑定 exact candidate SHA。
-- [ ] 对 exact SHA 并行完成 Standards/Spec 双轴审查，零 finding。
-- [ ] 在 fresh clean detached worktree 对 exact SHA 从头重跑全部 Gate，writer/verifier 均 clean。
+## Candidate invalidation
 
-> Post-commit review/verifier 两项在实际 external receipt 前必须保持 pending，不预宣 PASS。integration 不在本 change 授权范围内。
+- `7a5412546e9d1c59e1213ea668245e60db52e63e` is `INVALIDATED_BY_INDEPENDENT_STANDARDS_AND_SPEC_REVIEW`.
+- P1: eleven completed tasks previously had only three aggregate records, without per-task unified evidence or an explicit `green` phase.
+- P2: Spec/tests previously did not freeze or distinguish `INVALID_RATE → EMPTY_LINES → per-line price → quantity → arithmetic` priority.
+- All writer review and detached receipts bound to the invalidated SHA are void; it must not be integrated. Replacement remains `candidate_sha: external-post-commit` until immutable handoff.
 
-## Evidence records
-
-以下记录逐阶段追加；只保留首个决定性、脱敏结果，不记录凭据、请求原文或个人数据。
+## Completed tasks and unified evidence
+- [x] `QP-01` 核验 exact base、clean detached start、目标 branch 不存在后创建独立 writer branch。
 
 ```yaml
-change: implement-quote-pricing-core
-gate_type: W3
-ui_level_target: UI0
-ui_level_actual: UI0
-base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
-candidate_sha: external-post-commit
-phase: red
-command_or_action: public-seam compile-only test
-exit_result: exit-1
-sanitized_summary: external test could not resolve Input, Result, or Calculate because the frozen Interface was absent
-artifact_or_environment: writer worktree with public_seam_test.go
-unverified_boundary: compile Red proves no pricing behavior or Green result
-external_asset:
-  owner: N/A
-  missing: N/A
-  recovery: add only the frozen Interface surface and rerun the same command
-```
-
-```yaml
+task_id: QP-01
+evidence_id: QP-01-writer-start
+evidence_origin: historical_action_recovered_from_writer_session
 change: implement-quote-pricing-core
 gate_type: W3
 ui_level_target: UI0
@@ -63,18 +21,279 @@ ui_level_actual: UI0
 base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
 candidate_sha: external-post-commit
 phase: writer
-command_or_action: fresh repair-version-scoped verify-mysql.sh full; vet; build; smoke; format; shell syntax; owned/protected/sensitive audits
+command_or_action: >-
+  Historical exact action: git rev-parse HEAD; git status --short --branch; git show-ref --verify --quiet refs/heads/codex/implement-quote-pricing-core; then git switch -c codex/implement-quote-pricing-core.
 exit_result: PASS
-sanitized_summary: fresh loopback-only MySQL 8.0.46 full services/api test/race passed; vet/build/smoke and static scope audits passed
-artifact_or_environment: disposable mysql:8.0.46-oraclelinux9 and local Go 1.26.5; temporary resources cleaned
-unverified_boundary: MySQL is adjacent regression only and does not prove this pure Module pricing; no caller integration, UI, real order/payment, push, PR, deployment, or external write ran
+sanitized_summary: exact base and clean detached HEAD confirmed; target branch was absent and created without overwrite
+artifact_or_environment: initial writer worktree before any owned file existed
+unverified_boundary: historical branch provenance only; not a replacement writer/review/verifier receipt
 external_asset:
-  owner: writer/verifier
-  missing: verifier must independently recreate all assets from exact SHA
-  recovery: rerun full profile in a fresh detached worktree after immutable candidate handoff
+  owner: N/A
+  missing: N/A
+  recovery: inspect git ancestry and immutable replacement handoff
 ```
+- [x] `QP-02` 完整读取适用 AGENTS/CONTEXT、canonical PRD、质量 Gate 与三项 Skill。
 
 ```yaml
+task_id: QP-02
+evidence_id: QP-02-source-read
+evidence_origin: historical_read_action_plus_current_structural_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: writer
+command_or_action: >-
+  Historical action: fully read AGENTS.md, CONTEXT.md, docs/quality/change-quality-gates.md, canonical PRD sections 5.6/6.4/15.6.2/15.6.5, codebase-design SKILL.md plus DEEPENING.md, tdd SKILL.md/tests.md/mocking.md, and code-review SKILL.md; current replay command: test -f AGENTS.md && test -f CONTEXT.md && test -f docs/quality/change-quality-gates.md && test -f docs/product/online-ordering-system-prd-0818.md && test -f .agents/skills/codebase-design/DEEPENING.md && test -f .agents/skills/tdd/SKILL.md && test -f .agents/skills/code-review/SKILL.md
+exit_result: PASS
+sanitized_summary: source hierarchy, W3 evidence rules, domain vocabulary, deep Module seam, TDD and two-axis review were applied
+artifact_or_environment: repository documentation at fixed base plus replacement worktree
+unverified_boundary: structural replay proves source availability; historical action records completed reading
+external_asset:
+  owner: N/A
+  missing: docs/agents/issue-tracker.md remains governance pending by explicit delegation
+  recovery: initialize tracker only in a separately authorized governance change
+```
+- [x] `QP-03` 冻结 W3/UI0、Interface、数学/错误、owned/read-only、非目标、RGR、Gate 与外部资产。
+
+```yaml
+task_id: QP-03
+evidence_id: QP-03-structure-green
+evidence_origin: current_replacement_structural_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  test -f .scratch/implement-quote-pricing-core/DRAFT.md && test -f .scratch/implement-quote-pricing-core/spec.md && rg -q 'gate_type.*W3' .scratch/implement-quote-pricing-core/DRAFT.md && rg -q 'Calculate\(input Input\) \(Result, error\)' .scratch/implement-quote-pricing-core/{DRAFT.md,spec.md} && rg -q 'candidate_sha: external-post-commit' .scratch/implement-quote-pricing-core/{DRAFT.md,spec.md,tasks.md}
+exit_result: exit-0
+sanitized_summary: DRAFT and Spec contain fixed W3/UI0 Interface, ownership, formula, priority, errors, Gate commands and external boundaries
+artifact_or_environment: owned scratch design artifacts
+unverified_boundary: structural check does not prove Go behavior or independent verification
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact structural command
+```
+- [x] `QP-04` 完成初始 owned-path 与冲突审计。
+
+```yaml
+task_id: QP-04
+evidence_id: QP-04-conflict-audit
+evidence_origin: historical_action_recovered_from_writer_session
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: writer
+command_or_action: >-
+  Historical exact action before creation: test ! -e .scratch/implement-quote-pricing-core; test ! -e services/api/internal/quotepricing; then rg searched quotepricing and frozen field names in read-only services/api, scratch and docs.
+exit_result: PASS
+sanitized_summary: both owned roots were absent on exact base and no existing quotepricing Module or same-name Interface was found
+artifact_or_environment: initial exact-base writer worktree
+unverified_boundary: absence cannot be replayed after implementation; current owned/protected diff is verified by QP-11
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: reproduce in disposable detached base worktree if historical absence must be re-audited
+```
+- [x] `QP-05` 取得 public-seam 编译 Red，再只补齐可编译 surface。
+
+```yaml
+task_id: QP-05
+evidence_id: QP-05-red
+evidence_origin: historical_red_recovered_from_writer_session
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^$' -count=1
+exit_result: exit-1
+sanitized_summary: public_seam_test.go failed to compile because Input, Result and Calculate were undefined
+artifact_or_environment: writer worktree with doc.go and external public seam test
+unverified_boundary: historical compile Red does not prove replacement Green or behavior
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: current compile Green is replayable below
+```
+```yaml
+task_id: QP-05
+evidence_id: QP-05-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^$' -count=1
+exit_result: exit-0
+sanitized_summary: public Calculate Interface and supporting exported types compile through external package seam
+artifact_or_environment: replacement writer worktree with Go 1.26.5
+unverified_boundary: compile-only Green does not prove pricing behavior
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact command
+```
+- [x] `QP-06` 完成 half-up、逐商品非整单舍入、数量在舍入后相乘的 Red/Green。
+
+```yaml
+task_id: QP-06
+evidence_id: QP-06-red
+evidence_origin: historical_first_decisive_red_recovered_from_writer_session
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^TestCalculateRoundsUnitHalfUpBeforeQuantity$' -count=1
+exit_result: exit-1
+sanitized_summary: named test observed zero Result instead of worked example 101x85 percent quantity 2 producing 202/172/30
+artifact_or_environment: writer worktree at first pricing tracer
+unverified_boundary: first decisive Red only; grouped Green covers all three named behaviors
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: mutation Gate reproducibly proves sensitivity
+```
+```yaml
+task_id: QP-06
+evidence_id: QP-06-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^(TestCalculateRoundsUnitHalfUpBeforeQuantity|TestCalculateRoundsEachUnitBeforeSumming|TestCalculateMultipliesQuantityAfterUnitRounding)$' -count=1
+exit_result: exit-0
+sanitized_summary: named tests pass 101x85 percent, two 1-cent lines at 50 percent, and quantity-after-rounding examples
+artifact_or_environment: replacement writer worktree public-seam tests
+unverified_boundary: focused Green does not prove invalid input, overflow, race or adjacent packages
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact focused command
+```
+- [x] `QP-07` 完成 rate/price/quantity/empty 合法边界与单一非法输入 Red/Green。
+
+```yaml
+task_id: QP-07
+evidence_id: QP-07-red
+evidence_origin: historical_first_decisive_red_recovered_from_writer_session
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^TestCalculateRejectsRateOutsideMathematicalRange$' -count=1
+exit_result: exit-1
+sanitized_summary: named test failed to compile because stable ErrorKind/Error types were not yet defined
+artifact_or_environment: writer worktree at first invalid-input tracer
+unverified_boundary: first decisive Red only; grouped Green covers named boundary and single-invalid tests
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: mutation Gate reproducibly proves rate/empty/error sensitivity
+```
+```yaml
+task_id: QP-07
+evidence_id: QP-07-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^(TestCalculateRejectsRateOutsideMathematicalRange|TestCalculateAcceptsZeroAndOneHundredPercent|TestCalculateRejectsNegativeUnitPrice|TestCalculateAcceptsZeroPrice|TestCalculateRejectsNonPositiveQuantity|TestCalculateRejectsEmptyLines)$' -count=1
+exit_result: exit-0
+sanitized_summary: named tests accept 0/100 percent and zero price while rejecting invalid rate, negative price, non-positive quantity and empty lines
+artifact_or_environment: replacement writer worktree public-seam tests
+unverified_boundary: single-invalid Green does not prove multi-invalid priority; QP-13 covers it
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact focused command
+```
+- [x] `QP-08` 完成乘法/加法 overflow 与零 Result fail-closed Red/Green。
+
+```yaml
+task_id: QP-08
+evidence_id: QP-08-red
+evidence_origin: historical_first_decisive_red_recovered_from_writer_session
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^TestCalculateRejectsOriginalLineMultiplicationOverflow$' -count=1
+exit_result: exit-1
+sanitized_summary: unchecked MaxInt64 times 2 wrapped negative instead of zero Result plus OVERFLOW
+artifact_or_environment: writer worktree at first overflow tracer
+unverified_boundary: first decisive Red only; grouped Green covers named arithmetic/fail-closed tests
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: mutation Gate injects named arithmetic faults
+```
+```yaml
+task_id: QP-08
+evidence_id: QP-08-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^(TestCalculateRejectsOriginalLineMultiplicationOverflow|TestCalculateRejectsDiscountMultiplicationOverflow|TestCalculateRejectsCrossLineSumOverflow|TestCalculateDiscardsPartialResultOnLaterInvalidLine)$' -count=1
+exit_result: exit-0
+sanitized_summary: named overflow and later-invalid tests return exact zero Result with stable expected error kind
+artifact_or_environment: replacement writer worktree public-seam tests
+unverified_boundary: focused arithmetic Green does not prove race cleanliness or adjacent packages
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact focused command
+```
+- [x] `QP-09` 覆盖顺序、输入不变、重复/并发确定性并完成 Refactor focused/race Gate。
+
+```yaml
+task_id: QP-09
+evidence_id: QP-09-refactor
+evidence_origin: current_replacement_replay
 change: implement-quote-pricing-core
 gate_type: W3
 ui_level_target: UI0
@@ -82,13 +301,183 @@ ui_level_actual: UI0
 base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
 candidate_sha: external-post-commit
 phase: refactor
-command_or_action: focused package test; race count 20; mutation gate with infrastructure failure shield
-exit_result: PASS
-sanitized_summary: public-seam money examples, typed redacted fail-closed errors, ordered immutable input handling, concurrent determinism, shield, and nine targeted mutation sensitivities passed
-artifact_or_environment: local Go 1.26.5 and isolated temporary mutation copies cleaned on exit
-unverified_boundary: pure Module evidence does not prove caller identity/config policy, database behavior, Quote/Prepay/Order creation, UI, integration, or deployment
+command_or_action: >-
+  set -e; GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -count=1; GOPROXY=off GOTOOLCHAIN=go1.26.5 go test -race ./services/api/internal/quotepricing -count=20
+exit_result: exit-0
+sanitized_summary: full package including line order/input preservation, repeated success/error determinism and 32-worker concurrency passed; race count 20 passed
+artifact_or_environment: replacement writer worktree with Go race detector
+unverified_boundary: pure Module race evidence does not prove caller, DB, router, order or payment integration
 external_asset:
   owner: N/A
   missing: N/A
-  recovery: rerun the same repository commands
+  recovery: rerun exact two-command shell action
 ```
+- [x] `QP-10` mutation shield 拒绝基础设施失败，11 个可逆 mutant 全部由命名行为断言杀死。
+
+```yaml
+task_id: QP-10
+evidence_id: QP-10-mutation
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: refactor
+command_or_action: >-
+  bash .scratch/implement-quote-pricing-core/verify-mutation-gate.sh
+exit_result: exit-0
+sanitized_summary: infrastructure exit 2 was rejected via harness exit 82; all 11 mutants exited exactly 1 with named FAIL marker and source count exactly one
+artifact_or_environment: isolated temporary mutation copies cleaned by harness
+unverified_boundary: mutation sensitivity proves only 11 named faults
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact mutation Gate
+```
+- [x] `QP-11` fresh MySQL 全 API test/race 与 vet/build/smoke/static/scope/sensitive Gate。
+
+```yaml
+task_id: QP-11
+evidence_id: QP-11-mysql-writer
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: writer
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 bash .scratch/repair-version-scoped-mysql-migration-fixtures-v13/verify-mysql.sh full
+exit_result: exit-0
+sanitized_summary: fresh mysql:8.0.46-oraclelinux9 reports 8.0.46 on loopback-only ephemeral binding; full services/api test and race pass
+artifact_or_environment: disposable loopback-only MySQL container cleaned by existing harness
+unverified_boundary: adjacent MySQL regression does not prove pure pricing Module or production data
+external_asset:
+  owner: writer/verifier
+  missing: verifier must independently recreate database
+  recovery: rerun full profile from immutable replacement SHA
+```
+```yaml
+task_id: QP-11
+evidence_id: QP-11-static-writer
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: writer
+command_or_action: >-
+  set -e; GOPROXY=off GOTOOLCHAIN=go1.26.5 go vet ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 go build ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh; test -z "$(gofmt -l services/api/internal/quotepricing)"; bash -n .scratch/implement-quote-pricing-core/verify-evidence.sh .scratch/implement-quote-pricing-core/verify-mutations.sh .scratch/implement-quote-pricing-core/verify-mutation-gate.sh; bash .scratch/implement-quote-pricing-core/verify-evidence.sh; git diff --cached --check; changed_paths=$(git diff --cached --name-only); printf '%s\n' "${changed_paths}" | awk '!/^\.scratch\/implement-quote-pricing-core\// && !/^services\/api\/internal\/quotepricing\// {bad=1} END {exit bad}'; if git diff --cached | rg -i 'authorization[[:space:]]*:|cookie[[:space:]]*:|begin [a-z ]*private key|api[_-]?v3[_-]?key[[:space:]]*[:=]|openid[[:space:]]*[:=]|session[_-]?code[[:space:]]*[:=]' >/dev/null; then exit 72; fi; git diff --quiet; test -z "$(git ls-files --others --exclude-standard)"
+exit_result: exit-0
+sanitized_summary: vet/build zero, smoke PASS, format/shell/evidence/diff/owned/protected/sensitive and unstaged-clean audits pass
+artifact_or_environment: staged replacement candidate in writer worktree
+unverified_boundary: pre-commit writer checks do not prove post-commit exact SHA
+external_asset:
+  owner: N/A
+  missing: replacement SHA and detached receipt pending
+  recovery: commit only staged owned paths then review and verify exact SHA
+```
+- [x] `QP-12` 修复 P1：每个完成 task 就地附统一 evidence record，显式包含 green 与单一 exit_result。
+
+```yaml
+task_id: QP-12
+evidence_id: QP-12-evidence-structure-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  bash .scratch/implement-quote-pricing-core/verify-evidence.sh
+exit_result: exit-0
+sanitized_summary: all 13 completed task IDs have unified records; required field counts match; green phase and invalidated old SHA explicit; three post-commit tasks pending
+artifact_or_environment: owned tasks.md and deterministic structural checker
+unverified_boundary: structure checker proves evidence shape/provenance declarations, not commands that must be replayed separately
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact evidence checker
+```
+- [x] `QP-13` 修复 P2：冻结多重非法输入优先级，并以两条组合测试和两个 priority mutant 闭合。
+
+```yaml
+task_id: QP-13
+evidence_id: QP-13-rate-empty-red
+evidence_origin: current_replacement_temporary_adversarial_red
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  In isolated temporary module copy, move empty-lines before rate validation; run GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^TestCalculateRejectsInvalidRateBeforeEmptyLines$' -count=1
+exit_result: exit-1
+sanitized_summary: named test returned EMPTY_LINES instead of INVALID_RATE with exact FAIL marker
+artifact_or_environment: isolated temporary adversarial copy moved to local Trash after capture
+unverified_boundary: temporary Red proves only rate-versus-empty priority sensitivity
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: final mutation harness injects same fault
+```
+```yaml
+task_id: QP-13
+evidence_id: QP-13-price-quantity-red
+evidence_origin: current_replacement_temporary_adversarial_red
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  In isolated temporary module copy, move quantity before price validation; run GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^TestCalculateRejectsNegativePriceBeforeNonPositiveQuantity$' -count=1
+exit_result: exit-1
+sanitized_summary: named test returned INVALID_QUANTITY instead of INVALID_PRICE with exact FAIL marker
+artifact_or_environment: isolated temporary adversarial copy moved to local Trash after capture
+unverified_boundary: temporary Red proves only price-versus-quantity priority sensitivity
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: final mutation harness injects same fault
+```
+```yaml
+task_id: QP-13
+evidence_id: QP-13-priority-green
+evidence_origin: current_replacement_replay
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: green
+command_or_action: >-
+  GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -run '^(TestCalculateRejectsInvalidRateBeforeEmptyLines|TestCalculateRejectsNegativePriceBeforeNonPositiveQuantity)$' -count=1
+exit_result: exit-0
+sanitized_summary: public Calculate seam returns INVALID_RATE before EMPTY_LINES and INVALID_PRICE before INVALID_QUANTITY with zero Result
+artifact_or_environment: replacement writer worktree external-package combination tests
+unverified_boundary: two combinations do not enumerate every later-line/arithmetic combination; Spec freezes full traversal order and full tests cover traversal
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun exact focused command plus mutation Gate
+```
+## Pending post-commit tasks
+
+- [ ] `QP-14` 只提交 owned paths，中文 replacement commit；immutable external handoff 绑定新 exact SHA。
+- [ ] `QP-15` 对 replacement exact SHA 从零并行完成 Standards/Spec 双轴审查，零 finding。
+- [ ] `QP-16` 在 fresh clean detached worktree 对 replacement exact SHA 从头重跑全部 Gate，writer/verifier 均 clean。
+
+> QP-14/QP-15/QP-16 在实际 external receipt 前保持 pending，不预宣 PASS。integration 不在本 change 授权范围内。
