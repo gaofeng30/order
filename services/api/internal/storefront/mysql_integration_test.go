@@ -120,17 +120,44 @@ func TestStorefrontMySQL8Integration(t *testing.T) {
 	})
 }
 
+func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
+	missingRequiredVersion := make([]migrate.Migration, 10)
+	if _, err := historicalMigrationPrefix(missingRequiredVersion, 11); err == nil {
+		t.Fatal("historical migration prefix accepted a missing required version")
+	}
+
+	wrongRequiredVersion := make([]migrate.Migration, 11)
+	wrongRequiredVersion[10].Version = 12
+	if _, err := historicalMigrationPrefix(wrongRequiredVersion, 11); err == nil {
+		t.Fatal("historical migration prefix accepted the wrong required version")
+	}
+}
+
 func applyStorefrontMigrations(t *testing.T, db *sql.DB) []migrate.Migration {
 	t.Helper()
 	migrationSet, err := migrate.Load(migrations.FS)
-	if err != nil || len(migrationSet) != 11 {
+	if err != nil {
 		t.Fatalf("load v1-v11 migrations: count=%d err=%v", len(migrationSet), err)
+	}
+	migrationSet, err = historicalMigrationPrefix(migrationSet, 11)
+	if err != nil {
+		t.Fatal(err)
 	}
 	result, err := migrate.Run(context.Background(), db, migrationSet)
 	if err != nil || result.FromVersion != 0 || result.ToVersion != 11 || result.AppliedCount != 11 {
 		t.Fatalf("apply v1-v11 migrations: result=%+v err=%v", result, err)
 	}
 	return migrationSet
+}
+
+func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion uint64) ([]migrate.Migration, error) {
+	if uint64(len(migrationSet)) < requiredVersion {
+		return nil, fmt.Errorf("required migration v%d is missing", requiredVersion)
+	}
+	if migrationSet[requiredVersion-1].Version != requiredVersion {
+		return nil, fmt.Errorf("required migration index has version %d, want %d", migrationSet[requiredVersion-1].Version, requiredVersion)
+	}
+	return migrationSet[:requiredVersion], nil
 }
 
 func assertMigrationRepeat(t *testing.T, db *sql.DB, migrationSet []migrate.Migration) {

@@ -31,13 +31,7 @@ var identitySchemaPattern = regexp.MustCompile(`^order_identity_test_[0-9a-f]{32
 
 func TestMiniprogramSessionMySQLIntegration(t *testing.T) {
 	withIdentitySchema(t, func(db *sql.DB) {
-		migrationSet, err := migrate.Load(migrations.FS)
-		if err != nil {
-			t.Fatal("load migrations failed")
-		}
-		if len(migrationSet) != 10 {
-			t.Fatalf("migration count = %d, want 10", len(migrationSet))
-		}
+		migrationSet := loadHistoricalMigrations(t, 10)
 
 		foundation, err := migrate.Run(context.Background(), db, migrationSet[:1])
 		if err != nil || foundation.AppliedCount != 1 || foundation.ToVersion != 1 {
@@ -67,13 +61,7 @@ func TestMiniprogramSessionMySQLIntegration(t *testing.T) {
 
 func TestMiniprogramPhoneMySQLIntegration(t *testing.T) {
 	withIdentitySchema(t, func(db *sql.DB) {
-		migrationSet, err := migrate.Load(migrations.FS)
-		if err != nil {
-			t.Fatal("load migrations failed")
-		}
-		if len(migrationSet) != 10 {
-			t.Fatalf("migration count = %d, want 10", len(migrationSet))
-		}
+		migrationSet := loadHistoricalMigrations(t, 10)
 		if result, err := migrate.Run(context.Background(), db, migrationSet[:9]); err != nil || result.ToVersion != 9 || result.AppliedCount != 9 {
 			t.Fatal("establish v9 identity baseline failed")
 		}
@@ -120,7 +108,7 @@ func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
 		if err != nil {
 			t.Fatal("load migrations failed")
 		}
-		if result, err := migrate.Run(context.Background(), db, migrationSet); err != nil || result.ToVersion != 10 || result.AppliedCount != 10 {
+		if result, err := migrate.Run(context.Background(), db, migrationSet); err != nil || result.FromVersion != 0 || result.ToVersion != migrationSet[len(migrationSet)-1].Version || result.AppliedCount != len(migrationSet) {
 			t.Fatal("establish phone-status schema failed")
 		}
 
@@ -241,6 +229,42 @@ func TestMiniprogramPhoneStatusMySQLIntegration(t *testing.T) {
 			t.Fatal("primary-phone status reached provider or binding write")
 		}
 	})
+}
+
+func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
+	missingRequiredVersion := make([]migrate.Migration, 9)
+	if _, err := historicalMigrationPrefix(missingRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted a missing required version")
+	}
+
+	wrongRequiredVersion := make([]migrate.Migration, 10)
+	wrongRequiredVersion[9].Version = 11
+	if _, err := historicalMigrationPrefix(wrongRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted the wrong required version")
+	}
+}
+
+func loadHistoricalMigrations(t *testing.T, requiredVersion uint64) []migrate.Migration {
+	t.Helper()
+	migrationSet, err := migrate.Load(migrations.FS)
+	if err != nil {
+		t.Fatal("load historical migrations failed")
+	}
+	prefix, err := historicalMigrationPrefix(migrationSet, requiredVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return prefix
+}
+
+func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion uint64) ([]migrate.Migration, error) {
+	if uint64(len(migrationSet)) < requiredVersion {
+		return nil, fmt.Errorf("required migration v%d is missing", requiredVersion)
+	}
+	if migrationSet[requiredVersion-1].Version != requiredVersion {
+		return nil, fmt.Errorf("required migration index has version %d, want %d", migrationSet[requiredVersion-1].Version, requiredVersion)
+	}
+	return migrationSet[:requiredVersion], nil
 }
 
 type phoneStatusProviderSpy struct{ calls int }
