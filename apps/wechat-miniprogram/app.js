@@ -5,7 +5,8 @@ const sessionApi = require('./utils/sessionApi.js');
 
 App({
   globalData: {
-    apiBaseUrl: 'http://127.0.0.1:8080',
+    apiBaseUrl: '',
+    runtimeEndpoint: { state: 'idle', envVersion: '', origin: '', errorCode: '' },
 
     // ---- 屏幕适配信息（各机型自适应核心）----
     statusBarHeight: 20, // 状态栏高度 px

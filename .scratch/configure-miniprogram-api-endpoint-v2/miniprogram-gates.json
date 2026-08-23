@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "change": "configure-miniprogram-api-endpoint-v2",
+  "base_sha": "01cc4896c3c6c8531b1a2f08778deeccab3dd43b",
+  "branch": "codex/configure-miniprogram-api-endpoint-v2",
+  "gate_type": "W2",
+  "ui_level_target": "UI2",
+  "ui_level_actual": "UI1",
+  "candidate_sha": "not-yet-created",
+  "status": "LOCAL_WIP_UI1_PASS_UI2_BLOCKED_EXTERNAL",
+  "tdd": {
+    "red": {
+      "status": "FAIL",
+      "command": "node --test apps/wechat-miniprogram/tests/runtime-endpoint-ui0.test.js",
+      "tests": 40,
+      "passed": 35,
+      "failed": 5,
+      "summary": "develop remote HTTP/HTTPS resolved ready and a forged develop remote endpoint emitted one wx.request"
+    },
+    "green": {
+      "status": "PASS",
+      "command": "node --test apps/wechat-miniprogram/tests/runtime-endpoint-ui0.test.js",
+      "tests": 45,
+      "passed": 45
+    },
+    "refactor": {
+      "status": "PASS",
+      "focused": "45/45",
+      "catalog_consumer": "14/14",
+      "default_node": "65/65",
+      "all_node": "162/162",
+      "apps_js": "PASS",
+      "apps_json": "PASS (28)",
+      "miniprogram_static": "PASS"
+    }
+  },
+  "side_effect_contract": {
+    "non_ready_endpoint": {
+      "wx_login_calls": 0,
+      "wx_request_calls": 0,
+      "catalog_state": "retryable-error",
+      "mock_fallback": false
+    }
+  },
+  "ui1": {
+    "status": "PASS",
+    "command": "npm --prefix tools/miniprogram-ui run ui1",
+    "required_scenarios": 3,
+    "completed_scenarios": 3,
+    "exit_code": 0,
+    "result": "UI1_RESULT status=PASS scenarios=3",
+    "environment": {
+      "runner": "order-miniprogram-ui-gates@1.0.0",
+      "simulator": "miniprogram-simulate@1.6.2",
+      "browser": "Google Chrome for Testing 151.0.7922.34",
+      "executor": "main-controller loopback-enabled environment on the same frozen runtime tree"
+    },
+    "unverified_boundary": "not Developer Tools UI2, experience build, physical device, real trial/release domain, or post-commit exact-SHA external attestation"
+  },
+  "ui2": {
+    "status": "BLOCKED_EXTERNAL",
+    "scope": "Developer Tools CLI login and AppID developer permission preflight only",
+    "cli_installed": true,
+    "cli_login": "inactive",
+    "appid_developer_permission": "not-reached",
+    "recovery": "log in to Developer Tools and confirm cli islogin; if the permission probe reports non-developer, the AppID administrator grants developer access; rerun on the same committed exact SHA",
+    "forbidden_actions": ["preview", "upload", "deploy"]
+  },
+  "writer_gate": {
+    "status": "BLOCKED_EXTERNAL",
+    "blocking_reason": "UI1 is satisfied on the frozen runtime tree, but target UI2 permission preflight remains blocked",
+    "local_hygiene": {
+      "status": "PASS",
+      "changed_paths": 8,
+      "owned_only": true,
+      "protected_diff": "empty",
+      "whitespace": "PASS",
+      "sensitive_scan": "PASS",
+      "manifest_json": "PASS"
+    }
+  },
+  "handoff": {
+    "stage_and_commit": "delegated-to-main-controller-after-tree-freeze",
+    "source_freeze": "READY_FOR_MECHANICAL_STAGE_AND_COMMIT",
+    "head_remains_base": true,
+    "candidate": false,
+    "independent_verification": false
+  }
+}

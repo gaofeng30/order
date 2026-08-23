@@ -1,3 +1,5 @@
+const { isRuntimeOrigin } = require('./runtimeEndpoint.js');
+
 class CatalogError extends Error {
   constructor(code) {
     super(code === 'PRODUCT_NOT_FOUND' ? 'product not found' : 'catalog unavailable');
@@ -10,7 +12,15 @@ function request(path, notFoundCode) {
   return new Promise((resolve, reject) => {
     let baseUrl;
     try {
-      baseUrl = getApp().globalData.apiBaseUrl;
+      const globalData = getApp().globalData;
+      const endpoint = globalData.runtimeEndpoint;
+      baseUrl = globalData.apiBaseUrl;
+      if (!endpoint
+        || endpoint.state !== 'ready'
+        || endpoint.origin !== baseUrl
+        || !isRuntimeOrigin(endpoint.envVersion, baseUrl)) {
+        throw new CatalogError('CATALOG_UNAVAILABLE');
+      }
       wx.request({
         url: `${baseUrl}${path}`,
         method: 'GET',

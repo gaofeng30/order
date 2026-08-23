@@ -8,7 +8,14 @@
 2. AppID 选择「测试号 / 不使用 AppID」即可预览（配置中为 `touristappid`）。
 3. 基础库建议 `3.x`（已用到 canvas 2d、`getWindowInfo` 等接口，并有低版本回退）。
 
-首页推荐、菜单和商品详情需要先按仓库根 [README](../../README.md#api-服务基线) 启动 MySQL、执行 migration 并运行 Go API。默认地址是 `http://127.0.0.1:8080`，由 `app.js` 的 `apiBaseUrl` 配置；API 不可用时页面会展示可重试错误，不会回退到 mock 目录。
+首页推荐、菜单和商品详情需要先按仓库根 [README](../../README.md#api-服务基线) 启动 MySQL、执行 migration 并运行 Go API。`develop` 默认使用 `utils/runtimeEndpointConfig.js` 中的 `http://127.0.0.1:8080`；API endpoint 不可用时页面会展示可重试错误，不会回退到 mock 目录。
+
+## API endpoint 配置与恢复
+
+- App 冷启动通过 `wx.getAccountInfoSync().miniProgram.envVersion` 选择 `develop`、`trial` 或 `release` 配置；测试环境缺少该 API 时仅按 `develop` 处理。
+- `develop` 只允许本机 HTTP `127.0.0.1` origin；默认值用于开发者工具连接本地 API，不接受远端 HTTP/HTTPS 地址。
+- `trial` / `release` 当前保持空值。真实域名未知时不要填写 placeholder；两者只接受无 path、query、fragment、userinfo 的 HTTPS origin，并拒绝 IP、`localhost` 与 `.localhost` 回环命名空间。
+- 外部域名、DNS/备案、有效 HTTPS 和微信后台 request 合法域名齐备后，以单独配置提交替换 `utils/runtimeEndpointConfig.js` 的对应空值；随后在同一 exact SHA 上重跑 Node/static Gate，并用指定体验版和真机分别冷启动 trial/release，核对 `envVersion`、脱敏请求 host 和目录最终状态均无 loopback。
 
 ## 多机型自适应（核心）
 
