@@ -57,7 +57,11 @@
 
       paintBatch(el, list);
 
-      const host = el.querySelector('#tbl-host');
+      // T.bind uses addEventListener; replace the host on every repaint so old
+      // row closures cannot replay a second write after status/sold-out changes.
+      const oldHost = el.querySelector('#tbl-host');
+      const host = oldHost.cloneNode(false);
+      oldHost.replaceWith(host);
       host.innerHTML = T.render({
         cols: [
           { t: `<input type="checkbox" data-act="all" ${list.length && picked.size === list.length ? 'checked' : ''}>`, w: '36px',
@@ -284,7 +288,7 @@
             imgs.map((src, i) => `
               <div class="img-cell">
                 <img src="${Api.imgUrl(src)}" alt="">
-                ${i === 0 ? '<span class="img-cover">封面</span>' : ''}
+                ${i === 0 ? '<span class="img-cover">封面</span>' : `<button class="img-cover" data-cover="${i}" style="border:0;cursor:pointer" title="设为封面">设为封面</button>`}
                 <button class="img-del" data-rm="${i}">${I.svg('close', 13)}</button>
               </div>`).join('') +
             (imgs.length < 3 ? `<div class="img-cell add" data-add>${I.svg('plus', 20, '#8f9384')}<span>添加</span></div>` : '');
@@ -293,6 +297,13 @@
           if (add) add.onclick = () => file.click();
           root.querySelectorAll('[data-rm]').forEach(n => {
             n.onclick = () => { imgs.splice(Number(n.dataset.rm), 1); paintImgs(); };
+          });
+          root.querySelectorAll('[data-cover]').forEach(n => {
+            n.onclick = () => {
+              const index = Number(n.dataset.cover);
+              imgs.unshift(imgs.splice(index, 1)[0]);
+              paintImgs();
+            };
           });
         }
         paintImgs();

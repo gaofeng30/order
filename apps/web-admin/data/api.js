@@ -161,8 +161,9 @@
     return image.object_key || image.key;
   }
   async function listCategories() { const body = await request('/admin/categories'); state.categories = listOf(body, 'categories').map(categoryOf); return state.categories.slice(); }
-  async function addCategory(name) { return categoryOf(await request('/admin/categories', { method: 'POST', body: { name: String(name || '').trim() } })); }
-  async function setCategoryEnabled(id, on) { return categoryOf(await request('/admin/categories/' + encodeURIComponent(id), { method: 'PUT', body: { enabled: !!on } })); }
+  async function addCategory(name) { const b = await request('/admin/categories', { method: 'POST', body: { name: String(name || '').trim() } }); return categoryOf(b.category || b); }
+  async function renameCategory(id, name) { const b = await request('/admin/categories/' + encodeURIComponent(id), { method: 'PUT', body: { name: String(name || '').trim() } }); return categoryOf(b.category || b); }
+  async function setCategoryEnabled(id, on) { const b = await request('/admin/categories/' + encodeURIComponent(id), { method: 'PUT', body: { enabled: !!on } }); return categoryOf(b.category || b); }
   function deleteCategory(id) { return request('/admin/categories/' + encodeURIComponent(id), { method: 'DELETE' }); }
   async function reorderCategories(ids) { await request('/admin/categories/order', { method: 'PUT', body: { ids } }); return listCategories(); }
 
@@ -279,7 +280,7 @@
   window.Api = {
     ApiError, bootstrap, logout, beginPCLogin, pollPCLogin, storeView, dashboardStats,
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage, setShelf, setSoldOut, reorderProducts, isSoldOut, isSellable,
-    listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
+    listCategories, addCategory, renameCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
     uncollectedCount, searchOrders, codeHint, listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,

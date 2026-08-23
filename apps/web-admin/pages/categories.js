@@ -1,9 +1,6 @@
-/* 分类管理 —— 对应 apps/wechat-miniprogram/pages/admin-categories
-   PC 形态：拖拽排序（手机端只能上下移按钮）+ 启停开关 + 删除保护。 */
+/* 分类管理：主账号改名、上移/下移、启停与带商品删除保护。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
-
-  let dragId = '';
 
   function render(el) {
     el.innerHTML =
@@ -13,7 +10,7 @@
        </div>
        <div class="tbl-wrap" id="cat-host"></div>`;
 
-    el.querySelector('[data-new]').onclick = () => openAdd(el);
+    el.querySelector('[data-new]').onclick = () => openForm(el, null);
     paint(el);
   }
 
@@ -26,16 +23,19 @@
            <span class="grow">分类名称</span>
            <span style="width:88px">菜品数</span>
            <span style="width:96px">用户端可见</span>
-           <span style="width:72px;text-align:right">操作</span>
+           <span style="width:178px;text-align:right">操作</span>
          </div>` +
         list.map(c => {
           const count = c.count;
-          return `<div class="cat-row" draggable="true" data-id="${c.id}">
+          return `<div class="cat-row" data-id="${c.id}">
             <span class="cat-grip">${I.svg('sort', 16, '#b6b9a6')}</span>
             <span class="grow cat-nm">${T.esc(c.name)}</span>
             <span style="width:88px" class="faint tnum">${count} 个</span>
             <span style="width:96px"><button class="sw${c.on ? ' on' : ''}" data-on="${c.id}"></button></span>
-            <span style="width:72px;text-align:right">
+            <span style="width:178px;text-align:right">
+              <button class="ibtn" data-act="cat-up" data-id="${c.id}" title="上移">↑</button>
+              <button class="ibtn" data-act="cat-down" data-id="${c.id}" title="下移">↓</button>
+              <button class="btn btn--sm btn--ghost-blue" data-act="cat-edit" data-id="${c.id}">编辑</button>
               <button class="ibtn danger" data-del="${c.id}">${I.svg('trash', 16)}</button>
             </span>
           </div>`;
@@ -69,58 +69,48 @@
         };
       });
 
-      bindDrag(el, host);
-    });
-  }
-
-  // 拖拽排序：dragover 时实时插入占位，drop 时按 DOM 顺序提交
-  function bindDrag(el, host) {
-    host.querySelectorAll('.cat-row').forEach(row => {
-      row.addEventListener('dragstart', e => {
-        dragId = row.dataset.id;
-        row.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        // Firefox 需要写入数据才会触发 drop
-        e.dataTransfer.setData('text/plain', dragId);
+      host.querySelectorAll('[data-act="cat-edit"]').forEach(n => {
+        n.onclick = () => openForm(el, list.find(c => c.id === n.dataset.id));
       });
-      row.addEventListener('dragend', () => {
-        row.classList.remove('dragging');
-        const ids = Array.from(host.querySelectorAll('.cat-row')).map(n => n.dataset.id);
-        Api.reorderCategories(ids).then(() => {
-          paint(el);
-          window.Toast.show('顺序已保存', { icon: 'sort' });
-        });
-      });
-      row.addEventListener('dragover', e => {
-        e.preventDefault();
-        const dragging = host.querySelector('.dragging');
-        if (!dragging || dragging === row) return;
-        const r = row.getBoundingClientRect();
-        const after = (e.clientY - r.top) > r.height / 2;
-        row.parentNode.insertBefore(dragging, after ? row.nextSibling : row);
+      host.querySelectorAll('[data-act="cat-up"], [data-act="cat-down"]').forEach(n => {
+        n.onclick = () => moveCategory(el, list, n.dataset.id, n.dataset.act === 'cat-up' ? -1 : 1);
       });
     });
   }
 
-  function openAdd(el) {
+  function moveCategory(el, list, id, delta) {
+    const index = list.findIndex(c => c.id === id);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= list.length) return;
+    const ids = list.map(c => c.id);
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    Api.reorderCategories(ids).then(() => {
+      paint(el);
+      window.Toast.show('顺序已保存', { icon: 'sort' });
+    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+  }
+
+  function openForm(el, category) {
+    const editing = !!category;
     window.Modal.open({
-      title: '新增分类',
+      title: editing ? '编辑分类' : '新增分类',
       bodyHtml:
         `<div class="fld">
            <div class="fld-lb">分类名称 <span class="req">*</span></div>
-           <input class="inp" id="c-name" placeholder="例如 节庆礼盒" autocomplete="off">
-           <div class="fld-hint">新增分类默认对用户端开放，可随时关闭。</div>
+           <input class="inp" id="c-name" value="${editing ? T.esc(category.name) : ''}" placeholder="例如 节庆礼盒" autocomplete="off">
+           <div class="fld-hint">${editing ? '改名后菜品编辑页同步读取新分类名。' : '新增分类默认对用户端开放，可随时关闭。'}</div>
          </div>`,
       footerHtml:
         `<button class="btn btn--line" data-a="c">取消</button>
-         <button class="btn btn--blue" data-a="ok">确认新增</button>`,
+         <button class="btn btn--blue" data-a="ok">${editing ? '保存' : '确认新增'}</button>`,
       onMount(root, close) {
         const inp = root.querySelector('#c-name');
         inp.focus();
         const submit = () => {
-          Api.addCategory(inp.value).then(c => {
+          const command = editing ? Api.renameCategory(category.id, inp.value) : Api.addCategory(inp.value);
+          command.then(c => {
             close(); paint(el);
-            window.Toast.show(`已新增「${c.name}」`, { icon: 'check' });
+            window.Toast.show(editing ? `已保存「${c.name}」` : `已新增「${c.name}」`, { icon: 'check' });
           }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         };
         inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
@@ -131,5 +121,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['categories'] = { sub: '拖动左侧手柄调整用户端的分类顺序', render };
+  window.Pages['categories'] = { sub: '使用上移、下移调整用户端的分类顺序', render };
 })();

@@ -1,6 +1,6 @@
 /* 开屏图层 —— 对应 apps/wechat-miniprogram/pages/admin-layer
    上传透明 PNG → 在等比缩放的手机预览上拖拽定位、滑杆调大小 →
-   保存后展示在「业务选择页 brand」与「身份选择页 launch」（两页共用一套配置）。
+   保存后展示在「用户端首页」与「身份选择页」（两页共用一套配置）。
    PC 端优势：装饰图原本就存在电脑里，可直接拖拽上传。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
@@ -13,7 +13,7 @@
   const DEFAULT_LAYER = { src: '', enabled: false, size: 0.3, cx: 0.5, cy: 0.35, ar: 1, v: 1 };
 
   let cfg = null;      // 当前编辑态
-  let mock = 'brand';  // 预览背景
+  let mock = 'home';   // 预览背景
   let dirtyRemove = false;
 
   function render(el) {
@@ -29,12 +29,12 @@
       `<div class="layer-cols">
          <div class="lay-stage">
            <div class="segs" style="margin-bottom:14px">
-             <span class="seg${mock === 'brand' ? ' on' : ''}" data-m="brand">业务选择页</span>
+             <span class="seg${mock === 'home' ? ' on' : ''}" data-m="home">用户端首页</span>
              <span class="seg${mock === 'launch' ? ' on' : ''}" data-m="launch">身份选择页</span>
            </div>
            <div class="phone" id="phone" style="width:${PW}px;height:${PH}px">
              ${mockBg()}
-             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" draggable="false">` : ''}
+             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" draggable="false" style="z-index:3">` : ''}
            </div>
            <div class="faint" style="font-size:12px;margin-top:10px">按 iPhone 逻辑分辨率 ${SCREEN_W}×${SCREEN_H} 1:1 预览 · 拖动图片调整位置</div>
          </div>
@@ -71,7 +71,7 @@
            <div class="card card-pad set-note" style="margin-top:16px">
              ${I.svg('warn', 16, '#a4873f')}
              <div>
-               图层同时作用于「业务选择页」与「身份选择页」，两页共用一套位置与大小，不能分别配置。<br>
+               图层同时作用于「用户端首页」与「身份选择页」，两页共用一套位置与大小，不能分别配置。<br>
                图片需为透明背景 PNG，否则会挡住底部按钮。上传后先在左侧确认两个页面都不遮挡文字，再保存。
              </div>
            </div>
@@ -112,38 +112,39 @@
           <div class="m-cards">
             <div class="m-id primary">
               <div class="m-id-ico">${I.svg('bag', 28, '#ffffff')}</div>
-              <div class="m-id-body"><div class="m-id-name serif">用户端</div><div class="m-id-desc">浏览菜单 · 在线点单 · 到店扫码取餐</div></div>
+              <div class="m-id-body"><div class="m-id-name serif">用户端</div></div>
               <div class="m-id-go primary">${I.svg('arrowRight', 18, '#3d6b2f')}</div>
             </div>
             <div class="m-id">
               <div class="m-id-ico ghost">${I.svg('store', 28, '#ffffff')}</div>
-              <div class="m-id-body"><div class="m-id-name serif">商户端</div><div class="m-id-desc">接单 · 制作 · 核销 · 菜品与经营管理</div></div>
+              <div class="m-id-body"><div class="m-id-name serif">商户端</div></div>
               <div class="m-id-go">${I.svg('arrowRight', 18, '#ffffff')}</div>
             </div>
             <div class="m-ver">${T.esc(Api.storeView().name)}　小程序 v1.0</div>
           </div>
         </div>`;
     }
-    return `<div class="mock mock-dark mk-brand">
-        <span class="ring r1"></span><span class="ring r3"></span>
-        <div class="m-logo-mid">
-          <div class="m-logo-card"><img class="m-logo-emblem" src="${EMBLEM}" alt=""></div>
+    return `<div class="mock mock-dark mk-launch">
+        <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+        <div class="m-brand">
+          <div class="m-brand-logo"><img class="m-brand-emblem" src="${EMBLEM}" alt=""></div>
+          <div>
+            <div class="m-brand-name serif">${T.esc(Api.storeView().name)}</div>
+            <div class="m-brand-sub">在地手作 · 到店自提</div>
+          </div>
         </div>
-        <div class="m-opts">
-          <div class="m-opt ready">
-            <div class="m-opt-ico">${I.svg('bowl', 27, '#ffffff')}</div>
-            <div class="m-opt-body"><div class="m-opt-name serif">绥安食品</div><div class="m-opt-desc">到店点单 · 预约取餐</div></div>
-            <div class="m-opt-go">${I.svg('arrowRight', 18, '#3d6b2f')}</div>
+        <div class="m-hero">
+          <div class="m-welcome">你好，欢迎光临</div>
+          <div class="m-big serif">${T.esc(Api.storeView().name)}</div>
+          <div class="m-lead">进入菜单查看当日商品目录</div>
+        </div>
+        <div class="m-cards">
+          <div class="m-id primary">
+            <div class="m-id-ico">${I.svg('bowl', 27, '#ffffff')}</div>
+            <div class="m-id-body"><div class="m-id-name serif">进入菜单</div></div>
+            <div class="m-id-go primary">${I.svg('arrowRight', 18, '#3d6b2f')}</div>
           </div>
-          <div class="m-opt off">
-            <div class="m-opt-ico">${I.svg('washer', 27, 'rgba(255,255,255,.5)')}</div>
-            <div class="m-opt-body"><div class="m-opt-name serif">绥安洗衣</div><div class="m-opt-desc">即将上线</div></div>
-          </div>
-          <div class="m-opt off">
-            <div class="m-opt-ico">${I.svg('car', 27, 'rgba(255,255,255,.5)')}</div>
-            <div class="m-opt-body"><div class="m-opt-name serif">绥安洗车</div><div class="m-opt-desc">即将上线</div></div>
-          </div>
-          <div class="m-ver">绥安集团 · 本地生活服务　v1.0</div>
+          <div class="m-ver">${T.esc(Api.storeView().name)}　小程序 v1.0</div>
         </div>
       </div>`;
   }
@@ -232,10 +233,10 @@
 
   function accept(el, f) {
     if (f.type !== 'image/png') return window.Toast.show('请选择透明背景的 PNG 图片', { icon: 'warn' });
-    Api.uploadImage(f).then(url => {
+    Api.uploadImage(f).then(objectKey => {
       const probe = new Image();
       probe.onload = () => {
-        cfg.src = url;
+        cfg.src = objectKey;
         cfg.ar = probe.height / probe.width;
         cfg.enabled = true;
         dirtyRemove = false;
@@ -243,7 +244,7 @@
         paint(el);
       };
       probe.onerror = () => window.Toast.show('图片读取失败', { icon: 'warn' });
-      probe.src = url;
+      probe.src = Api.imgUrl(objectKey);
     });
   }
 
@@ -280,5 +281,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['layer'] = { sub: '业务选择页与身份选择页的装饰图片，两页共用一套配置', render };
+  window.Pages['layer'] = { sub: '用户端首页与身份选择页的装饰图片，两页共用一套配置', render };
 })();

@@ -70,6 +70,25 @@ test('business mutation carries one idempotency key and integer-cent DTO', async
   assert.equal(JSON.parse(calls[0].init.body).price_cents, 1234);
 });
 
+test('category rename uses the authenticated server contract', async () => {
+  const calls = [];
+  const window = {
+    crypto: { randomUUID: () => 'rename-category-op' },
+    sessionStorage: { getItem: () => 'session-token' },
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ category: { id: '2', name: '热食', sort_order: 1, enabled: true, product_count: 0 } }) };
+    },
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'data/api.js'), 'utf8'), { window, URL, Blob, FormData });
+  const category = await window.Api.renameCategory('2', ' 热食 ');
+  assert.equal(category.name, '热食');
+  assert.equal(calls[0].url, '/api/v1/admin/categories/2');
+  assert.equal(calls[0].init.method, 'PUT');
+  assert.equal(calls[0].init.headers['Idempotency-Key'], 'rename-category-op');
+  assert.deepEqual(JSON.parse(calls[0].init.body), { name: '热食' });
+});
+
 test('network failure is surfaced and never replaced with browser data', async () => {
   const window = {
     sessionStorage: { getItem: () => 'session-token' },
