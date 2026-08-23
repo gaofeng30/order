@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "3b83d0515a03769ae2ab034fcde6b9eea453aa07"
+    "inventory_base_sha": "7b282749e16b2bfe338e2c9e8769c5874821291d"
   },
   "policy": {
     "exact_counts": {
@@ -482,6 +482,25 @@
           "selector": {
             "kind": "command",
             "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-U06:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
               "npm",
               "--prefix",
               "tools/miniprogram-ui",
@@ -1176,7 +1195,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1285,7 +1304,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1389,7 +1408,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1599,7 +1618,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1697,7 +1716,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1801,7 +1820,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1912,7 +1931,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -1996,7 +2015,7 @@
           "level": "L3",
           "status": "AVAILABLE",
           "satisfies": false,
-          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "claim": "Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.",
           "selector": {
             "kind": "command",
             "argv": [
@@ -2173,6 +2192,20 @@
           ]
         },
         {
+          "evidence_id": "PAGE-PC11:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC11:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -2242,6 +2275,20 @@
               "test": "TestParseRowsFailsClosedOverLimit"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-PC12:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
         },
         {
           "evidence_id": "PAGE-PC12:missing:L3",
@@ -2625,6 +2672,25 @@
           "selector": {
             "kind": "command",
             "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
+          "evidence_id": "AC-06:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
               "npm",
               "--prefix",
               "tools/miniprogram-ui",
@@ -4011,6 +4077,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-07:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-07:payment_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -4077,6 +4162,25 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-08:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-08:payment_mysql_l2",
           "level": "L2",
@@ -5263,6 +5367,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-27:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-27:import_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -5523,6 +5641,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-31:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-31:import_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -5588,6 +5720,20 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-32:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-32:import_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -5652,6 +5798,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-33:web_composed_imports_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-33:import_l1",
           "level": "L1",
@@ -6061,6 +6221,25 @@
           "selector": {
             "kind": "command",
             "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
+          "evidence_id": "INV-05:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
               "npm",
               "--prefix",
               "tools/miniprogram-ui",
@@ -7074,6 +7253,25 @@
           }
         },
         {
+          "evidence_id": "INV-16:mini_composed_pending_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_PAYMENT_EXPECTATION=pending",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-16:schema_no_inventory_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -7168,5 +7366,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "56f359a379448c1a0627446e4d8d042339a9fed8bddb13031b4637d3056162d2"
+  "manifest_sha256": "986e2b24d45efd403f591c39235d661b46749cf5a7dd37d3f8fc486c2439b5d3"
 }

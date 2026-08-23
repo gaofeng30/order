@@ -19,14 +19,18 @@ export const profiles = Object.freeze({
     command('npm', 'run', 'ui1', '--prefix', 'tools/miniprogram-ui')),
   mini_composed_ui1_l3: evidence('L3', 'Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.',
     command('npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
+  mini_composed_pending_ui1_l3: evidence('L3', 'One rendered Mini pending-payment scenario uses the root-composed API in explicit local NOTPAY mode: two Confirm calls return 202, the UI stays pending, preserves the cart, suppresses result navigation, avoids a second requestPayment call and rotates the Confirm idempotency key. This is supporting evidence only: it does not directly assert the durable observation/prepayment rows, absence of an order row, Query reconciliation, or real WeChat behavior.',
+    command('env', 'ORDER_COMPOSED_PAYMENT_EXPECTATION=pending', 'npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
   web_contract_ui0: evidence('UI0', 'PC Admin contract suite proves twelve-page wiring and no browser truth, not rendered full-flow E2E.',
     node('apps/web-admin/tests/http-contract.test.js')),
   web_chrome_ui1_fixture: evidence('UI1', 'PC Chrome smoke renders login/nav against a local fixture, not the composed MySQL API.',
     command('node', 'apps/web-admin/tests/ui1-chrome-runner.js')),
-  web_composed_reads_ui1_l3: evidence('L3', 'Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.',
+  web_composed_reads_ui1_l3: evidence('L3', 'Twenty-seven PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts, visit eleven routes and require every observed server GET, including all three finance endpoints, to return 200. This is supporting read evidence only: successful reads do not prove mutations or each matrix row failure shield.',
     command('node', 'apps/web-admin/tests/composed-ui1-chrome-runner.mjs')),
   web_composed_writes_ui1_l3: evidence('L3', 'Twenty-one PC Chrome checks drive category, product, staff, discount, settings and merchant-account UI writes, then read the composed server facts back; category deletion also asserts a redacted audit receipt. This is supporting CRUD evidence only: ordering, upload/image, invalid-input, FK, role/session, cross-client and other row-specific failure shields are not all asserted.',
     command('node', 'apps/web-admin/tests/composed-ui1-writes-chrome-runner.mjs')),
+  web_composed_imports_ui1_l3: evidence('L3', 'Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.',
+    command('node', 'apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs')),
 
   composed_order_refund_l2: evidence('L2', 'One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.',
     go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund')),
@@ -161,8 +165,15 @@ assign(['AC-01', 'AC-06', 'AC-14'], ['mini_composed_ui1_l3']);
 assign(['BE-12', 'BE-22'], ['mini_composed_ui1_l3']);
 assign(['INV-05', 'INV-09', 'INV-10', 'INV-11', 'INV-16'], ['mini_composed_ui1_l3']);
 
+assign(['PAGE-U06'], ['mini_composed_pending_ui1_l3']);
+assign(['AC-06'], ['mini_composed_pending_ui1_l3']);
+assign(['BE-07', 'BE-08'], ['mini_composed_pending_ui1_l3']);
+assign(['INV-05', 'INV-16'], ['mini_composed_pending_ui1_l3']);
+
 assign(['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC08', 'PAGE-PC09'], ['web_composed_reads_ui1_l3']);
 assign(['PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC09'], ['web_composed_writes_ui1_l3']);
+assign(['PAGE-PC11', 'PAGE-PC12'], ['web_composed_imports_ui1_l3']);
+assign(['BE-27', 'BE-31', 'BE-32', 'BE-33'], ['web_composed_imports_ui1_l3']);
 
 // This first composed release selector is useful supporting evidence for the
 // broader rows below, but only the five exact L2 scenarios explicitly marked
