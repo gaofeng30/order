@@ -34,6 +34,8 @@ export const profiles = Object.freeze({
 
   composed_order_refund_l2: evidence('L2', 'One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.',
     go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund')),
+  composed_import_boundaries_l2: evidence('L2', 'One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.',
+    go('./services/api/cmd/order-api', 'TestAcceptanceImportBoundariesAreDurable')),
 
   schema_no_inventory_l1: evidence('L1', 'Frozen migration ledger rejects PRD-out-of-scope inventory/member/coupon/summary tables.',
     go('./services/api/migrations', 'TestFrozenV18ToV44LedgerContracts')),
@@ -223,6 +225,7 @@ assign(['BE-24'], ['quote_mysql_l2', 'mini_checkout_ui0']);
 assign(['BE-25'], ['mini_checkout_ui0']);
 assign(['BE-26'], ['order_query_l1', 'mini_orders_ui0']);
 assign(['BE-27', 'BE-28', 'BE-29', 'BE-30', 'BE-31', 'BE-32', 'BE-33'], ['import_l1', 'web_contract_ui0']);
+assign(['BE-27', 'BE-28', 'BE-29', 'BE-30', 'BE-31', 'BE-32', 'BE-33'], [['composed_import_boundaries_l2', true]]);
 assign(['BE-34', 'BE-35'], ['catalog_mysql_l2', 'mini_menu_ui0']);
 
 assign(['INV-01'], ['storefront_mysql_l2_legacy', 'menu_rules_l1']);

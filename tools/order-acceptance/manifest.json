@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "7b282749e16b2bfe338e2c9e8769c5874821291d"
+    "inventory_base_sha": "488253591b137dcffaba556db8fb1a7c3c220b8c"
   },
   "policy": {
     "exact_counts": {
@@ -5412,11 +5412,16 @@
           }
         },
         {
-          "evidence_id": "BE-27:missing:L2",
+          "evidence_id": "BE-27:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-27: execute import preview, assert 无 batch, expected \"整体拒绝\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-27:missing:L3",
@@ -5477,11 +5482,16 @@
           }
         },
         {
-          "evidence_id": "BE-28:missing:L2",
+          "evidence_id": "BE-28:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-28: execute import preview, assert import batch rejected/无业务写, expected \"文件级异常，不逐行\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-28:missing:L3",
@@ -5542,11 +5552,16 @@
           }
         },
         {
-          "evidence_id": "BE-29:missing:L2",
+          "evidence_id": "BE-29:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-29: execute import preview, assert 无或 rejected batch, expected \"中止并提示分批\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-29:missing:L3",
@@ -5607,11 +5622,16 @@
           }
         },
         {
-          "evidence_id": "BE-30:missing:L2",
+          "evidence_id": "BE-30:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-30: execute preview/commit, assert products.namekey、batch, expected \"行异常并跳过，不覆盖\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-30:missing:L3",
@@ -5686,11 +5706,16 @@
           }
         },
         {
-          "evidence_id": "BE-31:missing:L2",
+          "evidence_id": "BE-31:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-31: execute preview/commit, assert categories、products、batch, expected \"分类一次新建、末尾、启用\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-31:missing:L3",
@@ -5765,11 +5790,16 @@
           }
         },
         {
-          "evidence_id": "BE-32:missing:L2",
+          "evidence_id": "BE-32:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-32: execute import preview, assert batch, expected \"异常，不取最后一条\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-32:missing:L3",
@@ -5844,11 +5874,16 @@
           }
         },
         {
-          "evidence_id": "BE-33:missing:L2",
+          "evidence_id": "BE-33:composed_import_boundaries_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-33: execute import commit, assert batch unique idempotency, expected \"只生效一次并重放结果\", and the failure shield."
+          "claim": "One root-composed OWNER PC multipart selector uses a fresh v1-v44 MySQL schema to prove non-xlsx and missing-header zero writes, 10 MiB and 500/5000 row limits, existing-product isolation, one ordered enabled category for two products, duplicate-phone first-row ownership, exact replay versus idempotency conflict, three committed batches and six unique import audit receipts.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceImportBoundariesAreDurable"
+          }
         },
         {
           "evidence_id": "BE-33:missing:L3",
@@ -7366,5 +7401,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "986e2b24d45efd403f591c39235d661b46749cf5a7dd37d3f8fc486c2439b5d3"
+  "manifest_sha256": "aaa08607e41c50cd8d389ddb7f40dc6f23e28aa57775fa0e38b938ade0d499c2"
 }

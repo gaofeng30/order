@@ -27,7 +27,9 @@ The runner starts no Docker container and installs no dependency. It inherits th
 
 ## Base inventory
 
-At integration base `7b282749e16b2bfe338e2c9e8769c5874821291d`, structural mapping finds 95/95 cases and 23 separate L4 blocks. `TestAcceptanceLocalThreeRoleOrderToRefund` adds one real L2 selector across the root HTTP router, workers, a fresh v1-v44 MySQL schema and deterministic local providers. It closes the exact L2 requirements for `BE-11`, `BE-15`, `INV-08`, `INV-10`, and `INV-13`; it does not claim UI1/L3 or broader boundary variants.
+At integration base `488253591b137dcffaba556db8fb1a7c3c220b8c`, structural mapping finds 95/95 cases and 23 separate L4 blocks. `TestAcceptanceLocalThreeRoleOrderToRefund` adds one real L2 selector across the root HTTP router, workers, a fresh v1-v44 MySQL schema and deterministic local providers. It closes the exact L2 requirements for `BE-11`, `BE-15`, `INV-08`, `INV-10`, and `INV-13`; it does not claim UI1/L3 or broader boundary variants.
+
+`TestAcceptanceImportBoundariesAreDurable` adds one root-composed OWNER PC multipart selector on a fresh v1-v44 schema. It closes L2 for `BE-27` through `BE-33`, including failure zero writes, durable batches/business rows, replay conflict shields and audit uniqueness. Their L3 requirement remains `MISSING`; the 11-check PC import runner stays supporting-only because it does not render every boundary.
 
 Five root-composed rendered selectors are now inventoried as L3 supporting evidence: Mini's four success-mode user scenarios, Mini's separate one-scenario pending-payment mode, PC's 27-check read flow, PC's 21-check CRUD flow, and PC's 11-check import flow. None is marked `satisfies:true`: each still omits at least one operation, authoritative MySQL assertion, or row-specific failure shield required by every mapped matrix row.
 
