@@ -6,16 +6,16 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/wechatpay"
 )
 
-type weChatRefundNotificationClient interface {
+type WeChatRefundNotificationClient interface {
 	ParseRefundNotification([]byte, wechatpay.SignatureHeaders) (wechatpay.RefundNotification, error)
 }
 
 // WeChatNotificationParser maps only facts already verified and decrypted by the APIv3 client.
 type WeChatNotificationParser struct {
-	client weChatRefundNotificationClient
+	client WeChatRefundNotificationClient
 }
 
-func NewWeChatNotificationParser(client weChatRefundNotificationClient) (*WeChatNotificationParser, error) {
+func NewWeChatNotificationParser(client WeChatRefundNotificationClient) (*WeChatNotificationParser, error) {
 	if client == nil {
 		return nil, ErrInvalidInput
 	}
@@ -63,3 +63,4 @@ func (parser *WeChatNotificationParser) ParseRefundNotification(body []byte, hea
 }
 
 var _ NotificationParser = (*WeChatNotificationParser)(nil)
+var _ WeChatRefundNotificationClient = (*wechatpay.Client)(nil)
