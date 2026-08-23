@@ -23,6 +23,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/objectstore"
+	"github.com/gaofeng30/order/services/api/internal/paymentorder"
 	"github.com/gaofeng30/order/services/api/internal/quote"
 	"github.com/gaofeng30/order/services/api/internal/staffdiscount"
 	"github.com/gaofeng30/order/services/api/internal/storefront"
@@ -102,7 +103,8 @@ func run() int {
 	}
 	catalogHandler := catalog.NewHandler(catalog.NewRepository(db), catalogOptions...)
 	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now, menuOptions...)
-	quoteHandler := quote.NewHandler(sessionService, quote.NewProvider(db, audit.NewQuoteReceiptStore(db), time.Now))
+	quoteApplication := quote.NewProvider(db, audit.NewQuoteReceiptStore(db), time.Now)
+	quoteHandler := quote.NewHandler(sessionService, quoteApplication)
 	merchantIdentityRepository := merchantidentity.NewRepository(db)
 	merchantIdentityService := merchantidentity.NewService(merchantIdentityRepository, phoneProvider)
 	merchantIdentityHandler := merchantidentity.NewHandler(
@@ -110,6 +112,15 @@ func run() int {
 		merchantIdentityService,
 	)
 	registrars := []httpapi.RouteRegistrar{storefrontHandler, catalogHandler, menuHandler, identityHandler, phoneHandler, merchantIdentityHandler, quoteHandler}
+	var paymentApplication *paymentorder.Service
+	if cfg.Environment != config.Production {
+		paymentProvider := newLocalPaymentProvider(time.Now)
+		paymentApplication = paymentorder.NewMySQLApplication(db, quoteApplication, paymentProvider, paymentorder.Config{
+			AppID: cfg.MiniProgram.AppID, MerchantID: "order-local-mch", Description: "预约点餐",
+			PaymentNotifyURL: "http://127.0.0.1:8080/api/v1/payments/wechat/notify",
+		})
+		registrars = append(registrars, newPaymentRoutes(paymentorder.NewHandler(sessionService, paymentApplication, paymentProvider)))
+	}
 	if cfg.Environment != config.Production {
 		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
 		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
@@ -159,6 +170,9 @@ func run() int {
 	defer stop()
 	if notificationService != nil {
 		go runSubscriptionWorker(ctx, notificationService, logger)
+	}
+	if paymentApplication != nil {
+		go runPaymentWorker(ctx, paymentApplication, logger)
 	}
 
 	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen); err != nil {
