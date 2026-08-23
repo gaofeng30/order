@@ -13,6 +13,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/adminreport"
 	"github.com/gaofeng30/order/services/api/internal/app"
 	"github.com/gaofeng30/order/services/api/internal/audit"
+	"github.com/gaofeng30/order/services/api/internal/billing"
 	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
@@ -207,6 +208,17 @@ func run() int {
 	}
 	refundService := refund.New(db, refundProvider, refundNotifyURL).WithNotificationEnqueuer(newRefundSubscriptionAdapter(notificationService))
 	registrars = append(registrars, newRefundRoutes(refund.NewHandler(sessionService, refundService, orderRepository, refundParser)))
+	var billProvider billing.BillProvider
+	if cfg.Environment == config.Production {
+		billProvider, err = billing.NewWeChatBillProvider(productionPaymentRuntime.client)
+		if err != nil {
+			logger.Error("wechat billing provider configuration error")
+			return 1
+		}
+	} else {
+		billProvider = billing.NewFakeBillProvider()
+	}
+	billingService := billing.New(db, billProvider)
 	if cfg.Environment != config.Production {
 		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
 		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
@@ -239,6 +251,9 @@ func run() int {
 	}
 	go runRefundWorker(ctx, refundService, logger)
 	go runOrderProductionWorker(ctx, orderProductionService, logger)
+	if cfg.Environment == config.Production {
+		go runBillingWorker(ctx, billingService, logger)
+	}
 
 	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
