@@ -24,14 +24,17 @@ type adminRefundProbe struct {
 	result              refund.Refund
 	err                 error
 	orderID, prepayment uint64
+	orderMeta, paidMeta refund.WriteMeta
 }
 
-func (probe *adminRefundProbe) RequestOrder(_ context.Context, _ refund.WriteMeta, orderID uint64, _ string) (refund.Refund, error) {
+func (probe *adminRefundProbe) RequestOrder(_ context.Context, meta refund.WriteMeta, orderID uint64, _ string) (refund.Refund, error) {
 	probe.orderID = orderID
+	probe.orderMeta = meta
 	return probe.result, probe.err
 }
-func (probe *adminRefundProbe) RequestPaidPrepayment(_ context.Context, _ refund.WriteMeta, prepaymentID uint64, _ string) (refund.Refund, error) {
+func (probe *adminRefundProbe) RequestPaidPrepayment(_ context.Context, meta refund.WriteMeta, prepaymentID uint64, _ string) (refund.Refund, error) {
 	probe.prepayment = prepaymentID
+	probe.paidMeta = meta
 	return probe.result, probe.err
 }
 
@@ -70,13 +73,13 @@ func TestAdminCommandAdapterRefundsOrderAndPaidPrepaymentWithoutIDConfusion(t *t
 	meta := adminreport.WriteMeta{ActorUserID: 7, IdempotencyKey: "refund-1", RequestID: "request-refund-1"}
 
 	order, projected, err := adapter.RequestRefund(context.Background(), meta, 81, "客户取消")
-	if err != nil || order.ID != 81 || projected.ID != 901 || projected.OrderID != 81 || projected.OrderNo != "ORDER-81" || refunds.orderID != 81 || reader.id != 81 {
+	if err != nil || order.ID != 81 || projected.ID != 901 || projected.OrderID != 81 || projected.OrderNo != "ORDER-81" || refunds.orderID != 81 || reader.id != 81 || refunds.orderMeta.ActorKind != refund.ActorMerchant || refunds.orderMeta.ActorUserID != 7 {
 		t.Fatalf("RequestRefund() = %#v/%#v, %v probes=%d/%d", order, projected, err, refunds.orderID, reader.id)
 	}
 
 	refunds.result = refund.Refund{ID: 902, OrderID: 0, State: refund.ProviderReady, AmountCents: 2100, RequestedAt: requestedAt}
 	result, err := adapter.ProcessPending(context.Background(), meta, 51, adminreport.RefundPaid, "无法补建")
-	if err != nil || result.Order != nil || result.Refund == nil || result.Refund.ID != 902 || result.Refund.OrderID != 0 || refunds.prepayment != 51 {
+	if err != nil || result.Order != nil || result.Refund == nil || result.Refund.ID != 902 || result.Refund.OrderID != 0 || refunds.prepayment != 51 || refunds.paidMeta.ActorKind != refund.ActorMerchant || refunds.paidMeta.ActorUserID != 7 {
 		t.Fatalf("paid refund result = %#v, %v prepayment=%d", result, err, refunds.prepayment)
 	}
 }

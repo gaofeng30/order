@@ -68,7 +68,7 @@ func (store *mysqlStore) requestOrderOnce(ctx context.Context, meta WriteMeta, l
 	}
 	defer tx.Rollback()
 
-	merchant := meta.ActorUserID != locator.ownerUserID
+	merchant := meta.ActorKind == ActorMerchant
 	var accountID, authVersion uint64
 	var role string
 	if merchant {

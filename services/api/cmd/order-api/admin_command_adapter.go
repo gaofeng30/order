@@ -100,7 +100,7 @@ func paymentMeta(meta adminreport.WriteMeta) paymentorder.WriteMeta {
 }
 
 func refundMeta(meta adminreport.WriteMeta) refund.WriteMeta {
-	return refund.WriteMeta{ActorUserID: meta.ActorUserID, IdempotencyKey: meta.IdempotencyKey, RequestID: meta.RequestID}
+	return refund.WriteMeta{ActorKind: refund.ActorMerchant, ActorUserID: meta.ActorUserID, IdempotencyKey: meta.IdempotencyKey, RequestID: meta.RequestID}
 }
 
 func projectAdminRefund(value refund.Refund, order *adminreport.Order, reason string) adminreport.Refund {

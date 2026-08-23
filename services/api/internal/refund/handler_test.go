@@ -40,7 +40,7 @@ func TestUserCancelReturnsFrozenOrderAndRefund(t *testing.T) {
 	if response.Code != http.StatusOK || response.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("cancel response = %d headers=%v body=%s", response.Code, response.Header(), response.Body.String())
 	}
-	if application.meta != (WriteMeta{ActorUserID: 17, IdempotencyKey: "cancel-301", RequestID: "request-cancel-301"}) || application.orderID != 301 || application.reason != "USER_CANCEL" {
+	if application.meta != (WriteMeta{ActorKind: ActorUser, ActorUserID: 17, IdempotencyKey: "cancel-301", RequestID: "request-cancel-301"}) || application.orderID != 301 || application.reason != "USER_CANCEL" {
 		t.Fatalf("RequestOrder inputs = %#v/%d/%q", application.meta, application.orderID, application.reason)
 	}
 	if reader.calls != 2 || reader.userID != 17 || reader.orderID != 301 {

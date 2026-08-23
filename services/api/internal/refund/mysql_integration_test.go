@@ -37,7 +37,7 @@ func TestRefundMySQL8FullAmountRequestQueryAndObservation(t *testing.T) {
 		service.now = func() time.Time { return now }
 		service.owner = func() ([16]byte, error) { return [16]byte{1}, nil }
 
-		meta := WriteMeta{ActorUserID: 1, IdempotencyKey: "cancel-order-1", RequestID: "request-order-1"}
+		meta := WriteMeta{ActorKind: ActorUser, ActorUserID: 1, IdempotencyKey: "cancel-order-1", RequestID: "request-order-1"}
 		requested, err := service.RequestOrder(context.Background(), meta, 1, "USER_CANCEL")
 		if err != nil || requested.ID == 0 || requested.OrderID != 1 || requested.State != ProviderProcessing || requested.MaterializationState != MaterializationAwaitingProvider {
 			t.Fatalf("RequestOrder() = %#v, %v", requested, err)
@@ -107,19 +107,140 @@ func TestRefundMySQL8SelfCancellationBoundaryAndOwnerPaidPrepayment(t *testing.T
 		service := New(db, provider, "https://merchant.invalid/api/v1/refunds/wechat/notify")
 		service.now = func() time.Time { return now }
 		service.owner = func() ([16]byte, error) { return [16]byte{2}, nil }
-		if _, err := service.RequestOrder(context.Background(), WriteMeta{ActorUserID: 1, IdempotencyKey: "boundary", RequestID: "boundary-request"}, 1, "USER_CANCEL"); !errors.Is(err, ErrTransitionNotAllowed) {
+		if _, err := service.RequestOrder(context.Background(), WriteMeta{ActorKind: ActorUser, ActorUserID: 1, IdempotencyKey: "boundary", RequestID: "boundary-request"}, 1, "USER_CANCEL"); !errors.Is(err, ErrTransitionNotAllowed) {
 			t.Fatalf("exact 30m cancellation error = %v", err)
 		}
 		var count int
 		if err := db.QueryRow(`SELECT COUNT(*) FROM refunds`).Scan(&count); err != nil || count != 0 {
 			t.Fatalf("boundary refund rows = %d/%v", count, err)
 		}
-		requested, err := service.RequestPaidPrepayment(context.Background(), WriteMeta{ActorUserID: 2, IdempotencyKey: "owner-paid", RequestID: "owner-paid-request"}, 2, "PAYMENT_MANUAL_REFUND")
+		requested, err := service.RequestPaidPrepayment(context.Background(), WriteMeta{ActorKind: ActorMerchant, ActorUserID: 2, IdempotencyKey: "owner-paid", RequestID: "owner-paid-request"}, 2, "PAYMENT_MANUAL_REFUND")
 		if err != nil || requested.PrepaymentID != 2 || requested.OrderID != 0 || provider.CreateCount("ORDER_REFUND_2") != 1 {
 			t.Fatalf("RequestPaidPrepayment() = %#v/%v count=%d", requested, err, provider.CreateCount("ORDER_REFUND_2"))
 		}
 		if requested.AmountCents != 700 {
 			t.Fatalf("paid prepayment amount = %d", requested.AmountCents)
+		}
+	})
+}
+
+func TestRefundMySQL8SelfOrderOwnerUsesMerchantAuthority(t *testing.T) {
+	withRefundSchema(t, func(db *sql.DB) {
+		set, _ := migrate.Load(migrations.FS)
+		if _, err := migrate.Run(context.Background(), db, set); err != nil {
+			t.Fatal(err)
+		}
+		now := time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC)
+		insertRefundPrincipals(t, db, now)
+		if _, err := db.Exec(`UPDATE merchant_accounts SET phone='+8613800000001',bound_user_id=1 WHERE id=1`); err != nil {
+			t.Fatal(err)
+		}
+		insertPaidOrderFixture(t, db, 1, 1, 1, 1, now, "RESERVED", now.Add(10*time.Minute))
+		provider := NewFakeProvider("mch-local")
+		service := New(db, provider, "https://merchant.invalid/api/v1/refunds/wechat/notify")
+		service.now = func() time.Time { return now }
+		service.owner = func() ([16]byte, error) { return [16]byte{3}, nil }
+
+		meta := WriteMeta{ActorKind: ActorMerchant, ActorUserID: 1, IdempotencyKey: "self-order-owner", RequestID: "self-order-owner-request"}
+		requested, err := service.RequestOrder(context.Background(), meta, 1, "MERCHANT_REFUND")
+		if err != nil || requested.ID == 0 || requested.OrderID != 1 || provider.CreateCount("ORDER_REFUND_1") != 1 {
+			t.Fatalf("self-order owner RequestOrder() = %#v/%v count=%d", requested, err, provider.CreateCount("ORDER_REFUND_1"))
+		}
+		var requestedUser, requestedAccount sql.NullInt64
+		if err := db.QueryRow(`SELECT requested_by_user_id,requested_by_account_id FROM refunds WHERE id=?`, requested.ID).Scan(&requestedUser, &requestedAccount); err != nil {
+			t.Fatal(err)
+		}
+		if requestedUser.Valid || !requestedAccount.Valid || requestedAccount.Int64 != 1 {
+			t.Fatalf("refund actor columns user=%#v account=%#v", requestedUser, requestedAccount)
+		}
+		var actorKind string
+		var actorUserID uint64
+		var actorAccountID sql.NullInt64
+		if err := db.QueryRow(`SELECT actor_kind,actor_user_id,actor_account_id FROM action_audits WHERE action='refund.request' AND target_id=?`, requested.ID).Scan(&actorKind, &actorUserID, &actorAccountID); err != nil {
+			t.Fatal(err)
+		}
+		if actorKind != "MERCHANT" || actorUserID != 1 || !actorAccountID.Valid || actorAccountID.Int64 != 1 {
+			t.Fatalf("refund audit actor kind=%q user=%d account=%#v", actorKind, actorUserID, actorAccountID)
+		}
+		replay, err := service.RequestOrder(context.Background(), meta, 1, "MERCHANT_REFUND")
+		if err != nil || replay != requested || provider.CreateCount("ORDER_REFUND_1") != 1 {
+			t.Fatalf("self-order owner replay = %#v/%v count=%d", replay, err, provider.CreateCount("ORDER_REFUND_1"))
+		}
+		if _, err := service.RequestOrder(context.Background(), meta, 1, "DIFFERENT_REASON"); !errors.Is(err, ErrIdempotencyConflict) {
+			t.Fatalf("self-order owner replay conflict = %v", err)
+		}
+		userScopeMeta := WriteMeta{ActorKind: ActorUser, ActorUserID: 1, IdempotencyKey: meta.IdempotencyKey, RequestID: "self-order-user-scope-request"}
+		if _, err := service.RequestOrder(context.Background(), userScopeMeta, 1, "MERCHANT_REFUND"); !errors.Is(err, ErrIdempotencyConflict) {
+			t.Fatalf("same user id with different actor scope error = %v", err)
+		}
+	})
+}
+
+func TestRefundMySQL8SelfOrderUserDoesNotInheritMerchantAuthority(t *testing.T) {
+	withRefundSchema(t, func(db *sql.DB) {
+		set, _ := migrate.Load(migrations.FS)
+		if _, err := migrate.Run(context.Background(), db, set); err != nil {
+			t.Fatal(err)
+		}
+		now := time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC)
+		insertRefundPrincipals(t, db, now)
+		if _, err := db.Exec(`UPDATE merchant_accounts SET phone='+8613800000001',bound_user_id=1 WHERE id=1`); err != nil {
+			t.Fatal(err)
+		}
+		insertPaidOrderFixture(t, db, 1, 1, 1, 1, now, "RESERVED", now.Add(30*time.Minute))
+		service := New(db, NewFakeProvider("mch-local"), "https://merchant.invalid/api/v1/refunds/wechat/notify")
+		service.now = func() time.Time { return now }
+
+		userMeta := WriteMeta{ActorKind: ActorUser, ActorUserID: 1, IdempotencyKey: "self-order-user", RequestID: "self-order-user-request"}
+		if _, err := service.RequestOrder(context.Background(), userMeta, 1, "USER_CANCEL"); !errors.Is(err, ErrTransitionNotAllowed) {
+			t.Fatalf("self-order user exact 30m error = %v", err)
+		}
+		if _, err := db.Exec(`UPDATE merchant_accounts SET enabled=FALSE WHERE id=1`); err != nil {
+			t.Fatal(err)
+		}
+		merchantMeta := WriteMeta{ActorKind: ActorMerchant, ActorUserID: 1, IdempotencyKey: "disabled-owner", RequestID: "disabled-owner-request"}
+		if _, err := service.RequestOrder(context.Background(), merchantMeta, 1, "MERCHANT_REFUND"); !errors.Is(err, ErrForbidden) {
+			t.Fatalf("disabled self-order owner error = %v", err)
+		}
+		var count int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM refunds`).Scan(&count); err != nil || count != 0 {
+			t.Fatalf("unauthorized refund rows = %d/%v", count, err)
+		}
+	})
+}
+
+func TestRefundMySQL8OwnerRefundsAnotherUsersOrderAndReplaysInMerchantScope(t *testing.T) {
+	withRefundSchema(t, func(db *sql.DB) {
+		set, _ := migrate.Load(migrations.FS)
+		if _, err := migrate.Run(context.Background(), db, set); err != nil {
+			t.Fatal(err)
+		}
+		now := time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC)
+		insertRefundPrincipals(t, db, now)
+		insertPaidOrderFixture(t, db, 1, 1, 1, 1, now, "PREPARING", now.Add(10*time.Minute))
+		provider := NewFakeProvider("mch-local")
+		service := New(db, provider, "https://merchant.invalid/api/v1/refunds/wechat/notify")
+		service.now = func() time.Time { return now }
+		service.owner = func() ([16]byte, error) { return [16]byte{4}, nil }
+
+		meta := WriteMeta{ActorKind: ActorMerchant, ActorUserID: 2, IdempotencyKey: "owner-order-refund", RequestID: "owner-order-refund-request"}
+		requested, err := service.RequestOrder(context.Background(), meta, 1, "MERCHANT_REFUND")
+		if err != nil || requested.ID == 0 || requested.OrderID != 1 || provider.CreateCount("ORDER_REFUND_1") != 1 {
+			t.Fatalf("owner RequestOrder() = %#v/%v count=%d", requested, err, provider.CreateCount("ORDER_REFUND_1"))
+		}
+		replay, err := service.RequestOrder(context.Background(), meta, 1, "MERCHANT_REFUND")
+		if err != nil || replay != requested || provider.CreateCount("ORDER_REFUND_1") != 1 {
+			t.Fatalf("owner replay = %#v/%v count=%d", replay, err, provider.CreateCount("ORDER_REFUND_1"))
+		}
+		if _, err := service.RequestOrder(context.Background(), meta, 1, "DIFFERENT_REASON"); !errors.Is(err, ErrIdempotencyConflict) {
+			t.Fatalf("owner replay conflict = %v", err)
+		}
+		var requestedUser, requestedAccount sql.NullInt64
+		if err := db.QueryRow(`SELECT requested_by_user_id,requested_by_account_id FROM refunds WHERE id=?`, requested.ID).Scan(&requestedUser, &requestedAccount); err != nil {
+			t.Fatal(err)
+		}
+		if requestedUser.Valid || !requestedAccount.Valid || requestedAccount.Int64 != 1 {
+			t.Fatalf("owner refund actor columns user=%#v account=%#v", requestedUser, requestedAccount)
 		}
 	})
 }

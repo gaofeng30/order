@@ -20,10 +20,18 @@ var (
 )
 
 type WriteMeta struct {
+	ActorKind      ActorKind
 	ActorUserID    uint64
 	IdempotencyKey string
 	RequestID      string
 }
+
+type ActorKind string
+
+const (
+	ActorUser     ActorKind = "USER"
+	ActorMerchant ActorKind = "MERCHANT"
+)
 
 type ProviderState string
 

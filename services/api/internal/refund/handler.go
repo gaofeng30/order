@@ -206,7 +206,7 @@ func (handler *Handler) writeMeta(ctx *gin.Context) (WriteMeta, bool) {
 		writeRefundHTTPError(ctx, http.StatusServiceUnavailable, "UNAVAILABLE")
 		return WriteMeta{}, false
 	}
-	return WriteMeta{ActorUserID: userID, IdempotencyKey: key, RequestID: requestID}, true
+	return WriteMeta{ActorKind: ActorUser, ActorUserID: userID, IdempotencyKey: key, RequestID: requestID}, true
 }
 
 func validHTTPReason(value string) bool {

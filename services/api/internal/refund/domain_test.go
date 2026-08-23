@@ -99,3 +99,15 @@ func TestCreateSuccessRemainsQueryableUntilDurableObservation(t *testing.T) {
 		t.Fatalf("providerStateAfterCreate(CLOSED) = %s, want CLOSED", got)
 	}
 }
+
+func TestRefundWriteMetaRequiresTrustedActorKind(t *testing.T) {
+	service := New(nil, NewFakeProvider("mch-local"), "https://merchant.invalid/api/v1/refunds/wechat/notify")
+	userMeta := WriteMeta{ActorKind: ActorUser, ActorUserID: 1, IdempotencyKey: "paid-user", RequestID: "paid-user-request"}
+	if _, err := service.RequestPaidPrepayment(context.Background(), userMeta, 1, "USER_CANNOT_REFUND_UNMATERIALIZED_PAYMENT"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("user RequestPaidPrepayment() error = %v, want invalid input", err)
+	}
+	unknownMeta := WriteMeta{ActorKind: ActorKind("OWNER"), ActorUserID: 1, IdempotencyKey: "unknown-kind", RequestID: "unknown-kind-request"}
+	if _, err := service.RequestOrder(context.Background(), unknownMeta, 1, "UNKNOWN_ACTOR"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("unknown actor RequestOrder() error = %v, want invalid input", err)
+	}
+}

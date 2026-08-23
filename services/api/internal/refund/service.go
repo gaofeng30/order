@@ -74,7 +74,7 @@ func (service *Service) RequestOrder(ctx context.Context, meta WriteMeta, orderI
 }
 
 func (service *Service) RequestPaidPrepayment(ctx context.Context, meta WriteMeta, prepaymentID uint64, reason string) (Refund, error) {
-	if !service.valid() || !validWriteMeta(meta) || prepaymentID == 0 || !validReason(reason) {
+	if !service.valid() || !validWriteMeta(meta) || meta.ActorKind != ActorMerchant || prepaymentID == 0 || !validReason(reason) {
 		return Refund{}, ErrInvalidInput
 	}
 	created, isNew, err := service.store.requestPaidPrepayment(ctx, meta, prepaymentID, reason, service.now().UTC(), service.notifyURL)
@@ -168,7 +168,7 @@ func randomLeaseOwner() ([16]byte, error) {
 }
 
 func validWriteMeta(meta WriteMeta) bool {
-	return meta.ActorUserID > 0 && validBounded(meta.IdempotencyKey, 1, 128) && validBounded(meta.RequestID, 1, 64)
+	return (meta.ActorKind == ActorUser || meta.ActorKind == ActorMerchant) && meta.ActorUserID > 0 && validBounded(meta.IdempotencyKey, 1, 128) && validBounded(meta.RequestID, 1, 64)
 }
 
 func validReason(reason string) bool { return validBounded(reason, 1, 64) }
