@@ -15,8 +15,11 @@ func TestMigrationSetLoadsExactlyThroughV17(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read migrations: %v", err)
 	}
+	if len(entries) < 17 || entries[16].Name() != "000017_create_quote_items.sql" {
+		t.Fatalf("migration prefix does not contain exact v1-v17 quote chain")
+	}
 	files := fstest.MapFS{}
-	for _, entry := range entries {
+	for _, entry := range entries[:17] {
 		data, err := fs.ReadFile(migrations.FS, entry.Name())
 		if err != nil {
 			t.Fatalf("read %s: %v", entry.Name(), err)
@@ -26,7 +29,7 @@ func TestMigrationSetLoadsExactlyThroughV17(t *testing.T) {
 			t.Fatalf("migration prefix ending at %s is invalid", entry.Name())
 		}
 	}
-	loaded, err := migrate.Load(migrations.FS)
+	loaded, err := migrate.Load(files)
 	if err != nil || len(loaded) != 17 || loaded[16].Version != 17 || loaded[16].Name != "000017_create_quote_items.sql" {
 		t.Fatalf("loaded migration set = count:%d err:%v", len(loaded), err)
 	}

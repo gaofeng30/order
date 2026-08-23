@@ -4,20 +4,29 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/gaofeng30/order/services/api/internal/adminreport"
 	"github.com/gaofeng30/order/services/api/internal/app"
+	"github.com/gaofeng30/order/services/api/internal/audit"
 	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
 	"github.com/gaofeng30/order/services/api/internal/identity"
+	"github.com/gaofeng30/order/services/api/internal/importbatch"
 	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
+	"github.com/gaofeng30/order/services/api/internal/objectstore"
+	"github.com/gaofeng30/order/services/api/internal/quote"
+	"github.com/gaofeng30/order/services/api/internal/staffdiscount"
+	"github.com/gaofeng30/order/services/api/internal/storefront"
+	"github.com/gaofeng30/order/services/api/internal/subscription"
 	"github.com/gaofeng30/order/services/api/internal/wechat"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
@@ -50,8 +59,6 @@ func run() int {
 		state := migrate.Check(checkContext, db, migrationSet)
 		return httpapi.ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
-	catalogHandler := catalog.NewHandler(catalog.NewRepository(db))
-	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now)
 	identityRepository := identity.NewRepository(db)
 	sessionService := identity.NewService(
 		wechat.NewCode2SessionClient(cfg.MiniProgram),
@@ -63,16 +70,95 @@ func run() int {
 		sessionService,
 		identity.NewPhoneService(phoneProvider, identityRepository),
 	)
+	requestAuthenticator := miniRequestAuthenticator{sessions: sessionService}
+	pricingApplication := staffdiscount.NewMySQLPricing(db)
+	var objectService *objectstore.Service
+	var localObjects httpapi.RouteRegistrar
+	if cfg.Environment != config.Production {
+		const localObjectRoot = "/private/tmp/order-local-objects"
+		fileAdapter, fileAdapterErr := objectstore.NewFileAdapter(localObjectRoot, "/api/v1/objects")
+		if fileAdapterErr != nil {
+			logger.Error("local object store configuration error")
+			return 1
+		}
+		localObjectRoutes, localObjectsErr := newLocalObjectRoutes(localObjectRoot)
+		if localObjectsErr != nil {
+			logger.Error("local object serving configuration error")
+			return 1
+		}
+		objectService = objectstore.NewService(fileAdapter)
+		localObjects = localObjectRoutes
+	}
+	catalogOptions := []catalog.HandlerOption{catalog.WithAuthenticator(requestAuthenticator), catalog.WithPricing(pricingApplication)}
+	menuOptions := []menu.HandlerOption{menu.WithAuthenticator(requestAuthenticator), menu.WithPricing(pricingApplication)}
+	storefrontHandler := storefront.NewHandler(storefront.NewRepository(db))
+	if objectService != nil {
+		catalogOptions = append(catalogOptions, catalog.WithPublicURLs(objectService))
+		menuOptions = append(menuOptions, menu.WithPublicURLs(objectService))
+		storefrontHandler = storefront.NewHandler(storefront.NewRepository(db), objectService)
+	}
+	catalogHandler := catalog.NewHandler(catalog.NewRepository(db), catalogOptions...)
+	menuHandler := menu.NewHandler(menu.NewRepository(db), time.Now, menuOptions...)
+	quoteHandler := quote.NewHandler(sessionService, quote.NewProvider(db, audit.NewQuoteReceiptStore(db), time.Now))
 	merchantIdentityRepository := merchantidentity.NewRepository(db)
+	merchantIdentityService := merchantidentity.NewService(merchantIdentityRepository, phoneProvider)
 	merchantIdentityHandler := merchantidentity.NewHandler(
 		sessionService,
-		merchantidentity.NewService(merchantIdentityRepository, phoneProvider),
+		merchantIdentityService,
 	)
+	registrars := []httpapi.RouteRegistrar{storefrontHandler, catalogHandler, menuHandler, identityHandler, phoneHandler, merchantIdentityHandler, quoteHandler}
+	if cfg.Environment != config.Production {
+		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
+		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
+		importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
+		adminFeatureRoutes := []adminGroupRegistrar{
+			catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
+			storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
+			staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
+			importHandler,
+			adminreport.NewHandler(adminreport.NewMySQLApplication(db, nil)),
+			audit.NewHandler(audit.NewMySQLSearcher(db)),
+		}
+		ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
+		registrars = append(registrars,
+			newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
+			localObjects,
+		)
+	}
+	var notificationService *subscription.Service
+	var subscriptionTemplateVersion uint64
+	if cfg.Environment != config.Production {
+		notificationService = subscription.New(db, subscription.NewFakeProvider())
+		subscriptionTemplateVersion = 1
+	} else {
+		providerConfig, providerConfigErr := loadWeChatSubscriptionProviderConfig(os.LookupEnv)
+		if providerConfigErr != nil {
+			logger.Error("wechat subscription configuration error")
+			return 1
+		}
+		providerHTTPClient := &http.Client{
+			Timeout: 10 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		}
+		provider, providerErr := newProductionWeChatSubscriptionProvider(providerHTTPClient, phoneProvider, identityRepository, providerConfig)
+		if providerErr != nil {
+			logger.Error("wechat subscription provider configuration error")
+			return 1
+		}
+		notificationService = subscription.New(db, provider)
+		subscriptionTemplateVersion = providerConfig.templateConfigVersion
+	}
+	registrars = append(registrars, httpapi.NewSubscriptionHandler(sessionService, notificationService, subscriptionTemplateVersion))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	if notificationService != nil {
+		go runSubscriptionWorker(ctx, notificationService, logger)
+	}
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, catalogHandler, menuHandler, identityHandler, phoneHandler, merchantIdentityHandler), logger, net.Listen); err != nil {
+	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

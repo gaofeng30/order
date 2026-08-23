@@ -66,6 +66,23 @@ func TestRouterMiniProgramSessionIsVersionedAndCatalogMenuRemainAnonymous(t *tes
 	}
 }
 
+func TestRouterComposesAdditionalFeatureRegistrarsWithoutSharedSignatureChanges(t *testing.T) {
+	extra := routeRegistrarFunc(func(engine *gin.Engine) {
+		engine.GET("/api/v1/frozen-feature", func(context *gin.Context) {
+			context.JSON(http.StatusOK, gin.H{"state": "ok"})
+		})
+	})
+	router := NewRouter(discardLogger(), alwaysReady, testCatalogHandler(), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler(), extra)
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/v1/frozen-feature", nil))
+	assertJSONResponse(t, response, http.StatusOK, `{"state":"ok"}`)
+}
+
+type routeRegistrarFunc func(*gin.Engine)
+
+func (register routeRegistrarFunc) RegisterRoutes(engine *gin.Engine) { register(engine) }
+
 type routerIdentityIssuer struct {
 	issued identity.IssuedSession
 	err    error
@@ -212,7 +229,7 @@ func TestMenuRoutesAreVersionedAndPreserveCatalogContract(t *testing.T) {
 	if valid.Code != http.StatusOK || !strings.Contains(valid.Body.String(), `"categories":[]`) {
 		t.Fatalf("versioned menu = %d %q", valid.Code, valid.Body.String())
 	}
-	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+	if menuReader.periodCalls != 0 || menuReader.listCalls != 1 {
 		t.Fatalf("versioned menu reader calls = %d/%d", menuReader.periodCalls, menuReader.listCalls)
 	}
 
@@ -228,7 +245,7 @@ func TestMenuRoutesAreVersionedAndPreserveCatalogContract(t *testing.T) {
 	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
 		t.Fatalf("menu wrong method = %d/%q", wrongMethod.Code, wrongMethod.Body.String())
 	}
-	if menuReader.periodCalls != 1 || menuReader.listCalls != 1 {
+	if menuReader.periodCalls != 0 || menuReader.listCalls != 1 {
 		t.Fatal("unknown or wrong-method menu request reached repository")
 	}
 
@@ -448,8 +465,17 @@ func (reader *catalogReaderStub) List(context.Context) ([]catalog.Category, erro
 	return reader.categories, reader.listErr
 }
 
+func (reader *catalogReaderStub) Browse(ctx context.Context) ([]catalog.Category, error) {
+	return reader.List(ctx)
+}
+
 func (*catalogReaderStub) GetProduct(context.Context, uint64) (catalog.Product, error) {
 	return catalog.Product{}, catalog.ErrProductNotFound
+}
+
+func (reader *catalogReaderStub) Detail(ctx context.Context, id uint64, _ string) (catalog.Product, catalog.CurrentFacts, error) {
+	product, err := reader.GetProduct(ctx, id)
+	return product, catalog.CurrentFacts{BusinessStatus: "open", ServiceDatePresent: true, ServiceDateOpen: true}, err
 }
 
 func testCatalogHandler() *catalog.Handler {
@@ -462,14 +488,18 @@ type routerMenuReader struct {
 	listCalls   int
 }
 
-func (reader *routerMenuReader) MealPeriods(context.Context) ([]menu.MealPeriodRecord, error) {
+func (reader *routerMenuReader) ReadPickupFacts(_ context.Context, dates []string) (menu.PickupFacts, error) {
 	reader.periodCalls++
-	return reader.periods, nil
+	serviceDates := make(map[string]bool, len(dates))
+	for _, date := range dates {
+		serviceDates[date] = true
+	}
+	return menu.PickupFacts{BusinessStatus: "open", MealPeriods: reader.periods, ServiceDates: serviceDates}, nil
 }
 
-func (reader *routerMenuReader) List(context.Context, string, menu.MealCode) ([]menu.Category, error) {
+func (reader *routerMenuReader) ReadMenu(context.Context, string) (menu.MenuSnapshot, error) {
 	reader.listCalls++
-	return []menu.Category{}, nil
+	return menu.MenuSnapshot{BusinessStatus: "open", ServiceDatePresent: true, ServiceDateOpen: true, MealPeriods: reader.periods, Categories: []menu.Category{}}, nil
 }
 
 func testMenuHandler() *menu.Handler {
@@ -497,8 +527,9 @@ func testMerchantIdentityHandler() *merchantidentity.Handler {
 
 func TestRouterRegistersOnlyVersionedMerchantIdentityRoutes(t *testing.T) {
 	application := &routerMerchantApplication{identity: merchantidentity.Identity{
-		PrimaryPhoneBound: true,
-		Merchant:          &merchantidentity.MerchantProjection{Role: merchantidentity.RoleOwner, AuthVersion: 7},
+		PrimaryPhoneBound: true, PrimaryPhoneMasked: "138****0001",
+		Pricing:  merchantidentity.PricingProjection{Kind: merchantidentity.PricingStaff, RatePercent: 80},
+		Merchant: &merchantidentity.MerchantProjection{Role: merchantidentity.RoleOwner, AuthVersion: 7},
 	}}
 	merchantHandler := merchantidentity.NewHandler(&routerPhoneAuthenticator{userID: 42}, application)
 	router := NewRouter(
@@ -509,14 +540,14 @@ func TestRouterRegistersOnlyVersionedMerchantIdentityRoutes(t *testing.T) {
 	identityRequest := httptest.NewRequest(http.MethodGet, "/api/v1/me/identity", nil)
 	identityRequest.Header.Set("Authorization", "Bearer router-merchant-session")
 	router.ServeHTTP(identityResponse, identityRequest)
-	assertJSONResponse(t, identityResponse, http.StatusOK, `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":7}}`)
+	assertJSONResponse(t, identityResponse, http.StatusOK, `{"identity":{"primary_phone":{"bound":true,"masked_phone":"138****0001"},"extra_phone":{"set":false},"pricing_identity":{"kind":"STAFF","rate_percent":80},"merchant":{"bound":true,"role":"OWNER"}}}`)
 
 	loginResponse := httptest.NewRecorder()
 	loginRequest := httptest.NewRequest(http.MethodPost, "/api/v1/me/merchant-login", strings.NewReader(`{"code":"router-merchant-code"}`))
 	loginRequest.Header.Set("Content-Type", "application/json")
 	loginRequest.Header.Set("Authorization", "Bearer router-merchant-session")
 	router.ServeHTTP(loginResponse, loginRequest)
-	assertJSONResponse(t, loginResponse, http.StatusOK, `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":7}}`)
+	assertJSONResponse(t, loginResponse, http.StatusOK, `{"merchant":{"bound":true,"role":"OWNER"}}`)
 
 	for _, route := range []struct {
 		method string
@@ -581,6 +612,10 @@ func (application *routerMerchantApplication) Login(_ context.Context, _ uint64,
 	application.loginCalls++
 	application.loginCode = code
 	return application.identity, application.err
+}
+
+func (application *routerMerchantApplication) SetExtraPhone(context.Context, merchantidentity.WriteMeta, merchantidentity.ExtraPhoneCommand) (merchantidentity.ExtraPhoneResult, error) {
+	return merchantidentity.ExtraPhoneResult{}, application.err
 }
 
 func TestRouterPhoneBindingIsRouteSpecificAndVersioned(t *testing.T) {

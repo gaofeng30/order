@@ -1,0 +1,15 @@
+ALTER TABLE action_audits
+  MODIFY COLUMN entry_kind ENUM('LEGACY_EVIDENCE','COMMAND_RECEIPT','SYSTEM_EVIDENCE') NOT NULL,
+  MODIFY COLUMN actor_kind ENUM('USER','MERCHANT','SYSTEM','PROVIDER') NOT NULL,
+  MODIFY COLUMN actor_scope_hash BINARY(32) NOT NULL,
+  DROP COLUMN request_id,
+  DROP COLUMN state_before,
+  DROP COLUMN state_after,
+  ADD UNIQUE KEY uq_action_audits_command_receipt (actor_scope_hash,action,operation_key_hash),
+  ADD CONSTRAINT fk_action_audits_user FOREIGN KEY (actor_user_id) REFERENCES miniprogram_users (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+  ADD CONSTRAINT fk_action_audits_account FOREIGN KEY (actor_account_id) REFERENCES merchant_accounts (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+  ADD CONSTRAINT chk_action_audits_snapshot CHECK ((actor_account_id_snapshot IS NULL AND actor_role_snapshot IS NULL AND actor_auth_version_snapshot IS NULL) OR (actor_account_id_snapshot IS NOT NULL AND actor_account_id_snapshot>0 AND actor_role_snapshot IS NOT NULL AND actor_auth_version_snapshot IS NOT NULL AND actor_auth_version_snapshot>0)),
+  ADD CONSTRAINT chk_action_audits_target CHECK ((target_type IS NULL AND target_id IS NULL AND target_key_hash IS NULL) OR (target_type IS NOT NULL AND CHAR_LENGTH(TRIM(target_type))>0 AND ((target_id IS NOT NULL AND target_id>0 AND target_key_hash IS NULL) OR (target_id IS NULL AND target_key_hash IS NOT NULL)))),
+  ADD CONSTRAINT chk_action_audits_operation_key CHECK ((entry_kind='COMMAND_RECEIPT' AND operation_key_hash IS NOT NULL) OR (entry_kind<>'COMMAND_RECEIPT' AND operation_key_hash IS NULL)),
+  ADD CONSTRAINT chk_action_audits_entry CHECK ((entry_kind='LEGACY_EVIDENCE' AND actor_kind='MERCHANT' AND response_json IS NULL) OR (entry_kind='COMMAND_RECEIPT' AND response_json IS NOT NULL AND ((actor_kind='USER' AND actor_user_id IS NOT NULL AND actor_account_id IS NULL) OR (actor_kind='MERCHANT' AND actor_user_id IS NOT NULL AND actor_account_id IS NOT NULL))) OR (entry_kind='SYSTEM_EVIDENCE' AND actor_kind IN ('SYSTEM','PROVIDER') AND actor_user_id IS NULL AND actor_account_id IS NULL)),
+  ADD CONSTRAINT chk_action_audits_text CHECK (CHAR_LENGTH(TRIM(action))>0 AND CHAR_LENGTH(TRIM(reason_code))>0);

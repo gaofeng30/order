@@ -2,12 +2,15 @@
 const runtimeEndpointConfig = require('./utils/runtimeEndpointConfig.js');
 const { isRuntimeOrigin, resolveRuntimeEndpoint } = require('./utils/runtimeEndpoint.js');
 const sessionApi = require('./utils/sessionApi.js');
+const subscriptionTemplateConfig = require('./utils/subscriptionTemplateConfig.js');
+const { resolveSubscriptionTemplateIds } = require('./utils/subscriptionTemplate.js');
 
 App({
   globalData: {
     apiBaseUrl: '',
     runtimeEndpoint: { state: 'idle', envVersion: '', origin: '', errorCode: '' },
     session: { state: 'idle', accessToken: '', expiresAt: '' },
+    subscriptionTemplateIds: {},
 
     // ---- 屏幕适配信息（各机型自适应核心）----
     statusBarHeight: 20, // 状态栏高度 px
@@ -28,6 +31,7 @@ App({
     const g = this.globalData;
     g.runtimeEndpoint = resolveRuntimeEndpoint(wx, runtimeEndpointConfig);
     g.apiBaseUrl = g.runtimeEndpoint.state === 'ready' ? g.runtimeEndpoint.origin : '';
+    g.subscriptionTemplateIds = resolveSubscriptionTemplateIds(g.runtimeEndpoint.envVersion, subscriptionTemplateConfig);
     if (this.isSessionEndpointReady()) {
       this.startSession();
     } else {

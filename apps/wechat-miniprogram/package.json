@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/runtime-endpoint-ui0.test.js tests/session-ui0.test.js tests/overnight-entry-home-ui0.test.js tests/overnight-menu-detail-ui0.test.js tests/overnight-checkout-ui0.test.js tests/overnight-user-orders-profile-ui0.test.js tests/overnight-merchant-ui0.test.js tests/wx-compile-ui1.test.js"
+    "test": "node --test tests/runtime-endpoint-ui0.test.js tests/session-ui0.test.js tests/subscription-template-ui0.test.js tests/public-read-storefront-ui0.test.js tests/public-read-menu-ui0.test.js tests/public-read-product-ui0.test.js tests/public-read-presentation-ui0.test.js tests/overnight-entry-home-ui0.test.js tests/overnight-menu-detail-ui0.test.js tests/overnight-checkout-ui0.test.js tests/overnight-user-orders-profile-ui0.test.js tests/overnight-merchant-ui0.test.js tests/wx-compile-ui1.test.js"
   }
 }

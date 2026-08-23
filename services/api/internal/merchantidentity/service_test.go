@@ -119,6 +119,10 @@ func (stub *storeStub) ReadIdentity(context.Context, uint64) (merchantidentity.I
 	return stub.identity, stub.identityErr
 }
 
+func (stub *storeStub) SetExtraPhone(context.Context, merchantidentity.WriteMeta, merchantidentity.ExtraPhoneCommand) (merchantidentity.ExtraPhoneResult, error) {
+	return merchantidentity.ExtraPhoneResult{}, nil
+}
+
 func (stub *storeStub) StartLogin(_ context.Context, _ uint64, codeHash merchantidentity.LoginCodeHash, _ string, _ time.Time) (merchantidentity.LoginStart, error) {
 	stub.startHash = codeHash
 	return stub.start, stub.startErr

@@ -16,6 +16,7 @@ const (
 	ReasonSchemaTooNew             = "schema_too_new"
 	ReasonSchemaChecksumMismatch   = "schema_checksum_mismatch"
 	ReasonMigrationLockUnavailable = "migration_lock_unavailable"
+	ReasonMigrationPreflightFailed = "migration_preflight_failed"
 	ReasonStatementFailed          = "migration_statement_failed"
 	ReasonMigrationFailed          = "migration_failed"
 )

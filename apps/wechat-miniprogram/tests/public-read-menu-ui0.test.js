@@ -11,7 +11,6 @@ const SESSION = {
 const OPTIONS = {
   statusCode: 200,
   data: {
-    timezone: 'Asia/Shanghai',
     dates: [{
       date: '2026-08-25', available: true,
       meal_periods: [{

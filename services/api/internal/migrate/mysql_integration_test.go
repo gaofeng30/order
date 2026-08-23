@@ -55,6 +55,37 @@ func TestMySQL8Integration(t *testing.T) {
 		})
 	})
 
+	t.Run("legacy name preflight fails before dirty history", func(t *testing.T) {
+		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, _ database.ConnectionConfig) {
+			if _, err := migrate.Run(context.Background(), db, current[:19]); err != nil {
+				t.Fatalf("run through v19: %v", err)
+			}
+			if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(name,sort_order,is_active,record_version) VALUES (' category',0,TRUE,1)"); err != nil {
+				t.Fatalf("insert unsafe legacy category: %v", err)
+			}
+			if _, err := migrate.Run(context.Background(), db, current[:20]); migrate.Reason(err) != migrate.ReasonMigrationPreflightFailed || migrate.Version(err) != 20 {
+				t.Fatalf("v20 preflight reason/version = %q/%d, error=%v", migrate.Reason(err), migrate.Version(err), err)
+			}
+			assertNoMigrationHistoryVersion(t, db, 20)
+		})
+
+		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, _ database.ConnectionConfig) {
+			if _, err := migrate.Run(context.Background(), db, current[:22]); err != nil {
+				t.Fatalf("run through v22: %v", err)
+			}
+			if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(name,name_key,sort_order,is_active,record_version) VALUES ('category',CONVERT('category' USING binary),0,TRUE,1)"); err != nil {
+				t.Fatalf("insert category: %v", err)
+			}
+			if _, err := db.ExecContext(context.Background(), "INSERT INTO products(category_id,name,description,specification,price_cents,sort_order,is_listed,meal_period,record_version) VALUES (1,'product ', '', '',1,0,TRUE,'all',1)"); err != nil {
+				t.Fatalf("insert unsafe legacy product: %v", err)
+			}
+			if _, err := migrate.Run(context.Background(), db, current[:23]); migrate.Reason(err) != migrate.ReasonMigrationPreflightFailed || migrate.Version(err) != 23 {
+				t.Fatalf("v23 preflight reason/version = %q/%d, error=%v", migrate.Reason(err), migrate.Version(err), err)
+			}
+			assertNoMigrationHistoryVersion(t, db, 23)
+		})
+	})
+
 	t.Run("first repeat and create-history crash recovery", func(t *testing.T) {
 		withIsolatedSchema(t, admin, configuration, func(db *sql.DB, _ database.ConnectionConfig) {
 			if state := migrate.Check(context.Background(), db, foundation); state.Reason != migrate.ReasonSchemaUninitialized {
@@ -304,6 +335,37 @@ func loadEmbeddedMigrations(t *testing.T) []migrate.Migration {
 		"000011_create_storefront_settings.sql",
 		"000012_create_merchant_accounts.sql",
 		"000013_create_merchant_action_audits.sql",
+		"000014_create_staff_whitelist.sql",
+		"000015_create_discount_settings.sql",
+		"000016_create_quotes.sql",
+		"000017_create_quote_items.sql",
+		"000018_extend_miniprogram_users.sql",
+		"000019_add_category_name_key.sql",
+		"000020_backfill_category_name_keys.sql",
+		"000021_constrain_category_name_key.sql",
+		"000022_add_product_name_key_images.sql",
+		"000023_backfill_product_name_keys.sql",
+		"000024_constrain_product_catalog_fields.sql",
+		"000025_extend_storefront_settings.sql",
+		"000026_clear_legacy_launch_layer.sql",
+		"000027_constrain_storefront_settings.sql",
+		"000028_soft_delete_merchant_accounts.sql",
+		"000029_create_service_dates.sql",
+		"000030_create_merchant_pc_sessions.sql",
+		"000031_create_prepayments.sql",
+		"000032_create_payment_observations.sql",
+		"000033_create_pickup_sequences.sql",
+		"000034_create_orders.sql",
+		"000035_create_order_items.sql",
+		"000036_create_refunds.sql",
+		"000037_create_refund_observations.sql",
+		"000038_create_notification_consents.sql",
+		"000039_create_notification_outbox.sql",
+		"000040_create_import_batches.sql",
+		"000041_rename_action_audits.sql",
+		"000042_generalize_action_audits.sql",
+		"000043_backfill_action_audits.sql",
+		"000044_constrain_action_audits.sql",
 	}
 	if len(set) != len(wantNames) {
 		t.Fatalf("embedded migration count = %d, want %d", len(set), len(wantNames))
@@ -375,6 +437,14 @@ func assertCurrent(t *testing.T, db *sql.DB, migrations []migrate.Migration) {
 	t.Helper()
 	if state := migrate.Check(context.Background(), db, migrations); !state.Ready || state.Reason != "" {
 		t.Fatalf("Check() = %#v, want current", state)
+	}
+}
+
+func assertNoMigrationHistoryVersion(t *testing.T, db *sql.DB, version uint64) {
+	t.Helper()
+	var count int
+	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM schema_migrations WHERE version=?", version).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("migration history version %d count/error = %d/%v, want no row", version, count, err)
 	}
 }
 
@@ -475,16 +545,28 @@ func testRealProcessBoundary(t *testing.T, db *sql.DB, configuration database.Co
 		t.Fatalf("current process migration history rows = %d, want %d", index, len(current))
 	}
 	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[]}`, 5*time.Second)
-	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'process',TRUE),(2,'hidden',FALSE)"); err != nil {
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO storefront_settings(id,store_name,store_address,pickup_point,announcement,business_status,flavor_options_json) VALUES (1,'process store','process address','process point','process announcement','open',JSON_ARRAY())"); err != nil {
+		t.Fatalf("insert process storefront")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO merchant_accounts(id,phone,name,role,created_at,updated_at) VALUES (1,'+8613800000000','process owner','OWNER',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))"); err != nil {
+		t.Fatalf("insert process owner")
+	}
+	serviceDate := time.Now().In(time.FixedZone("Asia/Shanghai", 8*60*60)).AddDate(0, 0, 1).Format("2006-01-02")
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO service_dates(service_date,is_open,updated_by_account_id,updated_at) VALUES (?,TRUE,1,UTC_TIMESTAMP(6))", serviceDate); err != nil {
+		t.Fatalf("insert process service date")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,name_key,is_active) VALUES (1,'process','process',TRUE),(2,'hidden','hidden',FALSE)"); err != nil {
 		t.Fatalf("insert process catalog categories")
 	}
-	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents,is_listed) VALUES (1,1,'visible',250,TRUE),(2,1,'unlisted',300,FALSE),(3,2,'hidden-parent',400,TRUE)"); err != nil {
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,name_key,price_cents,is_listed,meal_period,images_json) VALUES (1,1,'visible','visible',250,TRUE,'all',JSON_ARRAY()),(2,1,'unlisted','unlisted',300,FALSE,'all',JSON_ARRAY()),(3,2,'hidden-parent','hidden-parent',400,TRUE,'all',JSON_ARRAY())"); err != nil {
 		t.Fatalf("insert process catalog products")
 	}
-	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"process","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}]}]}`, 5*time.Second)
-	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/1", http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}}`, 5*time.Second)
-	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/2", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
-	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/3", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/storefront/settings", http.StatusOK, `{"storefront":{"name":"process store","address":"process address","pickup_point":"process point","announcement":"process announcement","business_status":"open","flavors":[]}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"process","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","meal_period":"all","images":[],"listed":true,"original_unit_price_cents":250}]}]}`, 5*time.Second)
+	detailSuffix := "?date=" + serviceDate + "&time=12:00"
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/1"+detailSuffix, http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","meal_period":"all","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":250}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/2"+detailSuffix, http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
+	waitHTTPBody(t, "http://"+address+"/api/v1/catalog/products/3"+detailSuffix, http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`, 5*time.Second)
 	if err := api.Process.Signal(os.Interrupt); err != nil {
 		t.Fatalf("stop order-api: %v", err)
 	}

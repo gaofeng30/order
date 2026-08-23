@@ -48,14 +48,14 @@ func TestPickupOptionsPublicContractPreservesExistingMenu(t *testing.T) {
 
 	pickupOptions := httptest.NewRecorder()
 	router.ServeHTTP(pickupOptions, httptest.NewRequest(http.MethodGet, "/api/v1/menu/pickup-options", nil))
-	wantPickupOptions := `{"timezone":"Asia/Shanghai","dates":[{"date":"2026-08-20","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":false,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-20T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","orderable":true,"meals":[{"code":"lunch","cutoff_at":"2026-08-21T10:45:00+08:00","orderable":true,"pickup_times":["11:00","11:20","11:40","12:00"]},{"code":"dinner","cutoff_at":"2026-08-21T17:00:00+08:00","orderable":true,"pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`
+	wantPickupOptions := `{"dates":[{"date":"2026-08-20","available":true,"meal_periods":[{"meal_period":"lunch","available":false,"cutoff_time":"10:45","pickup_times":["11:00","11:20","11:40","12:00"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]},{"date":"2026-08-21","available":true,"meal_periods":[{"meal_period":"lunch","available":true,"cutoff_time":"10:45","pickup_times":["11:00","11:20","11:40","12:00"]},{"meal_period":"dinner","available":true,"cutoff_time":"17:00","pickup_times":["17:00","17:30","18:00","18:30","19:00"]}]}]}`
 	if pickupOptions.Code != http.StatusOK || strings.TrimSpace(pickupOptions.Body.String()) != wantPickupOptions || pickupOptions.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("pickup options contract = %d cache=%q body=%q", pickupOptions.Code, pickupOptions.Header().Get("Cache-Control"), pickupOptions.Body.String())
 	}
 
 	existingMenu := httptest.NewRecorder()
 	router.ServeHTTP(existingMenu, httptest.NewRequest(http.MethodGet, "/api/v1/menu?date=2026-08-20&time=11:40", nil))
-	wantExistingMenu := `{"selection":{"date":"2026-08-20","time":"11:40","timezone":"Asia/Shanghai"},"meal":{"code":"lunch","cutoff_at":"2026-08-20T10:45:00+08:00","orderable":false},"categories":[]}`
+	wantExistingMenu := `{"selection":{"date":"2026-08-20","time":"11:40","meal_period":"lunch"},"store_status":{"business_status":"open","service_date_available":true,"meal_available":false,"cutoff_passed":true},"categories":[]}`
 	if existingMenu.Code != http.StatusOK || strings.TrimSpace(existingMenu.Body.String()) != wantExistingMenu {
 		t.Fatalf("existing menu contract = %d %q", existingMenu.Code, existingMenu.Body.String())
 	}
@@ -65,7 +65,7 @@ func TestPickupOptionsPublicContractPreservesExistingMenu(t *testing.T) {
 	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Body.Len() != 0 {
 		t.Fatalf("pickup options wrong method = %d %q", wrongMethod.Code, wrongMethod.Body.String())
 	}
-	if reader.periodCalls != 2 || reader.listCalls != 1 {
+	if reader.periodCalls != 1 || reader.listCalls != 1 {
 		t.Fatalf("combined reader calls = periods:%d list:%d", reader.periodCalls, reader.listCalls)
 	}
 }
@@ -77,12 +77,16 @@ type pickupOptionsHTTPReader struct {
 	listCalls   int
 }
 
-func (reader *pickupOptionsHTTPReader) MealPeriods(context.Context) ([]menu.MealPeriodRecord, error) {
+func (reader *pickupOptionsHTTPReader) ReadPickupFacts(_ context.Context, dates []string) (menu.PickupFacts, error) {
 	reader.periodCalls++
-	return reader.periods, reader.err
+	serviceDates := make(map[string]bool, len(dates))
+	for _, date := range dates {
+		serviceDates[date] = true
+	}
+	return menu.PickupFacts{BusinessStatus: "open", MealPeriods: reader.periods, ServiceDates: serviceDates}, reader.err
 }
 
-func (reader *pickupOptionsHTTPReader) List(context.Context, string, menu.MealCode) ([]menu.Category, error) {
+func (reader *pickupOptionsHTTPReader) ReadMenu(context.Context, string) (menu.MenuSnapshot, error) {
 	reader.listCalls++
-	return []menu.Category{}, nil
+	return menu.MenuSnapshot{BusinessStatus: "open", ServiceDatePresent: true, ServiceDateOpen: true, MealPeriods: reader.periods, Categories: []menu.Category{}}, nil
 }

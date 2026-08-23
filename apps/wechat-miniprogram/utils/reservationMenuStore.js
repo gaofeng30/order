@@ -16,7 +16,7 @@ function exactBoolean(value) {
 }
 
 function parsePickupOptions(body) {
-  if (!body || body.timezone !== 'Asia/Shanghai' || !Array.isArray(body.dates)) {
+  if (!body || !Array.isArray(body.dates)) {
     throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
   }
   const dates = body.dates.map(day => {
@@ -35,7 +35,7 @@ function parsePickupOptions(body) {
     });
     return { date: day.date, available: day.available, mealPeriods };
   });
-  return { timezone: body.timezone, dates };
+  return { dates };
 }
 
 function firstAvailable(options) {

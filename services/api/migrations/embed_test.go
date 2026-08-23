@@ -30,13 +30,40 @@ func TestEmbeddedMigrationChainIsExactAndRecoverable(t *testing.T) {
 		{name: "000015_create_discount_settings.sql", prefix: "CREATE TABLE "},
 		{name: "000016_create_quotes.sql", prefix: "CREATE TABLE "},
 		{name: "000017_create_quote_items.sql", prefix: "CREATE TABLE "},
+		{name: "000018_extend_miniprogram_users.sql", prefix: "ALTER TABLE "},
+		{name: "000019_add_category_name_key.sql", prefix: "ALTER TABLE "},
+		{name: "000020_backfill_category_name_keys.sql", prefix: "UPDATE "},
+		{name: "000021_constrain_category_name_key.sql", prefix: "ALTER TABLE "},
+		{name: "000022_add_product_name_key_images.sql", prefix: "ALTER TABLE "},
+		{name: "000023_backfill_product_name_keys.sql", prefix: "UPDATE "},
+		{name: "000024_constrain_product_catalog_fields.sql", prefix: "ALTER TABLE "},
+		{name: "000025_extend_storefront_settings.sql", prefix: "ALTER TABLE "},
+		{name: "000026_clear_legacy_launch_layer.sql", prefix: "UPDATE "},
+		{name: "000027_constrain_storefront_settings.sql", prefix: "ALTER TABLE "},
+		{name: "000028_soft_delete_merchant_accounts.sql", prefix: "ALTER TABLE "},
+		{name: "000029_create_service_dates.sql", prefix: "CREATE TABLE "},
+		{name: "000030_create_merchant_pc_sessions.sql", prefix: "CREATE TABLE "},
+		{name: "000031_create_prepayments.sql", prefix: "CREATE TABLE "},
+		{name: "000032_create_payment_observations.sql", prefix: "CREATE TABLE "},
+		{name: "000033_create_pickup_sequences.sql", prefix: "CREATE TABLE "},
+		{name: "000034_create_orders.sql", prefix: "CREATE TABLE "},
+		{name: "000035_create_order_items.sql", prefix: "CREATE TABLE "},
+		{name: "000036_create_refunds.sql", prefix: "CREATE TABLE "},
+		{name: "000037_create_refund_observations.sql", prefix: "CREATE TABLE "},
+		{name: "000038_create_notification_consents.sql", prefix: "CREATE TABLE "},
+		{name: "000039_create_notification_outbox.sql", prefix: "CREATE TABLE "},
+		{name: "000040_create_import_batches.sql", prefix: "CREATE TABLE "},
+		{name: "000041_rename_action_audits.sql", prefix: "RENAME TABLE "},
+		{name: "000042_generalize_action_audits.sql", prefix: "ALTER TABLE "},
+		{name: "000043_backfill_action_audits.sql", prefix: "UPDATE "},
+		{name: "000044_constrain_action_audits.sql", prefix: "ALTER TABLE "},
 	}
 	entries, err := fs.ReadDir(FS, ".")
 	if err != nil {
 		t.Fatalf("ReadDir() error = %v", err)
 	}
 	if len(entries) != len(want) {
-		t.Fatalf("embedded migrations = %d, want exact v1-v17 chain", len(entries))
+		t.Fatalf("embedded migrations = %d, want exact v1-v44 chain", len(entries))
 	}
 	for index, expected := range want {
 		if entries[index].IsDir() || entries[index].Name() != expected.name {

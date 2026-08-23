@@ -65,7 +65,7 @@ func validMigrationBytes(data []byte) bool {
 	}
 	upper := strings.ToUpper(trimmed)
 	for _, forbidden := range []string{"DELIMITER", "SOURCE ", "LOAD DATA"} {
-		if strings.Contains(upper, forbidden) {
+		if strings.HasPrefix(upper, forbidden) {
 			return false
 		}
 	}

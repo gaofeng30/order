@@ -11,18 +11,17 @@ const SESSION = {
 const OPTIONS = {
   statusCode: 200,
   data: {
-    timezone: 'Asia/Shanghai',
     dates: [
       {
-        date: '2026-08-25', orderable: true,
-        meals: [
-          { code: 'lunch', cutoff_at: '2026-08-25T10:45:00+08:00', orderable: false, pickup_times: ['11:40'] },
-          { code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true, pickup_times: ['17:30', '18:00'] },
+        date: '2026-08-25', available: true,
+        meal_periods: [
+          { meal_period: 'lunch', cutoff_time: '10:45', available: false, pickup_times: ['11:40'] },
+          { meal_period: 'dinner', cutoff_time: '17:00', available: true, pickup_times: ['17:30', '18:00'] },
         ],
       },
       {
-        date: '2026-08-26', orderable: true,
-        meals: [{ code: 'lunch', cutoff_at: '2026-08-26T10:45:00+08:00', orderable: true, pickup_times: ['11:40'] }],
+        date: '2026-08-26', available: true,
+        meal_periods: [{ meal_period: 'lunch', cutoff_time: '10:45', available: true, pickup_times: ['11:40'] }],
       },
     ],
   },
@@ -31,12 +30,12 @@ const OPTIONS = {
 const MENU = {
   statusCode: 200,
   data: {
-    selection: { date: '2026-08-25', time: '17:30', timezone: 'Asia/Shanghai' },
-    meal: { code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true },
+    selection: { date: '2026-08-25', time: '17:30', meal_period: 'dinner' },
+    store_status: { business_status: 'open', service_date_available: true, meal_available: true, cutoff_passed: false },
     categories: [{
       id: '7', name: '晚餐', products: [
-        { id: '70', category_id: '7', name: '红烧肉', description: '慢炖', specification: '份', price_cents: 1800, sold_out: false, orderable: true },
-        { id: '71', category_id: '7', name: '米饭', description: '', specification: '碗', price_cents: 200, sold_out: true, orderable: false },
+        { id: '70', category_id: '7', name: '红烧肉', description: '慢炖', specification: '份', meal_period: 'all', images: [], listed: true, sold_out: false, original_unit_price_cents: 1800 },
+        { id: '71', category_id: '7', name: '米饭', description: '', specification: '碗', meal_period: 'dinner', images: [], listed: true, sold_out: true, original_unit_price_cents: 200 },
       ],
     }],
   },
@@ -73,8 +72,8 @@ test('PAGE-U03 pickup options skip cut-off meals and menu sold-out stays non-add
 });
 test('BE-02 selecting a different available point reloads /menu and never synthesizes a time', async () => {
   const secondMenu = JSON.parse(JSON.stringify(MENU));
-  secondMenu.data.selection = { date: '2026-08-26', time: '11:40', timezone: 'Asia/Shanghai' };
-  secondMenu.data.meal.code = 'lunch';
+  secondMenu.data.selection = { date: '2026-08-26', time: '11:40', meal_period: 'lunch' };
+  secondMenu.data.categories[0].products = secondMenu.data.categories[0].products.filter(product => product.meal_period === 'all' || product.meal_period === 'lunch');
   const { app, harness } = readyHarness([OPTIONS, MENU, secondMenu]);
   await harness.flush();
   const page = harness.loadPage('pages/menu/menu.js');

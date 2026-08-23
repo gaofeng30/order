@@ -78,13 +78,13 @@ test('PAGE-M04 real scan/manual lookup then explicit redeem; invalid code makes 
 });
 
 test('PAGE-M05 reads server menu and today sold-out toggle updates only from response', async () => {
-  const options = { statusCode: 200, data: { timezone: 'Asia/Shanghai', dates: [{
-    date: '2026-08-25', orderable: true, meals: [{ code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true, pickup_times: ['17:30'] }],
+  const options = { statusCode: 200, data: { dates: [{
+    date: '2026-08-25', available: true, meal_periods: [{ meal_period: 'dinner', cutoff_time: '17:00', available: true, pickup_times: ['17:30'] }],
   }] } };
   const menu = { statusCode: 200, data: {
-    selection: { date: '2026-08-25', time: '17:30', timezone: 'Asia/Shanghai' },
-    meal: { code: 'dinner', cutoff_at: '2026-08-25T17:00:00+08:00', orderable: true },
-    categories: [{ id: '7', name: '晚餐', products: [{ id: '70', category_id: '7', name: '红烧肉', description: '', specification: '份', price_cents: 1800, sold_out: false, orderable: true }] }],
+    selection: { date: '2026-08-25', time: '17:30', meal_period: 'dinner' },
+    store_status: { business_status: 'open', service_date_available: true, meal_available: true, cutoff_passed: false },
+    categories: [{ id: '7', name: '晚餐', products: [{ id: '70', category_id: '7', name: '红烧肉', description: '', specification: '份', meal_period: 'all', images: [], listed: true, sold_out: false, original_unit_price_cents: 1800 }] }],
   } };
   const harness = readyHarness([options, menu, {
     statusCode: 200, data: { product_id: '70', service_date: '2026-08-25', sold_out: true },

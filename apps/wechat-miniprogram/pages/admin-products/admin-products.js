@@ -11,10 +11,10 @@ Page({
     try {
       const options = await menuStore.loadPickupOptions();
       const day = options.dates[0];
-      const meal = day && day.meals.find(item => item.times.length);
+      const meal = day && day.mealPeriods.find(item => item.available && item.pickupTimes.length);
       if (!day || !meal) throw new Error('no merchant product selection');
       this._serviceDate = day.date;
-      const menu = await menuStore.loadMenu({ date: day.date, mealPeriod: meal.code, time: meal.times[0] });
+      const menu = await menuStore.loadMenu({ date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] });
       this._all = menu.categories.flatMap(category => category.products.map(product => Object.assign({}, product, {
         cat: category.name, price: product.price_text, soldoutLabel: product.soldOut ? '恢复售卖' : '标记售罄',
         pillLabel: product.soldOut ? '售罄' : '可售', pillTone: product.soldOut ? 'mute' : 'ok',

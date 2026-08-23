@@ -66,6 +66,34 @@ func TestRunLockedFailureLeavesDirtyAndStops(t *testing.T) {
 	}
 }
 
+func TestRunLockedRunsLegacyNamePreflightBeforeDirty(t *testing.T) {
+	migration := Migration{Version: 20, Name: "000020_backfill_category_name_keys.sql", SQL: []byte("UPDATE categories SET name_key=CONVERT(name USING binary);\n"), Checksum: sha256.Sum256([]byte("v20"))}
+	connection := &fakeRunnerConnection{historyExists: false}
+
+	result, err := runLocked(context.Background(), connection, []Migration{migration})
+	if err != nil || result.AppliedCount != 1 {
+		t.Fatalf("runLocked() = %#v, %v; want one applied migration", result, err)
+	}
+	wantCalls := []string{"get_lock", "session", "history", "preflight_20", "insert_dirty_20", "exec_20", "mark_clean_20", "release_lock"}
+	if !reflect.DeepEqual(connection.calls, wantCalls) {
+		t.Fatalf("calls = %#v, want %#v", connection.calls, wantCalls)
+	}
+}
+
+func TestRunLockedPreflightFailureDoesNotWriteHistoryOrExecute(t *testing.T) {
+	migration := Migration{Version: 23, Name: "000023_backfill_product_name_keys.sql", SQL: []byte("UPDATE products SET name_key=CONVERT(name USING binary),images_json=JSON_ARRAY();\n"), Checksum: sha256.Sum256([]byte("v23"))}
+	connection := &fakeRunnerConnection{historyExists: false, preflightErrorAt: 23}
+
+	_, err := runLocked(context.Background(), connection, []Migration{migration})
+	if Reason(err) != ReasonMigrationPreflightFailed || Version(err) != 23 {
+		t.Fatalf("error = %v (reason=%q version=%d), want preflight failure at v23", err, Reason(err), Version(err))
+	}
+	wantCalls := []string{"get_lock", "session", "history", "preflight_23", "release_lock"}
+	if !reflect.DeepEqual(connection.calls, wantCalls) {
+		t.Fatalf("calls = %#v, want %#v", connection.calls, wantCalls)
+	}
+}
+
 func TestRunLockedRejectsLockOutcomes(t *testing.T) {
 	for _, test := range []struct {
 		name       string
@@ -109,6 +137,7 @@ type fakeRunnerConnection struct {
 	historyExists      bool
 	rows               []historyRow
 	execErrorAt        uint64
+	preflightErrorAt   uint64
 	returnReleaseError bool
 }
 
@@ -153,6 +182,14 @@ func (connection *fakeRunnerConnection) execute(_ context.Context, migration Mig
 	}
 	if connection.execErrorAt == migration.Version {
 		return errors.New("statement canary")
+	}
+	return nil
+}
+
+func (connection *fakeRunnerConnection) preflight(_ context.Context, migration Migration) error {
+	connection.calls = append(connection.calls, "preflight_"+versionString(migration.Version))
+	if connection.preflightErrorAt == migration.Version {
+		return errors.New("preflight canary")
 	}
 	return nil
 }

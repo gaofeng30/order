@@ -24,6 +24,14 @@ func TestLoadAcceptsContinuousSingleStatementMigrations(t *testing.T) {
 	}
 }
 
+func TestLoadAcceptsSourceAsAColumnName(t *testing.T) {
+	if _, err := Load(fstest.MapFS{
+		"000001_create_observations.sql": {Data: []byte("CREATE TABLE observations (source ENUM('CALLBACK') NOT NULL);\n")},
+	}); err != nil {
+		t.Fatalf("Load() rejected source column: %v", err)
+	}
+}
+
 func TestLoadRejectsInvalidMigrationSets(t *testing.T) {
 	tests := map[string]fstest.MapFS{
 		"empty":         {},

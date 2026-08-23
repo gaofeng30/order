@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/gaofeng30/order/services/api/internal/httpdto"
 	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gin-gonic/gin"
 )
@@ -18,6 +19,7 @@ import (
 const (
 	maxLoginBodyBytes = 1024
 	maxPhoneCodeBytes = 256
+	maxExtraBodyBytes = 2048
 )
 
 // SessionAuthenticator resolves an existing strict Mini Program bearer.
@@ -29,6 +31,7 @@ type SessionAuthenticator interface {
 type Application interface {
 	Identity(context.Context, uint64) (Identity, error)
 	Login(context.Context, uint64, string, string) (Identity, error)
+	SetExtraPhone(context.Context, WriteMeta, ExtraPhoneCommand) (ExtraPhoneResult, error)
 }
 
 // Handler serves only merchant identity endpoints.
@@ -45,21 +48,54 @@ func NewHandler(authenticator SessionAuthenticator, application Application) *Ha
 // RegisterRoutes adds only the two versioned merchant identity routes.
 func (handler *Handler) RegisterRoutes(engine *gin.Engine) {
 	engine.GET("/api/v1/me/identity", handler.getIdentity)
+	engine.POST("/api/v1/me/extra-phone", handler.setExtraPhone)
 	engine.POST("/api/v1/me/merchant-login", handler.merchantLogin)
 }
 
 type identityResponse struct {
-	User     identityUserResponse      `json:"user"`
-	Merchant *identityMerchantResponse `json:"merchant"`
+	Identity identityProjectionResponse `json:"identity"`
 }
 
-type identityUserResponse struct {
-	PrimaryPhoneBound bool `json:"primary_phone_bound"`
+type identityProjectionResponse struct {
+	PrimaryPhone    primaryPhoneResponse    `json:"primary_phone"`
+	ExtraPhone      extraPhoneResponse      `json:"extra_phone"`
+	PricingIdentity pricingIdentityResponse `json:"pricing_identity"`
+	Merchant        merchantResponse        `json:"merchant"`
 }
 
-type identityMerchantResponse struct {
-	Role        Role   `json:"role"`
-	AuthVersion uint64 `json:"auth_version"`
+type primaryPhoneResponse struct {
+	Bound       bool   `json:"bound"`
+	MaskedPhone string `json:"masked_phone,omitempty"`
+}
+
+type extraPhoneResponse struct {
+	Set         bool   `json:"set"`
+	MaskedPhone string `json:"masked_phone,omitempty"`
+	Name        string `json:"name,omitempty"`
+}
+
+type pricingIdentityResponse struct {
+	Kind        PricingKind `json:"kind"`
+	RatePercent uint8       `json:"rate_percent"`
+}
+
+type merchantResponse struct {
+	Bound bool `json:"bound"`
+	Role  Role `json:"role,omitempty"`
+}
+
+type merchantLoginResponse struct {
+	Merchant merchantResponse `json:"merchant"`
+}
+
+type extraPhoneRequest struct {
+	Phone string `json:"phone"`
+	Name  string `json:"name"`
+}
+
+type extraPhoneResultResponse struct {
+	ExtraPhone      extraPhoneResponse      `json:"extra_phone"`
+	PricingIdentity pricingIdentityResponse `json:"pricing_identity"`
 }
 
 type errorEnvelope struct {
@@ -134,12 +170,59 @@ func (handler *Handler) merchantLogin(ctx *gin.Context) {
 		writeUnavailable(ctx)
 		return
 	}
-	response, valid := publicIdentity(projection)
-	if !valid || response.Merchant == nil {
+	if projection.Merchant == nil || (projection.Merchant.Role != RoleOwner && projection.Merchant.Role != RoleSubaccount) || projection.Merchant.AuthVersion == 0 {
 		writeUnavailable(ctx)
 		return
 	}
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, merchantLoginResponse{Merchant: merchantResponse{Bound: true, Role: projection.Merchant.Role}})
+}
+
+func (handler *Handler) setExtraPhone(ctx *gin.Context) {
+	ctx.Header("Cache-Control", "no-store")
+	mediaType, _, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+	if err != nil || mediaType != "application/json" {
+		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
+		return
+	}
+	var request extraPhoneRequest
+	if err := httpdto.DecodeStrict(ctx.Request.Body, maxExtraBodyBytes, &request); err != nil {
+		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
+		return
+	}
+	idempotencyKey, err := httpdto.IdempotencyKey(ctx.Request)
+	if err != nil {
+		writeError(ctx, http.StatusBadRequest, "INVALID_IDEMPOTENCY_KEY", "invalid idempotency key")
+		return
+	}
+	userID, ok := handler.authenticate(ctx)
+	if !ok {
+		return
+	}
+	result, err := handler.application.SetExtraPhone(ctx.Request.Context(), WriteMeta{
+		ActorUserID: userID, IdempotencyKey: idempotencyKey, RequestID: ctx.GetString("request_id"),
+	}, ExtraPhoneCommand{Phone: request.Phone, Name: request.Name})
+	switch {
+	case errors.Is(err, ErrInvalidInput):
+		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
+		return
+	case errors.Is(err, ErrPrimaryPhoneRequired):
+		writeError(ctx, http.StatusConflict, "PRIMARY_PHONE_REQUIRED", "primary phone required")
+		return
+	case errors.Is(err, ErrIdempotencyConflict):
+		writeError(ctx, http.StatusConflict, "IDEMPOTENCY_CONFLICT", "idempotency key conflicts with another request")
+		return
+	case err != nil:
+		writeUnavailable(ctx)
+		return
+	}
+	if !validPricing(result.Pricing.Kind, result.Pricing.RatePercent) || result.ExtraPhone.MaskedPhone == "" || result.ExtraPhone.Name == "" {
+		writeUnavailable(ctx)
+		return
+	}
+	ctx.JSON(http.StatusOK, extraPhoneResultResponse{
+		ExtraPhone:      extraPhoneResponse{Set: true, MaskedPhone: result.ExtraPhone.MaskedPhone, Name: result.ExtraPhone.Name},
+		PricingIdentity: pricingIdentityResponse{Kind: result.Pricing.Kind, RatePercent: result.Pricing.RatePercent},
+	})
 }
 
 func decodeLoginRequest(body []byte) (string, bool) {
@@ -172,8 +255,8 @@ func decodeLoginRequest(body []byte) (string, bool) {
 }
 
 func (handler *Handler) authenticate(ctx *gin.Context) (uint64, bool) {
-	token, ok := exactBearer(ctx.Request.Header.Values("Authorization"))
-	if !ok {
+	token, err := httpdto.BearerToken(ctx.Request)
+	if err != nil {
 		writeError(ctx, http.StatusUnauthorized, "UNAUTHENTICATED", "authentication required")
 		return 0, false
 	}
@@ -201,15 +284,27 @@ func exactBearer(values []string) (string, bool) {
 }
 
 func publicIdentity(projection Identity) (identityResponse, bool) {
-	response := identityResponse{User: identityUserResponse{PrimaryPhoneBound: projection.PrimaryPhoneBound}}
-	if projection.Merchant == nil {
-		return response, true
-	}
-	if (projection.Merchant.Role != RoleOwner && projection.Merchant.Role != RoleSubaccount) || projection.Merchant.AuthVersion == 0 {
+	if projection.PrimaryPhoneBound != (projection.PrimaryPhoneMasked != "") || (!projection.PrimaryPhoneBound && projection.ExtraPhone != nil) || !validPricing(projection.Pricing.Kind, projection.Pricing.RatePercent) {
 		return identityResponse{}, false
 	}
-	response.Merchant = &identityMerchantResponse{
-		Role: projection.Merchant.Role, AuthVersion: projection.Merchant.AuthVersion,
+	response := identityResponse{Identity: identityProjectionResponse{
+		PrimaryPhone:    primaryPhoneResponse{Bound: projection.PrimaryPhoneBound, MaskedPhone: projection.PrimaryPhoneMasked},
+		ExtraPhone:      extraPhoneResponse{Set: projection.ExtraPhone != nil},
+		PricingIdentity: pricingIdentityResponse{Kind: projection.Pricing.Kind, RatePercent: projection.Pricing.RatePercent},
+		Merchant:        merchantResponse{Bound: projection.Merchant != nil},
+	}}
+	if projection.ExtraPhone != nil {
+		if projection.ExtraPhone.MaskedPhone == "" || projection.ExtraPhone.Name == "" {
+			return identityResponse{}, false
+		}
+		response.Identity.ExtraPhone.MaskedPhone = projection.ExtraPhone.MaskedPhone
+		response.Identity.ExtraPhone.Name = projection.ExtraPhone.Name
+	}
+	if projection.Merchant != nil {
+		if (projection.Merchant.Role != RoleOwner && projection.Merchant.Role != RoleSubaccount) || projection.Merchant.AuthVersion == 0 || !projection.PrimaryPhoneBound {
+			return identityResponse{}, false
+		}
+		response.Identity.Merchant.Role = projection.Merchant.Role
 	}
 	return response, true
 }

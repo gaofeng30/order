@@ -46,7 +46,11 @@ function seedCart(app) {
   app.globalData.pickup = { date: '2026-08-25', mealPeriod: 'dinner', time: '17:30' };
   app.globalData.cart = {
     70: {
-      product: { id: '70', category_id: '7', name: '红烧肉', description: '慢炖', specification: '份', price_cents: 1800 },
+      product: {
+        id: '70', category_id: '7', name: '红烧肉', description: '慢炖', specification: '份',
+        meal_period: 'all', images: [], listed: true, sold_out: false,
+        original_unit_price_cents: 1800, price_cents: 1800, isStaffPrice: false,
+      },
       qty: 1, flavors: ['少盐'], note: '分装',
     },
   };
@@ -80,7 +84,7 @@ test('PAGE-U05/U06 checkout uses Quote -> durable wx_request_payment -> server c
 
 test('BE-07/BE-08 payment failure plus pending confirm keeps cart and never navigates', async () => {
   const pending = { statusCode: 202, data: { state: 'PENDING' } };
-  const { app, harness } = readyCheckout([PHONE, QUOTE, PREPAY, pending], [{ errMsg: 'requestPayment:fail cancel' }]);
+  const { app, harness } = readyCheckout([PHONE, QUOTE, PREPAY, pending, pending], [{ errMsg: 'requestPayment:fail cancel' }]);
   await harness.flush();
   seedCart(app);
   const page = harness.loadPage('pages/confirm/confirm.js');
@@ -96,6 +100,10 @@ test('BE-07/BE-08 payment failure plus pending confirm keeps cart and never navi
   assert.equal(Object.keys(app.globalData.cart).length, 1);
   assert.equal(harness.navigationCalls.length, 0);
   assert.equal(harness.requestCalls.at(-1).url, 'http://127.0.0.1:8080/api/v1/orders/confirm');
+  const firstConfirmKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.equal(await page.pay(), false);
+  const secondConfirmKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.notEqual(secondConfirmKey, firstConfirmKey, 'a durable PENDING receipt requires a new key for the next observation query');
 });
 
 test('BE-25 empty cart makes zero checkout request', async () => {

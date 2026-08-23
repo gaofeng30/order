@@ -1,8 +1,12 @@
 package merchantidentity
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -38,20 +42,65 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 	if repository.db == nil || userID == 0 {
 		return Identity{}, ErrUnavailable
 	}
-	var phone sql.NullString
+	var phone, extraPhone, extraName sql.NullString
 	var phoneBoundAt sql.NullTime
+	var extraPhoneSetAt sql.NullTime
+	var extraNameKey, whitelistExtraNameKey []byte
+	var recordVersion uint64
 	var accountID, authVersion sql.NullInt64
 	var role sql.NullString
+	var ratePercent uint8
+	var whitelistVersion uint64
+	var primaryEnabled, extraEnabled sql.NullBool
 	err := repository.db.QueryRowContext(ctx, `
-		SELECT u.primary_phone,u.primary_phone_bound_at,a.id,a.role,a.auth_version
+		SELECT CONVERT(u.primary_phone USING ascii),u.primary_phone_bound_at,
+		       CONVERT(u.extra_phone USING ascii),u.extra_name,u.extra_name_key,u.extra_phone_set_at,u.record_version,
+		       a.id,a.role,a.auth_version,d.rate_percent,d.whitelist_version,
+		       primary_staff.enabled,extra_staff.enabled,extra_staff.name_key
 		FROM miniprogram_users AS u
-		LEFT JOIN merchant_accounts AS a ON a.bound_user_id=u.id AND a.enabled=TRUE
+		JOIN discount_settings AS d ON d.id=1
+		LEFT JOIN merchant_accounts AS a ON a.bound_user_id=u.id AND a.enabled=TRUE AND a.deleted_at IS NULL
+		LEFT JOIN staff_whitelist AS primary_staff ON primary_staff.phone=u.primary_phone
+		LEFT JOIN staff_whitelist AS extra_staff ON extra_staff.phone=u.extra_phone
 		WHERE u.id=?
-	`, userID).Scan(&phone, &phoneBoundAt, &accountID, &role, &authVersion)
-	if err != nil || !validPhoneState(phone, phoneBoundAt) {
+	`, userID).Scan(
+		&phone, &phoneBoundAt, &extraPhone, &extraName, &extraNameKey, &extraPhoneSetAt, &recordVersion,
+		&accountID, &role, &authVersion, &ratePercent, &whitelistVersion,
+		&primaryEnabled, &extraEnabled, &whitelistExtraNameKey,
+	)
+	if err != nil || !validPhoneState(phone, phoneBoundAt) || recordVersion == 0 || ratePercent < 1 || ratePercent > 100 || whitelistVersion == 0 {
 		return Identity{}, ErrUnavailable
 	}
-	projection := Identity{PrimaryPhoneBound: phone.Valid}
+	extraCount := 0
+	for _, present := range []bool{extraPhone.Valid, extraName.Valid, extraNameKey != nil, extraPhoneSetAt.Valid} {
+		if present {
+			extraCount++
+		}
+	}
+	if extraCount != 0 && extraCount != 4 || (!phone.Valid && extraCount != 0) {
+		return Identity{}, ErrUnavailable
+	}
+	projection := Identity{
+		PrimaryPhoneBound: phone.Valid,
+		Pricing:           PricingProjection{Kind: PricingVisitor, RatePercent: 100},
+	}
+	if phone.Valid {
+		projection.PrimaryPhoneMasked = maskIdentityPhone(phone.String)
+	}
+	if extraCount == 4 {
+		_, expectedKey, ok := canonicalExtraIdentity(extraPhone.String, extraName.String)
+		if !ok || !bytes.Equal(extraNameKey, expectedKey) {
+			return Identity{}, ErrUnavailable
+		}
+		projection.ExtraPhone = &ExtraPhoneProjection{MaskedPhone: maskIdentityPhone(extraPhone.String), Name: extraName.String}
+	}
+	staff := primaryEnabled.Valid && primaryEnabled.Bool
+	if !staff && projection.ExtraPhone != nil && extraEnabled.Valid && extraEnabled.Bool && bytes.Equal(extraNameKey, whitelistExtraNameKey) {
+		staff = true
+	}
+	if staff {
+		projection.Pricing = PricingProjection{Kind: PricingStaff, RatePercent: ratePercent}
+	}
 	if !accountID.Valid && !role.Valid && !authVersion.Valid {
 		return projection, nil
 	}
@@ -297,14 +346,15 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 		var marker uint8
 		err := transaction.QueryRowContext(ctx, `
 			SELECT 1
-			FROM merchant_action_audits
+			FROM action_audits
 			WHERE actor_user_id=?
-			  AND account_id_snapshot=?
-			  AND auth_version_snapshot=?
-			  AND idempotency_key_hash=?
+			  AND actor_account_id_snapshot=?
+			  AND actor_auth_version_snapshot=?
+			  AND target_type='merchant_login_code'
+			  AND target_key_hash=?
 			  AND action='merchant.login'
 			  AND result='SUCCEEDED'
-			  AND reason IN ('FIRST_BINDING','CONCURRENT_BINDING_CONFIRMED')
+			  AND reason_code IN ('FIRST_BINDING','CONCURRENT_BINDING_CONFIRMED')
 			  AND occurred_at>=?
 			ORDER BY id DESC
 			LIMIT 1
@@ -375,23 +425,39 @@ func scanAccount(row scanner) (accountState, bool, error) {
 }
 
 func insertLoginAudit(ctx context.Context, transaction *sql.Tx, userID uint64, codeHash LoginCodeHash, requestID string, account *accountState, result, reason, before, after string, at time.Time) error {
-	var accountID, snapshotID, role, authVersion, targetType, targetID any
+	var accountID, snapshotID, role, authVersion any
 	if account != nil {
 		accountID = account.ID
 		snapshotID = account.ID
 		role = account.Role
 		authVersion = account.AuthVersion
-		targetType = "merchant_account"
-		targetID = account.ID
 	}
-	_, err := transaction.ExecContext(ctx, `
-		INSERT INTO merchant_action_audits(
-			merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			actor_user_id,action,result,reason,target_type,target_id,request_id,idempotency_key_hash,
-			state_before,state_after,occurred_at
-		) VALUES (?,?,?,?,?,'merchant.login',?,?,?,?,?,?,?,?,?)
-	`, accountID, snapshotID, role, authVersion, userID, result, reason, targetType, targetID, []byte(requestID), codeHash[:], before, after, at)
+	scopeHash := merchantLoginScopeHash(userID)
+	requestIDHash := sha256.Sum256([]byte(requestID))
+	beforeJSON, err := json.Marshal(map[string]string{"state": before})
+	if err != nil {
+		return err
+	}
+	afterJSON, err := json.Marshal(map[string]string{"state": after})
+	if err != nil {
+		return err
+	}
+	_, err = transaction.ExecContext(ctx, `
+		INSERT INTO action_audits(
+			entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,
+			actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+			action,result,reason_code,target_type,target_key_hash,request_id_hash,
+			before_state_json,after_state_json,occurred_at
+		) VALUES ('LEGACY_EVIDENCE','MERCHANT',?,?,?,?,?,?,'merchant.login',?,?,'merchant_login_code',?,?,?, ?,?)
+	`, scopeHash[:], userID, accountID, snapshotID, role, authVersion, result, reason, codeHash[:], requestIDHash[:], beforeJSON, afterJSON, at)
 	return err
+}
+
+func merchantLoginScopeHash(userID uint64) [sha256.Size]byte {
+	var material [23]byte
+	copy(material[:15], "MERCHANT_LOGIN\x00")
+	binary.BigEndian.PutUint64(material[15:], userID)
+	return sha256.Sum256(material[:])
 }
 
 func accountIdentity(account accountState) Identity {

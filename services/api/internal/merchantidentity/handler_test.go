@@ -24,7 +24,8 @@ func TestIdentityEndpointReturnsExactBoundOwnerProjection(t *testing.T) {
 	handler := merchantidentity.NewHandler(
 		&authenticatorStub{userID: 41},
 		&serviceStub{identity: merchantidentity.Identity{
-			PrimaryPhoneBound: true,
+			PrimaryPhoneBound: true, PrimaryPhoneMasked: "138****0001",
+			Pricing: merchantidentity.PricingProjection{Kind: merchantidentity.PricingStaff, RatePercent: 80},
 			Merchant: &merchantidentity.MerchantProjection{
 				Role: merchantidentity.RoleOwner, AuthVersion: 7,
 			},
@@ -43,7 +44,7 @@ func TestIdentityEndpointReturnsExactBoundOwnerProjection(t *testing.T) {
 	if response.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("Cache-Control = %q", response.Header().Get("Cache-Control"))
 	}
-	if got, want := response.Body.String(), `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":7}}`; got != want {
+	if got, want := response.Body.String(), `{"identity":{"primary_phone":{"bound":true,"masked_phone":"138****0001"},"extra_phone":{"set":false},"pricing_identity":{"kind":"STAFF","rate_percent":80},"merchant":{"bound":true,"role":"OWNER"}}}`; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
 }
@@ -51,13 +52,13 @@ func TestIdentityEndpointReturnsExactBoundOwnerProjection(t *testing.T) {
 func TestIdentityEndpointReturnsExactUnboundProjection(t *testing.T) {
 	engine := merchantHandlerEngine(
 		&authenticatorStub{userID: 40},
-		&serviceStub{identity: merchantidentity.Identity{PrimaryPhoneBound: false}},
+		&serviceStub{identity: merchantidentity.Identity{PrimaryPhoneBound: false, Pricing: merchantidentity.PricingProjection{Kind: merchantidentity.PricingVisitor, RatePercent: 100}}},
 	)
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/me/identity", nil)
 	request.Header.Set("Authorization", "Bearer opaque-session")
 	response := httptest.NewRecorder()
 	engine.ServeHTTP(response, request)
-	assertMerchantHTTP(t, response, http.StatusOK, `{"user":{"primary_phone_bound":false},"merchant":null}`)
+	assertMerchantHTTP(t, response, http.StatusOK, `{"identity":{"primary_phone":{"bound":false},"extra_phone":{"set":false},"pricing_identity":{"kind":"VISITOR","rate_percent":100},"merchant":{"bound":false}}}`)
 }
 
 func TestMerchantLoginEndpointReturnsExactBoundSubaccountProjection(t *testing.T) {
@@ -88,7 +89,7 @@ func TestMerchantLoginEndpointReturnsExactBoundSubaccountProjection(t *testing.T
 	if response.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("Cache-Control = %q", response.Header().Get("Cache-Control"))
 	}
-	if got, want := response.Body.String(), `{"user":{"primary_phone_bound":true},"merchant":{"role":"SUBACCOUNT","auth_version":9}}`; got != want {
+	if got, want := response.Body.String(), `{"merchant":{"bound":true,"role":"SUBACCOUNT"}}`; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
 	if application.loginCode != "fresh-code" || application.requestID != "internal-request-2" || application.userID != 42 {
@@ -146,8 +147,9 @@ func TestMerchantLoginRejectsInvalidUTF8BeforeAuthentication(t *testing.T) {
 
 func TestMerchantIdentityEndpointsEnforceStrictRequestsAndStableErrors(t *testing.T) {
 	validIdentity := merchantidentity.Identity{
-		PrimaryPhoneBound: true,
-		Merchant:          &merchantidentity.MerchantProjection{Role: merchantidentity.RoleOwner, AuthVersion: 3},
+		PrimaryPhoneBound: true, PrimaryPhoneMasked: "138****0001",
+		Pricing:  merchantidentity.PricingProjection{Kind: merchantidentity.PricingStaff, RatePercent: 80},
+		Merchant: &merchantidentity.MerchantProjection{Role: merchantidentity.RoleOwner, AuthVersion: 3},
 	}
 
 	t.Run("identity body must be empty before authentication", func(t *testing.T) {
@@ -256,7 +258,7 @@ func TestMerchantIdentityEndpointsEnforceStrictRequestsAndStableErrors(t *testin
 		request.Header.Set("Authorization", "Bearer opaque-session")
 		response := httptest.NewRecorder()
 		engine.ServeHTTP(response, request)
-		assertMerchantHTTP(t, response, http.StatusOK, `{"user":{"primary_phone_bound":true},"merchant":{"role":"OWNER","auth_version":3}}`)
+		assertMerchantHTTP(t, response, http.StatusOK, `{"merchant":{"bound":true,"role":"OWNER"}}`)
 		if application.loginCode != " x " {
 			t.Fatalf("accepted code was changed to %q", application.loginCode)
 		}
@@ -344,4 +346,8 @@ func (stub *serviceStub) Login(_ context.Context, userID uint64, code, requestID
 	stub.loginCode = code
 	stub.requestID = requestID
 	return stub.identity, stub.err
+}
+
+func (stub *serviceStub) SetExtraPhone(context.Context, merchantidentity.WriteMeta, merchantidentity.ExtraPhoneCommand) (merchantidentity.ExtraPhoneResult, error) {
+	return merchantidentity.ExtraPhoneResult{}, stub.err
 }

@@ -54,6 +54,7 @@ type runnerConnection interface {
 	releaseLock(context.Context) error
 	validateSession(context.Context) error
 	history(context.Context) (bool, []historyRow, error)
+	preflight(context.Context, Migration) error
 	execute(context.Context, Migration) error
 	verifyHistoryShape(context.Context) error
 	insertClean(context.Context, Migration) error
@@ -102,6 +103,11 @@ func runLocked(ctx context.Context, connection runnerConnection, migrations []Mi
 				return result, migrateError{reason: ReasonMigrationFailed, version: migration.Version}
 			}
 		} else {
+			if migration.Version == 20 || migration.Version == 23 {
+				if err := connection.preflight(ctx, migration); err != nil {
+					return result, migrateError{reason: ReasonMigrationPreflightFailed, version: migration.Version}
+				}
+			}
 			if err := connection.insertDirty(ctx, migration); err != nil {
 				return result, migrateError{reason: ReasonMigrationFailed, version: migration.Version}
 			}

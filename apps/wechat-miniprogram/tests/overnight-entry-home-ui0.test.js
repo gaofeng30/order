@@ -15,13 +15,14 @@ const SESSION = {
 const STOREFRONT = {
   statusCode: 200,
   data: {
-    settings: {
-      store_name: '绥安食品',
-      store_address: '党政办公中心后院老食堂',
+    storefront: {
+      name: '绥安食品',
+      address: '党政办公中心后院老食堂',
       pickup_point: '北门',
       announcement: '今日公告',
       business_status: 'open',
       launch_layer: null,
+      flavors: [],
     },
   },
 };
@@ -46,7 +47,7 @@ test('PAGE-U01 app owns only client cart/selection and never seeds business trut
 test('PAGE-U01 anonymous user entry remains available while merchant login is server-confirmed', async () => {
   const { harness } = readyHarness([
     STOREFRONT,
-    { statusCode: 200, data: { user: { primary_phone_bound: true }, merchant: { role: 'OWNER', auth_version: 3 } } },
+    { statusCode: 200, data: { merchant: { bound: true, role: 'OWNER' } } },
   ]);
   await harness.flush();
   const page = harness.loadPage('pages/launch/launch.js');

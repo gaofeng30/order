@@ -19,6 +19,7 @@ type LoginStart struct {
 // Store owns all durable merchant identity transactions.
 type Store interface {
 	ReadIdentity(context.Context, uint64) (Identity, error)
+	SetExtraPhone(context.Context, WriteMeta, ExtraPhoneCommand) (ExtraPhoneResult, error)
 	StartLogin(context.Context, uint64, LoginCodeHash, string, time.Time) (LoginStart, error)
 	CompleteLogin(context.Context, uint64, string, LoginCodeHash, string, time.Time) (Identity, error)
 	RecoverRejectedLogin(context.Context, uint64, LoginCodeHash, string, time.Time, time.Time) (Identity, error)
@@ -55,6 +56,15 @@ func (service *Service) Identity(ctx context.Context, userID uint64) (Identity, 
 		return Identity{}, ErrUnavailable
 	}
 	return projection, nil
+}
+
+// SetExtraPhone records the one allowed user-supplied staff claim. The store
+// owns canonicalization, current-fact resolution, locking and durable replay.
+func (service *Service) SetExtraPhone(ctx context.Context, meta WriteMeta, command ExtraPhoneCommand) (ExtraPhoneResult, error) {
+	if service == nil || service.store == nil || meta.ActorUserID == 0 {
+		return ExtraPhoneResult{}, ErrUnavailable
+	}
+	return service.store.SetExtraPhone(ctx, meta, command)
 }
 
 // Login bypasses the provider for an existing enabled binding, otherwise consumes one code.
@@ -112,6 +122,18 @@ func hashLoginCode(code string) LoginCodeHash {
 
 func validIdentity(projection Identity, requireMerchant bool) bool {
 	if requireMerchant && projection.Merchant == nil {
+		return false
+	}
+	if projection.Pricing.Kind != "" && (projection.Pricing.Kind != PricingVisitor && projection.Pricing.Kind != PricingStaff) {
+		return false
+	}
+	if projection.Pricing.Kind != "" && (projection.Pricing.RatePercent < 1 || projection.Pricing.RatePercent > 100) {
+		return false
+	}
+	if !requireMerchant && projection.Pricing.Kind == "" {
+		return false
+	}
+	if (!requireMerchant && projection.PrimaryPhoneBound != (projection.PrimaryPhoneMasked != "")) || (!projection.PrimaryPhoneBound && projection.ExtraPhone != nil) {
 		return false
 	}
 	if projection.Merchant == nil {

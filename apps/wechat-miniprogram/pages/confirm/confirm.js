@@ -87,6 +87,7 @@ Page({
     try {
       const confirmed = await transaction.confirm(this._prepayment.id, this._confirmKey);
       if (confirmed.state !== 'ORDER_CREATED') {
+		this._confirmKey = api.newIdempotencyKey('confirm');
         this.setData({ paymentState: 'pending', payBtn: '重新确认支付结果' });
         return false;
       }
