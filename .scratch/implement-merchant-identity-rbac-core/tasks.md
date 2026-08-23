@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 6a40d0fe70602163983cb9f7373a0a0e293d8ae3
+phase: red
+command_or_action: fresh MySQL 8.0.46 sequence that binds an account, disables it, and then completes an already-started provider exchange with a different valid normalized phone
+exit_result: FAIL
+sanitized_summary: the concurrent-bound branch returned MERCHANT_ACCOUNT_NOT_AVAILABLE before evaluating the primary-phone mismatch; the WIP SHA and both review axes were invalidated
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after failure
+unverified_boundary: minimal branch-order Green, complete Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: decide the completion-time phone mismatch before enabled only in the concurrent-bound branch, retaining the resolved account snapshot and disabled state summary
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same fresh MySQL 8.0.46 bind-disable-different-phone completion sequence after swapping mismatch and enabled precedence
+exit_result: PASS
+sanitized_summary: the already-started completion now returns durable PRIMARY_PHONE_MISMATCH with a complete internal snapshot of the disabled bound account; primary phone, binding, versions and the provider-phone account receive no partial writes
+artifact_or_environment: disposable loopback mysql:8.0.46-oraclelinux9 container; cleaned after success
+unverified_boundary: complete Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun both enabled and disabled concurrent-bound phone mismatch scenarios after any completion precedence change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-disabled-concurrent-mismatch focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed after the concurrent-bound branch made completion-time phone mismatch precede enabled state; all existing login, recovery, authorization and privacy contracts stayed green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit the exact branch-order fix, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: 168265551f912647bbda1dd5e92ada83c4d102fe
 phase: red
 command_or_action: fresh MySQL 8.0.46 business-rejection matrix for an existing primary phone that differs from the provider phone across unresolved, disabled, bound-other and enabled-unbound merchant states

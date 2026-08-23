@@ -159,7 +159,8 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 		}
 		return "+44", nil
 	})
-	service := newService(NewRepository(db), provider, func() time.Time { return now })
+	repository := NewRepository(db)
+	service := newService(repository, provider, func() time.Time { return now })
 
 	type loginResult struct {
 		identity Identity
@@ -210,6 +211,50 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	}
 	if auditSuccesses != 1 || auditMismatches != 1 {
 		t.Fatal("concurrent different-phone audits did not retain one success and one mismatch")
+	}
+
+	if _, err := db.ExecContext(ctx, `
+		UPDATE merchant_accounts
+		SET enabled=FALSE,record_version=record_version+1,auth_version=auth_version+1,updated_at=?
+		WHERE id=?
+	`, now.Add(time.Microsecond), boundAccountID); err != nil {
+		t.Fatal("disable concurrent binding failed")
+	}
+	differentPhone := "+43"
+	unboundAccountID := firstAccountID
+	if primaryPhone == differentPhone {
+		differentPhone = "+44"
+		unboundAccountID = secondAccountID
+	}
+	disabledRequestID := "internal-concurrent-phone-disabled"
+	if _, err := repository.CompleteLogin(ctx, userID, differentPhone, hashLoginCode("disabled-binding-code"), disabledRequestID, now.Add(2*time.Microsecond)); !errors.Is(err, ErrPrimaryPhoneMismatch) {
+		t.Fatalf("disabled concurrent binding mismatch error = %v", err)
+	}
+	var boundUserID, recordVersion, authVersion uint64
+	var enabled bool
+	if err := db.QueryRowContext(ctx, `
+		SELECT bound_user_id,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
+	`, boundAccountID).Scan(&boundUserID, &enabled, &recordVersion, &authVersion); err != nil {
+		t.Fatal("read disabled concurrent binding failed")
+	}
+	if boundUserID != userID || enabled || recordVersion != 3 || authVersion != 3 {
+		t.Fatal("mismatch changed the disabled concurrent binding")
+	}
+	var otherBoundUser sql.NullInt64
+	if err := db.QueryRowContext(ctx, "SELECT bound_user_id FROM merchant_accounts WHERE id=?", unboundAccountID).Scan(&otherBoundUser); err != nil || otherBoundUser.Valid {
+		t.Fatal("mismatch partially bound the provider-phone account")
+	}
+	var snapshotID, snapshotAuth uint64
+	var snapshotRole Role
+	var result, reason string
+	if err := db.QueryRowContext(ctx, `
+		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
+		FROM merchant_action_audits WHERE request_id=?
+	`, []byte(disabledRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		t.Fatal("read disabled concurrent mismatch audit failed")
+	}
+	if snapshotID != boundAccountID || !validRole(snapshotRole) || snapshotAuth != 3 || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
+		t.Fatal("disabled concurrent mismatch audit snapshot was incomplete")
 	}
 }
 

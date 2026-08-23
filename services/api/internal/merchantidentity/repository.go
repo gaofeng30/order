@@ -183,11 +183,15 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		if !validAccount(boundAccount) || !currentPhone.Valid {
 			return Identity{}, ErrUnavailable
 		}
+		if currentPhone.String != phone {
+			state := "BOUND_ENABLED"
+			if !boundAccount.Enabled {
+				state = "BOUND_DISABLED"
+			}
+			return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "REJECTED", "PRIMARY_PHONE_MISMATCH", state, state, at, Identity{}, ErrPrimaryPhoneMismatch)
+		}
 		if !boundAccount.Enabled {
 			return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_DISABLED", "BOUND_DISABLED", at, Identity{}, ErrMerchantAccountNotAvailable)
-		}
-		if currentPhone.String != phone {
-			return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "REJECTED", "PRIMARY_PHONE_MISMATCH", "BOUND_ENABLED", "BOUND_ENABLED", at, Identity{}, ErrPrimaryPhoneMismatch)
 		}
 		projection := accountIdentity(boundAccount)
 		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &boundAccount, "SUCCEEDED", "CONCURRENT_BINDING_CONFIRMED", "BOUND_ENABLED", "BOUND_ENABLED", at, projection, nil)
