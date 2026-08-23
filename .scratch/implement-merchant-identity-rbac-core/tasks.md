@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 4366df80fbe88832e1246e6d124fbccb017a2cf7
+phase: red
+command_or_action: static zero-partial-write proof checker over the bind-disable-different-phone fresh-MySQL scenario
+exit_result: FAIL
+sanitized_summary: the scenario did not read primary_phone_bound_at or merchant bound_at after rejection and therefore could not prove the claimed complete before-after state preservation; the WIP SHA and both review axes were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 4366df80fbe88832e1246e6d124fbccb017a2cf7
+unverified_boundary: strengthened state assertions, fresh MySQL Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: capture the disabled binding before completion and compare every binding timestamp, state and version after rejection, while also re-reading the primary-phone timestamp and provider-phone account
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same static proof checker plus fresh MySQL 8.0.46 bind-disable-different-phone scenario with complete before-after state assertions
+exit_result: PASS
+sanitized_summary: the rejection now proves primary phone and bound time unchanged, bound account user/time/enabled/versions byte-for-state equal to the pre-call snapshot, and the provider-phone account still unbound at initial versions; the test remains within 646 lines and 12 functions
+artifact_or_environment: owned recovery/concurrency MySQL test; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain both the static proof checker and the real MySQL scenario after any future test restructuring
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-zero-partial-write-assertions focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact post-rejection primary phone and bound-time assertions plus the existing account, version, peer-account and durable-audit checks; no implementation change was needed
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the strengthened test and lifecycle evidence, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: 6a40d0fe70602163983cb9f7373a0a0e293d8ae3
 phase: red
 command_or_action: fresh MySQL 8.0.46 sequence that binds an account, disables it, and then completes an already-started provider exchange with a different valid normalized phone

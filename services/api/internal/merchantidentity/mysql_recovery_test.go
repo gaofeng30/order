@@ -192,7 +192,8 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	}
 
 	var primaryPhone string
-	if err := db.QueryRowContext(ctx, "SELECT primary_phone FROM miniprogram_users WHERE id=?", userID).Scan(&primaryPhone); err != nil {
+	var primaryPhoneBoundAt time.Time
+	if err := db.QueryRowContext(ctx, "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&primaryPhone, &primaryPhoneBoundAt); err != nil {
 		t.Fatal("read concurrent primary phone failed")
 	}
 	var boundAccountID uint64
@@ -220,6 +221,14 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	`, now.Add(time.Microsecond), boundAccountID); err != nil {
 		t.Fatal("disable concurrent binding failed")
 	}
+	var beforeBoundUserID, beforeRecordVersion, beforeAuthVersion uint64
+	var beforeEnabled bool
+	var beforeBoundAt time.Time
+	if err := db.QueryRowContext(ctx, `
+		SELECT bound_user_id,bound_at,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
+	`, boundAccountID).Scan(&beforeBoundUserID, &beforeBoundAt, &beforeEnabled, &beforeRecordVersion, &beforeAuthVersion); err != nil {
+		t.Fatal("snapshot disabled concurrent binding failed")
+	}
 	differentPhone := "+43"
 	unboundAccountID := firstAccountID
 	if primaryPhone == differentPhone {
@@ -232,16 +241,24 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	}
 	var boundUserID, recordVersion, authVersion uint64
 	var enabled bool
+	var boundAt time.Time
 	if err := db.QueryRowContext(ctx, `
-		SELECT bound_user_id,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
-	`, boundAccountID).Scan(&boundUserID, &enabled, &recordVersion, &authVersion); err != nil {
+		SELECT bound_user_id,bound_at,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
+	`, boundAccountID).Scan(&boundUserID, &boundAt, &enabled, &recordVersion, &authVersion); err != nil {
 		t.Fatal("read disabled concurrent binding failed")
 	}
-	if boundUserID != userID || enabled || recordVersion != 3 || authVersion != 3 {
+	if boundUserID != beforeBoundUserID || !boundAt.Equal(beforeBoundAt) || enabled != beforeEnabled || recordVersion != beforeRecordVersion || authVersion != beforeAuthVersion {
 		t.Fatal("mismatch changed the disabled concurrent binding")
 	}
+	var afterPrimaryPhone string
+	var afterPrimaryPhoneBoundAt time.Time
+	if err := db.QueryRowContext(ctx, "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&afterPrimaryPhone, &afterPrimaryPhoneBoundAt); err != nil || afterPrimaryPhone != primaryPhone || !afterPrimaryPhoneBoundAt.Equal(primaryPhoneBoundAt) {
+		t.Fatal("mismatch changed the primary phone binding")
+	}
 	var otherBoundUser sql.NullInt64
-	if err := db.QueryRowContext(ctx, "SELECT bound_user_id FROM merchant_accounts WHERE id=?", unboundAccountID).Scan(&otherBoundUser); err != nil || otherBoundUser.Valid {
+	var otherBoundAt sql.NullTime
+	var otherRecordVersion, otherAuthVersion uint64
+	if err := db.QueryRowContext(ctx, "SELECT bound_user_id,bound_at,record_version,auth_version FROM merchant_accounts WHERE id=?", unboundAccountID).Scan(&otherBoundUser, &otherBoundAt, &otherRecordVersion, &otherAuthVersion); err != nil || otherBoundUser.Valid || otherBoundAt.Valid || otherRecordVersion != 1 || otherAuthVersion != 1 {
 		t.Fatal("mismatch partially bound the provider-phone account")
 	}
 	var snapshotID, snapshotAuth uint64
