@@ -3,14 +3,15 @@
 ## 固定点与状态
 
 - change: `implement-quote-pricing-core`
-- status: `REPLACEMENT_CANDIDATE_READY_FOR_EXTERNAL_SHA_HANDOFF`
+- status: `THIRD_REPLACEMENT_READY_FOR_EXTERNAL_SHA_HANDOFF`
 - `base_sha`: `8bcdf3d6b1ea41529adaa54f463cc118c69e0e25`
 - source branch: `codex/order-delivery-integration`
 - writer branch: `codex/implement-quote-pricing-core`
 - writer worktree: `/Users/vivix/.codex/worktrees/9ede/order`
 - `candidate_sha: external-post-commit`；最终完整 SHA 只由 immutable handoff/外部 receipt 绑定，避免把未来 commit SHA 写进自身。
 - invalidated candidate: `7a5412546e9d1c59e1213ea668245e60db52e63e`；主控独立 Standards 审查发现 task evidence 不满足逐 task 统一模板，独立 Spec 审查又发现多重非法输入的 stable error priority 未冻结/未对抗测试。该 SHA 的全部 writer review 与 detached receipt 失效，禁止集成。
-- replacement scope: P1 只修复 `.scratch/implement-quote-pricing-core/**` evidence；P2 追加 Spec、mutation harness 与外部包 public-seam 组合错误测试。除非 fresh Gate 暴露真实业务失败，不修改 `calculator.go`、`errors.go` 或其他业务实现。
+- invalidated replacement: `8650359395bd0b5117217dee967ec6b09d831a0b`；独立 Standards 审查发现 evidence checker 只比较全文件字段总数，允许单 record 缺字段/缺 phase，并未精确要求旧 receipt 作废语义。该 SHA 的 Spec 0 finding 和全部 writer/review receipt 均失效，禁止集成。
+- replacement scope: P1 在 `.scratch/implement-quote-pricing-core/**` 追加逐 fenced record/字段/phase/exit 校验及缺字段、缺 phase、缺旧 receipt 作废语义的负向 failure shield；P2 保留已通过的 Spec、mutation harness 与外部包 public-seam 组合错误测试。除非 fresh Gate 暴露真实业务失败，不修改 `calculator.go`、`errors.go` 或其他业务实现。
 - `gate_type`: `W3`（报价与金额语义）
 - `ui_level_target`: `UI0`
 - `ui_level_actual`: `UI0`
@@ -75,6 +76,7 @@ Calculate(input Input) (Result, error)
 - focused：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/quotepricing -count=1`
 - race/determinism：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test -race ./services/api/internal/quotepricing -count=20`
 - mutation + infrastructure shield：`bash .scratch/implement-quote-pricing-core/verify-mutation-gate.sh`
+- evidence structure + failure shield：`bash .scratch/implement-quote-pricing-core/verify-evidence-gate.sh`
 - W3 邻接：`.scratch/repair-version-scoped-mysql-migration-fixtures-v13/verify-mysql.sh full`，必须 fresh `mysql:8.0.46-oraclelinux9` 且 loopback-only；它只证明全 `services/api` 邻接回归，不证明本纯 Module 的金额语义。
 - static/build/smoke：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go vet ./services/api/...`；`GOPROXY=off GOTOOLCHAIN=go1.26.5 go build ./services/api/...`；`GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh`。
 - formatting/scope/sensitive：`test -z "$(gofmt -l services/api/internal/quotepricing)"`；`git diff --check 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25...HEAD`；base diff 只允许两个 owned paths；敏感扫描只报告文件/规则摘要。

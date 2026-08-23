@@ -6,6 +6,8 @@
 - P1: eleven completed tasks previously had only three aggregate records, without per-task unified evidence or an explicit `green` phase.
 - P2: Spec/tests previously did not freeze or distinguish `INVALID_RATE → EMPTY_LINES → per-line price → quantity → arithmetic` priority.
 - All writer review and detached receipts bound to the invalidated SHA are void; it must not be integrated. Replacement remains `candidate_sha: external-post-commit` until immutable handoff.
+- `8650359395bd0b5117217dee967ec6b09d831a0b` is `INVALIDATED_BY_INDEPENDENT_STANDARDS_REVIEW` because the aggregate-count evidence checker admitted per-record missing fields/phases and did not require receipt-void semantics.
+- Its Spec 0-finding receipt and all writer/review receipts are void; it must not be integrated. The next replacement also remains `candidate_sha: external-post-commit` until immutable handoff.
 
 ## Completed tasks and unified evidence
 - [x] `QP-01` 核验 exact base、clean detached start、目标 branch 不存在后创建独立 writer branch。
@@ -372,7 +374,7 @@ base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
 candidate_sha: external-post-commit
 phase: writer
 command_or_action: >-
-  set -e; GOPROXY=off GOTOOLCHAIN=go1.26.5 go vet ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 go build ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh; test -z "$(gofmt -l services/api/internal/quotepricing)"; bash -n .scratch/implement-quote-pricing-core/verify-evidence.sh .scratch/implement-quote-pricing-core/verify-mutations.sh .scratch/implement-quote-pricing-core/verify-mutation-gate.sh; bash .scratch/implement-quote-pricing-core/verify-evidence.sh; git diff --cached --check; changed_paths=$(git diff --cached --name-only); printf '%s\n' "${changed_paths}" | awk '!/^\.scratch\/implement-quote-pricing-core\// && !/^services\/api\/internal\/quotepricing\// {bad=1} END {exit bad}'; if git diff --cached | rg -i 'authorization[[:space:]]*:|cookie[[:space:]]*:|begin [a-z ]*private key|api[_-]?v3[_-]?key[[:space:]]*[:=]|openid[[:space:]]*[:=]|session[_-]?code[[:space:]]*[:=]' >/dev/null; then exit 72; fi; git diff --quiet; test -z "$(git ls-files --others --exclude-standard)"
+  set -e; GOPROXY=off GOTOOLCHAIN=go1.26.5 go vet ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 go build ./services/api/...; GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh; test -z "$(gofmt -l services/api/internal/quotepricing)"; bash -n .scratch/implement-quote-pricing-core/verify-evidence.sh .scratch/implement-quote-pricing-core/verify-evidence-gate.sh .scratch/implement-quote-pricing-core/verify-mutations.sh .scratch/implement-quote-pricing-core/verify-mutation-gate.sh; bash .scratch/implement-quote-pricing-core/verify-evidence-gate.sh; git diff --cached --check; changed_paths=$(git diff --cached --name-only); printf '%s\n' "${changed_paths}" | awk '!/^\.scratch\/implement-quote-pricing-core\// && !/^services\/api\/internal\/quotepricing\// {bad=1} END {exit bad}'; if git diff --cached | rg -i 'authorization[[:space:]]*:|cookie[[:space:]]*:|begin [a-z ]*private key|api[_-]?v3[_-]?key[[:space:]]*[:=]|openid[[:space:]]*[:=]|session[_-]?code[[:space:]]*[:=]' >/dev/null; then exit 72; fi; git diff --quiet; test -z "$(git ls-files --others --exclude-standard)"
 exit_result: exit-0
 sanitized_summary: vet/build zero, smoke PASS, format/shell/evidence/diff/owned/protected/sensitive and unstaged-clean audits pass
 artifact_or_environment: staged replacement candidate in writer worktree
@@ -382,7 +384,30 @@ external_asset:
   missing: replacement SHA and detached receipt pending
   recovery: commit only staged owned paths then review and verify exact SHA
 ```
-- [x] `QP-12` 修复 P1：每个完成 task 就地附统一 evidence record，显式包含 green 与单一 exit_result。
+- [x] `QP-12` 修复 P1：每个完成 task 就地附统一 evidence record，并以逐 record checker 和负向 failure shield 验证完整性。
+
+```yaml
+task_id: QP-12
+evidence_id: QP-12-evidence-failure-shield-red
+evidence_origin: current_replacement_structural_red
+change: implement-quote-pricing-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
+candidate_sha: external-post-commit
+phase: red
+command_or_action: >-
+  bash .scratch/implement-quote-pricing-core/verify-evidence-gate.sh
+exit_result: exit-1
+sanitized_summary: named EvidenceMissingTopLevelField mutant survived with exit 0 because the old checker compared only whole-file field totals
+artifact_or_environment: writer worktree after adding the negative Gate but before replacing aggregate-count validation
+unverified_boundary: first decisive structural Red; Green below covers all per-record and invalidation negative cases
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: replay the committed negative Gate against the replacement checker
+```
 
 ```yaml
 task_id: QP-12
@@ -396,15 +421,15 @@ base_sha: 8bcdf3d6b1ea41529adaa54f463cc118c69e0e25
 candidate_sha: external-post-commit
 phase: green
 command_or_action: >-
-  bash .scratch/implement-quote-pricing-core/verify-evidence.sh
+  bash .scratch/implement-quote-pricing-core/verify-evidence-gate.sh
 exit_result: exit-0
-sanitized_summary: all 13 completed task IDs have unified records; required field counts match; green phase and invalidated old SHA explicit; three post-commit tasks pending
-artifact_or_environment: owned tasks.md and deterministic structural checker
-unverified_boundary: structure checker proves evidence shape/provenance declarations, not commands that must be replayed separately
+sanitized_summary: every fenced record has each top-level and external_asset field exactly once with valid phase/exit enums; required phase pairs and both invalidated-candidate receipt semantics are explicit; five missing-field/phase/invalidation mutants are rejected nonzero
+artifact_or_environment: owned tasks.md plus deterministic per-record checker and negative failure-shield Gate
+unverified_boundary: structural Gate proves evidence shape and declared provenance, not the underlying commands that are replayed separately
 external_asset:
   owner: N/A
   missing: N/A
-  recovery: rerun exact evidence checker
+  recovery: rerun exact evidence failure-shield Gate
 ```
 - [x] `QP-13` 修复 P2：冻结多重非法输入优先级，并以两条组合测试和两个 priority mutant 闭合。
 
