@@ -45,7 +45,7 @@ func newCVMSSMSecretSource(region string, provider credentialProvider, factory s
 }
 
 func (source *cvmSSMSecretSource) Get(ctx context.Context, name string) (string, error) {
-	if name != databasePasswordSecret && name != miniProgramSecret {
+	if name != databasePasswordSecret && name != miniProgramSecret && name != weChatPaySecretName {
 		return "", errProductionSecretUnavailable
 	}
 	source.once.Do(func() {

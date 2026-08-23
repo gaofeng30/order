@@ -112,15 +112,31 @@ func run() int {
 		merchantIdentityService,
 	)
 	registrars := []httpapi.RouteRegistrar{storefrontHandler, catalogHandler, menuHandler, identityHandler, phoneHandler, merchantIdentityHandler, quoteHandler}
-	var paymentApplication *paymentorder.Service
-	if cfg.Environment != config.Production {
-		paymentProvider := newLocalPaymentProvider(time.Now)
-		paymentApplication = paymentorder.NewMySQLApplication(db, quoteApplication, paymentProvider, paymentorder.Config{
+	var paymentProvider paymentorder.PaymentProvider
+	var paymentParser paymentorder.NotificationParser
+	var paymentConfig paymentorder.Config
+	if cfg.Environment == config.Production {
+		material, materialErr := config.LoadProductionWeChatPayMaterial(context.Background(), os.Getenv("ORDER_TENCENT_REGION"))
+		if materialErr != nil {
+			logger.Error("wechat payment configuration error", "reason", config.Reason(materialErr))
+			return 1
+		}
+		provider, providerConfig, providerErr := composeProductionWeChatPayment(cfg.MiniProgram.AppID, material)
+		if providerErr != nil {
+			logger.Error("wechat payment provider configuration error")
+			return 1
+		}
+		paymentProvider, paymentParser, paymentConfig = provider, provider, providerConfig
+	} else {
+		provider := newLocalPaymentProvider(time.Now)
+		paymentProvider, paymentParser = provider, provider
+		paymentConfig = paymentorder.Config{
 			AppID: cfg.MiniProgram.AppID, MerchantID: "order-local-mch", Description: "预约点餐",
 			PaymentNotifyURL: "http://127.0.0.1:8080/api/v1/payments/wechat/notify",
-		})
-		registrars = append(registrars, newPaymentRoutes(paymentorder.NewHandler(sessionService, paymentApplication, paymentProvider)))
+		}
 	}
+	paymentApplication := paymentorder.NewMySQLApplication(db, quoteApplication, paymentProvider, paymentConfig)
+	registrars = append(registrars, newPaymentRoutes(paymentorder.NewHandler(sessionService, paymentApplication, paymentParser)))
 	if cfg.Environment != config.Production {
 		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
 		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
