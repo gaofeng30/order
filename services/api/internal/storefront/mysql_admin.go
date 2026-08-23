@@ -30,7 +30,7 @@ func (a *MySQLAdminApplication) Admin(ctx context.Context) (AdminSettings, error
 func readAdminSettings(ctx context.Context, q storefrontQueryer) (AdminSettings, error) {
 	var s AdminSettings
 	var status string
-	if q.QueryRowContext(ctx, `SELECT store_name,pickup_point,announcement,business_status,DATE_FORMAT(CURRENT_DATE,'%Y-%m-%d') FROM storefront_settings WHERE id=1`).Scan(&s.StoreName, &s.PickupPoint, &s.Notice, &status, &s.ServiceDate) != nil {
+	if q.QueryRowContext(ctx, `SELECT store_name,pickup_point,announcement,business_status,DATE_FORMAT(DATE(CONVERT_TZ(UTC_TIMESTAMP(6),'+00:00','+08:00')),'%Y-%m-%d') FROM storefront_settings WHERE id=1`).Scan(&s.StoreName, &s.PickupPoint, &s.Notice, &status, &s.ServiceDate) != nil {
 		return AdminSettings{}, ErrAdminUnavailable
 	}
 	s.StoreStatus = status
@@ -58,7 +58,7 @@ func readAdminSettings(ctx context.Context, q storefrontQueryer) (AdminSettings,
 	if len(s.MealPeriods) != 2 {
 		return AdminSettings{}, ErrAdminUnavailable
 	}
-	rows, err = q.QueryContext(ctx, `SELECT DATE_FORMAT(service_date,'%Y-%m-%d'),IF(is_open,'open','closed') FROM service_dates WHERE service_date>=CURRENT_DATE ORDER BY service_date LIMIT 31`)
+	rows, err = q.QueryContext(ctx, `SELECT DATE_FORMAT(service_date,'%Y-%m-%d'),IF(is_open,'open','closed') FROM service_dates WHERE service_date>=DATE(CONVERT_TZ(UTC_TIMESTAMP(6),'+00:00','+08:00')) ORDER BY service_date LIMIT 31`)
 	if err != nil {
 		return AdminSettings{}, ErrAdminUnavailable
 	}

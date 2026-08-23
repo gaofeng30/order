@@ -68,7 +68,7 @@ func (a *MySQLApplication) SearchOrders(ctx context.Context, userID uint64, f Or
 		args = append(args, f.Date)
 	}
 	if f.Unclaimed {
-		query += ` AND state='READY_FOR_PICKUP' AND pickup_date<CURRENT_DATE`
+		query += ` AND state='READY_FOR_PICKUP' AND pickup_date<DATE(CONVERT_TZ(UTC_TIMESTAMP(6),'+00:00','+08:00'))`
 	}
 	if f.Query != "" {
 		query += ` AND (CONVERT(order_no USING utf8mb4) LIKE CONCAT('%',?,'%') OR LPAD(pickup_number,4,'0')=? OR CONVERT(contact_phone_snapshot USING ascii) LIKE CONCAT('%',?,'%'))`
