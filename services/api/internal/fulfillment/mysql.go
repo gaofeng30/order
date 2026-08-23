@@ -19,6 +19,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/orderproduction"
 	"github.com/gaofeng30/order/services/api/internal/orderquery"
+	"github.com/gaofeng30/order/services/api/internal/subscription"
 	mysqlDriver "github.com/go-sql-driver/mysql"
 )
 
@@ -35,28 +36,38 @@ var fulfillmentLocation = time.FixedZone("Asia/Shanghai", 8*60*60)
 // Every transaction locks the current merchant account before one order and
 // appends its command receipt last.
 type MySQLApplication struct {
-	db         *sql.DB
-	authorizer merchantidentity.Authorizer
-	receipts   *audit.ReceiptStore
-	cipher     TokenCipher
-	random     io.Reader
-	now        func() time.Time
-	location   *time.Location
+	db            *sql.DB
+	authorizer    merchantidentity.Authorizer
+	receipts      *audit.ReceiptStore
+	cipher        TokenCipher
+	notifications NotificationEnqueuer
+	random        io.Reader
+	now           func() time.Time
+	location      *time.Location
 }
 
 var _ Application = (*MySQLApplication)(nil)
 
-func NewMySQLApplication(db *sql.DB, authorizer merchantidentity.Authorizer, cipher TokenCipher) *MySQLApplication {
+// NotificationEnqueuer appends a subscription intent inside the fulfillment transaction.
+type NotificationEnqueuer interface {
+	EnqueueInTx(context.Context, *sql.Tx, subscription.NotificationIntent) error
+}
+
+func NewMySQLApplication(db *sql.DB, authorizer merchantidentity.Authorizer, cipher TokenCipher, notifications NotificationEnqueuer) *MySQLApplication {
 	return &MySQLApplication{
 		db: db, authorizer: authorizer, receipts: audit.NewReceiptStore(db), cipher: cipher,
-		random: rand.Reader, now: time.Now, location: fulfillmentLocation,
+		notifications: notifications, random: rand.Reader, now: time.Now, location: fulfillmentLocation,
 	}
 }
 
 type lockedOrder struct {
 	id             uint64
+	userID         uint64
+	orderNumber    string
 	state          orderquery.State
 	pickupDate     string
+	pickupTime     string
+	pickupPoint    string
 	pickupNumber   uint16
 	preparingAt    sql.NullTime
 	readyAt        sql.NullTime
@@ -195,6 +206,22 @@ func (application *MySQLApplication) executeOnce(
 	response, err := applyTransition(ctx, transaction, authorization, command, order, now, tokenHash, keyVersion, ciphertext)
 	if err != nil {
 		return Result{}, err
+	}
+	if command.Kind == CommandMarkReady {
+		if err := application.notifications.EnqueueInTx(ctx, transaction, subscription.NotificationIntent{
+			OrderID:         order.id,
+			RecipientUserID: order.userID,
+			Kind:            subscription.KindReady,
+			Message: subscription.Message{
+				OrderNumber: order.orderNumber,
+				PickupDate:  order.pickupDate,
+				PickupTime:  order.pickupTime,
+				PickupPoint: order.pickupPoint,
+			},
+			AvailableAt: now,
+		}); err != nil {
+			return Result{}, err
+		}
 	}
 	role, ok := receiptRole(authorization.Actor)
 	if !ok {
@@ -389,7 +416,7 @@ func (application *MySQLApplication) locateReceiptTarget(ctx context.Context, me
 	return orderID, nil
 }
 
-const lockedOrderColumns = `id,state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),pickup_number,preparing_at,ready_at,completed_at,redemption_token_hash,redemption_token_ciphertext,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at,record_version`
+const lockedOrderColumns = `id,user_id,order_no,state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),pickup_point_snapshot,pickup_number,preparing_at,ready_at,completed_at,redemption_token_hash,redemption_token_ciphertext,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at,record_version`
 
 func lockOrder(ctx context.Context, transaction *sql.Tx, orderID uint64) (lockedOrder, error) {
 	return scanLockedOrder(transaction.QueryRowContext(ctx, `SELECT `+lockedOrderColumns+` FROM orders WHERE id=? FOR UPDATE`, orderID))
@@ -398,7 +425,7 @@ func lockOrder(ctx context.Context, transaction *sql.Tx, orderID uint64) (locked
 func scanLockedOrder(row *sql.Row) (lockedOrder, error) {
 	var order lockedOrder
 	var state string
-	err := row.Scan(&order.id, &state, &order.pickupDate, &order.pickupNumber, &order.preparingAt, &order.readyAt, &order.completedAt, &order.redemptionHash, &order.ciphertext, &order.keyVersion, &order.issuedAt, &order.redeemedBy, &order.redeemedAt, &order.recordVersion)
+	err := row.Scan(&order.id, &order.userID, &order.orderNumber, &state, &order.pickupDate, &order.pickupTime, &order.pickupPoint, &order.pickupNumber, &order.preparingAt, &order.readyAt, &order.completedAt, &order.redemptionHash, &order.ciphertext, &order.keyVersion, &order.issuedAt, &order.redeemedBy, &order.redeemedAt, &order.recordVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return lockedOrder{}, ErrNotFound
 	}
@@ -520,7 +547,7 @@ func decodeReceiptResponse(raw []byte) (receiptResponse, bool) {
 
 func validApplication(application *MySQLApplication) bool {
 	return application != nil && application.db != nil && application.authorizer != nil && application.receipts != nil &&
-		application.cipher != nil && application.random != nil && application.now != nil && application.location != nil
+		application.cipher != nil && application.notifications != nil && application.random != nil && application.now != nil && application.location != nil
 }
 
 func validWrite(meta WriteMeta) bool {

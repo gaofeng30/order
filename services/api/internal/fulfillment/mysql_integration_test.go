@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -19,6 +20,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/orderquery"
+	"github.com/gaofeng30/order/services/api/internal/subscription"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
 
@@ -44,9 +46,11 @@ func TestFulfillmentMySQLVerticalSlice(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		seedAcceptedReadyConsents(t, db)
 		now := time.Date(2026, 8, 25, 8, 2, 0, 0, time.UTC)
 		identityRepository := merchantidentity.NewRepository(db)
-		application := NewMySQLApplication(db, identityRepository, cipher)
+		notifications := subscription.New(db, subscription.NewFakeProvider())
+		application := NewMySQLApplication(db, identityRepository, cipher, notifications)
 		application.now = func() time.Time { return now }
 
 		command := Command{Kind: CommandMarkReady, OrderID: 401}
@@ -82,11 +86,22 @@ func TestFulfillmentMySQLVerticalSlice(t *testing.T) {
 		if replays != 1 {
 			t.Fatalf("ready replay count = %d, want 1", replays)
 		}
+		assertReadyNotification(t, db, 401, "SA202608250401", now)
 		for _, id := range []uint64{402, 403} {
 			result, err := application.Execute(context.Background(), WriteMeta{ActorUserID: 2, IdempotencyKey: fmt.Sprintf("ready-%d", id), RequestID: fmt.Sprintf("request-ready-%d", id)}, Command{Kind: CommandMarkReady, OrderID: id})
 			if err != nil || result.State != orderquery.StateReadyForPickup {
 				t.Fatalf("ready %d = %#v, %v", id, result, err)
 			}
+		}
+		var readyOutbox, consumedConsents int
+		if err := db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM notification_outbox WHERE kind='READY'`).Scan(&readyOutbox); err != nil {
+			t.Fatal("count READY notification outbox failed")
+		}
+		if err := db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM notification_consents WHERE kind='READY' AND consumed_at IS NOT NULL`).Scan(&consumedConsents); err != nil {
+			t.Fatal("count consumed READY consents failed")
+		}
+		if readyOutbox != 3 || consumedConsents != 3 {
+			t.Fatalf("READY notifications outbox=%d consumed=%d, want 3/3", readyOutbox, consumedConsents)
 		}
 
 		identityService := merchantidentity.NewService(identityRepository, nil)
@@ -143,6 +158,141 @@ func TestFulfillmentMySQLVerticalSlice(t *testing.T) {
 			t.Fatalf("durable fulfillment facts receipts=%d ciphertext=%d hash=%d", receipts, cipherRows, hashRows)
 		}
 	})
+}
+
+func TestMarkReadyRollsBackWhenNotificationEnqueueFails(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		makeEnqueuer  func(*sql.DB) NotificationEnqueuer
+		hideOutboxSQL bool
+	}{
+		{
+			name: "notification SQL unavailable",
+			makeEnqueuer: func(db *sql.DB) NotificationEnqueuer {
+				return subscription.New(db, subscription.NewFakeProvider())
+			},
+			hideOutboxSQL: true,
+		},
+		{
+			name: "invalid notification rejected",
+			makeEnqueuer: func(*sql.DB) NotificationEnqueuer {
+				return rejectingNotificationEnqueuer{err: subscription.ErrInvalidInput}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			withFulfillmentSchema(t, func(db *sql.DB) {
+				migrationSet, err := migrate.Load(migrations.FS)
+				if err != nil {
+					t.Fatal("load migrations failed")
+				}
+				if result, err := migrate.Run(context.Background(), db, migrationSet); err != nil || result.ToVersion != 44 {
+					t.Fatalf("apply v1-v44 = %#v, %v", result, err)
+				}
+				seedFulfillmentOrder(t, db)
+				seedAcceptedReadyConsents(t, db)
+
+				key := make([]byte, 32)
+				for index := range key {
+					key[index] = byte(index + 1)
+				}
+				cipher, err := NewAESGCMTokenCipher(map[uint16][]byte{1: key}, 1, rand.Reader)
+				if err != nil {
+					t.Fatal(err)
+				}
+				application := NewMySQLApplication(db, merchantidentity.NewRepository(db), cipher, test.makeEnqueuer(db))
+				application.now = func() time.Time { return time.Date(2026, 8, 25, 8, 2, 0, 0, time.UTC) }
+
+				restoreOutbox := func() {}
+				if test.hideOutboxSQL {
+					if _, err := db.ExecContext(context.Background(), `RENAME TABLE notification_outbox TO notification_outbox_unavailable`); err != nil {
+						t.Fatal("hide notification outbox failed")
+					}
+					restored := false
+					restoreOutbox = func() {
+						if restored {
+							return
+						}
+						if _, err := db.ExecContext(context.Background(), `RENAME TABLE notification_outbox_unavailable TO notification_outbox`); err != nil {
+							t.Fatal("restore notification outbox failed")
+						}
+						restored = true
+					}
+					defer restoreOutbox()
+				}
+
+				result, err := application.Execute(context.Background(), WriteMeta{
+					ActorUserID: 2, IdempotencyKey: "ready-notification-failure", RequestID: "request-ready-notification-failure",
+				}, Command{Kind: CommandMarkReady, OrderID: 401})
+				if !errors.Is(err, ErrUnavailable) || result != (Result{}) {
+					t.Fatalf("MarkReady() = %#v, %v, want unavailable", result, err)
+				}
+
+				var unchanged, receiptCount, consumedCount int
+				if err := db.QueryRowContext(context.Background(), `
+					SELECT COUNT(*) FROM orders
+					WHERE id=401 AND state='PREPARING' AND ready_at IS NULL
+					  AND redemption_token_ciphertext IS NULL AND redemption_token_hash IS NULL
+					  AND redemption_key_version IS NULL AND redemption_issued_at IS NULL AND record_version=1
+				`).Scan(&unchanged); err != nil {
+					t.Fatal("read rolled-back order failed")
+				}
+				if err := db.QueryRowContext(context.Background(), `
+					SELECT COUNT(*) FROM action_audits
+					WHERE entry_kind='COMMAND_RECEIPT' AND action=? AND target_id=401
+				`, actionMarkReady).Scan(&receiptCount); err != nil {
+					t.Fatal("read rolled-back receipt failed")
+				}
+				if err := db.QueryRowContext(context.Background(), `
+					SELECT COUNT(*) FROM notification_consents WHERE order_id=401 AND consumed_at IS NOT NULL
+				`).Scan(&consumedCount); err != nil {
+					t.Fatal("read rolled-back consent failed")
+				}
+				if unchanged != 1 || receiptCount != 0 || consumedCount != 0 {
+					t.Fatalf("rollback facts order=%d receipt=%d consumed=%d", unchanged, receiptCount, consumedCount)
+				}
+				restoreOutbox()
+			})
+		})
+	}
+}
+
+type rejectingNotificationEnqueuer struct{ err error }
+
+func (enqueuer rejectingNotificationEnqueuer) EnqueueInTx(context.Context, *sql.Tx, subscription.NotificationIntent) error {
+	return enqueuer.err
+}
+
+func seedAcceptedReadyConsents(t *testing.T, db *sql.DB) {
+	t.Helper()
+	decidedAt := time.Date(2026, 8, 20, 8, 1, 0, 0, time.UTC)
+	for offset, orderID := range []uint64{401, 402, 403} {
+		if _, err := db.ExecContext(context.Background(), `
+			INSERT INTO notification_consents(
+				order_id,user_id,kind,grant_sequence,decision,template_config_version,idempotency_key_hash,decided_at
+			) VALUES (?,1,'READY',1,'ACCEPTED',7,?,?)
+		`, orderID, sha256Bytes(byte(80+offset)), decidedAt); err != nil {
+			t.Fatalf("seed accepted READY consent for order %d failed: %v", orderID, err)
+		}
+	}
+}
+
+func assertReadyNotification(t *testing.T, db *sql.DB, orderID uint64, orderNumber string, availableAt time.Time) {
+	t.Helper()
+	var recipientUserID, templateVersion uint64
+	var kind, message string
+	var nextAttemptAt time.Time
+	if err := db.QueryRowContext(context.Background(), `
+		SELECT recipient_user_id,kind,CAST(immutable_message_json AS CHAR),template_config_version,next_attempt_at
+		FROM notification_outbox WHERE order_id=?
+	`, orderID).Scan(&recipientUserID, &kind, &message, &templateVersion, &nextAttemptAt); err != nil {
+		t.Fatal("read READY notification failed")
+	}
+	var decoded subscription.Message
+	wantMessage := subscription.Message{OrderNumber: orderNumber, PickupDate: "2026-08-25", PickupTime: "16:30", PickupPoint: "北门"}
+	if json.Unmarshal([]byte(message), &decoded) != nil || recipientUserID != 1 || kind != "READY" || decoded != wantMessage || templateVersion != 7 || !nextAttemptAt.Equal(availableAt) {
+		t.Fatalf("READY notification facts recipient=%d kind=%s message=%s template=%d available=%s", recipientUserID, kind, message, templateVersion, nextAttemptAt)
+	}
 }
 
 func seedFulfillmentOrder(t *testing.T, db *sql.DB) {
