@@ -317,20 +317,31 @@ func TestFoundationAndCatalogIntegration(t *testing.T) {
 		state := migrate.Check(ctx, db, migrationSet)
 		return ReadinessResult{Ready: state.Ready, Reason: state.Reason}
 	}
-	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db)), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
+	catalogNow := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.FixedZone("Asia/Shanghai", 8*60*60))
+	router := NewRouter(discardLogger(), readiness, catalog.NewHandler(catalog.NewRepository(db), catalog.WithClock(func() time.Time { return catalogNow })), testMenuHandler(), testIdentityHandler(), testPhoneHandler(), testMerchantIdentityHandler())
 	assertSmokeResponse(t, router, "/health/ready", http.StatusOK, `{"status":"ok"}`)
 	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[]}`)
 
-	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,is_active) VALUES (1,'smoke',TRUE),(2,'hidden',FALSE)"); err != nil {
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO categories(id,name,name_key,is_active) VALUES (1,'smoke','smoke',TRUE),(2,'hidden','hidden',FALSE)"); err != nil {
 		t.Fatal("insert smoke categories failed")
 	}
-	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,price_cents,is_listed) VALUES (1,1,'visible',250,TRUE),(2,1,'unlisted',300,FALSE),(3,2,'hidden-parent',400,TRUE)"); err != nil {
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO products(id,category_id,name,name_key,images_json,price_cents,is_listed) VALUES (1,1,'visible','visible',JSON_ARRAY(),250,TRUE),(2,1,'unlisted','unlisted',JSON_ARRAY(),300,FALSE),(3,2,'hidden-parent','hidden-parent',JSON_ARRAY(),400,TRUE)"); err != nil {
 		t.Fatal("insert smoke products failed")
 	}
-	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"smoke","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}]}]}`)
-	assertSmokeResponse(t, router, "/api/v1/catalog/products/1", http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","price_cents":250}}`)
-	assertSmokeResponse(t, router, "/api/v1/catalog/products/2", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
-	assertSmokeResponse(t, router, "/api/v1/catalog/products/3", http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO storefront_settings(id,store_name,store_address,pickup_point,announcement,business_status) VALUES (1,'smoke store','smoke address','smoke point','','open')"); err != nil {
+		t.Fatal("insert smoke storefront failed")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO merchant_accounts(id,phone,name,role,created_at,updated_at) VALUES (1,'+8613800000000','smoke owner','OWNER',UTC_TIMESTAMP(6),UTC_TIMESTAMP(6))"); err != nil {
+		t.Fatal("insert smoke merchant account failed")
+	}
+	if _, err := db.ExecContext(context.Background(), "INSERT INTO service_dates(service_date,is_open,updated_by_account_id,updated_at) VALUES ('2026-08-25',TRUE,1,UTC_TIMESTAMP(6))"); err != nil {
+		t.Fatal("insert smoke service date failed")
+	}
+	assertSmokeResponse(t, router, "/api/v1/catalog", http.StatusOK, `{"categories":[{"id":"1","name":"smoke","products":[{"id":"1","category_id":"1","name":"visible","description":"","specification":"","meal_period":"all","images":[],"listed":true,"original_unit_price_cents":250}]}]}`)
+	detailSuffix := "?date=2026-08-25&time=12:00"
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/1"+detailSuffix, http.StatusOK, `{"product":{"id":"1","category_id":"1","name":"visible","description":"","specification":"","meal_period":"all","images":[],"listed":true,"sold_out":false,"original_unit_price_cents":250}}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/2"+detailSuffix, http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
+	assertSmokeResponse(t, router, "/api/v1/catalog/products/3"+detailSuffix, http.StatusNotFound, `{"error":{"code":"PRODUCT_NOT_FOUND","message":"product not found"}}`)
 
 	if err := db.Close(); err != nil {
 		t.Fatal("close smoke database failed")
