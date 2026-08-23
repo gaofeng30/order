@@ -3,12 +3,14 @@
 ## 固定点与状态
 
 - change: `implement-order-production-policy-core`
-- status: `APPROVED_FOR_THIS_DELEGATED_IMPLEMENTATION`
+- status: `REPLACEMENT_CANDIDATE_READY_FOR_EXACT_REVIEW`
 - `base_sha`: `5e937f3599a16f4813d6021f4cd2dd637c3156a2`
 - source branch: `codex/order-delivery-integration`
 - writer branch: `codex/implement-order-production-policy-core`
 - writer worktree: `/Users/vivix/.codex/worktrees/fd9e/order`
-- `candidate_sha`: `not-yet-created`
+- `candidate_sha`: `39c0ea43067f30e5befd48290e9cb45711415452`
+- `candidate_status`: `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT`
+- `replacement_final_sha`: 由包含本治理修复的 commit 形成，并在 immutable external handoff 中绑定完整 SHA；不得把未来 commit SHA 写入其自身内容制造无限 amend。
 - `gate_type`: `W3`（订单状态与并发确定性，按最高风险分类）
 - `ui_level_target`: `UI0`
 - `ui_level_actual`: `UI0`
@@ -64,18 +66,25 @@ Advance(current State, observedAt, pickupAt time.Time) (Decision, error)
 2. Public-seam 编译 Red：外部测试只引用已冻结的 exported Interface，因实现缺失真实编译失败。
 3. 逐 tracer 纵切：`InitialState` 的 `>30m`、`<30m`、`=30m`；`Advance` 的阈值前、恰好阈值、漏跑后；五个后继态不回退；非法/废止/空状态、零时间、`pickupAt<=paymentSucceededAt`；并发与重复确定性。每次先见目标行为 Red，再加最小 Green。
 4. Refactor 仅在全部行为 Green 后进行；重跑相同 focused 与 race。
-5. Writer mutation Gate 在临时副本依次注入五个可逆 mutant：Initial `<` 改 `<=`、Advance `>=` 改 `>`、不足 30 分钟初态错为 `RESERVED`、后继态回退、非法/废止态被接受。每个 focused test 必须非零退出；原工作树保持未变并重跑全绿。
+5. Writer mutation Gate 在临时副本依次注入五个可逆 mutant：Initial `<` 改 `<=`、Advance `>=` 改 `>`、不足 30 分钟初态错为 `RESERVED`、后继态回退、非法/废止态被接受。每个 source pattern 必须恰好命中一次；每个 focused test 必须以 exit 1 到达指定 `--- FAIL: Test...` 行为断言。build/toolchain/setup 等其他非零退出必须使 harness 自身失败；原工作树保持未变并重跑全绿。
+
+## Candidate 作废与两阶段治理
+
+- 业务候选 `39c0ea43067f30e5befd48290e9cb45711415452` 已由主控第三方 Standards/Governance 审计作废；旧双审和旧动态 Gate 不得继承到 replacement。
+- 作废原因：任务状态/checklist 没有闭环；mutation harness 又把任意非零 `go test` 错报为 `MUTATION_KILLED`，不能证明目标行为断言杀死 mutant。
+- 两阶段稳定验收：本工件记录完整旧业务候选 SHA 与作废事实；随后只在 owned paths 提交治理修复形成 replacement final SHA；该 final exact SHA 由 immutable external handoff 绑定，并从固定 base 对完整 diff 重跑双轴和 fresh detached 全 Gate。
+- 本治理不改变 `orderproduction` 业务 Interface 或策略实现，不扩大 owned paths，不集成、不推送。
 
 ## Writer / Review / Verifier / Integration 命令
 
 - focused：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/orderproduction -count=1`
 - focused race/determinism：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go test -race ./services/api/internal/orderproduction -count=20`
-- mutation：`GOPROXY=off GOTOOLCHAIN=go1.26.5 bash .scratch/implement-order-production-policy-core/verify-mutations.sh`
+- mutation：`bash .scratch/implement-order-production-policy-core/verify-mutation-gate.sh`；先证明 infrastructure failure 被拒绝，再运行五个真实 mutant。
 - W3 邻接 schema/事务回归：`.scratch/repair-version-scoped-mysql-migration-fixtures-v13/verify-mysql.sh full`，必须是 fresh loopback-only `mysql:8.0.46-oraclelinux9`。它不证明本纯 Module 的策略正确；本 Module 的决定性证据是 focused/race/determinism/mutation。
 - static/build/smoke：`GOPROXY=off GOTOOLCHAIN=go1.26.5 go vet ./services/api/...`；`GOPROXY=off GOTOOLCHAIN=go1.26.5 go build ./services/api/...`；`GOPROXY=off GOTOOLCHAIN=go1.26.5 bash services/api/scripts/smoke.sh`。
 - formatting/diff/owned/PII：`test -z "$(gofmt -l services/api/internal/orderproduction)"`；`git diff --check 5e937f3599a16f4813d6021f4cd2dd637c3156a2...HEAD`；只允许两个 owned path；扫描 owned diff 中的 credential/header/token/个人数据 canary，只报告文件与规则摘要。
 - review fixed point：`git diff 5e937f3599a16f4813d6021f4cd2dd637c3156a2...HEAD` 与 `git log 5e937f3599a16f4813d6021f4cd2dd637c3156a2..HEAD --oneline`；Standards/Spec 两轴并行绑定 exact candidate SHA。
-- verifier：在全新 clean detached worktree checkout exact candidate，重跑 focused/race/mutation、fresh MySQL full、vet/build/smoke、format/diff/owned/PII/clean；不得修改业务文件。
+- verifier：在全新 clean detached worktree checkout exact candidate，重跑 focused/race/mutation（含 infrastructure failure shield）、fresh MySQL full、vet/build/smoke、format/diff/owned/PII/clean；不得修改业务文件。
 - integration：本次不做。未来 integration owner 在依赖满足且 exact SHA 独立 PASS 后另行获权处理；rebase/merge 后候选与验证失效。
 
 ## 外部资产与未验证边界

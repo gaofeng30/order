@@ -19,11 +19,17 @@
 - [x] 覆盖并发与重复确定性并完成 focused/race Refactor Gate。
   - Evidence: exact 30-minute two-step test, 32-worker repeated determinism test, focused PASS, and `go test -race ... -count=20` PASS after Refactor.
 - [x] 杀死五个指定可逆 mutant，并恢复后全绿。
-  - Evidence: `verify-mutations.sh` killed Initial `<→<=`, Advance `>=→>`, insufficient-time `PREPARING→RESERVED`, successor rollback, and invalid-state acceptance mutants with five expected exit-1 focused failures; original focused and race gates then passed.
+  - Evidence: hardened `verify-mutations.sh` kills Initial `<→<=`, Advance `>=→>`, insufficient-time `PREPARING→RESERVED`, successor rollback, and invalid-state acceptance only when each focused command exits 1 with its named `--- FAIL: Test...` marker; focused and race gates pass after temporary copies are removed.
 - [x] 在 fresh loopback MySQL 8.0.46 跑 baseline `verify-mysql.sh full`，另跑 vet/build/smoke/gofmt/diff/owned/PII。
-  - Evidence: pinned image reported MySQL `8.0.46` and loopback-only binding; all `services/api` tests and race tests passed; vet/build exited 0; smoke printed `smoke: PASS`; formatting, shell syntax, sensitive-pattern and temporary-resource checks passed. Final pre-commit rerun remains the commit gate after this evidence update.
-- [ ] 只提交 owned paths，中文完整 commit，并记录 exact candidate SHA。
-- [ ] 对 exact SHA 并行完成 Standards/Spec 双轴审查，零 finding。
+  - Evidence: pinned image reported MySQL `8.0.46` and loopback-only binding; all `services/api` tests and race tests passed; vet/build exited 0; smoke printed `smoke: PASS`; formatting, shell syntax, sensitive-pattern and temporary-resource checks passed before business candidate `39c0ea43067f30e5befd48290e9cb45711415452`. Those dynamic results were later invalidated with that candidate and are not inherited by the replacement.
+- [x] 只提交 owned paths，中文完整 commit，并记录 exact business candidate SHA。
+  - Evidence: `39c0ea43067f30e5befd48290e9cb45711415452`; clean writer tree after commit; subsequently `INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT` and never pushed/integrated/deployed.
+- [x] 如实记录旧 Candidate/双审作废并消除 phase/status/checklist 矛盾。
+  - Evidence: `DRAFT.md` now records the full invalidated business candidate SHA, replacement-ready status, two-stage final-SHA handoff, and non-inheritance rule.
+- [x] 修复 mutation harness 的假阳性并完成 remediation Red/Green。
+  - Red evidence: an injected `go` setup failure exited 2, but the old harness printed five `MUTATION_KILLED` lines and exited 0.
+  - Green evidence: `verify-mutation-gate.sh` requires the same setup failure to exit 82 before it runs real mutants; the hardened harness requires one exact source match plus exit 1 and the named `--- FAIL: Test...` marker, then kills all five mutants and leaves focused/race green.
+- [ ] 对 replacement exact SHA 并行完成 Standards/Spec 双轴审查，零 finding。
 - [ ] 在 fresh clean detached worktree 对 exact SHA 从头重跑全部 Gate，writer/verifier 均 clean。
 
 ## Evidence records
@@ -36,7 +42,8 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
-candidate_sha: not-yet-created
+candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
 phase: red
 command_or_action: focused public-seam compile and one focused command per Initial, Advance, successor, invalid-state, and invalid-time tracer
 exit_result: expected nonzero before each minimal slice
@@ -55,7 +62,8 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
-candidate_sha: not-yet-created
+candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
 phase: refactor
 command_or_action: focused package test; race count 20; temporary-copy mutation harness
 exit_result: PASS; five mutants each exited nonzero as expected
@@ -74,7 +82,8 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
-candidate_sha: not-yet-created
+candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
 phase: writer
 command_or_action: repair-version-scoped baseline verify-mysql.sh full; vet; build; smoke; format and scope audits
 exit_result: PASS
@@ -85,4 +94,24 @@ external_asset:
   owner: writer/verifier
   missing: N/A for writer; verifier must independently recreate
   recovery: rerun full profile from exact candidate in a fresh detached worktree
+```
+
+```yaml
+change: implement-order-production-policy-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
+candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
+candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
+phase: review-remediation
+command_or_action: third-party governance audit; exported failing go function against old mutation harness; harden source and behavior-failure proof
+exit_result: old harness false PASS exit 0; remediated harness rejects setup failure with exit 82 and kills five real mutants with exit 1 plus named test markers
+sanitized_summary: old candidate and all old review/runtime receipts invalidated; mutation proof now distinguishes target assertion failures from infrastructure failures
+artifact_or_environment: owned task artifacts and isolated temporary mutation copies
+unverified_boundary: replacement final SHA, new dual review, and detached full Gate are pending and cannot inherit any old result
+external_asset:
+  owner: writer/verifier
+  missing: replacement external SHA handoff and fresh detached receipt
+  recovery: commit owned remediation, bind exact SHA externally, then rerun all declared gates from the fixed base
 ```
