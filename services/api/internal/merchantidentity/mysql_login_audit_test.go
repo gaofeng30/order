@@ -57,6 +57,7 @@ func assertResolvedLoginAuditBranches(t *testing.T, db *sql.DB) {
 		if merchantAccountID != accountID || snapshotID != accountID || snapshotRole != RoleSubaccount || snapshotAuth != 1 || result != wantResult || reason != wantReason || !bytes.Equal(idempotencyHash, wantHash[:]) {
 			t.Fatalf("%s audit facts were not exact", requestID)
 		}
+		assertMerchantLoginAuditTarget(t, db, requestID, accountID)
 	}
 
 	alreadyHash := hashLoginCode("already-bound-branch-code")
@@ -116,6 +117,7 @@ func assertAlreadyBoundCannotConfirmRejectedLogin(t *testing.T, db *sql.DB) {
 	if err := db.QueryRowContext(ctx, "SELECT reason,idempotency_key_hash FROM merchant_action_audits WHERE request_id=?", []byte("internal-already-proof-candidate")).Scan(&candidateReason, &candidateHash); err != nil || candidateReason != "ALREADY_BOUND" || !bytes.Equal(candidateHash, rejectedHash[:]) {
 		t.Fatal("ALREADY_BOUND proof candidate was not exact")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-already-proof-candidate", accountID)
 
 	if _, err := repository.RecoverRejectedLogin(ctx, userID, rejectedHash, "internal-already-proof-rejected", now, now.Add(3*time.Microsecond)); !errors.Is(err, ErrPhoneCodeRejected) {
 		t.Fatalf("ALREADY_BOUND recovery result = %v", err)
@@ -133,6 +135,7 @@ func assertAlreadyBoundCannotConfirmRejectedLogin(t *testing.T, db *sql.DB) {
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "PHONE_CODE_REJECTED" || !bytes.Equal(rejectionHash, rejectedHash[:]) {
 		t.Fatal("ALREADY_BOUND rejection audit was not unresolved and exact")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-already-proof-rejected", 0)
 	var primaryPhone string
 	var primaryBoundAt, accountBoundAt time.Time
 	var boundUserID, recordVersion, authVersion uint64
@@ -176,6 +179,7 @@ func assertExistingPrimaryPhoneCompletesFirstBinding(t *testing.T, db *sql.DB) {
 	if merchantAccountID != accountID || snapshotID != accountID || snapshotRole != RoleSubaccount || snapshotAuth != 2 || result != "SUCCEEDED" || reason != "FIRST_BINDING" || !bytes.Equal(idempotencyHash, wantHash[:]) {
 		t.Fatal("FIRST_BINDING_EXISTING_PRIMARY audit facts were not exact")
 	}
+	assertMerchantLoginAuditTarget(t, db, requestID, accountID)
 
 	var primaryPhone string
 	var storedPrimaryBoundAt, accountBoundAt time.Time

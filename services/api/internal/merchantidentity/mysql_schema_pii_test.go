@@ -173,6 +173,7 @@ func assertMerchantPIIBoundaries(t *testing.T, db *sql.DB) {
 			t.Fatal("durable merchant audit contained a PII canary")
 		}
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-pii-request", uint64(accountID))
 	var storedCodeHash []byte
 	if err := db.QueryRowContext(ctx, `
 		SELECT idempotency_key_hash

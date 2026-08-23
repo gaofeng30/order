@@ -81,6 +81,26 @@ func bindPrimaryPhoneFixture(t *testing.T, db *sql.DB, userID uint64, phone stri
 	}
 }
 
+func assertMerchantLoginAuditTarget(t *testing.T, db *sql.DB, requestID string, accountID uint64) {
+	t.Helper()
+	var targetType sql.NullString
+	var targetID sql.NullInt64
+	if err := db.QueryRowContext(context.Background(), `
+		SELECT target_type,target_id FROM merchant_action_audits WHERE request_id=?
+	`, []byte(requestID)).Scan(&targetType, &targetID); err != nil {
+		t.Fatal("read merchant login audit target failed")
+	}
+	if accountID == 0 {
+		if targetType.Valid || targetID.Valid {
+			t.Fatal("unresolved merchant login audit retained a target")
+		}
+		return
+	}
+	if !targetType.Valid || targetType.String != "merchant_account" || !targetID.Valid || uint64(targetID.Int64) != accountID {
+		t.Fatal("resolved merchant login audit target was not exact")
+	}
+}
+
 type staticPhoneProvider struct {
 	phone string
 	err   error

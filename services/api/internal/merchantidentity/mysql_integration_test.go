@@ -153,6 +153,7 @@ func assertFirstMerchantBinding(t *testing.T, db *sql.DB) {
 	if auditAccountID != uint64(accountID) || snapshotID != uint64(accountID) || snapshotRole != RoleOwner || snapshotAuth != 2 || auditActorID != uint64(userID) || action != "merchant.login" || auditResult != "SUCCEEDED" || reason != "FIRST_BINDING" {
 		t.Fatal("first-binding audit snapshot was incomplete")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-request-a", uint64(accountID))
 }
 
 func assertUnresolvedMerchantRejection(t *testing.T, db *sql.DB) {
@@ -185,6 +186,7 @@ func assertUnresolvedMerchantRejection(t *testing.T, db *sql.DB) {
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "ACCOUNT_NOT_AVAILABLE" {
 		t.Fatal("unresolved rejection audit did not preserve the all-empty snapshot contract")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-request-b", 0)
 }
 
 func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
@@ -319,8 +321,11 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 				if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid {
 					t.Fatal("unresolved mismatch audit retained an account snapshot")
 				}
+				assertMerchantLoginAuditTarget(t, db, requestID, 0)
 			} else if !snapshotID.Valid || uint64(snapshotID.Int64) != accountID || !snapshotRole.Valid || Role(snapshotRole.String) != expectedSnapshotRole || !snapshotAuth.Valid || uint64(snapshotAuth.Int64) != expectedSnapshotAuth {
 				t.Fatal("resolved rejection audit snapshot was incomplete")
+			} else {
+				assertMerchantLoginAuditTarget(t, db, requestID, accountID)
 			}
 		})
 	}

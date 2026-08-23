@@ -25,6 +25,63 @@ ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: not-yet-created
 phase: writer
+command_or_action: post-audit-target focused plus race; fresh MySQL 8.0.46; repository-wide test plus race; vet; controlled build; smoke; format, diff, ownership, migration, structure, lifecycle, evidence, PII, container and artifact checks
+exit_result: PASS
+sanitized_summary: all exact resolved and unresolved merchant-login audit paths now enforce the frozen target pair, both targeted mutations are killed, and every declared Writer Gate passed without a production-code change in this cycle
+artifact_or_environment: replacement WIP test and task tree before commit; disposable MySQL credentials and containers cleaned and build output confined to the controlled temporary directory
+unverified_boundary: replacement clean WIP SHA, fresh fixed-base Standards and Spec review, controller approval and detached exact-SHA verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: rerun the complete Gate after this evidence change, commit the replacement, and externally pin both reviews to clean HEAD
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: 5b42e015da7ec4688553536a47b2ab2c975d14af
+phase: red
+command_or_action: structural exact-audit checker plus controller disposable resolved-target deletion mutation against fresh MySQL W3
+exit_result: FAIL
+sanitized_summary: no merchant-login exact audit assertion read target_type or target_id, so deleting both resolved production assignments still passed the prior W3 suite; the clean WIP SHA and both in-flight reviews were invalidated
+artifact_or_environment: exact externally pinned WIP SHA 5b42e015da7ec4688553536a47b2ab2c975d14af; controller disposable copy and interrupted reviewer copy cleaned
+unverified_boundary: resolved and unresolved target assertions, two mutation kills, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: assert the frozen target pair on every exact resolved and unresolved merchant-login audit path
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: fresh MySQL exact target assertions, followed by sequential reversible resolved-target deletion and unresolved-target injection mutations, then restored-source rerun
+exit_result: PASS
+sanitized_summary: resolved merchant-login audits now require target_type merchant_account and exact account ID while unresolved audits require both target columns null; deleting resolved assignments and injecting unresolved targets each fail multiple W3 cases, and restored production code passes unchanged
+artifact_or_environment: shared MySQL fixture assertion used by first binding, idempotent and concurrent success, resolved rejection, unresolved rejection, deadlock and PII scenarios; both production mutations fully restored and disposable containers cleaned
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verification remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: rerun both mutation kills after any merchant_action_audits target-writing change
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
 command_or_action: post-recovery-proof and existing-primary branch focused plus race; fresh MySQL 8.0.46; repository-wide test plus race; vet; controlled build; smoke; format, diff, ownership, migration, structure, lifecycle, evidence, PII, container and artifact checks
 exit_result: PASS
 sanitized_summary: ALREADY_BOUND is excluded from rejected-code success proof and the existing-same-primary FIRST_BINDING path has exact durable facts plus a mutation kill; every declared Writer Gate passed with no partial write, sensitive output or unmanaged artifact

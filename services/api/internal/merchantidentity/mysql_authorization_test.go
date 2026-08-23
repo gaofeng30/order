@@ -65,6 +65,7 @@ func assertLiveMerchantAuthorization(t *testing.T, db *sql.DB) {
 	if disabledAuditAccountID != accountID || disabledAuditRole != disabledRole || disabledAuditAuthVersion != disabledAuthVersion || disabledAuditResult != "REJECTED" || disabledAuditReason != "ACCOUNT_NOT_AVAILABLE" {
 		t.Fatal("disabled existing binding was not durably audited")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-live-disabled", accountID)
 
 	if _, err := db.ExecContext(ctx, `
 		UPDATE merchant_accounts SET enabled=TRUE,record_version=record_version+1,auth_version=auth_version+1,updated_at=? WHERE id=?

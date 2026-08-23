@@ -64,6 +64,8 @@ func assertConcurrentSameCodeMerchantLogin(t *testing.T, db *sql.DB) {
 	if successes != 2 || rejections != 0 {
 		t.Fatal("same-code recovery did not produce two durable success results")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-concurrent-0", accountID)
+	assertMerchantLoginAuditTarget(t, db, "internal-concurrent-1", accountID)
 }
 
 func assertConcurrentDifferentCodeMerchantLogin(t *testing.T, db *sql.DB) {
@@ -274,6 +276,7 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
 		t.Fatal("disabled concurrent mismatch audit snapshot was incomplete")
 	}
+	assertMerchantLoginAuditTarget(t, db, disabledRequestID, boundAccountID)
 
 	samePhoneRequestID := "internal-concurrent-phone-disabled-same"
 	if _, err := repository.CompleteLogin(ctx, userID, primaryPhone, hashLoginCode("disabled-binding-same-phone-code"), samePhoneRequestID, now.Add(3*time.Microsecond)); !errors.Is(err, ErrMerchantAccountNotAvailable) {
@@ -288,6 +291,7 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "ACCOUNT_NOT_AVAILABLE" {
 		t.Fatal("disabled concurrent same-phone audit snapshot was incomplete")
 	}
+	assertMerchantLoginAuditTarget(t, db, samePhoneRequestID, boundAccountID)
 	if err := db.QueryRowContext(ctx, `
 		SELECT bound_user_id,bound_at,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
 	`, boundAccountID).Scan(&boundUserID, &boundAt, &enabled, &recordVersion, &authVersion); err != nil || boundUserID != beforeBoundUserID || !boundAt.Equal(beforeBoundAt) || enabled != beforeEnabled || recordVersion != beforeRecordVersion || authVersion != beforeAuthVersion {
@@ -499,6 +503,7 @@ func assertMerchantDeadlockRecovery(t *testing.T, db *sql.DB) {
 	if boundUserID != userID || recordVersion != 2 || authVersion != 2 || loginAuditCount != 1 {
 		t.Fatal("deadlock recovery left duplicate or partial merchant writes")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-deadlock-login", accountID)
 }
 
 func assertRejectedPhoneCodeAudit(t *testing.T, db *sql.DB) {
@@ -525,6 +530,7 @@ func assertRejectedPhoneCodeAudit(t *testing.T, db *sql.DB) {
 	if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || result != "REJECTED" || reason != "PHONE_CODE_REJECTED" {
 		t.Fatal("rejected code audit did not retain the unresolved business result")
 	}
+	assertMerchantLoginAuditTarget(t, db, "internal-rejected-code", 0)
 }
 
 func assertRejectedPhoneCodeAfterConcurrentAccountChange(t *testing.T, db *sql.DB, disable bool) {
@@ -625,6 +631,7 @@ func assertRejectedPhoneCodeAfterConcurrentAccountChange(t *testing.T, db *sql.D
 	if merchantAccountID.Valid || snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid || auditResult != "REJECTED" || reason != "PHONE_CODE_REJECTED" {
 		t.Fatal("unconfirmed provider rejection audit retained an account snapshot")
 	}
+	assertMerchantLoginAuditTarget(t, db, requestID, 0)
 }
 
 type blockingRejectedPhoneProvider struct {
