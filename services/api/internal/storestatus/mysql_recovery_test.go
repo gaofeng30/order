@@ -2,6 +2,7 @@ package storestatus
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"testing"
@@ -23,13 +24,13 @@ func TestApplyAuditReadFailureRollsBackAndSameKeyRecovers(t *testing.T) {
 			UserID: userID, DesiredStatus: storefront.BusinessClosed,
 			IdempotencyKey: "audit-recovery-command", RequestID: "audit-recovery-request",
 		}
-		if _, err := db.ExecContext(context.Background(), "RENAME TABLE merchant_action_audits TO merchant_action_audits_unavailable"); err != nil {
+		if _, err := db.ExecContext(context.Background(), "RENAME TABLE action_audits TO action_audits_unavailable"); err != nil {
 			t.Fatal("hide audit table failed")
 		}
 		restored := false
 		defer func() {
 			if !restored {
-				_, _ = db.ExecContext(context.Background(), "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits")
+				_, _ = db.ExecContext(context.Background(), "RENAME TABLE action_audits_unavailable TO action_audits")
 			}
 		}()
 
@@ -40,7 +41,7 @@ func TestApplyAuditReadFailureRollsBackAndSameKeyRecovers(t *testing.T) {
 		if got := readBusinessStatus(t, db); got != string(storefront.BusinessOpen) {
 			t.Fatalf("audit failure committed business_status %q", got)
 		}
-		if _, err := db.ExecContext(context.Background(), "RENAME TABLE merchant_action_audits_unavailable TO merchant_action_audits"); err != nil {
+		if _, err := db.ExecContext(context.Background(), "RENAME TABLE action_audits_unavailable TO action_audits"); err != nil {
 			t.Fatal("restore audit table failed")
 		}
 		restored = true
@@ -68,7 +69,7 @@ func TestApplyAuditInsertFailureRollsBackAndSameKeyRecovers(t *testing.T) {
 		}
 		if _, err := db.ExecContext(context.Background(), `
 			CREATE TRIGGER reject_store_status_audit
-			BEFORE INSERT ON merchant_action_audits FOR EACH ROW
+			BEFORE INSERT ON action_audits FOR EACH ROW
 			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='controlled store status audit insert failure'
 		`); err != nil {
 			t.Fatal("install controlled audit insert failure failed")
@@ -229,10 +230,13 @@ func TestApplyRetriesOneRealDeadlockWithFreshAuthorization(t *testing.T) {
 			t.Fatal("lock deadlock storefront fixture failed")
 		}
 		for index := range 20 {
+			scopeHash := sha256.Sum256([]byte("deadlock-fixture-scope-" + string(rune('a'+index))))
+			requestHash := sha256.Sum256([]byte("deadlock-fixture-request-" + string(rune('a'+index))))
 			if _, err := managementTx.ExecContext(context.Background(), `
-				INSERT INTO merchant_action_audits(actor_user_id,action,result,reason,request_id,occurred_at)
-				VALUES (?,'deadlock.fixture','SUCCEEDED','FIXTURE',?,?)
-			`, userID, []byte("deadlock-fixture-"+string(rune('a'+index))), now); err != nil {
+				INSERT INTO action_audits(
+					entry_kind,actor_kind,actor_scope_hash,action,result,reason_code,request_id_hash,occurred_at
+				) VALUES ('SYSTEM_EVIDENCE','SYSTEM',?,'deadlock.fixture','SUCCEEDED','FIXTURE',?,?)
+			`, scopeHash[:], requestHash[:], now); err != nil {
 				t.Fatal("weight deadlock management transaction failed")
 			}
 		}
@@ -273,8 +277,8 @@ func TestApplyRetriesOneRealDeadlockWithFreshAuthorization(t *testing.T) {
 		var role merchantidentity.Role
 		var authVersion uint64
 		if err := db.QueryRowContext(context.Background(), `
-			SELECT role_snapshot,auth_version_snapshot FROM merchant_action_audits
-			WHERE actor_user_id=? AND action=?
+			SELECT actor_role_snapshot,actor_auth_version_snapshot FROM action_audits
+			WHERE entry_kind='COMMAND_RECEIPT' AND actor_user_id=? AND action=?
 		`, userID, merchantidentity.ActionStoreStatusWrite).Scan(&role, &authVersion); err != nil {
 			t.Fatal("read deadlock retry audit failed")
 		}
@@ -391,8 +395,8 @@ func TestApplyRetriesAuthorizationLockTimeoutWithFreshRole(t *testing.T) {
 		var role merchantidentity.Role
 		var authVersion uint64
 		if err := db.QueryRowContext(context.Background(), `
-			SELECT role_snapshot,auth_version_snapshot FROM merchant_action_audits
-			WHERE actor_user_id=? AND action=?
+			SELECT actor_role_snapshot,actor_auth_version_snapshot FROM action_audits
+			WHERE entry_kind='COMMAND_RECEIPT' AND actor_user_id=? AND action=?
 		`, userID, merchantidentity.ActionStoreStatusWrite).Scan(&role, &authVersion); err != nil {
 			t.Fatal("read authorization-timeout audit failed")
 		}

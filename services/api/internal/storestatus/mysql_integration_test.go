@@ -5,7 +5,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -114,26 +118,42 @@ func TestApplyWritesExactSuccessAudit(t *testing.T) {
 
 		var liveAccountID, snapshotID, snapshotAuth, actorUserID, targetID uint64
 		var role merchantidentity.Role
-		var action, auditResult, reason, targetType, stateBefore, stateAfter string
-		var requestID, keyHash []byte
+		var entryKind, actorKind, action, auditResult, reason, targetType string
+		var actorScope, requestIDHash, keyHash, beforeJSON, afterJSON, responseJSON []byte
 		var occurredAt time.Time
 		if err := db.QueryRowContext(context.Background(), `
-			SELECT merchant_account_id,account_id_snapshot,role_snapshot,auth_version_snapshot,
-			       actor_user_id,action,result,reason,target_type,target_id,request_id,
-			       idempotency_key_hash,state_before,state_after,occurred_at
-			FROM merchant_action_audits WHERE actor_user_id=?
+			SELECT entry_kind,actor_kind,actor_scope_hash,
+			       actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
+			       actor_user_id,action,result,reason_code,target_type,target_id,request_id_hash,
+			       operation_key_hash,before_state_json,after_state_json,response_json,occurred_at
+			FROM action_audits WHERE actor_user_id=?
 		`, userID).Scan(
-			&liveAccountID, &snapshotID, &role, &snapshotAuth, &actorUserID, &action, &auditResult, &reason,
-			&targetType, &targetID, &requestID, &keyHash, &stateBefore, &stateAfter, &occurredAt,
+			&entryKind, &actorKind, &actorScope, &liveAccountID, &snapshotID, &role, &snapshotAuth,
+			&actorUserID, &action, &auditResult, &reason, &targetType, &targetID, &requestIDHash,
+			&keyHash, &beforeJSON, &afterJSON, &responseJSON, &occurredAt,
 		); err != nil {
 			t.Fatal("read exact store status audit failed")
 		}
-		wantHash := sha256.Sum256([]byte(key))
-		if liveAccountID != accountID || snapshotID != accountID || role != merchantidentity.RoleSubaccount || snapshotAuth != 1 ||
+		wantScope := sha256.Sum256([]byte("merchant:" + strconv.FormatUint(userID, 10) + ":" + strconv.FormatUint(accountID, 10)))
+		wantKeyHash := sha256.Sum256([]byte("operation:" + key))
+		wantRequestIDHash := sha256.Sum256([]byte("request:exact-audit-request"))
+		wantRequestDigest := sha256.Sum256([]byte(`{"desired_status":"cutoff"}`))
+		var evidence receiptRequestEvidence
+		var afterState receiptAfterState
+		var response receiptResponse
+		if json.Unmarshal(beforeJSON, &evidence) != nil || json.Unmarshal(afterJSON, &afterState) != nil || json.Unmarshal(responseJSON, &response) != nil {
+			t.Fatal("decode exact store status receipt failed")
+		}
+		decodedDigest, decodeErr := hex.DecodeString(evidence.RequestDigest)
+		if entryKind != "COMMAND_RECEIPT" || actorKind != "MERCHANT" ||
+			liveAccountID != accountID || snapshotID != accountID || role != merchantidentity.RoleSubaccount || snapshotAuth != 1 ||
 			actorUserID != userID || action != string(merchantidentity.ActionStoreStatusWrite) || auditResult != "SUCCEEDED" ||
 			reason != "OPERATING_STATUS_CHANGED" || targetType != "storefront_settings" || targetID != 1 ||
-			!bytes.Equal(requestID, []byte("exact-audit-request")) || !bytes.Equal(keyHash, wantHash[:]) ||
-			stateBefore != string(storefront.BusinessOpen) || stateAfter != string(storefront.BusinessCutoff) || !occurredAt.Equal(now) {
+			!bytes.Equal(actorScope, wantScope[:]) || !bytes.Equal(requestIDHash, wantRequestIDHash[:]) || !bytes.Equal(keyHash, wantKeyHash[:]) ||
+			decodeErr != nil || !bytes.Equal(decodedDigest, wantRequestDigest[:]) ||
+			afterState.BusinessStatus != storefront.BusinessCutoff ||
+			response != (receiptResponse{Before: storefront.BusinessOpen, After: storefront.BusinessCutoff, Changed: true}) ||
+			strings.Contains(string(beforeJSON)+string(afterJSON)+string(responseJSON), key) || !occurredAt.Equal(now) {
 			t.Fatalf("audit facts were not exact")
 		}
 	})
@@ -181,15 +201,18 @@ func TestApplyNoOpReturnsUnchangedAndAuditsOnce(t *testing.T) {
 			t.Fatal("no-op changed persisted storefront settings")
 		}
 		var count int
-		var reason, before, after string
+		var reason string
+		var responseJSON []byte
 		if err := db.QueryRowContext(context.Background(), `
-			SELECT COUNT(*),MIN(reason),MIN(state_before),MIN(state_after)
-			FROM merchant_action_audits WHERE actor_user_id=? AND action=?
-		`, userID, merchantidentity.ActionStoreStatusWrite).Scan(&count, &reason, &before, &after); err != nil {
+			SELECT COUNT(*),MIN(reason_code),MIN(response_json)
+			FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_user_id=? AND action=?
+		`, userID, merchantidentity.ActionStoreStatusWrite).Scan(&count, &reason, &responseJSON); err != nil {
 			t.Fatal("read no-op audit failed")
 		}
-		if count != 1 || reason != "OPERATING_STATUS_UNCHANGED" || before != "open" || after != "open" {
-			t.Fatalf("no-op audit = %d/%s/%s/%s", count, reason, before, after)
+		var response receiptResponse
+		if json.Unmarshal(responseJSON, &response) != nil || count != 1 || reason != "OPERATING_STATUS_UNCHANGED" ||
+			response != (receiptResponse{Before: storefront.BusinessOpen, After: storefront.BusinessOpen, Changed: false}) {
+			t.Fatalf("no-op audit = %d/%s/%s", count, reason, responseJSON)
 		}
 	})
 }
@@ -438,8 +461,8 @@ func TestApplyConcurrentDifferentKeysFormSerializedChain(t *testing.T) {
 			}
 		}
 		rows, err := db.QueryContext(context.Background(), `
-			SELECT state_before,state_after FROM merchant_action_audits
-			WHERE actor_user_id=? AND action=? ORDER BY id
+			SELECT response_json FROM action_audits
+			WHERE entry_kind='COMMAND_RECEIPT' AND actor_user_id=? AND action=? ORDER BY id
 		`, userID, merchantidentity.ActionStoreStatusWrite)
 		if err != nil {
 			t.Fatal("read serialized audit chain failed")
@@ -447,11 +470,15 @@ func TestApplyConcurrentDifferentKeysFormSerializedChain(t *testing.T) {
 		defer rows.Close()
 		chain := make([][2]string, 0, 2)
 		for rows.Next() {
-			var pair [2]string
-			if err := rows.Scan(&pair[0], &pair[1]); err != nil {
+			var raw []byte
+			if err := rows.Scan(&raw); err != nil {
 				t.Fatal("scan serialized audit chain failed")
 			}
-			chain = append(chain, pair)
+			var response receiptResponse
+			if json.Unmarshal(raw, &response) != nil {
+				t.Fatal("decode serialized audit chain failed")
+			}
+			chain = append(chain, [2]string{string(response.Before), string(response.After)})
 		}
 		if err := rows.Err(); err != nil {
 			t.Fatal("iterate serialized audit chain failed")
@@ -587,8 +614,8 @@ func TestApplySerializesRoleChangeAndAuditsLiveRole(t *testing.T) {
 			t.Fatalf("SUBACCOUNT Apply() error = %v", err)
 		}
 		rows, err := db.QueryContext(context.Background(), `
-			SELECT role_snapshot,auth_version_snapshot FROM merchant_action_audits
-			WHERE actor_user_id=? AND action=? ORDER BY id
+			SELECT actor_role_snapshot,actor_auth_version_snapshot FROM action_audits
+			WHERE entry_kind='COMMAND_RECEIPT' AND actor_user_id=? AND action=? ORDER BY id
 		`, userID, merchantidentity.ActionStoreStatusWrite)
 		if err != nil {
 			t.Fatal("read role-order audits failed")

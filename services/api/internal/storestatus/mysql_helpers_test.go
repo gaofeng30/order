@@ -61,12 +61,12 @@ func withStoreStatusSchema(t *testing.T, run func(*sql.DB)) {
 	}
 	defer db.Close()
 	migrationSet, err := migrate.Load(migrations.FS)
-	if err != nil || len(migrationSet) != 13 {
-		t.Fatal("load exact v1-v13 migrations failed")
+	if err != nil || len(migrationSet) != 44 || migrationSet[43].Version != 44 {
+		t.Fatal("load exact v1-v44 migrations failed")
 	}
 	result, err := migrate.Run(context.Background(), db, migrationSet)
-	if err != nil || result.FromVersion != 0 || result.ToVersion != 13 || result.AppliedCount != 13 {
-		t.Fatalf("apply exact v1-v13 migrations: result=%+v err=%v", result, err)
+	if err != nil || result.FromVersion != 0 || result.ToVersion != 44 || result.AppliedCount != 44 {
+		t.Fatalf("apply exact v1-v44 migrations: result=%+v err=%v", result, err)
 	}
 	run(db)
 }
@@ -139,9 +139,9 @@ func insertStorefrontSettings(t *testing.T, db *sql.DB, status string) {
 	if _, err := db.ExecContext(context.Background(), `
 		INSERT INTO storefront_settings(
 			id,store_name,store_address,pickup_point,announcement,business_status,
-			launch_png_url,center_x,center_y,width_ratio,aspect_ratio
+			launch_image_object_key,center_x,center_y,width_ratio,aspect_ratio,flavor_options_json,record_version
 		) VALUES (1,'Synthetic Store','Synthetic Address','Synthetic Pickup','Synthetic Announcement',?,
-		          'https://static.example.com/launch.png',0.25,0.75,0.5,1.5)
+		          'storefront/launch.png',0.25,0.75,0.5,1.5,JSON_ARRAY('香菜'),1)
 	`, status); err != nil {
 		t.Fatal("insert storefront settings failed")
 	}
@@ -159,8 +159,10 @@ func readBusinessStatus(t *testing.T, db *sql.DB) string {
 type storefrontNonStatus struct {
 	ID                                        uint8
 	StoreName, StoreAddress, PickupPoint      string
-	Announcement, LaunchPNGURL                string
+	Announcement, LaunchImageObjectKey        string
 	CenterX, CenterY, WidthRatio, AspectRatio float64
+	FlavorOptionsJSON                         string
+	RecordVersion                             uint64
 }
 
 func readStorefrontNonStatus(t *testing.T, db *sql.DB) storefrontNonStatus {
@@ -168,11 +170,13 @@ func readStorefrontNonStatus(t *testing.T, db *sql.DB) storefrontNonStatus {
 	var value storefrontNonStatus
 	if err := db.QueryRowContext(context.Background(), `
 		SELECT id,store_name,store_address,pickup_point,announcement,
-		       launch_png_url,center_x,center_y,width_ratio,aspect_ratio
+		       launch_image_object_key,center_x,center_y,width_ratio,aspect_ratio,
+		       CAST(flavor_options_json AS CHAR),record_version
 		FROM storefront_settings WHERE id=1
 	`).Scan(
 		&value.ID, &value.StoreName, &value.StoreAddress, &value.PickupPoint, &value.Announcement,
-		&value.LaunchPNGURL, &value.CenterX, &value.CenterY, &value.WidthRatio, &value.AspectRatio,
+		&value.LaunchImageObjectKey, &value.CenterX, &value.CenterY, &value.WidthRatio, &value.AspectRatio,
+		&value.FlavorOptionsJSON, &value.RecordVersion,
 	); err != nil {
 		t.Fatal("read non-status storefront columns failed")
 	}
@@ -182,7 +186,7 @@ func readStorefrontNonStatus(t *testing.T, db *sql.DB) storefrontNonStatus {
 func countStoreStatusAudits(t *testing.T, db *sql.DB) int {
 	t.Helper()
 	var count int
-	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM merchant_action_audits WHERE action=?", merchantidentity.ActionStoreStatusWrite).Scan(&count); err != nil {
+	if err := db.QueryRowContext(context.Background(), "SELECT COUNT(*) FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND action=?", merchantidentity.ActionStoreStatusWrite).Scan(&count); err != nil {
 		t.Fatal("count store status audits failed")
 	}
 	return count
