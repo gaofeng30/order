@@ -24,13 +24,7 @@ var ownedSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestCatalogSchemaIntegration(t *testing.T) {
 	withCatalogSchema(t, func(db *sql.DB) {
-		migrationSet, err := migrate.Load(migrations.FS)
-		if err != nil {
-			t.Fatal("load migration set failed")
-		}
-		if len(migrationSet) != 10 {
-			t.Fatalf("migration count = %d, want 10", len(migrationSet))
-		}
+		migrationSet := loadHistoricalMigrations(t, 10)
 
 		baseResult, err := migrate.Run(context.Background(), db, migrationSet[:1])
 		if err != nil || baseResult.AppliedCount != 1 || baseResult.ToVersion != 1 {
@@ -78,6 +72,19 @@ func TestCatalogSchemaIntegration(t *testing.T) {
 			t.Fatal("checksum drift was rewritten")
 		}
 	})
+}
+
+func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
+	missingRequiredVersion := make([]migrate.Migration, 9)
+	if _, err := historicalMigrationPrefix(missingRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted a missing required version")
+	}
+
+	wrongRequiredVersion := make([]migrate.Migration, 10)
+	wrongRequiredVersion[9].Version = 11
+	if _, err := historicalMigrationPrefix(wrongRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted the wrong required version")
+	}
 }
 
 func TestCatalogRepositoryAndHTTPIntegration(t *testing.T) {
@@ -213,6 +220,29 @@ func applyCatalogMigrations(t *testing.T, db *sql.DB) {
 	if _, err := migrate.Run(context.Background(), db, migrationSet); err != nil {
 		t.Fatal("apply catalog migrations failed")
 	}
+}
+
+func loadHistoricalMigrations(t *testing.T, requiredVersion uint64) []migrate.Migration {
+	t.Helper()
+	migrationSet, err := migrate.Load(migrations.FS)
+	if err != nil {
+		t.Fatal("load historical migrations failed")
+	}
+	prefix, err := historicalMigrationPrefix(migrationSet, requiredVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return prefix
+}
+
+func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion uint64) ([]migrate.Migration, error) {
+	if uint64(len(migrationSet)) < requiredVersion {
+		return nil, fmt.Errorf("required migration v%d is missing", requiredVersion)
+	}
+	if migrationSet[requiredVersion-1].Version != requiredVersion {
+		return nil, fmt.Errorf("required migration index has version %d, want %d", migrationSet[requiredVersion-1].Version, requiredVersion)
+	}
+	return migrationSet[:requiredVersion], nil
 }
 
 func insertCatalogVisibilityFixture(t *testing.T, db *sql.DB) {

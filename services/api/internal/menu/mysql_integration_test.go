@@ -24,10 +24,7 @@ var menuOwnedSchemaPattern = regexp.MustCompile(`^order_test_[0-9a-f]{32}$`)
 
 func TestMenuMySQLIntegration(t *testing.T) {
 	withMenuSchema(t, func(db *sql.DB) {
-		set, err := migrate.Load(migrations.FS)
-		if err != nil || len(set) != 10 {
-			t.Fatalf("load v1-v10 migrations: count=%d err=%v", len(set), err)
-		}
+		set := loadHistoricalMigrations(t, 10)
 		if first, err := migrate.Run(context.Background(), db, set[:3]); err != nil || first.ToVersion != 3 || first.AppliedCount != 3 {
 			t.Fatal("establish v3 menu baseline failed")
 		}
@@ -84,6 +81,42 @@ func TestMenuMySQLIntegration(t *testing.T) {
 			restoreMenuConfiguration(t, db)
 		}
 	})
+}
+
+func TestHistoricalMigrationPrefixRequiresExactVersion(t *testing.T) {
+	missingRequiredVersion := make([]migrate.Migration, 9)
+	if _, err := historicalMigrationPrefix(missingRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted a missing required version")
+	}
+
+	wrongRequiredVersion := make([]migrate.Migration, 10)
+	wrongRequiredVersion[9].Version = 11
+	if _, err := historicalMigrationPrefix(wrongRequiredVersion, 10); err == nil {
+		t.Fatal("historical migration prefix accepted the wrong required version")
+	}
+}
+
+func loadHistoricalMigrations(t *testing.T, requiredVersion uint64) []migrate.Migration {
+	t.Helper()
+	migrationSet, err := migrate.Load(migrations.FS)
+	if err != nil {
+		t.Fatal("load historical migrations failed")
+	}
+	prefix, err := historicalMigrationPrefix(migrationSet, requiredVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return prefix
+}
+
+func historicalMigrationPrefix(migrationSet []migrate.Migration, requiredVersion uint64) ([]migrate.Migration, error) {
+	if uint64(len(migrationSet)) < requiredVersion {
+		return nil, fmt.Errorf("required migration v%d is missing", requiredVersion)
+	}
+	if migrationSet[requiredVersion-1].Version != requiredVersion {
+		return nil, fmt.Errorf("required migration index has version %d, want %d", migrationSet[requiredVersion-1].Version, requiredVersion)
+	}
+	return migrationSet[:requiredVersion], nil
 }
 
 func insertMenuFixture(t *testing.T, db *sql.DB) {
