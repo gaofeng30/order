@@ -90,6 +90,13 @@ const (
 	RefundPaid  PendingAction = "REFUND"
 )
 
+// PendingResult is the only successful projection for a pending-payment command.
+// Exactly one field is present, matching the requested action.
+type PendingResult struct {
+	Order  *Order
+	Refund *Refund
+}
+
 // Application is an Adapter over Order/PaymentOrder/Refund/Fulfillment plus derived Billing reads.
 // It never owns duplicate transaction facts or summary tables.
 type Application interface {
@@ -100,7 +107,8 @@ type Application interface {
 	Summary(context.Context, uint64, BillingRange) (Summary, error)
 	ExportCSV(context.Context, uint64, BillingRange) (io.ReadCloser, error)
 	ListPending(context.Context, uint64, PageQuery) ([]Pending, uint64, error)
-	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (any, error)
+	GetOrder(context.Context, uint64, uint64) (Order, error)
+	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (PendingResult, error)
 	RequestRefund(context.Context, WriteMeta, uint64, string) (Order, Refund, error)
 }
 type Handler struct {
@@ -293,7 +301,22 @@ func (h *Handler) processPending(c *gin.Context) {
 		writeError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, out)
+	switch in.Action {
+	case Materialize:
+		if out.Order == nil || out.Order.ID == 0 || out.Refund != nil {
+			writeError(c, ErrUnavailable)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"order": orderView(*out.Order)})
+	case RefundPaid:
+		if out.Refund == nil || out.Refund.ID == 0 || out.Order != nil {
+			writeError(c, ErrUnavailable)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"refund": refundView(*out.Refund)})
+	default:
+		writeError(c, ErrUnavailable)
+	}
 }
 
 type refundWrite struct {

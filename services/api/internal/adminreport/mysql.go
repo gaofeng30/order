@@ -12,7 +12,7 @@ import (
 )
 
 type CommandAdapter interface {
-	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (any, error)
+	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (PendingResult, error)
 	RequestRefund(context.Context, WriteMeta, uint64, string) (Order, Refund, error)
 }
 type MySQLApplication struct {
@@ -23,9 +23,9 @@ type MySQLApplication struct {
 func NewMySQLApplication(db *sql.DB, commands CommandAdapter) *MySQLApplication {
 	return &MySQLApplication{db: db, commands: commands}
 }
-func (a *MySQLApplication) ProcessPending(ctx context.Context, m WriteMeta, id uint64, act PendingAction, reason string) (any, error) {
+func (a *MySQLApplication) ProcessPending(ctx context.Context, m WriteMeta, id uint64, act PendingAction, reason string) (PendingResult, error) {
 	if a.commands == nil {
-		return nil, ErrUnavailable
+		return PendingResult{}, ErrUnavailable
 	}
 	return a.commands.ProcessPending(ctx, m, id, act, reason)
 }
@@ -46,11 +46,49 @@ func authorizeOwner(ctx context.Context, db *sql.DB, userID uint64) error {
 	}
 	return nil
 }
+
+const orderProjectionColumns = `id,CONVERT(order_no USING utf8mb4),state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),meal_period,pickup_point_snapshot,LPAD(pickup_number,4,'0'),payable_cents,original_subtotal_cents,discount_cents,discount_rate_percent,contact_name_snapshot,CONVERT(contact_phone_snapshot USING ascii),CONVERT(transaction_id USING utf8mb4),paid_at,materialized_at`
+
+type orderScanner interface{ Scan(...any) error }
+
+func scanOrderProjection(scanner orderScanner) (Order, error) {
+	var order Order
+	var phone, state string
+	if err := scanner.Scan(&order.ID, &order.OrderNo, &state, &order.PickupDate, &order.PickupTime, &order.MealPeriod, &order.PickupPoint, &order.PickupNumber, &order.PayableCents, &order.SubtotalCents, &order.DiscountCents, &order.DiscountRate, &order.ContactName, &phone, &order.TransactionID, &order.PaidAt, &order.MaterializedAt); err != nil {
+		return Order{}, err
+	}
+	order.State = stateLabel(state)
+	order.MaskedPhone = mask(phone)
+	order.AvailableActions = actions(state)
+	return order, nil
+}
+
+func (a *MySQLApplication) GetOrder(ctx context.Context, userID, orderID uint64) (Order, error) {
+	if a == nil || a.db == nil || userID == 0 || orderID == 0 {
+		return Order{}, ErrInvalidInput
+	}
+	if err := authorizeOwner(ctx, a.db, userID); err != nil {
+		return Order{}, err
+	}
+	order, err := scanOrderProjection(a.db.QueryRowContext(ctx, `SELECT `+orderProjectionColumns+` FROM orders WHERE id=?`, orderID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return Order{}, ErrNotFound
+	}
+	if err != nil {
+		return Order{}, ErrUnavailable
+	}
+	orders := []Order{order}
+	if err := a.loadItems(ctx, orders, []uint64{orderID}); err != nil {
+		return Order{}, err
+	}
+	return orders[0], nil
+}
+
 func (a *MySQLApplication) SearchOrders(ctx context.Context, userID uint64, f OrderFilter) ([]Order, uint64, error) {
 	if err := authorizeOwner(ctx, a.db, userID); err != nil {
 		return nil, 0, err
 	}
-	query := `SELECT id,CONVERT(order_no USING utf8mb4),state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),meal_period,pickup_point_snapshot,LPAD(pickup_number,4,'0'),payable_cents,original_subtotal_cents,discount_cents,discount_rate_percent,contact_name_snapshot,CONVERT(contact_phone_snapshot USING ascii),CONVERT(transaction_id USING utf8mb4),paid_at,materialized_at FROM orders WHERE id>?`
+	query := `SELECT ` + orderProjectionColumns + ` FROM orders WHERE id>?`
 	args := []any{f.Page.AfterID}
 	if f.State != "" {
 		query += ` AND state=?`
@@ -77,14 +115,10 @@ func (a *MySQLApplication) SearchOrders(ctx context.Context, userID uint64, f Or
 	out := []Order{}
 	ids := []uint64{}
 	for rows.Next() {
-		var o Order
-		var phone, state string
-		if rows.Scan(&o.ID, &o.OrderNo, &state, &o.PickupDate, &o.PickupTime, &o.MealPeriod, &o.PickupPoint, &o.PickupNumber, &o.PayableCents, &o.SubtotalCents, &o.DiscountCents, &o.DiscountRate, &o.ContactName, &phone, &o.TransactionID, &o.PaidAt, &o.MaterializedAt) != nil {
+		o, err := scanOrderProjection(rows)
+		if err != nil {
 			return nil, 0, ErrUnavailable
 		}
-		o.State = stateLabel(state)
-		o.MaskedPhone = mask(phone)
-		o.AvailableActions = actions(state)
 		out = append(out, o)
 		ids = append(ids, o.ID)
 	}
@@ -165,7 +199,7 @@ func (a *MySQLApplication) Payments(ctx context.Context, userID uint64, r Billin
 	if err := authorizeOwner(ctx, a.db, userID); err != nil {
 		return nil, 0, err
 	}
-	rows, err := a.db.QueryContext(ctx, `SELECT id,CONVERT(order_no USING utf8mb4),state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),meal_period,pickup_point_snapshot,LPAD(pickup_number,4,'0'),payable_cents,original_subtotal_cents,discount_cents,discount_rate_percent,contact_name_snapshot,CONVERT(contact_phone_snapshot USING ascii),CONVERT(transaction_id USING utf8mb4),paid_at,materialized_at FROM orders WHERE id>? AND DATE(paid_at) BETWEEN ? AND ? ORDER BY id LIMIT ?`, p.AfterID, r.From, r.To, p.Limit)
+	rows, err := a.db.QueryContext(ctx, `SELECT `+orderProjectionColumns+` FROM orders WHERE id>? AND DATE(paid_at) BETWEEN ? AND ? ORDER BY id LIMIT ?`, p.AfterID, r.From, r.To, p.Limit)
 	if err != nil {
 		return nil, 0, ErrUnavailable
 	}
@@ -173,13 +207,10 @@ func (a *MySQLApplication) Payments(ctx context.Context, userID uint64, r Billin
 	orders := []Order{}
 	ids := []uint64{}
 	for rows.Next() {
-		var o Order
-		var state, phone string
-		if rows.Scan(&o.ID, &o.OrderNo, &state, &o.PickupDate, &o.PickupTime, &o.MealPeriod, &o.PickupPoint, &o.PickupNumber, &o.PayableCents, &o.SubtotalCents, &o.DiscountCents, &o.DiscountRate, &o.ContactName, &phone, &o.TransactionID, &o.PaidAt, &o.MaterializedAt) != nil {
+		o, err := scanOrderProjection(rows)
+		if err != nil {
 			return nil, 0, ErrUnavailable
 		}
-		o.State = stateLabel(state)
-		o.MaskedPhone = mask(phone)
 		orders = append(orders, o)
 		ids = append(ids, o.ID)
 	}

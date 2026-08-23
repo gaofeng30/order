@@ -98,6 +98,56 @@ test('PC order management is query and refund only; fulfillment remains in merch
   assert.match(orders, /发起退款/);
 });
 
+test('PC transaction mutations require nested order/refund contracts and keep domain IDs distinct', async () => {
+  const calls = [];
+  const replies = [
+    { order: { id: '41', order_no: 'ORDER-41', pickup_number: '0012', state: 'REFUNDING', items: [] }, refund: { id: '901', order_id: '41', state: '退款中' } },
+    { order: { id: '42', order_no: 'ORDER-42', pickup_number: '0013', state: 'PREPARING', items: [] } },
+    { prepayments: [{ id: '77', out_trade_no: 'PAY-77', amount_cents: 2100, items: [] }] },
+    { refund: { id: '902', order_id: '0', state: '退款中', amount_cents: 2100 } },
+  ];
+  const window = {
+    crypto: { randomUUID: () => 'transaction-op' },
+    sessionStorage: { getItem: () => 'session-token' },
+    fetch: async (url, init) => {
+      calls.push({ url, init });
+      const body = replies.shift();
+      return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => body };
+    },
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'data/api.js'), 'utf8'), { window, URL, Blob, FormData });
+
+  const refundedOrder = await window.Api.refundOrder('41', '客户取消');
+  const rebuiltOrder = await window.Api.rebuildOrder('77');
+  await window.Api.listPendingPayments();
+  const refundedPending = await window.Api.refundPendingPayment('77', '无法补建');
+
+  assert.equal(refundedOrder.id, '41');
+  assert.equal(refundedOrder.status, '退款中');
+  assert.equal(rebuiltOrder.id, '42');
+  assert.equal(refundedPending.id, '77');
+  assert.equal(refundedPending.refundId, '902');
+  assert.equal(refundedPending.refund.id, '902');
+  assert.deepEqual(calls.map(call => call.url), [
+    '/api/v1/admin/orders/41/refund',
+    '/api/v1/admin/pending-payments/77',
+    '/api/v1/admin/pending-payments',
+    '/api/v1/admin/pending-payments/77',
+  ]);
+});
+
+test('PC transaction mutations fail closed on flat or missing nested responses', async () => {
+  const replies = [{ id: '901', order_id: '41' }, { state: 'ORDER_CREATED', order_id: '42' }];
+  const window = {
+    crypto: { randomUUID: () => 'transaction-op' },
+    sessionStorage: { getItem: () => 'session-token' },
+    fetch: async () => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => replies.shift() }),
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'data/api.js'), 'utf8'), { window, URL, Blob, FormData });
+  await assert.rejects(window.Api.refundOrder('41', '客户取消'), /响应无法解析/);
+  await assert.rejects(window.Api.rebuildOrder('77'), /响应无法解析/);
+});
+
 test('PC QR exchanges use intrinsic dedupe and never send client idempotency keys', async () => {
   const calls = [];
   const window = {

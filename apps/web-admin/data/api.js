@@ -176,7 +176,15 @@
   function findOrder(id) { return state.orders.find(o => o.id === String(id)); }
   function findOrderByCode(code) { return state.orders.find(o => o.code === String(code)); }
   function codeHint() { return ''; }
-  async function refundOrder(id, reason) { return request('/admin/orders/' + encodeURIComponent(id) + '/refund', { method: 'POST', body: { reason: String(reason || '').trim() } }); }
+  function nestedObject(body, key) {
+    const value = body && body[key];
+    if (!value || typeof value !== 'object' || Array.isArray(value) || value.id === undefined || value.id === null || String(value.id) === '') throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+    return value;
+  }
+  async function refundOrder(id, reason) {
+    const body = await request('/admin/orders/' + encodeURIComponent(id) + '/refund', { method: 'POST', body: { reason: String(reason || '').trim() } });
+    return orderOf(nestedObject(body, 'order'));
+  }
   const canRefund = status => ['已预约', '制作中', '待取餐', '已完成'].includes(status);
 
   const PENDING_REASON_LABEL = { PRODUCT_UNAVAILABLE: '商品不可售', PICKUP_EXPIRED: '取餐时间已过', SNAPSHOT_INVALID: '数据校验不通过' };
@@ -195,8 +203,16 @@
     return state.pending.slice();
   }
   function pendingPaymentCount() { return state.pending.length; }
-  async function rebuildOrder(id) { const b = await request('/admin/pending-payments/' + encodeURIComponent(id), { method: 'POST', body: { action: 'MATERIALIZE', reason: '' } }); return orderOf(b.order || b); }
-  async function refundPendingPayment(id, reason) { const current = state.pending.find(p => p.id === String(id)) || {}; const b = await request('/admin/pending-payments/' + encodeURIComponent(id), { method: 'POST', body: { action: 'REFUND', reason: String(reason || '').trim() } }); return Object.assign({}, current, b.refund || b); }
+  async function rebuildOrder(id) {
+    const body = await request('/admin/pending-payments/' + encodeURIComponent(id), { method: 'POST', body: { action: 'MATERIALIZE', reason: '' } });
+    return orderOf(nestedObject(body, 'order'));
+  }
+  async function refundPendingPayment(id, reason) {
+    const current = state.pending.find(p => p.id === String(id)) || {};
+    const body = await request('/admin/pending-payments/' + encodeURIComponent(id), { method: 'POST', body: { action: 'REFUND', reason: String(reason || '').trim() } });
+    const refunded = nestedObject(body, 'refund');
+    return Object.assign({}, current, { refund: refunded, refundId: String(refunded.id), refundState: refunded.state });
+  }
   function blockingReason(p) { return p.blocking_reason || p.blockingReason || ''; }
 
   function rangePath(path, range) { return path + qs({ from: range && range.from, to: range && range.to }); }
