@@ -2,7 +2,7 @@
 
 唯一产品基线：[online-ordering-system-prd-0818.md](../product/online-ordering-system-prd-0818.md)。冻结设计：[order-mvp-domain-schema-interfaces.md](../architecture/order-mvp-domain-schema-interfaces.md)。本矩阵只定义验收闭环，不把模块测试、mock、设计或 `BLOCKED_EXTERNAL` 冒充完整提测。
 
-矩阵 revision `ORDER-MVP-R2.1`；candidate lineage：parent `8ef6f8f1281af4a3e1df6abc8685ebdde0f3b53d` → 本次定点修正文档所在 commit。
+矩阵 revision `ORDER-MVP-R2.2`；candidate lineage：parent `cf46b73d709ab4f68af258c12516c6678dae5225` → 本次定点修正文档所在 commit。
 
 证据等级：`L1` 单元/纯规则；`L2` HTTP + fresh MySQL；`L3` UI1 + fake-provider 本地 E2E；`L4` 微信 DevTools 真机/真实支付资产。当前所有行均未绑定最终 Candidate SHA，故状态只能是 `NOT_RUN`；L4 另列 `BLOCKED_EXTERNAL`，不阻塞可替代的 L1–L3 本地证据。
 
@@ -12,7 +12,7 @@
 
 | CaseID | 角色 | UI 操作 | HTTP | MySQL 事实 | 预期 | 失败保护 | 证据等级 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PAGE-U01 | 用户/商户 | 已绑定商户在「用户端/商户端」二选一；普通用户冷启动直达首页 | GET `/me/identity`; GET `/storefront/settings`; POST `/me/merchant-login` | users、merchant_accounts、storefront | 只选择端，不选择员工/访客；员工身份始终服务端派生 | 拒绝商户手机号授权停留本页但不阻断用户端 | L3; L4 phone/UI3 | NOT_RUN; L4 BLOCKED_EXTERNAL |
+| PAGE-U01 | 所有用户 | 入口页选择「用户端/商户端」；用户端直接进入，商户端点击后触发微信手机号授权 | GET `/storefront/settings`; POST `/me/merchant-login` | users、merchant_accounts、storefront | 所有用户先选端；用户端免授权；商户端由服务端手机号比对；员工/访客仍服务端派生且不可选择 | 拒绝商户授权时停留入口并说明原因，但用户端入口始终可用 | L3 user path; L4 merchant phone/UI3 | NOT_RUN; L4 BLOCKED_EXTERNAL |
 | PAGE-U02 | 用户 | 首页看门店/公告/进行中单；点菜单、订单、取餐码 | GET `/storefront/settings`; GET `/orders?active=true` | storefront、service_dates、orders | 服务端门店事实；进行中条准确 | 读失败不显示可下单/伪订单 | L3 | NOT_RUN |
 | PAGE-U03 | 用户 | 选今天/明天与离散时间；搜索；加购 | GET `/menu/pickup-options`; GET `/menu?date=&time=` | service_dates、meal_periods、products、soldout、discount | 餐段过滤；截单折叠；员工价正确 | 缺日期事实/售罄未知即不可加购 | L3 | NOT_RUN |
 | PAGE-U04 | 用户 | 看图片、说明、只读规格、口味与价格 | GET `/catalog/products/:id?date=&time=` | products.images_json/specification、soldout、staff | 强制 date/time；0–3 图；spec 只读 | 缺 date/time 400；当前事实不可读 503 | L3 | NOT_RUN |

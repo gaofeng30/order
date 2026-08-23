@@ -7,7 +7,7 @@
 | 产品唯一基线 | `docs/product/online-ordering-system-prd-0818.md` |
 | 设计固定点 | artifact base `9b96c64177f88bb0c148df20f91054a2ffc367c5`；authoritative integration `01cc4896c3c6c8531b1a2f08778deeccab3dd43b` |
 | Schema / Interface 版本 | `ORDER-MVP-R2` |
-| R2 revision / candidate lineage | `R2.1`；parent candidate `8ef6f8f1281af4a3e1df6abc8685ebdde0f3b53d` → 本次定点修正文档所在 commit（exact SHA 由提交回执绑定） |
+| R2 revision / candidate lineage | `R2.2`；parent candidate `cf46b73d709ab4f68af258c12516c6678dae5225` → 本次定点修正文档所在 commit（exact SHA 由提交回执绑定） |
 | 当前状态 | `REVIEW_CANDIDATE`；两轴 Review 均为 0 finding 后才冻结 |
 | 已集成迁移 | v1–v13 |
 | TX-02 checkpoint | `eddf796454085ad0253a6db4a2f776ece8f51ea8`；v14–v17，WIP / NOT_CANDIDATE / NOT_INTEGRATED |
@@ -164,8 +164,8 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 | v40 | CREATE `import_batches` |
 | v41 | RENAME TABLE `merchant_action_audits` TO `action_audits`；旧读写路径在应用切换前保持 schema-behind，不能启动 |
 | v42 | ALTER `action_audits`：旧列 rename 到通用列并新增 `entry_kind LEGACY_EVIDENCE|COMMAND_RECEIPT|SYSTEM_EVIDENCE`、actor kind/scope、nullable operation key、response/JSON 列；live account 与 account snapshot 保持为两个独立概念 |
-| v43 | UPDATE `action_audits`：旧行标 `LEGACY_EVIDENCE`，request 计算 hash；已有 idempotency hash 才复制为 operation key，否则保持 NULL；允许 `actor_account_id` NULL 而 account id/role/auth version snapshot 非空，逐行保留原 id/occurred_at/result/reason |
-| v44 | ALTER `action_audits`：exact entry-kind/actor/snapshot CHECK、nullable-key UNIQUE、live user/account 列各自补 RESTRICT FK；仅新 `COMMAND_RECEIPT` 强制 operation key + replayable response，legacy 不补造 live FK/幂等键 |
+| v43 | UPDATE `action_audits`：旧行标 `LEGACY_EVIDENCE`，request 计算 hash，所有 legacy 行一律 `operation_key_hash=NULL`，绝不复制 v13 `idempotency_key_hash`；允许 `actor_account_id` NULL 而 account id/role/auth version snapshot 非空，逐行保留原 id/occurred_at/result/reason |
+| v44 | ALTER `action_audits`：exact entry-kind/actor/snapshot CHECK、nullable-key UNIQUE、live user/account 列各自补 RESTRICT FK；CHECK 强制 `operation_key_hash IS NOT NULL` iff `entry_kind='COMMAND_RECEIPT'`，因此 UNIQUE 只约束新 command receipts，legacy/system evidence 永远 NULL |
 
 迁移 runner 继续单连接 `GET_LOCK`；任一 dirty、schema-behind 或 v41–v43 中间态阻止 API 启动。不得并行分配迁移号。v20/v23 preflight 必须在同一 migration lock 下、写 dirty 前完成；SQL 只复制已证明 canonical 的 bytes。归一改变、越界或重复都拒绝迁移并人工修正源数据，禁止静默改名。
 
@@ -265,7 +265,7 @@ v41–v44 将 `merchant_action_audits` 分阶段原地变为唯一 `action_audit
 
 - `id, entry_kind LEGACY_EVIDENCE|COMMAND_RECEIPT|SYSTEM_EVIDENCE, actor_kind USER|MERCHANT|SYSTEM|PROVIDER, actor_scope_hash, actor_user_id nullable, actor_account_id nullable, actor_account_id_snapshot nullable, actor_role_snapshot nullable, actor_auth_version nullable`。
 - `action, target_type, target_id nullable, target_key_hash nullable, operation_key_hash, request_id_hash nullable, result SUCCEEDED|REJECTED, reason_code, before_state_json, after_state_json, response_json, occurred_at`。
-- UNIQUE `(actor_scope_hash,action,operation_key_hash)`；NULL operation key 只允许 legacy/system evidence且不参与去重；live actor user/account 非空时各自为 RESTRICT FK，snapshot 不是 live FK；不增加范围索引，按 PK cursor + exact target/actor 过滤。
+- UNIQUE `(actor_scope_hash,action,operation_key_hash)`；CHECK 强制 operation key 非空 iff `COMMAND_RECEIPT`，故 UNIQUE 仅约束新 receipt，legacy/system evidence key 必为 NULL且不参与去重；live actor user/account 非空时各自为 RESTRICT FK，snapshot 不是 live FK；不增加范围索引，按 PK cursor + exact target/actor 过滤。
 - CHECK：新 COMMAND_RECEIPT 的 USER 需 live user，新 MERCHANT 需 live user+account，且 operation key/response 均非空；LEGACY_EVIDENCE 允许 operation key NULL，也允许只有 account snapshot 而无 live account；SYSTEM/PROVIDER live user/account 均空。snapshot 三字段全空或全非空。JSON 只含最小状态和可重放的非 PII 结果；不保存手机号、姓名、openid、raw provider payload。
 
 `action_audits` 同时是统一证据流与 authenticated business command 的 durable receipt，但不是 aggregate 状态源。业务 mutator 先锁/修改 aggregate，最后 insert `COMMAND_RECEIPT`；若 `(actor_scope,action,operation_key)` duplicate，整个业务 transaction 必须 rollback，随后在无业务锁的新只读 transaction 读取既有 `response_json` 并原样 replay。禁止先锁 receipt 再锁业务行；认证/provider intrinsic dedupe 仍由各自事实表承担。订单、配置、退款等当前状态永远从 aggregate 读取，禁止用 audit/receipt 重建。
@@ -308,7 +308,7 @@ DDL 的 CHECK 必须逐行等价于下表，不能只检查“若干字段一起
 | Import `PREVIEWED` | preview JSON/expiry | commit key/skip/result/committed N |
 | Import `COMMITTED` | commit key/skip/result/committed | staff preview JSON 必须清空；committed_at<=expiry |
 | Import `EXPIRED` | state | preview/commit/skip/result/committed 全 N |
-| Audit `LEGACY_EVIDENCE` | actor kind/scope、action/result/reason/time | operation key/response 可 N；live account 可 N；account snapshot 三列全空或全非空，且可在无 live account 时 NN |
+| Audit `LEGACY_EVIDENCE` | actor kind/scope、action/result/reason/time | operation key 必须 N，response 可 N；live account 可 N；account snapshot 三列全空或全非空，且可在无 live account 时 NN |
 | Audit `COMMAND_RECEIPT` | authenticated live actor、operation key、response、action/result/time | USER 的 account N；MERCHANT 的 live account NN+RESTRICT FK；snapshot 可选但成组 |
 
 除 v1–v17 已集成目录读取索引及 PK、UNIQUE、FK 所需定点索引外，v18–v44 只新增三个非唯一范围索引：R1 `prepayments(next_reconcile_at,id)`、R2 `orders(state,pickup_at,id)`、R3 `notification_outbox(state,next_attempt_at,id)`。4000–5000 用户量级的财务、退款、审计、销量和导入过期查询用主键 cursor 小批扫描/日期条件，不为报表增加写放大索引。
