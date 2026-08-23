@@ -1,9 +1,10 @@
 const api = require('../../utils/apiClient.js');
 const merchantStore = require('../../utils/merchantStore.js');
+const { nav } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: { code: '', match: null, lookupState: 'idle', lastResult: null },
+  data: { code: '', lookupState: 'idle', lastResult: null },
   onCode(e) { this.setData({ code: (e.detail.value || '').trim() }); },
   scan() {
     if (!wx.scanCode) return Promise.resolve(false);
@@ -19,24 +20,17 @@ Page({
     return this.lookup(() => merchantStore.verifyCode(this.data.code));
   },
   async lookup(loader) {
-    this.setData({ lookupState: 'loading', match: null });
+    this.setData({ lookupState: 'loading', lastResult: null });
     try {
       const order = await loader();
-      const err = order.state === 'COMPLETED' ? '该订单已核销'
-        : order.state === 'REFUNDED' || order.state === 'REFUNDING' ? '退款订单不可核销'
-          : order.state !== 'READY_FOR_PICKUP' ? '订单尚未备好' : '';
-      this.setData({ lookupState: 'ready', match: { o: order, rows: order.rows, err } });
+      if (order.state !== 'COMPLETED') throw new api.APIError('REDEEM_UNAVAILABLE');
+      this.setData({ lookupState: 'completed', code: '', lastResult: order });
       return true;
-    } catch (error) { this.setData({ lookupState: 'error', match: null }); return false; }
+    } catch (error) { this.setData({ lookupState: 'error', lastResult: null }); return false; }
   },
-  closeSheet() { this.setData({ match: null }); },
-  async confirm() {
-    const order = this.data.match && this.data.match.o;
-    if (!order || this.data.match.err || !order.available_actions.includes('REDEEM')) return false;
-    try {
-      const completed = await merchantStore.redeem(order.id, api.newIdempotencyKey('redeem'));
-      this.setData({ match: null, code: '', lastResult: completed });
-      return true;
-    } catch (error) { return false; }
+  backToOrders() {
+    if (!this.data.lastResult || this.data.lastResult.state !== 'COMPLETED') return false;
+    nav.replace('admin-orders', { lane: '已完成' });
+    return true;
   },
 });

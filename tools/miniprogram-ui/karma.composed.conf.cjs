@@ -7,6 +7,8 @@ module.exports = function configure(config) {
   const webpack = dependencyRequire('webpack');
   const proxyOrigin = process.env.ORDER_COMPOSED_PROXY_ORIGIN;
   const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION;
+  const composedFlow = process.env.ORDER_COMPOSED_FLOW;
+  const merchantSetup = process.env.ORDER_COMPOSED_MERCHANT_SETUP;
   config.set({
     basePath: path.resolve(__dirname, '../..'),
     frameworks: ['mocha', 'webpack'],
@@ -25,6 +27,8 @@ module.exports = function configure(config) {
         new webpack.DefinePlugin({
           ORDER_COMPOSED_PROXY_ORIGIN: JSON.stringify(proxyOrigin),
           ORDER_COMPOSED_PAYMENT_EXPECTATION: JSON.stringify(paymentExpectation),
+          ORDER_COMPOSED_FLOW: JSON.stringify(composedFlow),
+          ORDER_COMPOSED_MERCHANT_SETUP: merchantSetup,
         }),
         new webpack.NormalModuleReplacementPlugin(
           /runtimeEndpointConfig\.js$/,

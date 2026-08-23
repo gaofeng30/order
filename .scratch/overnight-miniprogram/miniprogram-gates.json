@@ -110,6 +110,33 @@
     },
     "root_integration_receipt_required": "on the integrated exact SHA, observe confirm keys across network ambiguity -> 202 PENDING -> 200 ORDER_CREATED and bind the UI2/UI3 result separately"
   },
+  "merchant_composed_change": {
+    "change": "complete-mini-merchant-composed-ui1",
+    "base_sha": "7b282749e16b2bfe338e2c9e8769c5874821291d",
+    "candidate_sha": "pending-post-commit-binding",
+    "status": "LOCAL_READY_UI1_PASS_UI2_UI3_BLOCKED_EXTERNAL",
+    "tdd": {
+      "red": {
+        "focused": "PAGE-M04 0/1 because verify scan omitted Idempotency-Key",
+        "composed": "Chrome 151 0/1; real POST /api/v1/verify/scan returned 400 and UI reported merchant scan ended error/400",
+        "request_id": "dkwo2667fskw-jx"
+      },
+      "green": {
+        "focused": "PAGE-M03 and PAGE-M04 2/2",
+        "composed": "Chrome 151 1/1; real session/menu/phone/Quote/Prepay/Confirm/order/merchant login/list/detail/ready/scan/store-status/sold-out APIs",
+        "order_state": "PREPARING -> READY_FOR_PICKUP -> COMPLETED",
+        "full_node_wxml": "92/92 PASS plus WX_LINT=PASS",
+        "default_composed_regression": "Chrome 151 customer flow 4/4 PASS"
+      },
+      "refactor": {
+        "scan_contract": "scan/code are one server-atomic redeem command with a generated idempotency key and an explicit completed result; no second confirm",
+        "detail_contract": "PREPARING exposes ready, READY_FOR_PICKUP exposes direct redeem, all other states are read-only; obsolete print/call controls removed",
+        "setup_cleanup": "OWNER PC auth and public APIs only; runner finally restored product sold-out and Admin settings with HTTP 200 and exact saved-baseline response equality",
+        "cleanup_request_ids": ["dkwo56k1yl8g-mm", "dkwo56k70xa0-mn"]
+      }
+    },
+    "external_only": ["real wx.requestPayment and funds", "real wx.scanCode camera", "WeChat DevTools UI2", "physical-device UI3"]
+  },
   "client_invariants": {
     "anonymous_browse": true,
     "merchant_entry_requires_server_identity": true,

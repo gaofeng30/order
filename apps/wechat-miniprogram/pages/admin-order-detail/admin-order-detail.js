@@ -13,9 +13,11 @@ Page({
   },
   build(order) {
     const flavorText = [...new Set(order.rows.flatMap(row => row.flavors.concat(row.note ? [row.note] : [])))].join('；');
+    const canReady = order.available_actions.includes('READY');
+    const canRedeem = order.available_actions.includes('REDEEM');
     this.setData({
       detailState: 'ready', o: order, rows: order.rows, flavorText, flavorShow: !!flavorText,
-      meta: { isView: !order.available_actions.includes('READY'), label: order.available_actions.includes('READY') ? '备好' : order.status },
+      meta: { isView: !canReady && !canRedeem, label: canReady ? '备好' : canRedeem ? '核销' : order.status },
       paidTime: String(order.paid_at || order.materialized_at || '').slice(11, 16),
     });
   },
@@ -24,7 +26,11 @@ Page({
     try { this.build(await merchantStore.markReady(this.data.o.id, api.newIdempotencyKey('ready'))); return true; }
     catch (error) { return false; }
   },
-  advance() { return this.markReady(); },
+  advance() {
+    if (this.data.o && this.data.o.available_actions.includes('READY')) return this.markReady();
+    if (this.data.o && this.data.o.available_actions.includes('REDEEM')) return this.redeem();
+    return false;
+  },
   async redeem() {
     if (!this.data.o || !this.data.o.available_actions.includes('REDEEM')) return false;
     try { this.build(await merchantStore.redeem(this.data.o.id, api.newIdempotencyKey('redeem'))); return true; }

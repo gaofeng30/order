@@ -29,5 +29,4 @@
   flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);
   border-top: 1rpx solid var(--line); display: flex; gap: 24rpx; align-items: center;
 }
-.foot-icon { height: 96rpx; padding: 0 32rpx; }
 .foot-main { flex: 1; }

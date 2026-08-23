@@ -41,40 +41,49 @@ test('PAGE-M02 has exactly five lanes, server search and server store-status wri
 
 test('PAGE-M03 marks only PREPARING order ready from server response', async () => {
   const ready = Object.assign({}, DETAIL, { state: 'READY_FOR_PICKUP', redemption_token: 'token', available_actions: ['REDEEM'] });
+  const completed = Object.assign({}, ready, { state: 'COMPLETED', redemption_token: null, available_actions: [] });
   const harness = readyHarness([
     { statusCode: 200, data: { order: DETAIL } },
     { statusCode: 200, data: { order: ready } },
+    { statusCode: 200, data: { order: completed } },
   ]);
   await harness.flush();
   const page = harness.loadPage('pages/admin-order-detail/admin-order-detail.js');
   await harness.invoke(page, 'onLoad', { id: '401' });
   assert.equal(page.data.o.state, 'PREPARING');
-  assert.equal(await page.markReady(), true);
+  assert.equal(page.data.meta.label, '备好');
+  assert.equal(await page.advance(), true);
   assert.equal(page.data.o.state, 'READY_FOR_PICKUP');
   assert.match(harness.requestCalls[2].header['Idempotency-Key'], /^ready-/);
+  assert.equal(page.data.meta.label, '核销');
+  assert.equal(page.data.meta.isView, false);
+  assert.equal(await page.advance(), true);
+  assert.equal(page.data.o.state, 'COMPLETED');
+  assert.match(harness.requestCalls[3].header['Idempotency-Key'], /^redeem-/);
 });
 
-test('PAGE-M04 real scan/manual lookup then explicit redeem; invalid code makes zero request', async () => {
-  const ready = Object.assign({}, DETAIL, { state: 'READY_FOR_PICKUP', redemption_token: 'token', available_actions: ['REDEEM'] });
-  const completed = Object.assign({}, ready, { state: 'COMPLETED', redemption_token: null, available_actions: [] });
+test('PAGE-M04 scan/manual atomically redeem with keys; invalid code makes zero request', async () => {
+  const completed = Object.assign({}, DETAIL, { state: 'COMPLETED', redemption_token: null, available_actions: [] });
   const harness = readyHarness([
-    { statusCode: 200, data: { order: ready } },
     { statusCode: 200, data: { order: completed } },
-    { statusCode: 200, data: { order: ready } },
+    { statusCode: 200, data: { order: completed } },
   ], { scans: [{ result: 'opaque-token' }] });
   await harness.flush();
   const page = harness.loadPage('pages/admin-verify/admin-verify.js');
   assert.equal(await page.scan(), true);
   assert.deepEqual(harness.requestCalls[1].data, { token: 'opaque-token' });
-  assert.equal(await page.confirm(), true);
+  assert.match(harness.requestCalls[1].header['Idempotency-Key'], /^redeem-scan-/);
+  assert.equal(page.data.lookupState, 'completed');
   assert.equal(page.data.lastResult.state, 'COMPLETED');
   const count = harness.requestCalls.length;
   page.setData({ code: '13' });
   assert.equal(await page.manual(), false);
   assert.equal(harness.requestCalls.length, count);
-  page.setData({ code: '0013' });
+  page.setData({ code: '0013', lastResult: null, lookupState: 'idle' });
   assert.equal(await page.manual(), true);
   assert.deepEqual(harness.requestCalls.at(-1).data, { pickup_number: '0013' });
+  assert.match(harness.requestCalls.at(-1).header['Idempotency-Key'], /^redeem-code-/);
+  assert.equal(page.data.lastResult.state, 'COMPLETED');
 });
 
 test('PAGE-M05 reads server menu and today sold-out toggle updates only from response', async () => {

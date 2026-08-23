@@ -48,8 +48,6 @@
   </scroll-view>
 
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
-    <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="print"><icon name="printer" size="17" color="#0b2f63" />打印</view>
-    <view class="btn btn--ghost-blue btn--sm foot-icon" bindtap="call"><icon name="phone" size="16" color="#0b2f63" /></view>
     <view wx:if="{{meta.isView}}" class="btn btn--mute foot-main">{{o.status}}</view>
     <view wx:else class="btn btn--primary foot-main" bindtap="advance">{{meta.label}}</view>
   </view>

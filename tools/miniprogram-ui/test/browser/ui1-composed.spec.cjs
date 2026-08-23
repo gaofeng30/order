@@ -1,4 +1,8 @@
-/* global App, Behavior, Component, ORDER_COMPOSED_PAYMENT_EXPECTATION, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+/* global App, Behavior, Component, ORDER_COMPOSED_FLOW, ORDER_COMPOSED_MERCHANT_SETUP, ORDER_COMPOSED_PAYMENT_EXPECTATION, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+const adminOrderDetailTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-order-detail/admin-order-detail.wxml');
+const adminOrdersTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-orders/admin-orders.wxml');
+const adminProductsTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-products/admin-products.wxml');
+const adminVerifyTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-verify/admin-verify.wxml');
 const homeTemplate = require('../../../../apps/wechat-miniprogram/pages/home/home.wxml');
 const launchTemplate = require('../../../../apps/wechat-miniprogram/pages/launch/launch.wxml');
 const menuTemplate = require('../../../../apps/wechat-miniprogram/pages/menu/menu.wxml');
@@ -27,6 +31,10 @@ const paymentCalls = [];
 const confirmRequestKeys = [];
 const confirmResponseStatuses = [];
 const paymentExpectation = ORDER_COMPOSED_PAYMENT_EXPECTATION;
+const composedFlow = ORDER_COMPOSED_FLOW;
+const merchantSetup = ORDER_COMPOSED_MERCHANT_SETUP;
+const requestObservations = [];
+let scanToken = '';
 
 globalThis.App = definition => { appDefinition = definition; };
 globalThis.Behavior = definition => definition;
@@ -42,6 +50,10 @@ globalThis.wx = {
   reLaunch: options => { lastNavigation = options.url; },
   navigateTo: options => { lastNavigation = options.url; },
   navigateBack: () => {},
+  scanCode: options => queueMicrotask(() => {
+    if (scanToken) options.success({ result: scanToken });
+    else options.fail({ errMsg: 'scanCode:fail no composed token' });
+  }),
   request: options => {
     const requestURL = new URL(options.url);
     const isConfirmRequest = requestURL.pathname === '/api/v1/orders/confirm';
@@ -57,6 +69,7 @@ globalThis.wx = {
       body: options.data === undefined ? undefined : JSON.stringify(options.data),
     })
       .then(async response => {
+        requestObservations.push({ method: options.method || 'GET', path: requestURL.pathname, status: response.status });
         if (isConfirmRequest) confirmResponseStatuses.push(response.status);
         const raw = await response.text();
         let data = {};
@@ -118,6 +131,14 @@ registeringPage = 'orders';
 require('../../../../apps/wechat-miniprogram/pages/orders/orders.js');
 registeringPage = 'order-detail';
 require('../../../../apps/wechat-miniprogram/pages/order-detail/order-detail.js');
+registeringPage = 'admin-orders';
+require('../../../../apps/wechat-miniprogram/pages/admin-orders/admin-orders.js');
+registeringPage = 'admin-order-detail';
+require('../../../../apps/wechat-miniprogram/pages/admin-order-detail/admin-order-detail.js');
+registeringPage = 'admin-verify';
+require('../../../../apps/wechat-miniprogram/pages/admin-verify/admin-verify.js');
+registeringPage = 'admin-products';
+require('../../../../apps/wechat-miniprogram/pages/admin-products/admin-products.js');
 
 const app = Object.assign({}, appDefinition, { globalData: JSON.parse(JSON.stringify(appDefinition.globalData)) });
 globalThis.getApp = () => app;
@@ -137,6 +158,7 @@ function globalComponents(suffix, includeMenuComponents = false, includeOrderCom
   if (includeMenuComponents) {
     components.stepper = registerComponent({ definition: stepperDefinition, template: stepperTemplate, id: `stepper-${suffix}`, tagName: 'stepper' });
     const imagephID = registerComponent({ definition: imagephDefinition, template: imagephTemplate, id: `imageph-${suffix}`, tagName: 'imageph' });
+    components.imageph = imagephID;
     components.customize = registerComponent({
       definition: customizeDefinition, template: customizeTemplate, id: `customize-${suffix}`, tagName: 'customize',
       usingComponents: { icon: iconID, imageph: imagephID, money: components.money, stepper: components.stepper },
@@ -226,7 +248,7 @@ async function openCheckout(suffix, contactName, note) {
   return confirm;
 }
 
-if (paymentExpectation === 'success') describe('mini-program UI1 against composed local API and MySQL', () => {
+if (composedFlow === 'customer' && paymentExpectation === 'success') describe('mini-program UI1 against composed local API and MySQL', () => {
   it('lets an anonymous user browse the storefront, pickup menu, categories, and products', async () => {
     document.body.innerHTML = '';
     lastNavigation = null;
@@ -444,7 +466,7 @@ if (paymentExpectation === 'success') describe('mini-program UI1 against compose
   });
 });
 
-if (paymentExpectation === 'pending') describe('mini-program UI1 against composed local API and MySQL in pending mode', () => {
+if (composedFlow === 'customer' && paymentExpectation === 'pending') describe('mini-program UI1 against composed local API and MySQL in pending mode', () => {
   it('keeps the cart, suppresses success, and rotates the confirm key after real pending responses', async () => {
     const suffix = `composed-pending-${Date.now()}`;
     const confirm = await openCheckout(suffix, 'UI1待确认用户', 'pending expectation');
@@ -484,5 +506,209 @@ if (paymentExpectation === 'pending') describe('mini-program UI1 against compose
       throw new Error('second pending confirm cleared the cart');
     }
     if (paymentCalls.length !== 1) throw new Error(`retry repeated requestPayment ${paymentCalls.length} times`);
+  });
+});
+
+if (composedFlow === 'merchant') describe('mini-program UI1 merchant fulfillment against composed local API and MySQL', () => {
+  it('creates a preparing order, marks it ready, scans it completed, and restores live controls', async () => {
+    const suffix = `composed-merchant-${Date.now()}`;
+    const confirm = await openCheckout(suffix, 'UI1商户联调用户', 'merchant composed');
+    const pay = confirm.querySelector('.pay-btn');
+    pay.dispatchEvent('touchstart');
+    pay.dispatchEvent('touchend');
+    await waitFor(
+      () => lastNavigation !== null || confirm.instance.data.paymentState === 'error',
+      () => `merchant setup payment remained ${confirm.instance.data.paymentState}`,
+    );
+    if (!lastNavigation || !lastNavigation.startsWith('/pages/result/result?id=')) {
+      throw new Error(`merchant setup payment ended at ${lastNavigation || confirm.instance.data.paymentState}`);
+    }
+    const orderID = new URL(`http://ui1.local${lastNavigation}`).searchParams.get('id');
+    if (!/^[1-9]\d*$/.test(orderID || '')) throw new Error(`merchant order id was ${orderID || 'missing'}`);
+    if (paymentCalls.length !== 1 || Object.keys(app.globalData.cart).length !== 0) {
+      throw new Error(`merchant payment/cart ended ${paymentCalls.length}/${Object.keys(app.globalData.cart).length}`);
+    }
+
+    document.body.innerHTML = '';
+    const initialUserDetail = renderPage({
+      definition: pageDefinitions['order-detail'],
+      template: orderDetailTemplate,
+      id: `merchant-user-initial-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-user-initial`, false, true),
+      loadOptions: { id: orderID },
+    });
+    await waitFor(
+      () => initialUserDetail.instance.data.detailState !== 'loading',
+      () => `merchant initial user detail remained ${initialUserDetail.instance.data.detailState}`,
+    );
+    if (initialUserDetail.instance.data.o.state !== 'PREPARING' || initialUserDetail.instance.data.showQr) {
+      throw new Error(`merchant order initial state/token was ${initialUserDetail.instance.data.o.state}/${initialUserDetail.instance.data.showQr}`);
+    }
+    if (initialUserDetail.instance.data.o.pickupDate !== merchantSetup.service_date
+      || initialUserDetail.instance.data.o.pickupTime !== merchantSetup.pickup_time) {
+      throw new Error(`merchant order pickup was ${initialUserDetail.instance.data.o.pickupDate}/${initialUserDetail.instance.data.o.pickupTime}`);
+    }
+
+    document.body.innerHTML = '';
+    lastNavigation = null;
+    const launch = renderPage({
+      definition: pageDefinitions.launch,
+      template: launchTemplate,
+      id: `merchant-entry-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-entry`),
+    });
+    await waitFor(
+      () => launch.instance.data.storefrontState !== 'loading',
+      () => `merchant entry remained ${launch.instance.data.storefrontState}`,
+    );
+    if (!launch.querySelector('.id-plain')) throw new Error('merchant phone entry was not rendered');
+    const loggedIn = await pageDefinitions.launch.onMerchantPhone.call(launch.instance, { detail: { code: 'ui1-composed-merchant-phone-code' } });
+    if (!loggedIn || lastNavigation !== '/pages/admin-orders/admin-orders') {
+      throw new Error(`merchant entry ended ${loggedIn}/${lastNavigation || 'no navigation'}`);
+    }
+
+    document.body.innerHTML = '';
+    lastNavigation = null;
+    const merchantOrders = renderPage({
+      definition: pageDefinitions['admin-orders'],
+      template: adminOrdersTemplate,
+      id: `merchant-orders-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-orders`, false, true),
+      loadOptions: { lane: '制作中' },
+    });
+    await waitFor(
+      () => merchantOrders.instance.data.listState !== 'loading',
+      () => `merchant orders remained ${merchantOrders.instance.data.listState}`,
+    );
+    if (!merchantOrders.instance.data.list.some(order => order.id === orderID && order.state === 'PREPARING')) {
+      throw new Error(`merchant PREPARING order ${orderID} was absent`);
+    }
+    const bizControls = merchantOrders.querySelectorAll('.biz-seg');
+    const closed = bizControls.find(control => control.dom.dataset.b === 'closed');
+    const open = bizControls.find(control => control.dom.dataset.b === 'open');
+    if (!closed || !open) throw new Error('merchant store status controls were absent');
+    closed.dispatchEvent('touchstart');
+    closed.dispatchEvent('touchend');
+    await waitFor(
+      () => merchantOrders.instance.data.storeStatus === 'closed',
+      () => `merchant store close ended ${merchantOrders.instance.data.storeStatus}`,
+    );
+    open.dispatchEvent('touchstart');
+    open.dispatchEvent('touchend');
+    await waitFor(
+      () => merchantOrders.instance.data.storeStatus === 'open',
+      () => `merchant store restore ended ${merchantOrders.instance.data.storeStatus}`,
+    );
+    const orderCard = merchantOrders.querySelectorAll('.aorder').find(card => card.dom.dataset.id === orderID);
+    if (!orderCard) throw new Error(`merchant order card ${orderID} was absent`);
+    orderCard.dispatchEvent('touchstart');
+    orderCard.dispatchEvent('touchend');
+    await simulate.sleep(10);
+    if (lastNavigation !== `/pages/admin-order-detail/admin-order-detail?id=${orderID}`) {
+      throw new Error(`merchant order card navigated to ${lastNavigation || 'nothing'}`);
+    }
+
+    document.body.innerHTML = '';
+    const merchantDetail = renderPage({
+      definition: pageDefinitions['admin-order-detail'],
+      template: adminOrderDetailTemplate,
+      id: `merchant-detail-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-detail`, false, true),
+      loadOptions: { id: orderID },
+    });
+    await waitFor(
+      () => merchantDetail.instance.data.detailState !== 'loading',
+      () => `merchant detail remained ${merchantDetail.instance.data.detailState}`,
+    );
+    if (merchantDetail.instance.data.o.state !== 'PREPARING') {
+      throw new Error(`merchant detail state was ${merchantDetail.instance.data.o.state}`);
+    }
+    const ready = merchantDetail.querySelector('.foot-main');
+    ready.dispatchEvent('touchstart');
+    ready.dispatchEvent('touchend');
+    await waitFor(
+      () => merchantDetail.instance.data.o && merchantDetail.instance.data.o.state === 'READY_FOR_PICKUP',
+      () => `merchant ready ended ${merchantDetail.instance.data.o && merchantDetail.instance.data.o.state}`,
+    );
+    if (merchantDetail.instance.data.meta.isView || merchantDetail.instance.data.meta.label !== '核销'
+      || !merchantDetail.querySelector('.foot-main').dom.textContent.includes('核销')) {
+      throw new Error('READY merchant detail did not expose direct redeem for cross-date orders');
+    }
+
+    document.body.innerHTML = '';
+    const readyUserDetail = renderPage({
+      definition: pageDefinitions['order-detail'],
+      template: orderDetailTemplate,
+      id: `merchant-user-ready-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-user-ready`, false, true),
+      loadOptions: { id: orderID },
+    });
+    await waitFor(
+      () => readyUserDetail.instance.data.detailState !== 'loading',
+      () => `ready user detail remained ${readyUserDetail.instance.data.detailState}`,
+    );
+    scanToken = readyUserDetail.instance.data.qrToken;
+    if (readyUserDetail.instance.data.o.state !== 'READY_FOR_PICKUP' || !readyUserDetail.instance.data.showQr || !scanToken) {
+      throw new Error(`ready user token ended ${readyUserDetail.instance.data.o.state}/${readyUserDetail.instance.data.showQr}`);
+    }
+
+    document.body.innerHTML = '';
+    lastNavigation = null;
+    const verify = renderPage({
+      definition: pageDefinitions['admin-verify'],
+      template: adminVerifyTemplate,
+      id: `merchant-verify-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-verify`, false, true),
+    });
+    const scan = verify.querySelector('.verify-center .btn');
+    scan.dispatchEvent('touchstart');
+    scan.dispatchEvent('touchend');
+    await waitFor(
+      () => verify.instance.data.lookupState !== 'loading' && verify.instance.data.lookupState !== 'idle',
+      () => `merchant scan remained ${verify.instance.data.lookupState}`,
+    );
+    if (verify.instance.data.lookupState !== 'completed' || !verify.instance.data.lastResult
+      || verify.instance.data.lastResult.id !== orderID || verify.instance.data.lastResult.state !== 'COMPLETED') {
+      const scanRequest = requestObservations.filter(item => item.path === '/api/v1/verify/scan').at(-1);
+      throw new Error(`merchant scan ended ${verify.instance.data.lookupState}/${scanRequest && scanRequest.status}`);
+    }
+    if (!verify.dom.textContent.includes('核销成功')) throw new Error('merchant scan did not render the completed result');
+    const backToOrders = verify.querySelector('.vr-back-orders');
+    backToOrders.dispatchEvent('touchstart');
+    backToOrders.dispatchEvent('touchend');
+    await simulate.sleep(10);
+    if (lastNavigation !== '/pages/admin-orders/admin-orders?lane=%E5%B7%B2%E5%AE%8C%E6%88%90') {
+      throw new Error(`completed scan navigated to ${lastNavigation || 'nothing'}`);
+    }
+
+    document.body.innerHTML = '';
+    const products = renderPage({
+      definition: pageDefinitions['admin-products'],
+      template: adminProductsTemplate,
+      id: `merchant-products-${suffix}`,
+      usingComponents: globalComponents(`${suffix}-products`, true, true),
+    });
+    await waitFor(
+      () => products.instance.data.listState !== 'loading',
+      () => `merchant products remained ${products.instance.data.listState}`,
+    );
+    const product = products.instance.data.list.find(item => item.id === merchantSetup.product_id);
+    if (!product || product.soldOut !== merchantSetup.prepared_sold_out) {
+      throw new Error(`merchant sold-out baseline was ${product && product.soldOut}`);
+    }
+    const soldout = products.querySelectorAll('.pa-soldout').find(control => control.dom.dataset.id === merchantSetup.product_id);
+    if (!soldout) throw new Error(`merchant sold-out control ${merchantSetup.product_id} was absent`);
+    soldout.dispatchEvent('touchstart');
+    soldout.dispatchEvent('touchend');
+    await waitFor(
+      () => products.instance.data.list.find(item => item.id === merchantSetup.product_id).soldOut === true,
+      () => 'merchant sold-out true did not persist',
+    );
+    soldout.dispatchEvent('touchstart');
+    soldout.dispatchEvent('touchend');
+    await waitFor(
+      () => products.instance.data.list.find(item => item.id === merchantSetup.product_id).soldOut === false,
+      () => 'merchant sold-out false did not persist',
+    );
   });
 });

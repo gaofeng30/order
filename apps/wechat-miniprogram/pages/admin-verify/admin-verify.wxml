@@ -25,38 +25,22 @@
     </view>
   </view>
 
-  <!-- 核销结果 -->
-  <view wx:if="{{match}}" class="sheet-mask" bindtap="closeSheet"></view>
-  <view wx:if="{{match}}" class="sheet verify-sheet" style="padding-bottom:{{safeBottom + 28}}px">
-    <block wx:if="{{match.err}}">
-      <view class="vr-err-ico"><icon name="warn" size="32" color="#a4873f" /></view>
-      <view class="serif vr-err-title">{{match.err}}</view>
-      <view class="vr-err-sub">取餐号 {{match.o.code}} · {{match.o.contact}}</view>
-      <view class="btn btn--ghost btn--block vr-back" bindtap="closeSheet">返回继续扫码</view>
-    </block>
-    <block wx:else>
-      <view class="vr-ok-head">
-        <view class="pill pill--ok">✓ 订单匹配 · 待取餐</view>
-        <view class="serif vr-ok-code">{{match.o.code}}</view>
-      </view>
-      <view class="card vr-items">
-        <view wx:for="{{match.rows}}" wx:key="name" class="vr-item">
-          <view class="vr-item-info">
-            <view class="vr-item-name">{{item.name}}</view>
-            <view class="vr-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
-          </view>
-          <money cents="{{item.sub}}" blue size="28" />
+  <!-- scan/code 调用服务端原子核销；成功响应本身就是最终结果，不再二次确认。 -->
+  <view wx:if="{{lastResult}}" class="sheet-mask"></view>
+  <view wx:if="{{lastResult}}" class="sheet verify-sheet" style="padding-bottom:{{safeBottom + 28}}px">
+    <view class="vr-err-ico"><icon name="check" size="32" color="#5b8f3f" /></view>
+    <view class="serif vr-err-title">核销成功</view>
+    <view class="vr-err-sub">取餐号 {{lastResult.code}} · {{lastResult.contactName}}</view>
+    <view class="card vr-items">
+      <view wx:for="{{lastResult.rows}}" wx:key="name" class="vr-item">
+        <view class="vr-item-info">
+          <view class="vr-item-name">{{item.name}}</view>
+          <view class="vr-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
         </view>
+        <money cents="{{item.sub}}" blue size="28" />
       </view>
-      <view class="vr-summary">
-        <text class="vr-contact">{{match.o.contactName}}</text>
-        <money cents="{{match.o.total}}" blue size="36" />
-      </view>
-      <view class="vr-actions">
-        <view class="btn btn--ghost-blue vr-cancel" bindtap="closeSheet">取消</view>
-        <view class="btn btn--primary vr-confirm" bindtap="confirm"><icon name="check" size="18" color="#ffffff" />确认核销</view>
-      </view>
-    </block>
+    </view>
+    <view class="btn btn--primary btn--block vr-back vr-back-orders" bindtap="backToOrders">返回已完成订单</view>
   </view>
 
   <tabbar variant="admin" active="admin-verify" />
