@@ -9,6 +9,7 @@ require (
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.164
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/ssm v1.3.164
+	golang.org/x/text v0.34.0
 )
 
 require (
@@ -40,6 +41,5 @@ require (
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.51.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
-	golang.org/x/text v0.34.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
