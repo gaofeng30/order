@@ -79,7 +79,7 @@ Page({
     const key = e.currentTarget.dataset.k;
     if (key === 'reserve') nav.tabTo('menu');
     else if (key === 'orders') nav.tabTo('orders');
-    else if (key === 'pickup' && this.data.ongoing) nav.go('order-detail', { id: this.data.ongoing.orderId });
+    else if (key === 'pickup' && this.data.ongoing && this.data.ongoing.ready) nav.go('order-detail', { id: this.data.ongoing.orderId });
     else if (key === 'pickup') this.toast('暂无可取餐订单', 'warn');
     else return false;
     return true;

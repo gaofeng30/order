@@ -1,0 +1,618 @@
+{
+  "schema": "order.mini-user-boundaries.ui1.v1",
+  "candidate_sha": "4eceab6c33baf1d87b057edddce1e4b39b24e5fb",
+  "generated_at": "2026-08-23T23:40:06.848Z",
+  "browser": "Google Chrome for Testing 151.0.7922.34",
+  "evidence_level": "L3_LOCAL_COMPOSED",
+  "upstream": "http://127.0.0.1:8080",
+  "cases": [
+    "BE-01",
+    "BE-02",
+    "BE-03",
+    "BE-04",
+    "BE-05",
+    "BE-06",
+    "BE-22",
+    "BE-23",
+    "BE-24",
+    "BE-25",
+    "BE-26"
+  ],
+  "case_evidence": {
+    "BE-01": "L3_LOCAL_COMPOSED",
+    "BE-02": "L3_LOCAL_COMPOSED",
+    "BE-03": "L3_LOCAL_COMPOSED",
+    "BE-04": "L3_LOCAL_COMPOSED",
+    "BE-05": "L3_LOCAL_COMPOSED",
+    "BE-06": "L3_LOCAL_COMPOSED",
+    "BE-22": "L3_RENDERED_SUPPORTING_PROJECTION",
+    "BE-23": "L3_LOCAL_COMPOSED",
+    "BE-24": "L3_LOCAL_COMPOSED",
+    "BE-25": "L3_LOCAL_COMPOSED",
+    "BE-26": "L3_RENDERED_SUPPORTING_PROJECTION"
+  },
+  "status": "PASS",
+  "requests": [
+    {
+      "phase": "setup-cleanup",
+      "method": "GET",
+      "path": "/api/v1/admin/settings",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "GET",
+      "path": "/api/v1/admin/staff-whitelist?q=13800000000",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "PUT",
+      "path": "/api/v1/admin/staff-whitelist/1",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "POST",
+      "path": "/api/v1/admin/categories",
+      "status": 201
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 201
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 201
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 201
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "POST",
+      "path": "/api/v1/admin/staff-whitelist",
+      "status": 201
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/auth/miniprogram/session",
+      "status": 201,
+      "request_id": "dkwpxp1ju3rc-6n"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp1u7gcg-6o"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-24&time=23%3A59",
+      "status": 200,
+      "request_id": "dkwpxp1wuxug-6p"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwpxp2eguu0-6q"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp2marr4-6r"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp2o9ha0-6s"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwpxp3qwj7k-6t"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp41urc8-6u"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-24&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp442vlk-6v"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwpxp4rqn6g-6w"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/products/58/soldout",
+      "status": 200,
+      "request_id": "dkwpxp4wmf40-6x"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp50anww-6y"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp521w5c-6z"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxp5938io-70"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/bind-phone",
+      "status": 200,
+      "request_id": "dkwpxp5npasg-71"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 409,
+      "request_id": "dkwpxp5rm8v4-72"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/products/58/soldout",
+      "status": 200,
+      "request_id": "dkwpxp63t9nc-73"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/products/59/status",
+      "status": 200,
+      "request_id": "dkwpxp66k0fk-74"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp6afz0g-75"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp6ccn8g-76"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/products/59/status",
+      "status": 200,
+      "request_id": "dkwpxp6gjbm8-77"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp6jqizs-78"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp6l93i0-79"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=23%3A59",
+      "status": 200,
+      "request_id": "dkwpxp6xfjg8-7a"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp7utyhk-7b"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxp81vkw0-7c"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 409,
+      "request_id": "dkwpxp8fvcow-7d"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwpxp8mcods-7e"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxp8s3vhk-7f"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxp8tl45k-7g"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-24&time=23%3A59",
+      "status": 200,
+      "request_id": "dkwpxp9co7hs-7h"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxpa3judc-7i"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwpxpagpqk0-7j"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 409,
+      "request_id": "dkwpxpam069k-7k"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxpb0flc8-7l"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxpb2bx7s-7m"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxpbrmpso-7n"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwpxpc66ia0-7o"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/products/58",
+      "status": 200,
+      "request_id": "dkwpxpccms5s-7p"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 409,
+      "request_id": "dkwpxpcfsyi0-7q"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/auth/miniprogram/session",
+      "status": 201,
+      "request_id": "dkwpxpcp68h4-7r"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxpcx6ik8-7s"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxpcyydy0-7t"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxpdqippk-7u"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/bind-phone",
+      "status": 200,
+      "request_id": "dkwpxpehkghs-7v"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/identity",
+      "status": 200,
+      "request_id": "dkwpxpel4ez4-7w"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 200,
+      "request_id": "dkwpxpel9dzk-7x"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/extra-phone",
+      "status": 200,
+      "request_id": "dkwpxpeyr8q8-7y"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/extra-phone",
+      "status": 200,
+      "request_id": "dkwpxpfcqs1k-7z"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/extra-phone",
+      "status": 200,
+      "request_id": "dkwpxpfqjs0o-80"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxpfykt40-81"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=11%3A30",
+      "status": 200,
+      "request_id": "dkwpxpg0da3k-82"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwpxpgqmotk-83"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwpxph569l4-84"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwpxphbz5y0-85"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwpxphkvnr4-86"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/storefront/settings",
+      "status": 200,
+      "request_id": "dkwpxpi3y2eg-88"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 200,
+      "request_id": "dkwpxpi3wiug-87"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 401,
+      "request_id": "dkwpxpiqc45c-8a"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/storefront/settings",
+      "status": 200,
+      "request_id": "dkwpxpiqb0so-89"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 503,
+      "injected_transport_failure": true
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwpxpj5gwsw-8b"
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/60",
+      "status": [
+        200,
+        404
+      ]
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/59",
+      "status": [
+        200,
+        404
+      ]
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/admin/products/58",
+      "status": [
+        200,
+        404
+      ]
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/admin/staff-whitelist/19",
+      "status": [
+        200,
+        404
+      ]
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "PUT",
+      "path": "/api/v1/admin/staff-whitelist/1",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "DELETE",
+      "path": "/api/v1/admin/categories/48",
+      "status": [
+        200,
+        404
+      ]
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200
+    },
+    {
+      "phase": "setup-cleanup",
+      "method": "GET",
+      "path": "/api/v1/admin/settings",
+      "status": 200
+    }
+  ],
+  "cleanup": [
+    {
+      "target": "product 60",
+      "ok": true
+    },
+    {
+      "target": "product 59",
+      "ok": true
+    },
+    {
+      "target": "product 58",
+      "ok": true
+    },
+    {
+      "target": "staff 19",
+      "ok": true
+    },
+    {
+      "target": "staff 1 enabled baseline",
+      "ok": true
+    },
+    {
+      "target": "category 48",
+      "ok": true
+    },
+    {
+      "target": "settings baseline",
+      "ok": true
+    }
+  ]
+}

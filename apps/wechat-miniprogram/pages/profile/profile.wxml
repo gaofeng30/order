@@ -32,10 +32,16 @@
           <view class="prow-main"><view class="prow-label">绑定主手机号</view></view>
         </button>
         <view class="prow">
-          <view class="prow-main"><view class="prow-label">附加手机号</view><view class="prow-sub">{{extraPhoneMask || '未设置'}}</view></view>
-          <input data-k="phone" bindinput="onExtraInput" placeholder="手机号" />
-          <input data-k="name" bindinput="onExtraInput" placeholder="姓名" />
-          <view bindtap="saveExtraPhone">保存</view>
+          <view class="prow-main">
+            <view class="prow-label">附加手机号</view>
+            <view class="prow-sub">{{extraPhoneMask || '未设置'}}</view>
+            <view wx:if="{{extraState === 'unmatched'}}" class="prow-sub">手机号已保存，姓名未匹配员工名单，请核对</view>
+            <view wx:elif="{{extraState === 'matched'}}" class="prow-sub">已命中员工名单</view>
+            <view wx:elif="{{extraState === 'error'}}" class="prow-sub">保存结果不可用，请重试</view>
+          </view>
+          <input class="extra-phone" data-k="phone" bindinput="onExtraInput" placeholder="手机号" />
+          <input class="extra-name" data-k="name" bindinput="onExtraInput" placeholder="姓名" />
+          <view class="extra-save" bindtap="saveExtraPhone">保存</view>
         </view>
         <button wx:if="{{identityState === 'ready'}}" class="prow merchant-login" open-type="getPhoneNumber" bindgetphonenumber="onMerchantPhone">
           <view class="prow-main">

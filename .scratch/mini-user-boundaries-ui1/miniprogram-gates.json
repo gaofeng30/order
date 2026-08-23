@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "change": "mini-user-fail-closed-boundaries-ui1",
+  "base_sha": "4eceab6c33baf1d87b057edddce1e4b39b24e5fb",
+  "branch": "codex/mini-user-boundaries-ui1",
+  "gate_type": "UI1_COMPOSED",
+  "ui_level_target": "UI2",
+  "ui_level_actual": "UI1",
+  "candidate_sha": "pending-post-commit-binding",
+  "status": "LOCAL_READY_UI1_PASS_UI2_UI3_BLOCKED_EXTERNAL",
+  "owned_pages": ["PAGE-U02", "PAGE-U03", "PAGE-U05", "PAGE-U09"],
+  "cases": ["BE-01", "BE-02", "BE-03", "BE-04", "BE-05", "BE-06", "BE-22", "BE-23", "BE-24", "BE-25", "BE-26"],
+  "seams": [
+    "rendered Mini Program WXML in locked Chrome 151",
+    "root HTTP API on explicit loopback",
+    "fresh shared MySQL facts",
+    "deterministic local fake WeChat provider",
+    "PC owner HTTP commands for setup and cleanup only"
+  ],
+  "tdd": {
+    "red": {
+      "BE-26": "0/1: non-READY ongoing order navigated to the order-detail take-code page",
+      "BE-01": "0/1: globally closed pickup-options produced an empty menu instead of a real browse-only catalog",
+      "BE-01-stale-cart": "0/1: an existing cart row bypassed current sold-out or closed product facts and incremented",
+      "BE-01-refresh": "0/1: a prior canCheckout=true survived into the next pickup/menu loading window",
+      "BE-23": "0/1: a server-confirmed VISITOR extra-phone result had no visible name-mismatch state"
+    },
+    "green": {
+      "focused": "3/3 PASS",
+      "related_regression": "7/7 entry/home/menu/detail and 11/11 profile/order tests PASS",
+      "full_node_wxml": "98/98 PASS; the new boundary file is run separately because package.json is a different writer's hotspot"
+    },
+    "refactor": {
+      "status": "PASS",
+      "scope": "home READY selection, menu browse-only selection plus canCheckout, profile server-owned extra-phone result copy",
+      "overdesign": "no new server model, table, endpoint, cache, dependency, package script, or local business truth"
+    }
+  },
+  "ui1_composed": {
+    "status": "PASS",
+    "command": "PLAYWRIGHT_BROWSERS_PATH=0 MINIPROGRAM_UI_DEPS=/Users/vivix/.codex/worktrees/a61d/order/tools/miniprogram-ui ORDER_COMPOSED_API_ORIGIN=http://127.0.0.1:8080 node tools/miniprogram-ui/run-ui1-composed-boundaries.mjs",
+    "expected_browser": "Google Chrome for Testing 151.0.7922.34",
+    "result": "Chrome Headless 151: 1/1 spec PASS; 11 BE cases; 79 observed requests",
+    "receipt": ".scratch/mini-user-boundaries-ui1/receipt.json",
+    "setup_cleanup": "authenticated root HTTP only; products 60/59/58, staff 19, category 48 deleted; existing local-primary staff 1 enabled baseline and settings baseline restored; no raw SQL business writes",
+    "supporting_projection_limits": [
+      "BE-22 projects a real 200 primary-phone response as unbound because the local fake WeChat provider has one fixed openid already bound by earlier shared-database flows; real unbound persistence is supplied by the existing identity MySQL L2 profile",
+      "BE-26 filters pre-existing READY rows from the real active-orders 200 response only inside the browser seam, avoiding mutation of unrelated evidence orders; order-query L1/L2 supplies the server fact"
+    ]
+  },
+  "blocked_external": {
+    "ui2": "WeChat Developer Tools login remains pending; this local UI1 gate must not be called UI2",
+    "ui3": ["real getPhoneNumber", "real wx.requestPayment and funds", "physical device network and native UI"]
+  },
+  "forbidden_actions_not_taken": ["npm install", "new Docker container", "raw SQL business write", "push", "PR", "preview", "upload", "deploy", "real funds"]
+}

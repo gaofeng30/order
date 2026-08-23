@@ -105,7 +105,7 @@
         <text wx:else class="cart-empty">购物车是空的</text>
         <view class="cart-hint">{{count > 0 ? '商品快照已保存 · 到店自提' : '从目录选择商品'}}</view>
       </view>
-      <view class="btn {{count ? 'btn--primary' : 'btn--mute'}} cart-go" bindtap="goConfirm">去结算</view>
+      <view class="btn {{canCheckout ? 'btn--primary' : 'btn--mute'}} cart-go" bindtap="goConfirm">去结算</view>
     </view>
   </view>
 
@@ -136,7 +136,7 @@
     </scroll-view>
     <view class="sheet-foot" style="padding-bottom:{{safeBottom + 20}}px">
       <view class="sheet-total"><text class="sheet-total-lbl">合计 </text><money v="{{total}}" size="44" /></view>
-      <view class="btn btn--primary" bindtap="goConfirm">去结算</view>
+      <view class="btn {{canCheckout ? 'btn--primary' : 'btn--mute'}}" bindtap="goConfirm">去结算</view>
     </view>
   </view>
 

@@ -9,7 +9,7 @@ Page({
   data: {
     identityState: 'loading', pend: 0, nick: '微信用户', avatarText: '客', avatarUrl: '',
     phoneMask: '', extraPhoneMask: '', pricingKind: 'VISITOR', merchantBound: false, merchantLoginState: 'idle',
-    extraForm: { phone: '', name: '' },
+    extraForm: { phone: '', name: '' }, extraState: 'idle',
   },
   async onShow() {
     this.setData({ identityState: 'loading', pend: 0 });
@@ -58,11 +58,21 @@ Page({
   },
   onExtraInput(e) { this.setData({ [`extraForm.${e.currentTarget.dataset.k}`]: e.detail.value }); },
   async saveExtraPhone() {
+    this.setData({ extraState: 'saving' });
     try {
       const result = await phoneStore.setExtra(this.data.extraForm.phone.trim(), this.data.extraForm.name.trim(), api.newIdempotencyKey('extra-phone'));
-      this.setData({ extraPhoneMask: result.extraPhone.masked_phone, pricingKind: result.pricingIdentity && result.pricingIdentity.kind || this.data.pricingKind });
+      const kind = result.pricingIdentity && result.pricingIdentity.kind;
+      if (kind !== 'STAFF' && kind !== 'VISITOR') {
+        this.setData({ extraState: 'error' });
+        return false;
+      }
+      this.setData({
+        extraPhoneMask: result.extraPhone.masked_phone,
+        pricingKind: kind,
+        extraState: kind === 'STAFF' ? 'matched' : 'unmatched',
+      });
       return true;
-    } catch (error) { return false; }
+    } catch (error) { this.setData({ extraState: 'error' }); return false; }
   },
   toOrders() { nav.tabTo('orders'); },
   reset() { nav.reset(); },

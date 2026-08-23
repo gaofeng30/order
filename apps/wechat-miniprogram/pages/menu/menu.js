@@ -3,6 +3,17 @@ const { nav, cart, pickup } = require('../../utils/util.js');
 
 const MEAL_LABELS = { lunch: '午餐', dinner: '晚餐' };
 
+function firstBrowsable(options) {
+  for (const day of options.dates) {
+    for (const meal of day.mealPeriods) {
+      if (meal.pickupTimes.length) {
+        return { date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] };
+      }
+    }
+  }
+  return null;
+}
+
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
@@ -10,6 +21,7 @@ Page({
     total: 0, active: '', intoView: '', sheet: false, cartItems: [], _offsets: [],
     czVisible: false, czItem: null, czInit: null, czLabel: '加入购物车',
     pickup: null, pickerVisible: false, pickerDates: [], pickerGroups: [], pickerDate: '', search: '', flavors: [],
+    canCheckout: false,
   },
   onLoad() { this.refresh(); },
   async onShow() {
@@ -18,7 +30,8 @@ Page({
     await this.loadOptionsAndMenu();
   },
   async loadOptionsAndMenu() {
-    this.setData({ optionState: 'loading', listState: 'loading', groups: [], cats: [] });
+    this._menuOrderable = false;
+    this.setData({ optionState: 'loading', listState: 'loading', groups: [], cats: [], canCheckout: false });
     try {
       const options = await menuStore.loadPickupOptions();
       this._options = options;
@@ -26,7 +39,8 @@ Page({
       const validCurrent = current && options.dates.some(day => day.date === current.date && day.available
         && day.mealPeriods.some(meal => meal.mealPeriod === current.mealPeriod
           && meal.available && meal.pickupTimes.includes(current.time)));
-      const selected = validCurrent ? current : menuStore.firstAvailable(options);
+      const available = validCurrent ? current : menuStore.firstAvailable(options);
+      const selected = available || firstBrowsable(options);
       this.setPicker(options, selected && selected.date);
       if (!selected) {
         pickup.set(null);
@@ -34,7 +48,7 @@ Page({
         return false;
       }
       pickup.set(selected);
-      this.setData({ optionState: 'ready', pickup: Object.assign({}, selected, { label: pickup.label() }) });
+      this.setData({ optionState: available ? 'ready' : 'browse', pickup: Object.assign({}, selected, { label: pickup.label() }) });
       return this.loadMenu();
     } catch (error) {
       pickup.set(null);
@@ -80,20 +94,24 @@ Page({
   async loadMenu() {
     const selected = pickup.get();
     if (!selected) return false;
-    this.setData({ listState: 'loading', groups: [], cats: [], active: '' });
+    this._menuOrderable = false;
+    this.setData({ listState: 'loading', groups: [], cats: [], active: '', canCheckout: false });
     try {
       const menu = await menuStore.loadMenu(selected);
       if (menu.selection.date !== selected.date || menu.selection.time !== selected.time
         || menu.selection.mealPeriod !== selected.mealPeriod) throw new Error('selection drift');
       this._allGroups = menu.categories;
+      this._menuOrderable = menu.orderable;
       this._productsById = {};
       menu.categories.forEach(group => group.products.forEach(product => { this._productsById[product.id] = product; }));
       this.applySearch(this.data.search);
+      this.refresh();
       return true;
     } catch (error) {
       this._allGroups = [];
       this._productsById = {};
-      this.setData({ listState: 'error', groups: [], cats: [], active: '' });
+      this._menuOrderable = false;
+      this.setData({ listState: 'error', groups: [], cats: [], active: '', canCheckout: false });
       return false;
     }
   },
@@ -117,13 +135,13 @@ Page({
     const raw = getApp().globalData.cart;
     const qtyMap = {};
     Object.keys(raw).forEach(id => { qtyMap[id] = raw[id].qty; });
-    this.setData({ qtyMap, count: cart.count(), total: cart.total(), cartItems: cart.list() });
+    const count = cart.count();
+    this.setData({ qtyMap, count, total: cart.total(), cartItems: cart.list(), canCheckout: count > 0 && this._menuOrderable === true });
   },
   add(e) {
     const id = e.currentTarget.dataset.id;
-    const entry = cart.entry(id);
-    const product = entry ? entry.product : this._productsById[id];
-    if (!product || (!entry && !product.orderable)) return false;
+    const product = this._productsById && this._productsById[id];
+    if (!product || !product.orderable) return false;
     cart.add(product);
     this.refresh();
     return true;
@@ -155,6 +173,6 @@ Page({
   },
   openSheet() { if (this.data.count) this.setData({ sheet: true }); },
   closeSheet() { this.setData({ sheet: false }); },
-  goConfirm() { if (this.data.count && pickup.get()) { this.setData({ sheet: false }); nav.go('confirm'); } },
+  goConfirm() { if (this.data.canCheckout && pickup.get()) { this.setData({ sheet: false }); nav.go('confirm'); } },
   noop() {},
 });
