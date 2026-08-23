@@ -8,9 +8,10 @@
 - [x] Refactor：收窄实现并重跑同一 focused/race suite。
 - [x] Mutation/resilience：canonical、precedence、accepted/rejected、malformed、重复与 collision。
 - [x] Writer runtime Gate：新 base `5e937f...56a2` focused/race、7 mutation、fresh MySQL、全 test/race、vet/build/smoke、format/PII/owned 均从头 PASS。
-- [ ] 候选中文 commit、exact SHA、clean。
-- [ ] `$code-review` Standards/Spec 双轴 PASS。
-- [ ] fresh clean detached exact-SHA independent verification PASS。
+- [x] 候选内容与中文 commit 流程已冻结；final exact SHA 与 clean 使用 `external-post-commit` handoff 绑定，不在 immutable commit 内自引用。
+- [x] `$code-review` 双轴 workflow 已发现并驱动两个真实 P2 修复；replacement review 与 verifier 命令包及独立 handoff 已冻结。
+- [ ] replacement exact SHA Standards/Spec 双轴 `0 findings`；实际 verdict 只由 post-commit handoff 绑定。
+- [ ] fresh detached exact-SHA independent verification PASS；实际 verdict 只进入外部 verifier receipt。
 
 首次 candidate `25af340...5415` 的 Standards 为 0 finding，Spec 报告 1 个真实 P2：malformed
 transaction 被 callback/state 错误遮蔽。已先用组合测试取得 RED，再最小修复并从 focused 到 fresh
@@ -25,6 +26,27 @@ RED/PASS。Candidate、`$code-review` 与 detached verifier 仍须按新 SHA 顺
 
 Writer runtime receipt 见 `evidence/v13-writer-gates.md`。commit 后才有意义的 exact-SHA diff、
 clean、双轴 review 与 detached receipt 保持后置绑定，不通过修改本 commit 自引用回填。
+
+## Immutable candidate handoff
+
+```yaml
+change: implement-payment-observation-normalizer-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
+candidate_sha: external-post-commit
+phase: candidate-handoff
+command_or_action: freeze owned implementation/spec/tasks and commit with a Chinese message; bind final exact SHA, clean, replacement two-axis review and fresh detached verification outside the immutable commit
+exit_result: READY_FOR_IMMUTABLE_HANDOFF
+sanitized_summary: writer runtime gates passed on the final implementation; two prior exact candidates were invalidated after Spec findings were reproduced and fixed; the last pre-governance candidate received Standards and Spec zero-finding verdicts
+artifact_or_environment: final owned writer tree before the governance replacement commit
+unverified_boundary: the replacement exact SHA does not exist inside its own content; its clean state, fresh full-diff review and detached Gate verdict must be recorded by immutable external handoff receipts
+external_asset:
+  owner: writer handoff, independent Standards/Spec reviewers, detached verifier
+  missing: N/A
+  recovery: after commit, pin the exact SHA, rerun both review axes on the full base diff, then run every declared Gate in a fresh clean detached worktree
+```
 
 ## v13 恢复固定证据
 

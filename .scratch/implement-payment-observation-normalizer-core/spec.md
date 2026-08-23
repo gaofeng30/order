@@ -1,6 +1,10 @@
 # Payment Observation Normalizer Core Spec
 
-**Status:** `WRITER_RUNTIME_PASS / CANDIDATE_PENDING`
+**Status:** `FROZEN / CANDIDATE_READY`
+
+Candidate exact SHA、replacement 双轴 review 与 detached verifier verdict 使用
+`candidate_sha: external-post-commit` 约定，由 immutable handoff/外部 receipt 绑定；本 Spec 不通过
+post-commit amend 自引用 SHA 或回填后置 verdict。
 
 本 Spec 只冻结本 change 的 Go interface 与纯领域行为，不批准或替代交易契约 worktree 的
 `WIP / NOT_APPROVED` 产品与持久化设计。

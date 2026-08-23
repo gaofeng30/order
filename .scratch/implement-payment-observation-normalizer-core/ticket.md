@@ -1,12 +1,14 @@
 # implement-payment-observation-normalizer-core
 
-**Status:** `WRITER_RUNTIME_PASS / CANDIDATE_PENDING`
+**Status:** `CANDIDATE_READY / IMMUTABLE_POST_COMMIT_HANDOFF`
 
 **Approval source:** 主控对本 backend-only slice 的明确委派；不代表交易契约 WIP 已获产品批准。
 
 ## 固定点
 
 - `base_sha`: `5e937f3599a16f4813d6021f4cd2dd637c3156a2`
+- `candidate_sha`: `external-post-commit`；immutable commit 不能包含自身 SHA，最终 exact SHA、clean、
+  replacement 双轴 verdict 与 detached receipt 由主控 handoff 绑定
 - `branch`: `codex/implement-payment-observation-normalizer-core-v13`
 - `worktree`: `/Users/vivix/.codex/worktrees/142a/order`
 - `gate_type`: `W3`
@@ -95,7 +97,7 @@ Integration 仅在依赖已进入目标 integration base、candidate exact SHA �
 
 | 资产 | owner | 当前状态 | 恢复条件 / 边界 |
 | --- | --- | --- | --- |
-| 临时隔离 MySQL 8.0 | Writer/Verifier | `WRITER_PASS / VERIFIER_PENDING` | Writer 已在 fresh MySQL 8.0.46 重跑完整矩阵；detached exact-candidate Verifier 仍须另启 fresh container，不复用本次 PASS |
+| 临时隔离 MySQL 8.0 | Writer/Verifier | `WRITER_PASS / EXTERNAL_RECEIPT_PENDING` | Writer 已在 fresh MySQL 8.0.46 重跑完整矩阵；detached exact-candidate Verifier 必须另启 fresh container，结果只进入 immutable 外部 receipt，不回填本 commit |
 | 正式 AppID/mchid、证书、APIv3 key、HTTPS callback、查单权限、真实资金 | 客户商户管理员 + 开发方 | `BLOCKED_EXTERNAL` | 未来 ingress/UAT change 获单独授权；本 change 不读取、不需要、不验证 |
 | UI runner / 真机 | N/A | `N/A` | backend-only 无 UI；UI0 不证明 UI1/UI2/UI3 |
 
