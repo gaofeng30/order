@@ -102,7 +102,6 @@ type Application interface {
 	ListPending(context.Context, uint64, PageQuery) ([]Pending, uint64, error)
 	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (any, error)
 	RequestRefund(context.Context, WriteMeta, uint64, string) (Order, Refund, error)
-	Advance(context.Context, WriteMeta, uint64) (Order, error)
 }
 type Handler struct {
 	app Application
@@ -120,7 +119,6 @@ func (h *Handler) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/pending-payments", h.pending)
 	group.POST("/pending-payments/:id", h.processPending)
 	group.POST("/orders/:id/refund", h.refund)
-	group.PUT("/orders/:id/advance", h.advance)
 }
 
 func actor(c *gin.Context) (uint64, bool) { id := c.GetUint64("actor_user_id"); return id, id > 0 }
@@ -321,25 +319,6 @@ func (h *Handler) refund(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"order": orderView(order), "refund": refundView(refund)})
 }
-func (h *Handler) advance(c *gin.Context) {
-	id, ok := uintID(c.Param("id"))
-	if !ok || !empty(c) {
-		writeError(c, ErrInvalidInput)
-		return
-	}
-	m, mok := meta(c)
-	if !mok {
-		writeError(c, ErrInvalidInput)
-		return
-	}
-	order, err := h.app.Advance(c.Request.Context(), m, id)
-	if err != nil {
-		writeError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, orderView(order))
-}
-
 func orderView(o Order) gin.H {
 	items := make([]gin.H, 0, len(o.Items))
 	for _, i := range o.Items {

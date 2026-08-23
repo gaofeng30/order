@@ -39,7 +39,6 @@ func (f *fakeReport) ProcessPending(context.Context, WriteMeta, uint64, PendingA
 func (*fakeReport) RequestRefund(context.Context, WriteMeta, uint64, string) (Order, Refund, error) {
 	return Order{}, Refund{}, nil
 }
-func (*fakeReport) Advance(context.Context, WriteMeta, uint64) (Order, error) { return Order{}, nil }
 func TestPendingMutationWithoutIdempotencyKeyFailsClosed(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	f := &fakeReport{}

@@ -14,7 +14,6 @@ import (
 type CommandAdapter interface {
 	ProcessPending(context.Context, WriteMeta, uint64, PendingAction, string) (any, error)
 	RequestRefund(context.Context, WriteMeta, uint64, string) (Order, Refund, error)
-	Advance(context.Context, WriteMeta, uint64) (Order, error)
 }
 type MySQLApplication struct {
 	db       *sql.DB
@@ -35,12 +34,6 @@ func (a *MySQLApplication) RequestRefund(ctx context.Context, m WriteMeta, id ui
 		return Order{}, Refund{}, ErrUnavailable
 	}
 	return a.commands.RequestRefund(ctx, m, id, reason)
-}
-func (a *MySQLApplication) Advance(ctx context.Context, m WriteMeta, id uint64) (Order, error) {
-	if a.commands == nil {
-		return Order{}, ErrUnavailable
-	}
-	return a.commands.Advance(ctx, m, id)
 }
 func authorizeOwner(ctx context.Context, db *sql.DB, userID uint64) error {
 	var id uint64
