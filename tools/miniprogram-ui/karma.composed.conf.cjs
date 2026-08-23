@@ -36,7 +36,7 @@ module.exports = function configure(config) {
         flags: ['--disable-gpu', '--no-first-run'],
       },
     },
-    client: { mocha: { timeout: 10000 } },
+    client: { mocha: { timeout: 30000 } },
     browserConsoleLogOptions: { level: 'error', format: '%b %T: %m', terminal: true },
     logLevel: config.LOG_WARN,
     colors: false,

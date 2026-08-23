@@ -107,7 +107,7 @@ try {
 
 console.log('UI1_COMPOSED_RESULT', JSON.stringify({
   status: exitCode === 0 ? 'PASS' : 'FAIL',
-  scenarios: 2,
+  scenarios: 4,
   evidence_level: 'L3_LOCAL_COMPOSED',
   upstream_requests: proxy.requests,
 }));

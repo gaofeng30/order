@@ -39,7 +39,7 @@ function registerComponent({ definition, template, id, tagName, usingComponents 
   }));
 }
 
-function renderPage({ definition, template, id, usingComponents = {} }) {
+function renderPage({ definition, template, id, usingComponents = {}, loadOptions = {} }) {
   const componentID = simulate.load({
     id,
     template,
@@ -49,7 +49,7 @@ function renderPage({ definition, template, id, usingComponents = {} }) {
   });
   const component = simulate.render(componentID);
   component.attach(document.body);
-  callLifecycle(component, definition, 'onLoad', {});
+  callLifecycle(component, definition, 'onLoad', loadOptions);
   callLifecycle(component, definition, 'onShow');
   return component;
 }
