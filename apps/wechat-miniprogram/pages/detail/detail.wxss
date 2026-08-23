@@ -2,7 +2,9 @@
 .detail-body { padding: 24rpx 32rpx 0; position: relative; }
 .info-card { padding: 36rpx; }
 .info-name { font-size: 46rpx; font-weight: 700; color: var(--ink); }
-.info-price { display: flex; align-items: baseline; margin-top: 24rpx; }
+.info-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12rpx; margin-top: 24rpx; }
+.staff-price-label { font-size: 20rpx; color: var(--green-1); background: var(--green-bg); border-radius: 8rpx; padding: 4rpx 10rpx; }
+.original-price { font-size: 24rpx; color: var(--ink-3); text-decoration: line-through; }
 .info-desc { font-size: 27rpx; color: var(--ink-2); margin-top: 28rpx; line-height: 1.75; }
 
 .spec-card { padding: 8rpx 36rpx 32rpx; margin-top: 24rpx; }

@@ -17,7 +17,11 @@
         </scroll-view>
         <view class="card info-card">
           <view class="info-name serif">{{m.name}}</view>
-          <view class="info-price"><money v="{{m.price_text}}" size="60" /></view>
+          <view class="info-price">
+            <view wx:if="{{m.isStaffPrice}}" class="staff-price-label">员工价</view>
+            <money v="{{m.price_text}}" size="60" />
+            <text wx:if="{{m.isStaffPrice}}" class="original-price">原价 ¥{{m.original_price_text}}</text>
+          </view>
           <view class="info-desc">{{m.description}}</view>
         </view>
 

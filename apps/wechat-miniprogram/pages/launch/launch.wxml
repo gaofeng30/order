@@ -3,6 +3,15 @@
   <view class="ring r2"></view>
   <view class="ring r3"></view>
 
+  <view
+    wx:if="{{launchLayer}}"
+    class="launch-layer"
+    style="left:{{launchLayer.leftPercent}}%;top:{{launchLayer.topPercent}}%;width:{{launchLayer.widthPercent}}vw;height:{{launchLayer.heightVw}}vw"
+    catchtap="dismissLaunchLayer"
+  >
+    <image src="{{launchLayer.image.url}}" mode="scaleToFill" />
+  </view>
+
   <!-- 顶部：返回品牌选择（仅图标） -->
   <view class="back-btn" bindtap="back"><icon name="back" size="22" color="rgba(255,255,255,0.85)" /></view>
 

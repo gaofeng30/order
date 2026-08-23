@@ -23,8 +23,9 @@ Page({
       const options = await menuStore.loadPickupOptions();
       this._options = options;
       const current = pickup.get();
-      const validCurrent = current && options.dates.some(day => day.date === current.date && day.meals.some(meal =>
-        meal.code === current.mealPeriod && meal.orderable && meal.times.includes(current.time)));
+      const validCurrent = current && options.dates.some(day => day.date === current.date && day.available
+        && day.mealPeriods.some(meal => meal.mealPeriod === current.mealPeriod
+          && meal.available && meal.pickupTimes.includes(current.time)));
       const selected = validCurrent ? current : menuStore.firstAvailable(options);
       this.setPicker(options, selected && selected.date);
       if (!selected) {
@@ -45,14 +46,14 @@ Page({
   },
   setPicker(options, selectedDate) {
     const dates = options.dates.map(day => ({
-      date: day.date, label: day.date.slice(5), available: day.orderable,
+      date: day.date, label: day.date.slice(5), available: day.available,
     }));
     const date = selectedDate || (dates[0] && dates[0].date) || '';
     const source = options.dates.find(day => day.date === date);
-    const groups = source ? source.meals.map(meal => ({
-      key: meal.code, name: MEAL_LABELS[meal.code], cutOff: !meal.orderable,
-      cutoffLabel: !meal.orderable ? `已截单 · ${meal.cutoffAt.slice(11, 16)} 截止` : '',
-      times: meal.orderable ? meal.times.slice() : [], date,
+    const groups = source ? source.mealPeriods.map(meal => ({
+      key: meal.mealPeriod, name: MEAL_LABELS[meal.mealPeriod], cutOff: !meal.available,
+      cutoffLabel: !meal.available ? `已截单 · ${meal.cutoffTime} 截止` : '',
+      times: meal.available ? meal.pickupTimes.slice() : [], date,
     })) : [];
     this.setData({ pickerDates: dates, pickerGroups: groups, pickerDate: date });
   },
@@ -61,15 +62,15 @@ Page({
   pickPickerDate(e) {
     const date = e.currentTarget.dataset.date;
     const day = this._options && this._options.dates.find(item => item.date === date);
-    if (!day || !day.orderable) return false;
+    if (!day || !day.available) return false;
     this.setPicker(this._options, date);
     return true;
   },
   async pickPickerTime(e) {
     const { date, period, t } = e.currentTarget.dataset;
     const day = this._options && this._options.dates.find(item => item.date === date);
-    const meal = day && day.meals.find(item => item.code === period);
-    if (!meal || !meal.orderable || !meal.times.includes(t)) return false;
+    const meal = day && day.mealPeriods.find(item => item.mealPeriod === period);
+    if (!day || !day.available || !meal || !meal.available || !meal.pickupTimes.includes(t)) return false;
     const selected = { date, mealPeriod: period, time: t };
     pickup.set(selected);
     this.setData({ pickerVisible: false, pickup: Object.assign({}, selected, { label: pickup.label() }) });
@@ -146,7 +147,12 @@ Page({
   onScroll() {},
   onReady() {},
   measure() {},
-  goDetail(e) { nav.go('detail', { id: e.currentTarget.dataset.id }); },
+  goDetail(e) {
+    const id = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id;
+    if (!this._productsById || !this._productsById[id]) return false;
+    nav.go('detail', { id });
+    return true;
+  },
   openSheet() { if (this.data.count) this.setData({ sheet: true }); },
   closeSheet() { this.setData({ sheet: false }); },
   goConfirm() { if (this.data.count && pickup.get()) { this.setData({ sheet: false }); nav.go('confirm'); } },

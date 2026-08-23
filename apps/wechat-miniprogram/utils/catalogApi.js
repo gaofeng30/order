@@ -1,4 +1,4 @@
-const { isRuntimeOrigin } = require('./runtimeEndpoint.js');
+const api = require('./apiClient.js');
 
 class CatalogError extends Error {
   constructor(code) {
@@ -8,49 +8,22 @@ class CatalogError extends Error {
   }
 }
 
-function request(path, notFoundCode) {
-  return new Promise((resolve, reject) => {
-    let baseUrl;
-    try {
-      const globalData = getApp().globalData;
-      const endpoint = globalData.runtimeEndpoint;
-      baseUrl = globalData.apiBaseUrl;
-      if (!endpoint
-        || endpoint.state !== 'ready'
-        || endpoint.origin !== baseUrl
-        || !isRuntimeOrigin(endpoint.envVersion, baseUrl)) {
-        throw new CatalogError('CATALOG_UNAVAILABLE');
-      }
-      wx.request({
-        url: `${baseUrl}${path}`,
-        method: 'GET',
-        success(response) {
-          if (response.statusCode === 200) {
-            resolve(response.data);
-            return;
-          }
-          if (response.statusCode === 404 && notFoundCode) {
-            reject(new CatalogError(notFoundCode));
-            return;
-          }
-          reject(new CatalogError('CATALOG_UNAVAILABLE'));
-        },
-        fail() {
-          reject(new CatalogError('CATALOG_UNAVAILABLE'));
-        },
-      });
-    } catch (error) {
-      reject(new CatalogError('CATALOG_UNAVAILABLE'));
-    }
-  });
+function unavailable(error) {
+  if (error && error.code === 'PRODUCT_NOT_FOUND') return new CatalogError('PRODUCT_NOT_FOUND');
+  return new CatalogError('CATALOG_UNAVAILABLE');
 }
 
-function listCatalog() {
-  return request('/api/v1/catalog');
+async function listCatalog() {
+  try { return await api.getOptional('/api/v1/catalog'); } catch (error) { throw unavailable(error); }
 }
 
-function getProduct(id) {
-  return request(`/api/v1/catalog/products/${encodeURIComponent(String(id))}`, 'PRODUCT_NOT_FOUND');
+async function getProduct(id, selection) {
+  if (!/^[1-9]\d*$/.test(String(id)) || !selection
+    || !/^\d{4}-\d{2}-\d{2}$/.test(selection.date)
+    || !/^\d{2}:\d{2}$/.test(selection.time)) throw new CatalogError('CATALOG_UNAVAILABLE');
+  const path = `/api/v1/catalog/products/${encodeURIComponent(String(id))}`
+    + `?date=${selection.date}&time=${encodeURIComponent(selection.time)}`;
+  try { return await api.getOptional(path); } catch (error) { throw unavailable(error); }
 }
 
 module.exports = { CatalogError, listCatalog, getProduct };

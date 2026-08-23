@@ -19,21 +19,44 @@ Page({
     hint: '',
   },
   async onShow() {
+    this.clearLaunchTimer();
     this.setData({ storefrontState: 'loading', storeName: '', launchLayer: null });
     try {
       const settings = await storefrontStore.load();
       getApp().globalData.storefrontFlavors = settings.flavors;
       this.setData({ storefrontState: 'ready', storeName: settings.name, launchLayer: settings.launchLayer });
+      this.scheduleLaunchLayer();
     } catch (error) {
       this.setData({ storefrontState: 'error' });
     }
   },
+  onHide() { this.clearLaunchTimer(); },
+  onUnload() { this.clearLaunchTimer(); },
+  clearLaunchTimer() {
+    if (this._launchTimer) clearTimeout(this._launchTimer);
+    this._launchTimer = null;
+  },
+  scheduleLaunchLayer() {
+    this.clearLaunchTimer();
+    if (!this.data.launchLayer) return;
+    this._launchTimer = setTimeout(() => this.dismissLaunchLayer(), 1500);
+  },
+  dismissLaunchLayer() {
+    this.clearLaunchTimer();
+    if (this.data.launchLayer) this.setData({ launchLayer: null });
+    return true;
+  },
   retryStorefront() { return this.onShow(); },
   back() { nav.back(); },
-  go(e) { nav.go(e.currentTarget.dataset.to); },
+  go(e) {
+    if (this.data.storefrontState !== 'ready') return false;
+    nav.go(e.currentTarget.dataset.to);
+    return true;
+  },
 
   /* 微信手机号授权回调。允许时 detail 带 code / encryptedData，拒绝时只有 errMsg。 */
   async onMerchantPhone(e) {
+    if (this.data.storefrontState !== 'ready') return false;
     const d = (e && e.detail) || {};
     if (typeof d.code !== 'string' || !d.code.trim()) {
       // 拒绝是合法选择，不渲染成失败，也不拦路

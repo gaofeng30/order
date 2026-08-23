@@ -61,6 +61,8 @@
         <view class="sec-h"><text class="t" style="font-size:30rpx">{{g.name}}</text></view>
         <view wx:if="{{g.products.length === 0}}" class="group-empty">该分类暂无商品</view>
         <view wx:for="{{g.products}}" wx:for-item="m" wx:key="id" class="dish-row">
+          <image wx:if="{{m.cover}}" class="dish-cover" src="{{m.cover.url}}" mode="aspectFill" data-id="{{m.id}}" bindtap="goDetail" />
+          <view wx:else class="dish-cover dish-cover--empty" data-id="{{m.id}}" bindtap="goDetail">暂无图片</view>
           <view class="dish-info">
             <view data-id="{{m.id}}" bindtap="goDetail">
               <view class="dish-name">{{m.name}}<text wx:if="{{!m.orderable}}"> · {{m.availabilityLabel}}</text></view>
@@ -68,7 +70,11 @@
               <view class="dish-spec">{{m.specification}}</view>
             </view>
             <view class="dish-foot">
-              <money v="{{m.price_text}}" size="36" />
+              <view class="dish-prices">
+                <view wx:if="{{m.isStaffPrice}}" class="staff-price-label">员工价</view>
+                <money v="{{m.price_text}}" size="36" />
+                <text wx:if="{{m.isStaffPrice}}" class="original-price">¥{{m.original_price_text}}</text>
+              </view>
               <view class="dish-action">
                 <stepper
                   wx:if="{{qtyMap[m.id] > 0}}"
@@ -113,7 +119,11 @@
       <view wx:for="{{cartItems}}" wx:for-item="ci" wx:key="item.id" class="list-row sheet-row">
         <view class="sheet-item-info">
           <view class="sheet-item-name">{{ci.item.name}}</view>
-          <money v="{{ci.item.price_text}}" size="28" />
+          <view class="sheet-item-prices">
+            <text wx:if="{{ci.item.isStaffPrice}}" class="staff-price-label">员工价</text>
+            <money v="{{ci.item.price_text}}" size="28" />
+            <text wx:if="{{ci.item.isStaffPrice}}" class="original-price">¥{{ci.item.original_price_text}}</text>
+          </view>
           <view wx:if="{{ci.flavors.length || ci.note}}" class="sheet-item-prefs" data-id="{{ci.item.id}}" catchtap="editItem">
             <text wx:for="{{ci.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
             <text wx:if="{{ci.note}}" class="pref-note">“{{ci.note}}”</text>

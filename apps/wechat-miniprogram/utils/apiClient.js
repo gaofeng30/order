@@ -1,4 +1,5 @@
 const SUCCESS = new Set([200, 201, 202, 204]);
+const { isRuntimeOrigin } = require('./runtimeEndpoint.js');
 let keySequence = 0;
 
 class APIError extends Error {
@@ -12,10 +13,54 @@ class APIError extends Error {
 
 function runtime() {
   const state = getApp().globalData;
-  if (!state.runtimeEndpoint || state.runtimeEndpoint.state !== 'ready' || !state.apiBaseUrl) {
+  if (!state.runtimeEndpoint || state.runtimeEndpoint.state !== 'ready' || !state.apiBaseUrl
+    || state.runtimeEndpoint.origin !== state.apiBaseUrl
+    || !isRuntimeOrigin(state.runtimeEndpoint.envVersion, state.apiBaseUrl)) {
     throw new APIError('RUNTIME_NOT_READY');
   }
   return state;
+}
+
+function validObjectKey(value) {
+  if (typeof value !== 'string' || !value || value !== value.trim() || value.length > 1024
+    || value.includes('\\') || value.startsWith('/')) return false;
+  return value.split('/').every(segment => segment && segment !== '.' && segment !== '..');
+}
+
+function resolvePublicURL(value, objectKey) {
+  const state = runtime();
+  if (typeof value !== 'string' || !value || /[\u0000-\u0020\u007f\\]/.test(value)
+    || value.includes('#') || !validObjectKey(objectKey)) {
+    throw new APIError('OBJECT_URL_INVALID');
+  }
+
+  const localPrefix = '/api/v1/objects/';
+  if (value.startsWith('/')) {
+    if (!value.startsWith(localPrefix) || value.includes('?')) throw new APIError('OBJECT_URL_INVALID');
+    const encoded = value.slice(localPrefix.length);
+    if (!encoded) throw new APIError('OBJECT_URL_INVALID');
+    let decoded;
+    try {
+      decoded = encoded.split('/').map(segment => {
+        if (!segment) throw new Error('empty object path segment');
+        const part = decodeURIComponent(segment);
+        if (!part || part === '.' || part === '..' || part.includes('/') || part.includes('\\')) {
+          throw new Error('invalid object path segment');
+        }
+        return part;
+      }).join('/');
+    } catch (error) {
+      throw new APIError('OBJECT_URL_INVALID');
+    }
+    if (decoded !== objectKey) throw new APIError('OBJECT_URL_INVALID');
+    return `${state.apiBaseUrl}${value}`;
+  }
+
+  const match = /^https:\/\/([^/?#]+)(?:\/[^#]*)?$/.exec(value);
+  if (!match || match[1].includes('@') || match[1].startsWith(':') || match[1].endsWith(':')) {
+    throw new APIError('OBJECT_URL_INVALID');
+  }
+  return value;
 }
 
 function sessionToken(required) {
@@ -89,4 +134,5 @@ module.exports = {
   newIdempotencyKey,
   post(path, data, key) { return write(path, 'POST', data, key); },
   put(path, data, key) { return write(path, 'PUT', data, key); },
+  resolvePublicURL,
 };

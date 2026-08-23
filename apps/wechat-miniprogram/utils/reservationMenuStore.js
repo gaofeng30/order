@@ -10,43 +10,65 @@ function text(value) {
   if (typeof value !== 'string') throw invalid();
   return value;
 }
+function exactBoolean(value) {
+  if (typeof value !== 'boolean') throw invalid();
+  return value;
+}
 
 function parsePickupOptions(body) {
-  if (!body || body.timezone !== 'Asia/Shanghai' || !Array.isArray(body.dates)) throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
+  if (!body || body.timezone !== 'Asia/Shanghai' || !Array.isArray(body.dates)) {
+    throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
+  }
   const dates = body.dates.map(day => {
-    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day.date) || typeof day.orderable !== 'boolean' || !Array.isArray(day.meals)) throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
-    const meals = day.meals.map(meal => {
-      if (!meal || !['lunch', 'dinner'].includes(meal.code) || typeof meal.orderable !== 'boolean'
-        || !Array.isArray(meal.pickup_times) || typeof meal.cutoff_at !== 'string') throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
-      const times = meal.pickup_times.map(time => {
+    if (!day || !/^\d{4}-\d{2}-\d{2}$/.test(day.date) || typeof day.available !== 'boolean'
+      || !Array.isArray(day.meal_periods)) throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
+    const mealPeriods = day.meal_periods.map(meal => {
+      if (!meal || !['lunch', 'dinner'].includes(meal.meal_period) || typeof meal.available !== 'boolean'
+        || !Array.isArray(meal.pickup_times) || !/^\d{2}:\d{2}$/.test(meal.cutoff_time)) {
+        throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
+      }
+      const pickupTimes = meal.pickup_times.map(time => {
         if (typeof time !== 'string' || !/^\d{2}:\d{2}$/.test(time)) throw invalid('PICKUP_OPTIONS_UNAVAILABLE');
         return time;
       });
-      return { code: meal.code, cutoffAt: meal.cutoff_at, orderable: meal.orderable, times };
+      return { mealPeriod: meal.meal_period, available: meal.available, cutoffTime: meal.cutoff_time, pickupTimes };
     });
-    return { date: day.date, orderable: day.orderable, meals };
+    return { date: day.date, available: day.available, mealPeriods };
   });
   return { timezone: body.timezone, dates };
 }
 
 function firstAvailable(options) {
   for (const day of options.dates) {
-    if (!day.orderable) continue;
-    for (const meal of day.meals) {
-      if (meal.orderable && meal.times.length) {
-        return { date: day.date, mealPeriod: meal.code, time: meal.times[0] };
+    if (!day.available) continue;
+    for (const meal of day.mealPeriods) {
+      if (meal.available && meal.pickupTimes.length) {
+        return { date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] };
       }
     }
   }
   return null;
 }
 
+function parseStoreStatus(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !['open', 'closed', 'cutoff'].includes(value.business_status)) throw invalid();
+  return {
+    businessStatus: value.business_status,
+    serviceDateAvailable: exactBoolean(value.service_date_available),
+    mealAvailable: exactBoolean(value.meal_available),
+    cutoffPassed: exactBoolean(value.cutoff_passed),
+  };
+}
+
 function parseMenu(body) {
-  if (!body || !body.selection || !body.meal || !Array.isArray(body.categories)) throw invalid();
+  if (!body || !body.selection || !body.store_status || !Array.isArray(body.categories)) throw invalid();
   const selection = body.selection;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(selection.date) || !/^\d{2}:\d{2}$/.test(selection.time)
-    || selection.timezone !== 'Asia/Shanghai' || !['lunch', 'dinner'].includes(body.meal.code)
-    || typeof body.meal.orderable !== 'boolean') throw invalid();
+    || !['lunch', 'dinner'].includes(selection.meal_period)) throw invalid();
+  const storeStatus = parseStoreStatus(body.store_status);
+  const currentOrderable = storeStatus.businessStatus === 'open' && storeStatus.serviceDateAvailable
+    && storeStatus.mealAvailable && !storeStatus.cutoffPassed;
   const categories = body.categories.map(category => {
     const categoryID = id(category.id);
     if (!Array.isArray(category.products)) throw invalid();
@@ -54,29 +76,29 @@ function parseMenu(body) {
       id: categoryID,
       name: text(category.name),
       products: category.products.map(product => {
-        const base = catalogStore.withPrice(product);
-        if (base.category_id !== categoryID || typeof product.sold_out !== 'boolean' || typeof product.orderable !== 'boolean') throw invalid();
-        return Object.assign(base, {
-          soldOut: product.sold_out,
-          orderable: body.meal.orderable && product.orderable && !product.sold_out,
-          availabilityLabel: product.sold_out ? '已售罄' : (body.meal.orderable && product.orderable ? '可选择' : '当前不可下单'),
-        });
+        let base;
+        try { base = catalogStore.withPrice(catalogStore.parseFrozenProduct(product)); } catch (error) { throw invalid(); }
+        if (base.category_id !== categoryID || !base.listed
+          || (base.meal_period !== 'all' && base.meal_period !== selection.meal_period)) throw invalid();
+        const orderable = currentOrderable && !base.sold_out;
+        let availabilityLabel = '当前不可下单';
+        if (base.sold_out) availabilityLabel = '已售罄';
+        else if (orderable) availabilityLabel = '可选择';
+        return Object.assign(base, { soldOut: base.sold_out, orderable, availabilityLabel });
       }),
     };
   });
   return {
-    selection: { date: selection.date, mealPeriod: body.meal.code, time: selection.time },
-    mealOrderable: body.meal.orderable,
-    categories,
+    selection: { date: selection.date, mealPeriod: selection.meal_period, time: selection.time },
+    storeStatus, orderable: currentOrderable, categories,
   };
 }
 
-async function loadPickupOptions() {
-  return parsePickupOptions(await api.getOptional('/api/v1/menu/pickup-options'));
-}
-
+async function loadPickupOptions() { return parsePickupOptions(await api.getOptional('/api/v1/menu/pickup-options')); }
 async function loadMenu(selection) {
-  if (!selection || !/^\d{4}-\d{2}-\d{2}$/.test(selection.date) || !/^\d{2}:\d{2}$/.test(selection.time)) throw invalid('INVALID_MENU_SELECTION');
+  if (!selection || !/^\d{4}-\d{2}-\d{2}$/.test(selection.date) || !/^\d{2}:\d{2}$/.test(selection.time)) {
+    throw invalid('INVALID_MENU_SELECTION');
+  }
   return parseMenu(await api.getOptional(`/api/v1/menu?date=${selection.date}&time=${encodeURIComponent(selection.time)}`));
 }
 

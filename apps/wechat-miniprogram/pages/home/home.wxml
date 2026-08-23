@@ -1,4 +1,12 @@
 <view class="page">
+  <view
+    wx:if="{{launchLayer}}"
+    class="launch-layer"
+    style="left:{{launchLayer.leftPercent}}%;top:{{launchLayer.topPercent}}%;width:{{launchLayer.widthPercent}}vw;height:{{launchLayer.heightVw}}vw"
+    catchtap="dismissLaunchLayer"
+  >
+    <image src="{{launchLayer.image.url}}" mode="scaleToFill" />
+  </view>
   <navbar tone="dark" overlay>
     <view slot="right"><icon name="bell" size="20" color="#ffffff" /></view>
   </navbar>
