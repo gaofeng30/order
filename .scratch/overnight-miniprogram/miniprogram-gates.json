@@ -41,6 +41,50 @@
       "owned_paths_only": true
     }
   },
+  "confirm_retry_key_change": {
+    "change": "fix-mini-confirm-pending-retry-key",
+    "base_sha": "402a921981f770964d8f7e71768492365aa848c5",
+    "candidate_sha": "pending-post-commit-binding",
+    "status": "LOCAL_READY_WIP_UI2_UI3_BLOCKED_EXTERNAL",
+    "public_seam": "pages/confirm/confirm.js pay()",
+    "invariants": {
+      "transport_ambiguity": "retain the existing confirm Idempotency-Key and cart, with zero navigation",
+      "durable_pending": "after an explicit 202 PENDING, generate a new confirm Idempotency-Key for the next user retry",
+      "order_created": "clear cart and navigate only after server ORDER_CREATED"
+    },
+    "tdd": {
+      "red": {
+        "status": "FAIL_AS_EXPECTED",
+        "method": "remove the PENDING key rotation line on the isolated writer tree",
+        "command": "node --test --test-name-pattern='transport ambiguity' apps/wechat-miniprogram/tests/overnight-checkout-ui0.test.js",
+        "result": "0/1; post-PENDING request reused the previous key"
+      },
+      "green": {
+        "status": "PASS",
+        "command": "node --test --test-name-pattern='transport ambiguity' apps/wechat-miniprogram/tests/overnight-checkout-ui0.test.js",
+        "result": "1/1"
+      },
+      "refactor": {
+        "status": "PASS",
+        "focused_command": "node --test apps/wechat-miniprogram/tests/overnight-checkout-ui0.test.js",
+        "focused_result": "4/4",
+        "full_command": "npm --prefix apps/wechat-miniprogram test",
+        "full_result": "92/92",
+        "wxml_wxss_command": "python3 apps/wechat-miniprogram/tests/lint_wx.py apps/wechat-miniprogram",
+        "wxml_wxss_result": "WX_LINT=PASS"
+      }
+    },
+    "ui1": {
+      "status": "BLOCKED_INFRASTRUCTURE",
+      "command": "MINIPROGRAM_UI_DEPS=/Users/vivix/.codex/worktrees/a61d/order/tools/miniprogram-ui npm --prefix tools/miniprogram-ui run ui1",
+      "result": "EADDRINUSE 127.0.0.1:8080; the root integration API owns the fixed fixture port and was not stopped by this writer"
+    },
+    "blocked_external": {
+      "ui2": "shared WeChat Developer Tools auth task remains pending; do not trigger a duplicate login",
+      "ui3": "real wx.requestPayment/funds remain external; this writer does not claim native-payment validation"
+    },
+    "root_integration_receipt_required": "on the integrated exact SHA, observe confirm keys across network ambiguity -> 202 PENDING -> 200 ORDER_CREATED and bind the UI2/UI3 result separately"
+  },
   "client_invariants": {
     "anonymous_browse": true,
     "merchant_entry_requires_server_identity": true,

@@ -106,6 +106,40 @@ test('BE-07/BE-08 payment failure plus pending confirm keeps cart and never navi
   assert.notEqual(secondConfirmKey, firstConfirmKey, 'a durable PENDING receipt requires a new key for the next observation query');
 });
 
+test('BE-08 confirm retry preserves the key for transport ambiguity and rotates it only after durable PENDING', async () => {
+  const pending = { statusCode: 202, data: { state: 'PENDING' } };
+  const created = { statusCode: 200, data: { state: 'ORDER_CREATED', order_id: '302' } };
+  const { app, harness } = readyCheckout(
+    [PHONE, QUOTE, PREPAY, { networkError: true }, pending, created],
+    [{ ok: true }],
+  );
+  await harness.flush();
+  seedCart(app);
+  const page = harness.loadPage('pages/confirm/confirm.js');
+  harness.invoke(page, 'onLoad');
+  await harness.invoke(page, 'onShow');
+  page.onInput({ currentTarget: { dataset: { k: 'contact' } }, detail: { value: '林先生' } });
+
+  assert.equal(await page.pay(), false);
+  const ambiguousKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.equal(page.data.paymentState, 'error');
+  assert.equal(Object.keys(app.globalData.cart).length, 1);
+  assert.equal(harness.navigationCalls.length, 0);
+
+  assert.equal(await page.pay(), false);
+  const pendingKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.equal(pendingKey, ambiguousKey, 'transport ambiguity must retry the same logical attempt');
+  assert.equal(page.data.paymentState, 'pending');
+  assert.equal(Object.keys(app.globalData.cart).length, 1);
+  assert.equal(harness.navigationCalls.length, 0);
+
+  assert.equal(await page.pay(), true);
+  const postPendingKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.notEqual(postPendingKey, pendingKey, 'durable PENDING starts a new observation attempt');
+  assert.deepEqual(app.globalData.cart, {});
+  assert.equal(harness.navigationCalls.at(-1).url, '/pages/result/result?id=302');
+});
+
 test('BE-25 empty cart makes zero checkout request', async () => {
   const { app, harness } = readyCheckout([], []);
   await harness.flush();
