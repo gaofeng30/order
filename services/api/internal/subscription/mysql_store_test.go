@@ -144,6 +144,36 @@ func TestEnqueueInTxLocksOrderConsentOutboxAndConsumesAcceptedConsent(t *testing
 	script.assertDone(t)
 }
 
+func TestEnqueueInTxWithoutAcceptedConsentIsNoOp(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 8, 24, 17, 15, 0, 0, time.UTC)
+	db, script := openScriptDB(t,
+		beginStep(),
+		queryStep("FROM orders WHERE id=? FOR UPDATE", []string{"user_id"}, []driver.Value{uint64(7)}),
+		queryStep("FROM notification_consents", []string{"id", "user_id", "template_config_version", "consumed_at"}),
+		commitStep(),
+	)
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service := New(db, NewFakeProvider())
+	service.now = func() time.Time { return now }
+	intent := NotificationIntent{
+		OrderID: 42, RecipientUserID: 7, Kind: KindReady, AvailableAt: now,
+		Message: Message{OrderNumber: "ORDER-42", PickupDate: "2026-08-25", PickupTime: "12:00", PickupPoint: "North gate"},
+	}
+	if err := service.EnqueueInTx(context.Background(), transaction, intent); err != nil {
+		_ = transaction.Rollback()
+		t.Fatalf("EnqueueInTx() without accepted consent error = %v", err)
+	}
+	if err := transaction.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	script.assertDone(t)
+}
+
 func TestRunDueCommitsLeaseBeforeProviderAndMarksSentWithCAS(t *testing.T) {
 	t.Parallel()
 

@@ -212,7 +212,7 @@ func (*mysqlStore) enqueueInTx(ctx context.Context, transaction *sql.Tx, intent 
 		LIMIT 1 FOR UPDATE
 	`, intent.OrderID, intent.Kind).Scan(&consentID, &consentUserID, &templateVersion, &consumedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ErrForbidden
+			return nil
 		}
 		return mapSQLError(err)
 	}
