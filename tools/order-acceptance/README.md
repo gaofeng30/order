@@ -27,6 +27,8 @@ The runner starts no Docker container and installs no dependency. It inherits th
 
 ## Base inventory
 
-At integration base `74e160a490fcdf60b4c66b6221ef701b4d0ba16b`, structural mapping finds 95/95 cases and 23 separate L4 blocks. `TestAcceptanceLocalThreeRoleOrderToRefund` adds one real L2 selector across the root HTTP router, workers, a fresh v1-v44 MySQL schema and deterministic local providers. It closes the exact L2 requirements for `BE-11`, `BE-15`, `INV-08`, `INV-10`, and `INV-13`; it does not claim UI1/L3 or broader boundary variants.
+At integration base `3b83d0515a03769ae2ab034fcde6b9eea453aa07`, structural mapping finds 95/95 cases and 23 separate L4 blocks. `TestAcceptanceLocalThreeRoleOrderToRefund` adds one real L2 selector across the root HTTP router, workers, a fresh v1-v44 MySQL schema and deterministic local providers. It closes the exact L2 requirements for `BE-11`, `BE-15`, `INV-08`, `INV-10`, and `INV-13`; it does not claim UI1/L3 or broader boundary variants.
+
+Three root-composed rendered selectors are now inventoried as L3 supporting evidence: Mini's four user scenarios, PC's 25-check read smoke, and PC's 21-check CRUD flow. None is marked `satisfies:true`: the Mini selector omits several row-specific boundary/failure paths, the PC read selector mostly proves navigation and GET availability, and the PC write selector does not assert every invalid-input, ordering, upload, FK, RBAC, session or cross-client shield required by any one mapped row.
 
 Only `BE-11`, `INV-03`, `INV-08`, and `INV-12` have complete executable selectors for every local level assigned by the matrix, and those four are still `AVAILABLE_NOT_RUN` until an exact-SHA run. The other 91 cases remain `MISSING`; most require composed MySQL-backed UI1, while the manifest preserves narrower L1/L2 gaps where present.

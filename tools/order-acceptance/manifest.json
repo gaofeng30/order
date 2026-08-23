@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "74e160a490fcdf60b4c66b6221ef701b4d0ba16b"
+    "inventory_base_sha": "3b83d0515a03769ae2ab034fcde6b9eea453aa07"
   },
   "policy": {
     "exact_counts": {
@@ -72,6 +72,23 @@
               "ui1",
               "--prefix",
               "tools/miniprogram-ui"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-U01:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
             ]
           }
         },
@@ -179,6 +196,23 @@
             "kind": "go-test",
             "package": "./services/api/internal/menu",
             "test": "TestMenuMySQLIntegration"
+          }
+        },
+        {
+          "evidence_id": "PAGE-U03:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
           }
         },
         {
@@ -307,6 +341,23 @@
           }
         },
         {
+          "evidence_id": "PAGE-U05:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-U05:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -423,6 +474,23 @@
           ]
         },
         {
+          "evidence_id": "PAGE-U06:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-U06:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -532,6 +600,23 @@
               "test": "TestRunDueClassifiesProviderFailuresWithoutPersistingRawError"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-U07:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
         },
         {
           "evidence_id": "PAGE-U07:composed_order_refund_l2",
@@ -1087,6 +1172,20 @@
           ]
         },
         {
+          "evidence_id": "PAGE-PC01:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC01:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -1182,6 +1281,20 @@
           ]
         },
         {
+          "evidence_id": "PAGE-PC02:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC02:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -1270,6 +1383,20 @@
               "test": "TestCompareBillReportsProviderAndSystemSingleSidesWithoutInventingRows"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-PC03:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
         },
         {
           "evidence_id": "PAGE-PC03:missing:L2",
@@ -1468,6 +1595,34 @@
           ]
         },
         {
+          "evidence_id": "PAGE-PC05:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC05:web_composed_writes_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-one PC Chrome checks drive category, product, staff, discount, settings and merchant-account UI writes, then read the composed server facts back; category deletion also asserts a redacted audit receipt. This is supporting CRUD evidence only: ordering, upload/image, invalid-input, FK, role/session, cross-client and other row-specific failure shields are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-writes-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC05:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -1535,6 +1690,34 @@
             "kind": "go-test",
             "package": "./services/api/internal/catalog",
             "test": "TestCatalogRepositoryAndHTTPIntegration"
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC06:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC06:web_composed_writes_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-one PC Chrome checks drive category, product, staff, discount, settings and merchant-account UI writes, then read the composed server facts back; category deletion also asserts a redacted audit receipt. This is supporting CRUD evidence only: ordering, upload/image, invalid-input, FK, role/session, cross-client and other row-specific failure shields are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-writes-chrome-runner.mjs"
+            ]
           }
         },
         {
@@ -1611,6 +1794,34 @@
             "kind": "go-test",
             "package": "./services/api/internal/menu",
             "test": "TestMenuMySQLIntegration"
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC07:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC07:web_composed_writes_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-one PC Chrome checks drive category, product, staff, discount, settings and merchant-account UI writes, then read the composed server facts back; category deletion also asserts a redacted audit receipt. This is supporting CRUD evidence only: ordering, upload/image, invalid-input, FK, role/session, cross-client and other row-specific failure shields are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-writes-chrome-runner.mjs"
+            ]
           }
         },
         {
@@ -1697,6 +1908,20 @@
           ]
         },
         {
+          "evidence_id": "PAGE-PC08:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC08:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -1764,6 +1989,34 @@
             "kind": "go-test",
             "package": "./services/api/internal/quote",
             "test": "TestQuoteMySQL8Integration"
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC09:web_composed_reads_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-five PC Chrome checks acquire a root-composed OWNER QR session, render dashboard facts and visit eleven routes while observing their real GET requests. This is supporting read-smoke evidence only: page visibility and absence of an error banner do not prove mutations or each matrix row failure shield.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC09:web_composed_writes_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-one PC Chrome checks drive category, product, staff, discount, settings and merchant-account UI writes, then read the composed server facts back; category deletion also asserts a redacted audit receipt. This is supporting CRUD evidence only: ordering, upload/image, invalid-input, FK, role/session, cross-client and other row-specific failure shields are not all asserted.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-writes-chrome-runner.mjs"
+            ]
           }
         },
         {
@@ -2016,6 +2269,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-01:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-01:mini_entry_ui0",
           "level": "UI0",
@@ -2346,6 +2616,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-06:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-06:payment_mysql_l2",
           "level": "L2",
@@ -2955,6 +3242,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-14:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-14:refund_rules_l1",
           "level": "L1",
@@ -4043,6 +4347,23 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-12:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-12:refund_rules_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -4659,6 +4980,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "BE-22:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "BE-22:identity_mysql_l2",
           "level": "L2",
@@ -5715,6 +6053,23 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "INV-05:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-05:payment_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -6118,6 +6473,23 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "INV-09:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-09:production_rules_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -6198,6 +6570,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "INV-10:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "INV-10:refund_rules_l1",
           "level": "L1",
@@ -6280,6 +6669,23 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "INV-11:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "INV-11:identity_mysql_l2",
           "level": "L2",
@@ -6651,6 +7057,23 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "INV-16:mini_composed_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Four rendered Mini Chromium scenarios use the root-composed HTTP API and MySQL for anonymous launch/menu/cart, trusted phone checkout, local payment/order list/detail/refund, a storefront HTTP shield, and a confirm HTTP shield that preserves the cart and suppresses success navigation. This is supporting evidence only: it does not cover phone refusal, subscription consent, payment cancel/unknown, cutoff/sold-out boundaries, or real WeChat UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-16:schema_no_inventory_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -6745,5 +7168,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "a310a0973d1e08c3f4ffc50ba620edd3b804e18edfc1366834933d79058e0db5"
+  "manifest_sha256": "56f359a379448c1a0627446e4d8d042339a9fed8bddb13031b4637d3056162d2"
 }
