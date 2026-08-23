@@ -6,7 +6,8 @@
     el.innerHTML = '<div class="card card-pad faint">正在读取经营数据…</div>';
     Promise.all([Api.dashboardStats(), Api.listOrders('全部')]).then(([stats, orders]) => {
       const live = orders.filter(o => ['已预约', '制作中', '待取餐'].includes(o.status));
-      const preparing = orders.filter(o => o.status === '制作中').length;
+      // 待制作数必须使用服务端全量统计；订单列表只是有限页，不能反推 KPI。
+      const preparing = Number(stats.pending_production || 0);
       const rank = (stats.product_sales || stats.product_ranking || stats.productRanking || []).map(r => ({
         name: r.product_name || r.name,
         sold: Number(r.quantity || r.sold || 0),
@@ -17,10 +18,11 @@
         { k: '当日订单', v: String(stats.today_orders || stats.today_order_count || 0), ic: 'receipt', c: '#2a5fa6' },
         { k: '当月营收', v: '¥' + Api.yuan(stats.month_revenue_cents || 0), ic: 'chart', c: '#a4873f' },
         { k: '当月订单', v: String(stats.month_orders || stats.month_order_count || 0), ic: 'calendar', c: '#5e6354' },
+        { k: '退款金额', v: '¥' + Api.yuan(stats.refund_cents || 0), ic: 'bell', c: '#a4873f' },
       ];
 
       el.innerHTML =
-        `<div class="grid-4" style="margin-bottom:18px">
+        `<div class="grid-4" style="grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:18px">
            ${kpis.map(k => `<div class="card card-pad kpi"><span class="kpi-ic" style="color:${k.c};background:${k.c}14">${I.svg(k.ic, 19, k.c)}</span><div class="kpi-v tnum">${k.v}</div><div class="kpi-k">${k.k}</div></div>`).join('')}
          </div>
          <div class="dash-cols">

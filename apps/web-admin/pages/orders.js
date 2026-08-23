@@ -127,9 +127,13 @@
     /* 口味与备注绑定在 items 行内（PRD §15.6.2），整单级只有 orderNote。
        小计按折后单价算 —— 逐行折后价之和恒等于 o.total，展示与结算不会各说各话。 */
     // 名称取订单自身的快照，不回查商品表（§15.6.2）
-    const rows = o.items.map(([, iname, q, p, dp, flavor, note]) => (
-      { name: iname, q, p, dp, sub: dp * q, band: [flavor, note].filter(Boolean).join(' · ') }
-    ));
+    const rows = o.items.map(item => {
+      const [, iname, q, , discountedUnitPrice, flavor, note] = item;
+      // 当前 admin HTTP 投影的第 4 位是行应付小计；旧视觉蓝本的 7 位数组才含
+      // 折后单价。两种公开形状在页面边界收敛，不回查商品或重算历史价格。
+      const sub = item.length >= 5 ? discountedUnitPrice * q : item[3];
+      return { name: iname, q, sub, band: [flavor, note].filter(Boolean).join(' · ') };
+    });
     host.innerHTML =
       `<div class="dt-hero">
          <span class="ring r1"></span>

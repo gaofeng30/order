@@ -92,8 +92,9 @@
   function orderOf(o) {
     return Object.assign({}, o, {
       id: String(o.id), no: o.order_no || o.no, code: o.pickup_number || o.code,
-      status: o.status_label || ORDER_STATE_LABEL[o.state] || o.status, pickupDate: o.pickup_date || o.service_date || o.pickupDate,
-      pickupTime: o.pickup_time || o.pickupTime, mealPeriod: o.meal_period || o.mealPeriod, paidAt: o.paid_at || o.paidAt,
+      status: o.status_label || ORDER_STATE_LABEL[o.state] || o.status || o.state, pickupDate: o.pickup_date || o.service_date || o.pickupDate,
+      pickupTime: o.pickup_time || o.pickupTime, pickupPoint: o.pickup_point || o.pickupPoint,
+      mealPeriod: o.meal_period || o.mealPeriod, paidAt: o.paid_at || o.paidAt,
       txnId: o.transaction_id || o.provider_transaction_id || o.txnId, contact: o.contact_name || o.contact,
       phone: o.phone_masked || o.phone, orderNote: o.note || o.orderNote,
       subtotal: o.subtotal_cents !== undefined ? o.subtotal_cents : o.subtotal,
@@ -216,9 +217,27 @@
   }
   function blockingReason(p) { return p.blocking_reason || p.blockingReason || ''; }
 
-  function rangePath(path, range) { return path + qs({ from: range && range.from, to: range && range.to }); }
-  async function listPayments(range) { return listOf(await request(rangePath('/admin/finance/payments', range)), 'payments').map(orderOf); }
-  async function listRefunds(range) { return listOf(await request(rangePath('/admin/finance/refunds', range)), 'refunds').map(r => Object.assign({}, r, { no: r.provider_refund_id || r.id, amount: r.amount_cents, status: r.state, at: r.requested_at, orderNo: r.order_no, paidAt: r.paid_at || '', txnId: r.transaction_id || '' })); }
+  function rangePath(path, range, page) { return path + qs({ from: range && range.from, to: range && range.to, limit: page && page.limit, after_id: page && page.afterID }); }
+  async function listFinancePages(path, range, key) {
+    const rows = [];
+    const seen = new Set();
+    let afterID = '';
+    for (let page = 0; page < 100; page += 1) {
+      const body = await request(rangePath(path, range, { limit: 100, afterID }));
+      rows.push(...listOf(body, key));
+      const next = body && body.next_after_id;
+      if (next === null || next === undefined || next === '') return rows;
+      const cursor = String(next);
+      if (!/^[1-9]\d*$/.test(cursor) || seen.has(cursor) || (afterID && BigInt(cursor) <= BigInt(afterID))) {
+        throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+      }
+      seen.add(cursor);
+      afterID = cursor;
+    }
+    throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+  }
+  async function listPayments(range) { return (await listFinancePages('/admin/finance/payments', range, 'payments')).map(orderOf); }
+  async function listRefunds(range) { return (await listFinancePages('/admin/finance/refunds', range, 'refunds')).map(r => Object.assign({}, r, { no: r.provider_refund_id || r.id, amount: r.amount_cents, status: r.state, at: r.requested_at, orderNo: r.order_no, paidAt: r.paid_at || '', txnId: r.transaction_id || '' })); }
   function financeSummary(range) { return request(rangePath('/admin/finance/summary', range)); }
   function buildPaymentExport(range) { return request(rangePath('/admin/finance/export', range)); }
   function dashboardStats() { return request('/admin/stats'); }
