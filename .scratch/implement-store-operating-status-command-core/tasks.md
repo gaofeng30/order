@@ -11,13 +11,17 @@
 - [x] Slice SS-04: no-op, replay and conflict preserve first-result idempotency.
 - [x] Slice SS-05: concurrent same/conflicting/different keys serialize correctly.
 - [x] Slice SS-06: exact audit and audit failure atomicity.
-- [x] Slice SS-07: controlled commit, deadlock, missing/bad row and DB failure recovery.
-- [x] Mutation infrastructure shield and all ten required mutants pass.
-- [x] Refactor and rerun focused, race, fresh MySQL, mutation, full API, vet, controlled build, smoke and hygiene Gates.
-- [ ] Create one complete Chinese owned-only commit and confirm clean candidate handoff.
-- [ ] Controller: exact candidate Standards review has zero findings.
-- [ ] Controller: exact candidate Spec review has zero findings.
-- [ ] Controller: fresh clean detached exact-SHA verifier passes all Gates.
+- [x] Slice SS-07: controlled commit, raw deadlock, folded authorization lock timeout, permanent folded unavailable, missing/bad row and DB failure recovery.
+- [x] Original mutation shield and ten mutants passed for the former candidate.
+- [x] Original Chinese owned-only candidate `25152cd98bc76f8bcb87dc42473ca4cbd55755e8` was created clean, then invalidated.
+- [x] Formal Spec P1 invalidated `25152cd98bc76f8bcb87dc42473ca4cbd55755e8` plus all attached formal/verifier results; none may be reused.
+- [x] Replacement Red→Green proves authorization-stage lock timeout restart and permanent-unavailable fail-closed behavior.
+- [x] Replacement mutation infrastructure shield and all eleven required mutants pass.
+- [x] Rerun focused, race, fresh MySQL, eleven mutations, full API, vet, controlled build, smoke and hygiene Gates on the replacement tree.
+- [x] Create one complete Chinese owned-only replacement commit and confirm clean candidate handoff; exact SHA is recorded externally because the commit cannot contain its own hash.
+- [ ] Controller: replacement exact candidate Standards review has zero findings.
+- [ ] Controller: replacement exact candidate Spec review has zero findings.
+- [ ] Controller: replacement fresh clean detached exact-SHA verifier passes all Gates.
 - [ ] Controller: separately authorize and perform integration; Writer does not push/PR/merge/deploy.
 
 ## Evidence ledger
@@ -824,6 +828,172 @@ external_asset:
   owner: N/A
   missing: N/A
   recovery: inspect the tree object and replay the exact command
+```
+
+```yaml
+task_id: SS-09
+evidence_id: formal-spec-p1-invalidation
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+invalidated_candidate_tree: 236c88a8144a86db8f1816391f92700e1756ef3e
+replacement_candidate_sha: NOT_CREATED
+phase: formal_spec_review
+exit_result: P1_INVALIDATED
+sanitized_summary: AuthorizeInTx folds its account FOR SHARE SQL error into merchantidentity.ErrUnavailable, while the former Core retried only preserved MySQL 1205/1213; an authorization-stage account lock timeout therefore returned without a complete retry
+artifact_or_environment: exact former candidate plus read-only merchantidentity implementation and formal Spec finding
+unverified_boundary: every former Standards, Spec and verifier result is invalidated and cannot be inherited by the replacement
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: return to the original Writer, add a real authorization-stage timeout Red and build a replacement candidate
+```
+
+```yaml
+task_id: SS-09
+evidence_id: authorization-lock-timeout-red
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: red
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-mysql.sh go test -race ./services/api/internal/storestatus -run '^TestApplyRetriesAuthorizationLockTimeoutWithFreshRole$' -count=1 -timeout=2m
+exit_result: exit-1
+sanitized_summary: a separate transaction held and updated the target account row, performance_schema proved the real account lock wait, session timeout folded the first authorization error to merchantidentity.ErrUnavailable, and the former Core returned without a second transaction
+exact_sha: 90c237f9b6d128355dec962c54c9b1b590e08f61
+exact_object_type: tree
+artifact_or_environment: immutable Writer Git tree plus fresh disposable loopback MySQL 8.0.46 with session innodb_lock_wait_timeout 1
+unverified_boundary: folded authorization unavailable was not yet a retry candidate
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay the exact command in a fresh fixture
+```
+
+```yaml
+task_id: SS-09
+evidence_id: authorization-lock-timeout-green
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: green
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-mysql.sh go test -race ./services/api/internal/storestatus -run '^TestApplyRetriesAuthorizationLockTimeoutWithFreshRole$' -count=1 -timeout=2m
+exit_result: exit-0
+sanitized_summary: the first folded authorization unavailable now rolls back and starts exactly one complete new transaction; after lock release the second live authorization reads SUBACCOUNT auth version 2 and commits one status write and one exact audit
+exact_sha: c4440287094d019e270efc6ac4cecc5d183467ad
+exact_object_type: tree
+artifact_or_environment: immutable Writer Git tree plus fresh disposable loopback MySQL 8.0.46 with real account lock timeout and release
+unverified_boundary: permanent folded-unavailable and mutation coverage had not yet run
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay the exact command in a fresh fixture
+```
+
+```yaml
+task_id: SS-09
+evidence_id: permanent-authorization-unavailable-green
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: green
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-mysql.sh go test -race ./services/api/internal/storestatus -run '^(TestApplyRetriesAuthorizationLockTimeoutWithFreshRole|TestApplyPermanentAuthorizationUnavailableRetriesOnceThenFailsClosed)$' -count=1 -timeout=2m
+exit_result: exit-0
+sanitized_summary: a permanent merchantidentity.ErrUnavailable invokes AuthorizeInTx exactly twice, returns the same distinguishable error after the single retry, and leaves status and audit unchanged
+exact_sha: 1781278ddc12451aa8d682a2196abbb97dedfe3d
+exact_object_type: tree
+artifact_or_environment: immutable Writer Git tree plus fresh disposable loopback MySQL 8.0.46
+unverified_boundary: the folded-unavailable retry mutation had not yet run
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay the exact command in a fresh fixture
+```
+
+```yaml
+task_id: MUT-01
+evidence_id: folded-authorization-retry-mutation-green
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: green
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-mutation-gate.sh
+exit_result: exit-0
+sanitized_summary: the infrastructure shield passed and all eleven disposable exact-match mutants were killed; deleting only the folded authorization retry branch was killed by the real account-lock-timeout assertion and writer source stayed byte-identical
+exact_sha: 89bbd19c88297bb6a7adcb42f80bfe24fa3df371
+exact_object_type: tree
+artifact_or_environment: immutable Writer Git tree plus disposable source copy and fresh loopback MySQL 8.0.46
+unverified_boundary: replacement full Writer Gate had not run
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay the exact command in a fresh fixture
+```
+
+```yaml
+task_id: SS-09
+evidence_id: replacement-stable-error-boundary-green
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: green
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-mysql.sh go test -race ./services/api/internal/storestatus -run '^(TestApplyRetriesAuthorizationLockTimeoutWithFreshRole|TestApplyPermanentAuthorizationUnavailableRetriesOnceThenFailsClosed|TestApplyForbiddenAuthorizationDoesNotRetry|TestApplyRejectsSameKeyWithDifferentDesiredStatus)$' -count=1 -timeout=2m
+exit_result: exit-0
+sanitized_summary: folded unavailable retries exactly once; repeated unavailable makes exactly two authorization calls; forbidden authorization and idempotency conflict do not retry; invalid command remains covered by the pre-dependency guard; every rejection leaves no extra state or audit
+exact_sha: df80a572f2d506c04b03772e0cbcb8d5b63af1e1
+exact_object_type: tree
+artifact_or_environment: immutable Writer Git tree plus fresh disposable loopback MySQL 8.0.46
+unverified_boundary: replacement full Writer Gate had not run
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay the exact command in a fresh fixture
+```
+
+```yaml
+task_id: SS-10
+evidence_id: replacement-writer-gate-green
+change: implement-store-operating-status-command-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 8cae09d5bc3e659d8851e7588835e579101058ac
+invalidated_candidate_sha: 25152cd98bc76f8bcb87dc42473ca4cbd55755e8
+replacement_candidate_sha: NOT_CREATED
+phase: refactor
+command_or_action: bash .scratch/implement-store-operating-status-command-core/verify-writer.sh
+exit_result: exit-0
+sanitized_summary: replacement focused and race count 20 passed; mutation shield plus eleven mutants passed; fresh MySQL package race count 20 completed in 92.5 seconds; fresh MySQL and local full services/api normal/race, vet, controlled build, smoke, formatting, ownership, sole-mutation, sensitive and cleanup checks all passed
+exact_sha: efccc2bc104d82f8834f99dccd8c3b7d5cb3e135
+exact_object_type: tree
+artifact_or_environment: immutable pre-receipt Writer Git tree plus disposable loopback MySQL 8.0.46 and controlled private build directory
+unverified_boundary: this tracked receipt changes the tree, so the complete Gate must rerun on the final replacement tree before commit; independent review and detached verification remain controller-owned
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: inspect the tree object and replay verify-writer.sh
 ```
 
 ## Candidate scoring target

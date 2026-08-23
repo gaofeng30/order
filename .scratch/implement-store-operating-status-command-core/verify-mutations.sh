@@ -84,6 +84,13 @@ run_mutant \
   'TestApplyRejectsDisabledAccountWithoutMutation'
 
 run_mutant \
+  remove-folded-authorization-retry \
+  $'\tif errors.Is(err, merchantidentity.ErrUnavailable) {\n\t\treturn true\n\t}\n' \
+  '' \
+  '^TestApplyRetriesAuthorizationLockTimeoutWithFreshRole$' \
+  'TestApplyRetriesAuthorizationLockTimeoutWithFreshRole'
+
+run_mutant \
   wrong-authorization-action \
   $'\t\tmerchantidentity.ActionStoreStatusWrite,\n\t\tmerchantidentity.Target{Type: "storefront_settings", ID: 1},' \
   $'\t\tmerchantidentity.ActionOrderRead,\n\t\tmerchantidentity.Target{Type: "storefront_settings", ID: 1},' \

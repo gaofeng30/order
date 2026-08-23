@@ -284,6 +284,217 @@ func TestApplyRetriesOneRealDeadlockWithFreshAuthorization(t *testing.T) {
 	})
 }
 
+func TestApplyRetriesAuthorizationLockTimeoutWithFreshRole(t *testing.T) {
+	withStoreStatusSchema(t, func(db *sql.DB) {
+		now := time.Date(2026, time.August, 23, 11, 33, 0, 123456000, time.UTC)
+		userID := insertStoreStatusUser(t, db, "opaque-store-status-authorization-timeout", now)
+		accountID := insertStoreStatusAccount(t, db, userID, merchantidentity.RoleOwner, true, now)
+		insertStorefrontSettings(t, db, string(storefront.BusinessOpen))
+		var schemaName string
+		if err := db.QueryRowContext(context.Background(), "SELECT DATABASE()").Scan(&schemaName); err != nil {
+			t.Fatal("read authorization-timeout schema failed")
+		}
+		config, ok := storeStatusIntegrationConfig(t, schemaName)
+		if !ok {
+			t.Fatal("authorization-timeout environment disappeared")
+		}
+		applyDB, err := database.Open(config)
+		if err != nil {
+			t.Fatal("open authorization-timeout connection failed")
+		}
+		defer applyDB.Close()
+		applyDB.SetMaxOpenConns(1)
+		applyDB.SetMaxIdleConns(1)
+		applyDB.SetConnMaxLifetime(0)
+		applyDB.SetConnMaxIdleTime(0)
+		if _, err := applyDB.ExecContext(context.Background(), "SET SESSION innodb_lock_wait_timeout=1"); err != nil {
+			t.Fatal("shorten authorization lock timeout failed")
+		}
+		var lockWaitTimeout int
+		if err := applyDB.QueryRowContext(context.Background(), "SELECT @@SESSION.innodb_lock_wait_timeout").Scan(&lockWaitTimeout); err != nil || lockWaitTimeout != 1 {
+			t.Fatalf("authorization lock timeout = %d, %v", lockWaitTimeout, err)
+		}
+
+		managementTx, err := db.BeginTx(context.Background(), nil)
+		if err != nil {
+			t.Fatal("begin authorization-timeout management transaction failed")
+		}
+		defer managementTx.Rollback()
+		if _, err := managementTx.ExecContext(context.Background(), `
+			UPDATE merchant_accounts
+			SET role='SUBACCOUNT',record_version=record_version+1,auth_version=auth_version+1,updated_at=?
+			WHERE id=?
+		`, now.Add(time.Minute), accountID); err != nil {
+			t.Fatal("lock and update authorization-timeout account failed")
+		}
+		authorizer := &outcomeAuthorizer{
+			delegate:     merchantidentity.NewRepository(applyDB),
+			outcomes:     make(chan error, 2),
+			releaseFirst: make(chan struct{}),
+		}
+		firstReleased := false
+		defer func() {
+			if !firstReleased {
+				close(authorizer.releaseFirst)
+			}
+		}()
+		type applyResult struct {
+			result Result
+			err    error
+		}
+		applyDone := make(chan applyResult, 1)
+		go func() {
+			result, err := New(applyDB, authorizer, func() time.Time { return now }).Apply(context.Background(), Command{
+				UserID: userID, DesiredStatus: storefront.BusinessClosed,
+				IdempotencyKey: "authorization-timeout-command", RequestID: "authorization-timeout-request",
+			})
+			applyDone <- applyResult{result: result, err: err}
+		}()
+		waitForStoreStatusLock(t, db, "merchant_accounts")
+		select {
+		case firstErr := <-authorizer.outcomes:
+			if !errors.Is(firstErr, merchantidentity.ErrUnavailable) {
+				t.Fatalf("first authorization outcome = %v, want folded unavailable", firstErr)
+			}
+		case <-time.After(3 * time.Second):
+			t.Fatal("authorization lock wait did not time out")
+		}
+		if readBusinessStatus(t, db) != "open" || countStoreStatusAudits(t, db) != 0 {
+			t.Fatal("timed-out authorization attempt wrote state or audit")
+		}
+		if err := managementTx.Commit(); err != nil {
+			t.Fatal("release authorization-timeout account lock failed")
+		}
+		close(authorizer.releaseFirst)
+		firstReleased = true
+
+		select {
+		case got := <-applyDone:
+			want := Result{Before: storefront.BusinessOpen, After: storefront.BusinessClosed, Changed: true}
+			if got.err != nil || got.result != want {
+				t.Fatalf("authorization-timeout Apply() = %#v, %v; want %#v", got.result, got.err, want)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatal("authorization-timeout retry did not complete")
+		}
+		if authorizer.calls != 2 {
+			t.Fatalf("authorization calls = %d, want exactly 2", authorizer.calls)
+		}
+		select {
+		case secondErr := <-authorizer.outcomes:
+			if secondErr != nil {
+				t.Fatalf("second authorization outcome = %v", secondErr)
+			}
+		default:
+			t.Fatal("second authorization attempt was not observed")
+		}
+		var role merchantidentity.Role
+		var authVersion uint64
+		if err := db.QueryRowContext(context.Background(), `
+			SELECT role_snapshot,auth_version_snapshot FROM merchant_action_audits
+			WHERE actor_user_id=? AND action=?
+		`, userID, merchantidentity.ActionStoreStatusWrite).Scan(&role, &authVersion); err != nil {
+			t.Fatal("read authorization-timeout audit failed")
+		}
+		if role != merchantidentity.RoleSubaccount || authVersion != 2 || readBusinessStatus(t, db) != "closed" || countStoreStatusAudits(t, db) != 1 {
+			t.Fatalf("authorization-timeout facts = role %s auth %d", role, authVersion)
+		}
+	})
+}
+
+type outcomeAuthorizer struct {
+	delegate     merchantidentity.Authorizer
+	outcomes     chan error
+	releaseFirst chan struct{}
+	calls        int
+}
+
+func (authorizer *outcomeAuthorizer) AuthorizeInTx(
+	ctx context.Context,
+	transaction *sql.Tx,
+	userID uint64,
+	action merchantidentity.Action,
+	target merchantidentity.Target,
+) (merchantidentity.Authorization, error) {
+	authorization, err := authorizer.delegate.AuthorizeInTx(ctx, transaction, userID, action, target)
+	authorizer.calls++
+	authorizer.outcomes <- err
+	if authorizer.calls == 1 {
+		select {
+		case <-authorizer.releaseFirst:
+		case <-ctx.Done():
+			return merchantidentity.Authorization{}, ctx.Err()
+		}
+	}
+	return authorization, err
+}
+
+func TestApplyPermanentAuthorizationUnavailableRetriesOnceThenFailsClosed(t *testing.T) {
+	withStoreStatusSchema(t, func(db *sql.DB) {
+		now := time.Date(2026, time.August, 23, 11, 34, 0, 123456000, time.UTC)
+		userID := insertStoreStatusUser(t, db, "opaque-store-status-permanent-auth-unavailable", now)
+		insertStoreStatusAccount(t, db, userID, merchantidentity.RoleOwner, true, now)
+		insertStorefrontSettings(t, db, string(storefront.BusinessOpen))
+		authorizer := &fixedErrorAuthorizer{err: merchantidentity.ErrUnavailable}
+
+		result, err := New(db, authorizer, func() time.Time { return now }).Apply(context.Background(), Command{
+			UserID: userID, DesiredStatus: storefront.BusinessClosed,
+			IdempotencyKey: "permanent-auth-unavailable-command", RequestID: "permanent-auth-unavailable-request",
+		})
+
+		if !errors.Is(err, merchantidentity.ErrUnavailable) || result != (Result{}) {
+			t.Fatalf("permanent authorization unavailable Apply() = %#v, %v", result, err)
+		}
+		if authorizer.calls != 2 {
+			t.Fatalf("permanent authorization unavailable calls = %d, want 2", authorizer.calls)
+		}
+		if readBusinessStatus(t, db) != "open" || countStoreStatusAudits(t, db) != 0 {
+			t.Fatal("permanent authorization unavailable wrote state or audit")
+		}
+	})
+}
+
+func TestApplyForbiddenAuthorizationDoesNotRetry(t *testing.T) {
+	withStoreStatusSchema(t, func(db *sql.DB) {
+		now := time.Date(2026, time.August, 23, 11, 34, 30, 123456000, time.UTC)
+		userID := insertStoreStatusUser(t, db, "opaque-store-status-forbidden-auth", now)
+		insertStoreStatusAccount(t, db, userID, merchantidentity.RoleOwner, true, now)
+		insertStorefrontSettings(t, db, string(storefront.BusinessOpen))
+		authorizer := &fixedErrorAuthorizer{err: merchantidentity.ErrForbidden}
+
+		result, err := New(db, authorizer, func() time.Time { return now }).Apply(context.Background(), Command{
+			UserID: userID, DesiredStatus: storefront.BusinessClosed,
+			IdempotencyKey: "forbidden-auth-command", RequestID: "forbidden-auth-request",
+		})
+
+		if !errors.Is(err, merchantidentity.ErrForbidden) || result != (Result{}) {
+			t.Fatalf("forbidden authorization Apply() = %#v, %v", result, err)
+		}
+		if authorizer.calls != 1 {
+			t.Fatalf("forbidden authorization calls = %d, want 1", authorizer.calls)
+		}
+		if readBusinessStatus(t, db) != "open" || countStoreStatusAudits(t, db) != 0 {
+			t.Fatal("forbidden authorization wrote state or audit")
+		}
+	})
+}
+
+type fixedErrorAuthorizer struct {
+	err   error
+	calls int
+}
+
+func (authorizer *fixedErrorAuthorizer) AuthorizeInTx(
+	context.Context,
+	*sql.Tx,
+	uint64,
+	merchantidentity.Action,
+	merchantidentity.Target,
+) (merchantidentity.Authorization, error) {
+	authorizer.calls++
+	return merchantidentity.Authorization{}, authorizer.err
+}
+
 func TestApplyDatabaseFailureReturnsUnavailableAndNextConnectionRecovers(t *testing.T) {
 	withStoreStatusSchema(t, func(db *sql.DB) {
 		now := time.Date(2026, time.August, 23, 11, 35, 0, 123456000, time.UTC)

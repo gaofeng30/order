@@ -5,6 +5,7 @@
 - Canonical product authority: `docs/product/online-ordering-system-prd-0818.md` §6.1, §6.9, §6.10 and §16.3 P1.
 - The explicit change contract resolves the §6.9/§6.10 role wording for this Module: both `OWNER` and `SUBACCOUNT` may change operating status. An `OWNER`/`SUBACCOUNT` role change is serialized and the committed live role is audited; disabled, deleted or invalid-role accounts are rejected.
 - Fixed base: `8cae09d5bc3e659d8851e7588835e579101058ac`.
+- Former candidate `25152cd98bc76f8bcb87dc42473ca4cbd55755e8` and every review/verifier result attached to it are `INVALIDATED`: formal Spec review found that authorization-stage account lock timeout was folded by the read-only Authorizer into `merchantidentity.ErrUnavailable` and therefore was not retried.
 - Gate: `W3`; UI target/actual: `UI0` / `UI0`.
 - This is a backend-only deep Module. It proves the command transaction, authorization, idempotency, audit and recovery behavior only.
 
@@ -81,7 +82,7 @@ Audit role is derived only from the live authorization actor: `merchant_owner ->
 
 The singleton row lock serializes every status command before replay inspection. Concurrent same-key/same-desired commands converge to one write and one audit. Concurrent same-key/different-desired commands produce one committed winner and one conflict. Different keys form a committed before/after chain.
 
-MySQL deadlock or lock-timeout errors (`1213`/`1205`) retry the complete transaction once, including live authorization. No other error retries. Missing/bad singleton data, authorization failure, query/update/audit failure or final commit failure returns no success; every controllably failed transaction is rolled back. A production commit error is reported as unavailable because its outcome cannot be inferred locally.
+Raw MySQL deadlock or lock-timeout errors (`1213`/`1205`) retry the complete transaction once, including live authorization. `merchantidentity.Authorizer` intentionally folds an account `FOR SHARE` database error into `merchantidentity.ErrUnavailable`, so that exact error is also a one-time complete-transaction retry candidate; a second occurrence fails closed and returns the same distinguishable error. `ErrInvalidCommand`, `ErrIdempotencyConflict`, `ErrMerchantAccountNotAvailable`, `ErrForbidden`, invalid authorization facts and every other error do not retry. Missing/bad singleton data, authorization rejection, query/update/audit failure or final commit failure returns no success; every controllably failed transaction is rolled back. A production commit error is reported as unavailable because its outcome cannot be inferred locally.
 
 ## 6. Mutation ownership invariant
 
@@ -99,6 +100,7 @@ The mutation Gate MUST kill at least these reversible mutants:
 8. update another storefront column;
 9. omit or corrupt the success audit;
 10. commit after audit insertion failure.
+11. remove the one-time retry for authorization-stage errors folded to `merchantidentity.ErrUnavailable`.
 
 Every mutation runs in a disposable copy, requires one exact source match, must exit through the named behavior assertion, and must leave the writer tree unchanged. The harness first proves its infrastructure-failure shield.
 
@@ -113,7 +115,7 @@ Each slice uses one public-seam test, records a real Red before the minimum Gree
 5. no-op, sequential replay and conflicting desired status;
 6. concurrent same-key convergence, conflicting-key winner and different-key serialization;
 7. audit exactness and rollback when the audit table is unavailable;
-8. controlled commit rollback, real deadlock retry, missing row, invalid row, DB failure and successful next-attempt recovery.
+8. controlled commit rollback, real post-authorization deadlock retry, authorization-stage account lock timeout retry with fresh role/auth version, permanent folded-unavailable two-attempt fail-closed behavior, missing row, invalid row, DB failure and successful next-attempt recovery.
 
 Refactor occurs only after all slices are Green, then reruns the same focused, race, fresh-MySQL, mutation and repository regression commands.
 
@@ -123,4 +125,5 @@ Refactor occurs only after all slices are Green, then reruns the same focused, r
 - Fresh loopback-only `mysql:8.0.46-oraclelinux9` is a disposable test fixture, not production or external evidence.
 - UI actual remains `UI0`; no browser, Mini Program, device, UAT or production behavior is claimed.
 - OpenSpec is `N/A`: root `AGENTS.md` makes `openspec/**` historical and it is outside owned paths.
+- The invalidated SHA and its old formal/verifier observations MUST NOT be inherited by a replacement SHA; the replacement starts both review axes and clean detached verification from zero.
 - Candidate status is recorded externally after the owned-only commit so the commit never self-references its own SHA.

@@ -238,7 +238,8 @@ func TestApplyRejectsSameKeyWithDifferentDesiredStatus(t *testing.T) {
 		userID := insertStoreStatusUser(t, db, "opaque-store-status-conflict", now)
 		insertStoreStatusAccount(t, db, userID, merchantidentity.RoleOwner, true, now)
 		insertStorefrontSettings(t, db, string(storefront.BusinessOpen))
-		core := New(db, merchantidentity.NewRepository(db), func() time.Time { return now })
+		authorizer := &recordingAuthorizer{delegate: merchantidentity.NewRepository(db)}
+		core := New(db, authorizer, func() time.Time { return now })
 		command := Command{
 			UserID: userID, DesiredStatus: storefront.BusinessClosed,
 			IdempotencyKey: "conflicting-command", RequestID: "conflict-first-request",
@@ -258,6 +259,9 @@ func TestApplyRejectsSameKeyWithDifferentDesiredStatus(t *testing.T) {
 		}
 		if got := countStoreStatusAudits(t, db); got != 1 {
 			t.Fatalf("audit count = %d, want 1", got)
+		}
+		if authorizer.calls != 2 {
+			t.Fatalf("authorization calls = %d, want one per command without conflict retry", authorizer.calls)
 		}
 	})
 }

@@ -200,6 +200,9 @@ func readReplay(ctx context.Context, transaction *sql.Tx, command Command, keyHa
 }
 
 func retryableTransaction(err error) bool {
+	if errors.Is(err, merchantidentity.ErrUnavailable) {
+		return true
+	}
 	var mysqlError *mysql.MySQLError
 	return errors.As(err, &mysqlError) && (mysqlError.Number == 1213 || mysqlError.Number == 1205)
 }
