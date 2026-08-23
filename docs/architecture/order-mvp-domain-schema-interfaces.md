@@ -344,6 +344,8 @@ type PageQuery struct { AfterID uint64; Limit uint16 } // Limit 1..100
 
 `WriteMeta` 是所有已认证、用户触发业务 mutator 的唯一元数据；Module 必须验证 `ActorUserID` 与认证 principal 一致，并以 `(actor scope, command, IdempotencyKey)` 在 action receipt 持久化首次非 PII 响应。认证 code exchange/QR consume 不接受客户端幂等键，分别以 provider code digest、`login_id+secret_hash` intrinsic dedupe；provider ingress 以 event/transaction intrinsic dedupe；worker 以 row id+record version/lease intrinsic dedupe。这三类例外不得伪造 `WriteMeta`。
 
+`Refund.WriteMeta` 在上述字段外固定增加服务端可信 `ActorKind = USER | MERCHANT`：用户取消 HTTP 只能填 `USER`，PC command adapter 只能填 `MERCHANT`；退款 Module 不得用 `ActorUserID` 是否等于订单用户猜调用渠道。`MERCHANT` 必须在同一事务锁定并验证 enabled OWNER，且写 `requested_by_account_id`；`RequestPaidPrepayment` 只接受 `MERCHANT`。这使“订单用户恰好也是 OWNER”时仍按 PC 全额退款语义执行，而不会误落用户自助取消规则。
+
 | Module | 冻结入口 |
 | --- | --- |
 
@@ -356,7 +358,7 @@ type PageQuery struct { AfterID uint64; Limit uint16 } // Limit 1..100
 | `PaymentOrder` | `Prepare(ctx,WriteMeta,QuoteID)`；`Confirm(ctx,WriteMeta,PrepaymentID)`；`IngestPayment(ctx,VerifiedPayment)`；`RunDue(ctx,Now,Limit)`；`ListPending(ctx,OwnerUserID,Filter,PageQuery)`；`MaterializePending(ctx,WriteMeta,PrepaymentID)`；ingress/worker 用 intrinsic dedupe |
 | `Order` | `MaterializePaidInTx(ctx,tx,PaidMaterialization)`；`GetUser`；`ListUser`；`SearchMerchant`；`RunProductionDue(ctx,Now,Limit)`；查询不推进状态 |
 | `Fulfillment` | `Execute(ctx,WriteMeta,FulfillmentCommand)`；command 仅 `MARK_READY / REDEEM_TOKEN / REDEEM_CURRENT_DATE_CODE / REDEEM_ORDER` |
-| `Refund` | `RequestOrder(ctx,WriteMeta,OrderID,Reason)`；`RequestPaidPrepayment(ctx,WriteMeta,PrepaymentID,Reason)`；`IngestRefund(ctx,VerifiedRefund)`；`RunDue(ctx,Now,Limit)`；`ListPending` |
+| `Refund` | `RequestOrder(ctx,Refund.WriteMeta{ActorKind},OrderID,Reason)`；`RequestPaidPrepayment(ctx,Refund.WriteMeta{ActorKind:MERCHANT},PrepaymentID,Reason)`；`IngestRefund(ctx,VerifiedRefund)`；`RunDue(ctx,Now,Limit)`；`ListPending` |
 | `Subscription` | `RecordConsent(ctx,WriteMeta,ConsentInput)`；`EnqueueInTx(ctx,tx,NotificationIntent)`；`RunDue(ctx,Now,Limit)` |
 | `Import` | `Preview(ctx,WriteMeta,ImportKind,XLSX)`；`Commit(ctx,WriteMeta,PreviewToken,SkipInvalid)` |
 | `Audit` | `AppendReceiptInTx(ctx,tx,WriteMeta,CommandResult)`，必须 insert-last；`ReplayReceipt(ctx,ActorScope,Action,OperationKey)`；`AppendEvidenceInTx(ctx,tx,AuditEntry)`；`Search(ctx,OwnerUserID,AuditFilter,PageQuery)` |
