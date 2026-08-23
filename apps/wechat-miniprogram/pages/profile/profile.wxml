@@ -37,6 +37,13 @@
           <input data-k="name" bindinput="onExtraInput" placeholder="姓名" />
           <view bindtap="saveExtraPhone">保存</view>
         </view>
+        <button wx:if="{{identityState === 'ready'}}" class="prow merchant-login" open-type="getPhoneNumber" bindgetphonenumber="onMerchantPhone">
+          <view class="prow-main">
+            <view class="prow-label">商户登录</view>
+            <view class="prow-sub">{{merchantLoginState === 'error' ? '商户身份未核验，可重试' : '验证商户账号手机号'}}</view>
+          </view>
+          <icon name="chevron" size="17" color="#8f9384" />
+        </button>
         <button class="prow last" open-type="contact">
           <view class="prow-ico" style="background:var(--bg2)"><icon name="headset" size="19" color="#2a5fa6" /></view>
           <view class="prow-main">
@@ -47,7 +54,7 @@
         </button>
       </view>
 
-      <view class="switch-id" bindtap="reset">切换身份入口 ›</view>
+      <view wx:if="{{identityState === 'ready' && merchantBound}}" class="switch-id" bindtap="reset">切换身份入口 ›</view>
       <view style="height:{{safeBottom + 30}}px"></view>
     </view>
   </scroll-view>

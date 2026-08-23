@@ -72,11 +72,11 @@
       <view class="cs-ring"><icon name="warn" size="30" color="#a4873f" /></view>
       <view class="cs-title serif">确认取消预约？</view>
       <view class="cs-sub">预约单 {{o.code}} · {{pickupText}} 取餐</view>
-      <view class="cs-sub">取消后款项将原路退回，名额释放。</view>
+      <view class="cs-sub">取消后款项将原路退回。</view>
     </view>
     <view class="cs-actions">
       <view class="btn btn--ghost cs-btn" bindtap="closeCancel">再想想</view>
-      <view class="btn cs-btn cs-confirm" bindtap="doCancel">确认取消</view>
+      <view class="btn cs-btn cs-confirm" bindtap="doCancel">{{canceling ? '正在取消…' : '确认取消'}}</view>
     </view>
   </view>
 

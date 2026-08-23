@@ -1,11 +1,12 @@
 const api = require('../../utils/apiClient.js');
 const orderStore = require('../../utils/orderStore.js');
+const subscriptionStore = require('../../utils/subscriptionStore.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     detailState: 'loading', o: null, rows: [], flavorsStr: '', showQr: false, qrToken: '',
-    canCancel: false, canSubscribeReady: false, cancelSheet: false, pickupText: '', navTitle: '订单详情',
+    canCancel: false, canSubscribeReady: false, cancelSheet: false, canceling: false, pickupText: '', navTitle: '订单详情',
   },
   async onLoad(opts) { this._id = String(opts.id || ''); return this.load(); },
   async load() {
@@ -39,32 +40,23 @@ Page({
   openCancel() { if (this.data.canCancel) this.setData({ cancelSheet: true }); },
   closeCancel() { this.setData({ cancelSheet: false }); },
   async doCancel() {
-    if (!this.data.canCancel || !this.data.o) return false;
+    if (!this.data.canCancel || !this.data.o || this.data.canceling) return false;
+    this.setData({ canceling: true });
     try {
+      await subscriptionStore.requestAndRecord(this.data.o.id, 'REFUND_RESULT');
       const result = await orderStore.cancel(this.data.o.id, api.newIdempotencyKey('cancel'));
-      this.setData({ cancelSheet: false });
+      this.setData({ cancelSheet: false, canceling: false });
       this.build(result.order);
       return true;
     } catch (error) {
-      this.setData({ cancelSheet: false });
+      this.setData({ cancelSheet: false, canceling: false });
       return false;
     }
   },
   subscribeReady() { return this.subscribe('READY'); },
   subscribeRefund() { return this.subscribe('REFUND_RESULT'); },
   async subscribe(kind) {
-    const ids = getApp().globalData.subscriptionTemplateIds || {};
-    const templateID = ids[kind];
-    if (!templateID || !wx.requestSubscribeMessage) return false;
-    const decision = await new Promise(resolve => {
-      wx.requestSubscribeMessage({ tmplIds: [templateID],
-        success(result) { resolve(result[templateID] === 'accept' ? 'ACCEPTED' : 'REJECTED'); },
-        fail() { resolve(''); } });
-    });
-    if (!decision) return false;
-    try {
-      await orderStore.subscription(this.data.o.id, kind, decision, api.newIdempotencyKey('subscription'));
-      return decision === 'ACCEPTED';
-    } catch (error) { return false; }
+    if (!this.data.o) return false;
+    return (await subscriptionStore.requestAndRecord(this.data.o.id, kind)) === 'ACCEPTED';
   },
 });

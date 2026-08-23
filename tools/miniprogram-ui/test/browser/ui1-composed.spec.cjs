@@ -1,4 +1,4 @@
-/* global App, Behavior, Component, ORDER_COMPOSED_FLOW, ORDER_COMPOSED_MERCHANT_SETUP, ORDER_COMPOSED_PAYMENT_EXPECTATION, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+/* global App, Behavior, Component, ORDER_COMPOSED_FLOW, ORDER_COMPOSED_MERCHANT_SETUP, ORDER_COMPOSED_PAYMENT_EXPECTATION, ORDER_COMPOSED_RUN_ID, Page, describe, getApp, getCurrentPages, it, simulate, wx */
 const adminOrderDetailTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-order-detail/admin-order-detail.wxml');
 const adminOrdersTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-orders/admin-orders.wxml');
 const adminProductsTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-products/admin-products.wxml');
@@ -10,6 +10,7 @@ const confirmTemplate = require('../../../../apps/wechat-miniprogram/pages/confi
 const resultTemplate = require('../../../../apps/wechat-miniprogram/pages/result/result.wxml');
 const ordersTemplate = require('../../../../apps/wechat-miniprogram/pages/orders/orders.wxml');
 const orderDetailTemplate = require('../../../../apps/wechat-miniprogram/pages/order-detail/order-detail.wxml');
+const profileTemplate = require('../../../../apps/wechat-miniprogram/pages/profile/profile.wxml');
 const customizeTemplate = require('../../../../apps/wechat-miniprogram/components/customize/customize.wxml');
 const iconTemplate = require('../../../../apps/wechat-miniprogram/components/icon/icon.wxml');
 const imagephTemplate = require('../../../../apps/wechat-miniprogram/components/imageph/imageph.wxml');
@@ -33,7 +34,10 @@ const confirmResponseStatuses = [];
 const paymentExpectation = ORDER_COMPOSED_PAYMENT_EXPECTATION;
 const composedFlow = ORDER_COMPOSED_FLOW;
 const merchantSetup = ORDER_COMPOSED_MERCHANT_SETUP;
+const composedRunID = ORDER_COMPOSED_RUN_ID;
 const requestObservations = [];
+const subscribeCalls = [];
+const subscribeDecisions = [];
 let scanToken = '';
 
 globalThis.App = definition => { appDefinition = definition; };
@@ -90,6 +94,14 @@ globalThis.wx = {
     });
     queueMicrotask(() => options.success({ errMsg: 'requestPayment:ok' }));
   },
+  requestSubscribeMessage: options => {
+    subscribeCalls.push({ tmplIds: (options.tmplIds || []).slice() });
+    const decision = subscribeDecisions.shift();
+    queueMicrotask(() => {
+      if (!decision || decision === 'fail') options.fail({ errMsg: 'requestSubscribeMessage:fail composed seam' });
+      else options.success({ [options.tmplIds[0]]: decision });
+    });
+  },
   getRandomValues: bytes => {
     crypto.getRandomValues(bytes);
     return bytes;
@@ -131,6 +143,8 @@ registeringPage = 'orders';
 require('../../../../apps/wechat-miniprogram/pages/orders/orders.js');
 registeringPage = 'order-detail';
 require('../../../../apps/wechat-miniprogram/pages/order-detail/order-detail.js');
+registeringPage = 'profile';
+require('../../../../apps/wechat-miniprogram/pages/profile/profile.js');
 registeringPage = 'admin-orders';
 require('../../../../apps/wechat-miniprogram/pages/admin-orders/admin-orders.js');
 registeringPage = 'admin-order-detail';
@@ -179,7 +193,7 @@ async function waitFor(predicate, message) {
   }
 }
 
-async function openCheckout(suffix, contactName, note) {
+async function openCheckout(suffix, contactName, note, selectedPickupTime = '', orderNote = '') {
   document.body.innerHTML = '';
   lastNavigation = null;
   paymentCalls.length = 0;
@@ -193,6 +207,9 @@ async function openCheckout(suffix, contactName, note) {
     () => `checkout session remained ${app.globalData.session.state}`,
   );
   if (app.globalData.session.state !== 'ready') throw new Error(`checkout session ended ${app.globalData.session.state}`);
+  if (composedFlow === 'consent') {
+    app.globalData.subscriptionTemplateIds = { READY: 'ui1-ready-template', REFUND_RESULT: 'ui1-refund-template' };
+  }
 
   const menu = renderPage({
     definition: pageDefinitions.menu,
@@ -205,6 +222,23 @@ async function openCheckout(suffix, contactName, note) {
     () => `checkout menu remained ${menu.instance.data.listState}`,
   );
   if (menu.instance.data.listState !== 'ready') throw new Error(`checkout menu ended ${menu.instance.data.listState}`);
+  if (selectedPickupTime && menu.instance.data.pickup.time !== selectedPickupTime) {
+    const pickupBar = menu.querySelector('.pickup-bar');
+    pickupBar.dispatchEvent('touchstart');
+    pickupBar.dispatchEvent('touchend');
+    await waitFor(
+      () => menu.instance.data.pickerVisible === true,
+      () => `pickup picker remained ${menu.instance.data.pickerVisible}`,
+    );
+    const target = menu.querySelectorAll('.pk-time').find(control => control.dom.dataset.t === selectedPickupTime);
+    if (!target) throw new Error(`pickup option ${selectedPickupTime} was absent`);
+    target.dispatchEvent('touchstart');
+    target.dispatchEvent('touchend');
+    await waitFor(
+      () => menu.instance.data.listState === 'ready' && menu.instance.data.pickup.time === selectedPickupTime,
+      () => `pickup selection ended ${menu.instance.data.listState}/${menu.instance.data.pickup.time}`,
+    );
+  }
   const firstChoice = menu.querySelector('.act-btn');
   if (!firstChoice) throw new Error('checkout menu had no orderable product control');
   firstChoice.dispatchEvent('touchstart');
@@ -244,6 +278,12 @@ async function openCheckout(suffix, contactName, note) {
     () => confirm.instance.data.form.contact === contactName,
     () => `contact input was ${confirm.instance.data.form.contact}`,
   );
+  if (orderNote) {
+    pageDefinitions.confirm.onInput.call(confirm.instance, {
+      currentTarget: { dataset: { k: 'orderNote' } }, detail: { value: orderNote },
+    });
+    if (confirm.instance.data.form.orderNote !== orderNote) throw new Error('order note did not reach checkout state');
+  }
   lastNavigation = null;
   return confirm;
 }
@@ -463,6 +503,198 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
     } finally {
       globalThis.__ui1ComposedHTTPFaultPath = '';
     }
+  });
+});
+
+if (composedFlow === 'consent') describe('mini-program UI1 consent and profile against composed local API and MySQL', () => {
+  it('persists READY/refund decisions, drives their notifications, and keeps merchant identity server-owned', async () => {
+    if (!composedRunID || !merchantSetup.pickup_time || !merchantSetup.far_pickup_time) {
+      throw new Error('consent composed setup was incomplete');
+    }
+    const payOrder = async (suffix, contact, pickupTime, orderNote) => {
+      const confirm = await openCheckout(suffix, contact, 'consent composed', pickupTime, orderNote);
+      const pay = confirm.querySelector('.pay-btn');
+      pay.dispatchEvent('touchstart');
+      pay.dispatchEvent('touchend');
+      await waitFor(
+        () => lastNavigation !== null || confirm.instance.data.paymentState === 'error',
+        () => `consent payment remained ${confirm.instance.data.paymentState}`,
+      );
+      if (!lastNavigation || !lastNavigation.startsWith('/pages/result/result?id=')) {
+        throw new Error(`consent payment ended ${confirm.instance.data.paymentState} at ${lastNavigation || 'no navigation'}`);
+      }
+      const orderID = new URL(`http://ui1.local${lastNavigation}`).searchParams.get('id');
+      if (!/^[1-9]\d*$/.test(orderID || '')) throw new Error(`consent order id was ${orderID || 'missing'}`);
+      return orderID;
+    };
+    const waitRefunded = async detail => {
+      const deadline = Date.now() + 12000;
+      while (detail.instance.data.o.state !== 'REFUNDED' && Date.now() < deadline) {
+        await simulate.sleep(250);
+        await pageDefinitions['order-detail'].load.call(detail.instance);
+      }
+      if (detail.instance.data.o.state !== 'REFUNDED') {
+        throw new Error(`consent refund worker ended ${detail.instance.data.o.state}`);
+      }
+    };
+
+    const readyID = await payOrder(
+      `${composedRunID}-ready`, 'UI1订阅备好用户', merchantSetup.pickup_time, `${composedRunID}-ready`,
+    );
+    subscribeDecisions.push('accept');
+    document.body.innerHTML = '';
+    const result = renderPage({
+      definition: pageDefinitions.result,
+      template: resultTemplate,
+      id: `consent-result-${composedRunID}`,
+      usingComponents: globalComponents(`${composedRunID}-result`, false, true),
+      loadOptions: { id: readyID },
+    });
+    await waitFor(
+      () => result.instance.data.state !== 'loading'
+        && requestObservations.some(item => item.path === `/api/v1/orders/${readyID}/subscriptions`),
+      () => `READY consent result ended ${result.instance.data.state}`,
+    );
+    if (result.instance.data.state !== 'ready' || result.instance.data.o.state !== 'PREPARING') {
+      throw new Error(`READY consent order ended ${result.instance.data.state}/${result.instance.data.o && result.instance.data.o.state}`);
+    }
+    const readyConsent = requestObservations.find(item => item.path === `/api/v1/orders/${readyID}/subscriptions`);
+    if (!readyConsent || readyConsent.status !== 200 || subscribeCalls.length !== 1
+      || subscribeCalls[0].tmplIds[0] !== 'ui1-ready-template') {
+      throw new Error(`READY consent was not durably recorded: ${readyConsent && readyConsent.status}`);
+    }
+
+    document.body.innerHTML = '';
+    const merchantReady = renderPage({
+      definition: pageDefinitions['admin-order-detail'],
+      template: adminOrderDetailTemplate,
+      id: `consent-ready-${composedRunID}`,
+      usingComponents: globalComponents(`${composedRunID}-ready`, false, true),
+      loadOptions: { id: readyID },
+    });
+    await waitFor(
+      () => merchantReady.instance.data.detailState !== 'loading',
+      () => `consent merchant detail remained ${merchantReady.instance.data.detailState}`,
+    );
+    const readyControl = merchantReady.querySelector('.foot-main');
+    readyControl.dispatchEvent('touchstart');
+    readyControl.dispatchEvent('touchend');
+    await waitFor(
+      () => merchantReady.instance.data.o && merchantReady.instance.data.o.state === 'READY_FOR_PICKUP',
+      () => `consent mark-ready ended ${merchantReady.instance.data.o && merchantReady.instance.data.o.state}`,
+    );
+
+    const acceptedRefundID = await payOrder(
+      `${composedRunID}-refund-accept`, 'UI1订阅退款用户', merchantSetup.far_pickup_time, `${composedRunID}-refund-accept`,
+    );
+    document.body.innerHTML = '';
+    const acceptedDetail = renderPage({
+      definition: pageDefinitions['order-detail'], template: orderDetailTemplate,
+      id: `consent-refund-accept-${composedRunID}`,
+      usingComponents: globalComponents(`${composedRunID}-refund-accept`, false, true),
+      loadOptions: { id: acceptedRefundID },
+    });
+    await waitFor(
+      () => acceptedDetail.instance.data.detailState !== 'loading',
+      () => `accepted refund detail remained ${acceptedDetail.instance.data.detailState}`,
+    );
+    if (!acceptedDetail.instance.data.canCancel || acceptedDetail.instance.data.o.state !== 'RESERVED') {
+      throw new Error(`accepted refund order was ${acceptedDetail.instance.data.o.state}/${acceptedDetail.instance.data.canCancel}`);
+    }
+    subscribeDecisions.push('accept');
+    const acceptedBefore = requestObservations.length;
+    const acceptedCancel = acceptedDetail.querySelector('.cancel-btn.on');
+    acceptedCancel.dispatchEvent('touchstart');
+    acceptedCancel.dispatchEvent('touchend');
+    await waitFor(
+      () => acceptedDetail.instance.data.cancelSheet === true && !!acceptedDetail.querySelector('.cs-confirm'),
+      () => `accepted refund sheet remained ${acceptedDetail.instance.data.cancelSheet}`,
+    );
+    const acceptedConfirm = acceptedDetail.querySelector('.cs-confirm');
+    acceptedConfirm.dispatchEvent('touchstart');
+    acceptedConfirm.dispatchEvent('touchend');
+    await waitFor(
+      () => acceptedDetail.instance.data.o && acceptedDetail.instance.data.o.state === 'REFUNDING',
+      () => `accepted refund cancel ended ${acceptedDetail.instance.data.o && acceptedDetail.instance.data.o.state}`,
+    );
+    const acceptedWrites = requestObservations.slice(acceptedBefore)
+      .filter(item => item.path === `/api/v1/orders/${acceptedRefundID}/subscriptions`
+        || item.path === `/api/v1/orders/${acceptedRefundID}/cancel`);
+    if (acceptedWrites.length !== 2 || !acceptedWrites[0].path.endsWith('/subscriptions')
+      || acceptedWrites[0].status !== 200 || !acceptedWrites[1].path.endsWith('/cancel') || acceptedWrites[1].status !== 200) {
+      throw new Error(`accepted refund write order was ${JSON.stringify(acceptedWrites)}`);
+    }
+    await waitRefunded(acceptedDetail);
+
+    const rejectedRefundID = await payOrder(
+      `${composedRunID}-refund-reject`, 'UI1拒绝退款提醒用户', merchantSetup.far_pickup_time, `${composedRunID}-refund-reject`,
+    );
+    document.body.innerHTML = '';
+    const rejectedDetail = renderPage({
+      definition: pageDefinitions['order-detail'], template: orderDetailTemplate,
+      id: `consent-refund-reject-${composedRunID}`,
+      usingComponents: globalComponents(`${composedRunID}-refund-reject`, false, true),
+      loadOptions: { id: rejectedRefundID },
+    });
+    await waitFor(
+      () => rejectedDetail.instance.data.detailState !== 'loading',
+      () => `rejected refund detail remained ${rejectedDetail.instance.data.detailState}`,
+    );
+    subscribeDecisions.push('reject');
+    const rejectedBefore = requestObservations.length;
+    rejectedDetail.querySelector('.cancel-btn.on').dispatchEvent('touchstart');
+    rejectedDetail.querySelector('.cancel-btn.on').dispatchEvent('touchend');
+    await waitFor(
+      () => rejectedDetail.instance.data.cancelSheet === true && !!rejectedDetail.querySelector('.cs-confirm'),
+      () => `rejected refund sheet remained ${rejectedDetail.instance.data.cancelSheet}`,
+    );
+    rejectedDetail.querySelector('.cs-confirm').dispatchEvent('touchstart');
+    rejectedDetail.querySelector('.cs-confirm').dispatchEvent('touchend');
+    await waitFor(
+      () => rejectedDetail.instance.data.o && rejectedDetail.instance.data.o.state === 'REFUNDING',
+      () => `rejected refund cancel ended ${rejectedDetail.instance.data.o && rejectedDetail.instance.data.o.state}`,
+    );
+    const rejectedWrites = requestObservations.slice(rejectedBefore)
+      .filter(item => item.path === `/api/v1/orders/${rejectedRefundID}/subscriptions`
+        || item.path === `/api/v1/orders/${rejectedRefundID}/cancel`);
+    if (rejectedWrites.length !== 2 || rejectedWrites.some(item => item.status !== 200)) {
+      throw new Error(`rejected refund did not continue through cancel: ${JSON.stringify(rejectedWrites)}`);
+    }
+    await waitRefunded(rejectedDetail);
+
+    document.body.innerHTML = '';
+    lastNavigation = null;
+    const profile = renderPage({
+      definition: pageDefinitions.profile, template: profileTemplate,
+      id: `consent-profile-${composedRunID}`,
+      usingComponents: globalComponents(`${composedRunID}-profile`, false, true),
+    });
+    await waitFor(
+      () => profile.instance.data.identityState !== 'loading',
+      () => `merchant profile remained ${profile.instance.data.identityState}`,
+    );
+    if (profile.instance.data.identityState !== 'ready' || !profile.instance.data.merchantBound
+      || !profile.querySelector('.switch-id') || !profile.querySelector('.merchant-login')) {
+      throw new Error(`merchant profile was not server-bound: ${profile.instance.data.identityState}/${profile.instance.data.merchantBound}`);
+    }
+    profile.instance.setData({ merchantBound: false });
+    await waitFor(
+      () => !profile.querySelector('.switch-id') && !!profile.querySelector('.merchant-login'),
+      () => 'ordinary-user projection still rendered identity switching',
+    );
+    profile.instance.setData({ merchantBound: true });
+    await waitFor(
+      () => !!profile.querySelector('.switch-id'),
+      () => 'merchant-bound projection did not restore identity switching',
+    );
+    const loginRequestCount = requestObservations.filter(item => item.path === '/api/v1/me/merchant-login').length;
+    const loggedIn = await pageDefinitions.profile.onMerchantPhone.call(profile.instance, { detail: { code: 'ui1-consent-merchant-code' } });
+    if (!loggedIn || lastNavigation !== '/pages/launch/launch'
+      || requestObservations.filter(item => item.path === '/api/v1/me/merchant-login').length !== loginRequestCount + 1) {
+      throw new Error(`profile merchant login ended ${loggedIn}/${lastNavigation || 'no navigation'}`);
+    }
+
+    await simulate.sleep(1500);
   });
 });
 

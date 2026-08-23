@@ -137,6 +137,65 @@
     },
     "external_only": ["real wx.requestPayment and funds", "real wx.scanCode camera", "WeChat DevTools UI2", "physical-device UI3"]
   },
+  "user_consent_identity_change": {
+    "change": "complete-mini-user-consent-identity-ui1",
+    "base_sha": "efe08cec56e534841cba4eb457ed1031bd71a8ff",
+    "branch": "codex/mini-user-consent-identity",
+    "candidate_sha": "pending-post-commit-binding",
+    "status": "LOCAL_READY_UI1_PASS_UI2_UI3_BLOCKED_EXTERNAL",
+    "owned_pages": ["PAGE-U06", "PAGE-U07", "PAGE-U09"],
+    "tdd": {
+      "red": {
+        "command": "node --test apps/wechat-miniprogram/tests/overnight-user-orders-profile-ui0.test.js",
+        "result": "3/8 PASS, 5/8 FAIL_AS_EXPECTED",
+        "first_failures": [
+          "result page made zero READY subscription request",
+          "cancel skipped the REFUND_RESULT decision and called cancel first",
+          "profile exposed no merchant phone handler"
+        ]
+      },
+      "green": {
+        "focused": "11/11 PASS",
+        "full_node_wxml": "98/98 PASS plus WX_LINT=PASS",
+        "contracts": [
+          "result renders the server-confirmed order before one READY native request and durable decision write",
+          "confirmed cancellation records REFUND_RESULT accepted/rejected first; native or persistence failure still continues cancel",
+          "cancel failure retains the server order state and never renders local success",
+          "profile merchant login uses getPhoneNumber -> /me/merchant-login and only merchant.bound renders identity switching"
+        ]
+      },
+      "refactor": {
+        "helpers": ["utils/subscriptionStore.js", "utils/merchantLoginStore.js"],
+        "production_template_config": "develop/trial/release remain empty; deterministic template IDs exist only in the UI1 harness",
+        "no_inventory_copy": "cancel copy says only original-route refund and contains no capacity, slot, quota, or inventory release claim"
+      }
+    },
+    "ui1_composed": {
+      "command": "ORDER_COMPOSED_FLOW=consent npm --prefix tools/miniprogram-ui run ui1:composed",
+      "browser": "Google Chrome for Testing 151.0.7922.34",
+      "result": "Chrome 151 1/1 PASS against real root API and MySQL",
+      "http": [
+        "READY decision 200 before merchant mark-ready 200",
+        "accepted REFUND_RESULT decision 200 before cancel 200 and worker REFUNDED",
+        "rejected REFUND_RESULT decision 200 before cancel 200 and worker REFUNDED",
+        "GET /me/identity 200 and POST /me/merchant-login 200"
+      ],
+      "rendering": "Chrome renders identity switching for merchant.bound=true and hides it for the ordinary-user projection while retaining merchant login",
+      "mysql": [
+        "READY ACCEPTED consumed=true, outbox=SENT, provider message persisted",
+        "REFUND_RESULT ACCEPTED consumed=true, outbox=SENT, provider message persisted",
+        "REFUND_RESULT REJECTED consumed=false, no outbox"
+      ],
+      "cleanup": "runner finally restored the exact saved Admin settings baseline with PUT 200 and a following GET 200 equality check",
+      "latest_cleanup_request_ids": ["dkwoj5lmwq0g-1xp", "dkwoj5lrqszk-1xq"]
+    },
+    "external_only": [
+      "real WeChat subscription template IDs and official consent UI",
+      "real getPhoneNumber provider surface",
+      "WeChat Developer Tools UI2",
+      "physical-device UI3 and real funds"
+    ]
+  },
   "client_invariants": {
     "anonymous_browse": true,
     "merchant_entry_requires_server_identity": true,
@@ -165,5 +224,5 @@
       "real camera scan"
     ]
   },
-  "forbidden_actions_not_taken": ["npm install", "Docker", "push", "PR", "preview", "upload", "deploy", "real funds"]
+  "forbidden_actions_not_taken": ["npm install", "new Docker container/image/build", "push", "PR", "preview", "upload", "deploy", "real funds"]
 }

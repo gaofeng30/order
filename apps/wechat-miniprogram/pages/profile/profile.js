@@ -1,5 +1,6 @@
 const identityStore = require('../../utils/identityStore.js');
 const phoneStore = require('../../utils/phoneStore.js');
+const merchantLoginStore = require('../../utils/merchantLoginStore.js');
 const api = require('../../utils/apiClient.js');
 const { nav } = require('../../utils/util.js');
 
@@ -7,7 +8,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     identityState: 'loading', pend: 0, nick: '微信用户', avatarText: '客', avatarUrl: '',
-    phoneMask: '', extraPhoneMask: '', pricingKind: 'VISITOR', merchantBound: false,
+    phoneMask: '', extraPhoneMask: '', pricingKind: 'VISITOR', merchantBound: false, merchantLoginState: 'idle',
     extraForm: { phone: '', name: '' },
   },
   async onShow() {
@@ -40,6 +41,20 @@ Page({
     if (!code) return false;
     try { const status = await phoneStore.bind(code); this.setData({ phoneMask: status.maskedPhone }); return true; }
     catch (error) { return false; }
+  },
+  async onMerchantPhone(e) {
+    const code = e && e.detail && e.detail.code;
+    if (!code) return false;
+    this.setData({ merchantLoginState: 'loading' });
+    try {
+      await merchantLoginStore.login(code);
+      this.setData({ merchantBound: true, merchantLoginState: 'ready' });
+      nav.reset();
+      return true;
+    } catch (error) {
+      this.setData({ merchantLoginState: 'error' });
+      return false;
+    }
   },
   onExtraInput(e) { this.setData({ [`extraForm.${e.currentTarget.dataset.k}`]: e.detail.value }); },
   async saveExtraPhone() {

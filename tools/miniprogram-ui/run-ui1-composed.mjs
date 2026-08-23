@@ -14,6 +14,11 @@ const browserPath = chromium.executablePath();
 const upstreamOrigin = process.env.ORDER_COMPOSED_API_ORIGIN;
 const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION || 'success';
 const composedFlow = process.env.ORDER_COMPOSED_FLOW || 'customer';
+const composedRunID = `ui1-consent-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const mysqlContainer = process.env.ORDER_COMPOSED_MYSQL_CONTAINER || '';
+const mysqlDatabase = process.env.ORDER_COMPOSED_MYSQL_DATABASE || '';
+const mysqlUser = process.env.ORDER_COMPOSED_MYSQL_USER || '';
+const mysqlPassword = process.env.ORDER_COMPOSED_MYSQL_PASSWORD || '';
 
 if (!existsSync(browserPath)) {
   throw new Error('locked Chromium is missing; reuse the configured MINIPROGRAM_UI_DEPS cache');
@@ -24,8 +29,13 @@ if (!/^http:\/\/127\.0\.0\.1:\d{1,5}$/.test(upstreamOrigin || '')) {
 if (!['success', 'pending'].includes(paymentExpectation)) {
   throw new Error('ORDER_COMPOSED_PAYMENT_EXPECTATION must be success or pending');
 }
-if (!['customer', 'merchant'].includes(composedFlow) || (composedFlow === 'merchant' && paymentExpectation !== 'success')) {
-  throw new Error('ORDER_COMPOSED_FLOW must be customer or merchant; merchant requires success payment expectation');
+if (!['customer', 'merchant', 'consent'].includes(composedFlow)
+  || (['merchant', 'consent'].includes(composedFlow) && paymentExpectation !== 'success')) {
+  throw new Error('ORDER_COMPOSED_FLOW must be customer, merchant, or consent; merchant/consent require success payment expectation');
+}
+if (composedFlow === 'consent' && (!/^[A-Za-z0-9_.-]+$/.test(mysqlContainer)
+  || !/^[A-Za-z0-9_]+$/.test(mysqlDatabase) || !/^[A-Za-z0-9_]+$/.test(mysqlUser) || !mysqlPassword)) {
+  throw new Error('consent flow requires explicit ORDER_COMPOSED_MYSQL_CONTAINER/DATABASE/USER/PASSWORD evidence settings');
 }
 
 process.env.CHROME_BIN = browserPath;
@@ -90,7 +100,7 @@ function merchantKey(scope) {
 
 async function restoreMerchantSetup(origin, setup) {
   const failures = [];
-  if (setup.product) {
+  if (setup.productChanged) {
     try {
       const restoredProduct = await requestJSON(origin, setup.requests, 'PUT', `/api/v1/merchant/products/${setup.product.id}/soldout`, {
         token: setup.miniToken,
@@ -113,13 +123,17 @@ async function restoreMerchantSetup(origin, setup) {
       if (JSON.stringify(settingsWrite(restoredSettings)) !== JSON.stringify(settingsWrite(setup.baselineSettings))) {
         throw new Error('settings cleanup response did not match the saved baseline');
       }
+      const reread = await requestJSON(origin, setup.requests, 'GET', '/api/v1/admin/settings', { token: setup.pcToken });
+      if (JSON.stringify(settingsWrite(reread)) !== JSON.stringify(settingsWrite(setup.baselineSettings))) {
+        throw new Error('settings cleanup reread did not match the saved baseline');
+      }
     } catch (error) { failures.push(error.message); }
   }
   return failures;
 }
 
-async function prepareMerchantSetup(origin) {
-  const setup = { requests: [], settingsChanged: false, product: null };
+async function prepareMerchantSetup(origin, includeFarPickup = false) {
+  const setup = { requests: [], settingsChanged: false, productChanged: false, product: null };
   try {
     const session = await requestJSON(origin, setup.requests, 'POST', '/api/v1/auth/miniprogram/session', {
       expected: 201,
@@ -149,10 +163,14 @@ async function prepareMerchantSetup(origin) {
     setup.baselineSettings = await requestJSON(origin, setup.requests, 'GET', '/api/v1/admin/settings', { token: setup.pcToken });
     const now = new Date();
     const target = new Date(Math.ceil((now.getTime() + 20 * 60 * 1000) / (5 * 60 * 1000)) * 5 * 60 * 1000);
+    const farTarget = new Date(target.getTime() + 40 * 60 * 1000);
     const cutoff = new Date(target.getTime() - 5 * 60 * 1000);
     const current = shanghaiParts(now);
     const pickup = shanghaiParts(target);
-    if (pickup.date !== current.date) throw new Error('merchant composed pickup crossed the Shanghai service date');
+    const farPickup = shanghaiParts(farTarget);
+    if (pickup.date !== current.date || (includeFarPickup && farPickup.date !== current.date)) {
+      throw new Error('merchant composed pickup crossed the Shanghai service date');
+    }
     const dates = setup.baselineSettings.service_dates.map(date => Object.assign({}, date));
     const today = dates.find(date => date.date === current.date);
     if (!today) throw new Error('baseline admin settings omitted the current service date; refusing non-restorable setup');
@@ -162,7 +180,7 @@ async function prepareMerchantSetup(origin) {
     if (!lunch) throw new Error('baseline admin settings omitted lunch');
     lunch.cutoff_time = shanghaiParts(cutoff).time;
     lunch.pickup_from = pickup.time;
-    lunch.pickup_to = pickup.time;
+    lunch.pickup_to = includeFarPickup ? farPickup.time : pickup.time;
     const temporary = settingsWrite(Object.assign({}, setup.baselineSettings, {
       store_status: 'open',
       pickup_step_min: 5,
@@ -177,6 +195,7 @@ async function prepareMerchantSetup(origin) {
     });
     setup.serviceDate = pickup.date;
     setup.pickupTime = pickup.time;
+    setup.farPickupTime = includeFarPickup ? farPickup.time : '';
 
     const menu = await requestJSON(origin, setup.requests, 'GET', `/api/v1/menu?date=${encodeURIComponent(setup.serviceDate)}&time=${encodeURIComponent(setup.pickupTime)}`, {
       token: setup.miniToken,
@@ -188,6 +207,7 @@ async function prepareMerchantSetup(origin) {
     }
     setup.product = { id: product.id, baselineSoldOut: product.sold_out, preparedSoldOut: false };
     if (product.sold_out) {
+      setup.productChanged = true;
       await requestJSON(origin, setup.requests, 'PUT', `/api/v1/merchant/products/${product.id}/soldout`, {
         token: setup.miniToken,
         idempotencyKey: merchantKey('prepare-soldout'),
@@ -200,6 +220,38 @@ async function prepareMerchantSetup(origin) {
     if (restoreFailures.length) throw new Error(`${error.message}; cleanup failed: ${restoreFailures.join('; ')}`);
     throw error;
   }
+}
+
+function verifyConsentMySQL() {
+  const notes = ['ready', 'refund-accept', 'refund-reject'].map(suffix => `${composedRunID}-${suffix}`);
+  const quoted = notes.map(note => `'${note}'`).join(',');
+  const sql = `SELECT o.order_note,c.kind,c.decision,IF(c.consumed_at IS NULL,'0','1'),COALESCE(x.kind,''),COALESCE(x.state,''),COALESCE(x.provider_message_id,'') FROM orders o JOIN notification_consents c ON c.order_id=o.id LEFT JOIN notification_outbox x ON x.order_id=o.id AND x.kind=c.kind WHERE o.order_note IN (${quoted}) ORDER BY o.order_note,c.kind,c.grant_sequence`;
+  const output = execFileSync('/opt/homebrew/bin/docker', [
+    'exec', '-e', `MYSQL_PWD=${mysqlPassword}`, mysqlContainer,
+    'mysql', '--batch', '--raw', '--skip-column-names', '-u', mysqlUser, `--database=${mysqlDatabase}`, '--execute', sql,
+  ], { encoding: 'utf8' }).trim();
+  const rows = output ? output.split('\n').map(line => {
+    const columns = line.split('\t');
+    while (columns.length < 7) columns.push('');
+    return columns;
+  }) : [];
+  const byNote = new Map(rows.map(row => [row[0], row]));
+  const ready = byNote.get(notes[0]);
+  const accepted = byNote.get(notes[1]);
+  const rejected = byNote.get(notes[2]);
+  if (rows.length !== 3
+    || !ready || ready[1] !== 'READY' || ready[2] !== 'ACCEPTED' || ready[3] !== '1'
+      || ready[4] !== 'READY' || ready[5] !== 'SENT' || !ready[6]
+    || !accepted || accepted[1] !== 'REFUND_RESULT' || accepted[2] !== 'ACCEPTED' || accepted[3] !== '1'
+      || accepted[4] !== 'REFUND_RESULT' || accepted[5] !== 'SENT' || !accepted[6]
+    || !rejected || rejected[1] !== 'REFUND_RESULT' || rejected[2] !== 'REJECTED' || rejected[3] !== '0'
+      || rejected[4] !== '' || rejected[5] !== '' || rejected[6] !== '') {
+    throw new Error(`consent MySQL evidence mismatch: ${JSON.stringify(rows)}`);
+  }
+  return rows.map(row => ({
+    order_note: row[0], kind: row[1], decision: row[2], consumed: row[3] === '1',
+    outbox_kind: row[4], outbox_state: row[5], provider_message: !!row[6],
+  }));
 }
 
 async function startTransparentProxy(origin) {
@@ -253,7 +305,8 @@ async function startTransparentProxy(origin) {
 const proxy = await startTransparentProxy(upstreamOrigin);
 let merchantSetup;
 try {
-  merchantSetup = composedFlow === 'merchant' ? await prepareMerchantSetup(upstreamOrigin) : null;
+  merchantSetup = ['merchant', 'consent'].includes(composedFlow)
+    ? await prepareMerchantSetup(upstreamOrigin, composedFlow === 'consent') : null;
 } catch (error) {
   await proxy.close();
   throw error;
@@ -261,9 +314,11 @@ try {
 process.env.ORDER_COMPOSED_PROXY_ORIGIN = proxy.origin;
 process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION = paymentExpectation;
 process.env.ORDER_COMPOSED_FLOW = composedFlow;
+process.env.ORDER_COMPOSED_RUN_ID = composedRunID;
 process.env.ORDER_COMPOSED_MERCHANT_SETUP = merchantSetup ? JSON.stringify({
   service_date: merchantSetup.serviceDate,
   pickup_time: merchantSetup.pickupTime,
+  far_pickup_time: merchantSetup.farPickupTime,
   product_id: merchantSetup.product.id,
   prepared_sold_out: merchantSetup.product.preparedSoldOut,
 }) : '{}';
@@ -278,12 +333,15 @@ console.log('UI1_COMPOSED_ENV', JSON.stringify({
   merchant_setup: merchantSetup ? {
     service_date: merchantSetup.serviceDate,
     pickup_time: merchantSetup.pickupTime,
+    far_pickup_time: merchantSetup.farPickupTime || undefined,
     product_id: merchantSetup.product.id,
   } : null,
 }));
 
 let exitCode;
 let cleanupFailures = [];
+let consentMySQLEvidence = [];
+let executionFailure = '';
 try {
   const processedConfig = await karma.config.parseConfig(
     path.join(toolRoot, 'karma.composed.conf.cjs'),
@@ -294,6 +352,10 @@ try {
     const server = new karma.Server(processedConfig, resolve);
     server.start().catch(reject);
   });
+  if (exitCode === 0 && composedFlow === 'consent') consentMySQLEvidence = verifyConsentMySQL();
+} catch (error) {
+  executionFailure = error && error.message || 'composed runner failed';
+  exitCode = 1;
 } finally {
   if (merchantSetup) cleanupFailures = await restoreMerchantSetup(upstreamOrigin, merchantSetup);
   await proxy.close();
@@ -303,12 +365,14 @@ if (cleanupFailures.length) {
   console.error('UI1_COMPOSED_CLEANUP', JSON.stringify({ status: 'FAIL', failures: cleanupFailures }));
   exitCode = exitCode || 1;
 }
+if (executionFailure) console.error('UI1_COMPOSED_EXECUTION', JSON.stringify({ status: 'FAIL', error: executionFailure }));
 
 console.log('UI1_COMPOSED_RESULT', JSON.stringify({
   status: exitCode === 0 ? 'PASS' : 'FAIL',
-  scenarios: composedFlow === 'merchant' || paymentExpectation === 'pending' ? 1 : 4,
+  scenarios: composedFlow === 'merchant' || composedFlow === 'consent' || paymentExpectation === 'pending' ? 1 : 4,
   evidence_level: 'L3_LOCAL_COMPOSED',
   setup_requests: merchantSetup ? merchantSetup.requests : [],
   upstream_requests: proxy.requests,
+  mysql_evidence: consentMySQLEvidence,
 }));
 if (exitCode !== 0) process.exitCode = exitCode;
