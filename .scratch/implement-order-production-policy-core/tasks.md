@@ -46,7 +46,7 @@ candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
 candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
 phase: red
 command_or_action: focused public-seam compile and one focused command per Initial, Advance, successor, invalid-state, and invalid-time tracer
-exit_result: expected nonzero before each minimal slice
+exit_result: FAIL
 sanitized_summary: missing Interface, zero state/Decision, missing typed errors, and unsafe legal outputs exposed every frozen behavior before implementation
 artifact_or_environment: writer worktree public seam tests
 unverified_boundary: Red evidence does not prove Green or external integration
@@ -66,8 +66,8 @@ candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
 candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
 phase: refactor
 command_or_action: focused package test; race count 20; temporary-copy mutation harness
-exit_result: PASS; five mutants each exited nonzero as expected
-sanitized_summary: public-seam behavior, exact 30-minute two-step boundary, concurrent determinism, redacted errors, and all five mutation sensitivities passed
+exit_result: PASS
+sanitized_summary: public-seam behavior, exact 30-minute two-step boundary, concurrent determinism, redacted errors, and all five mutation sensitivities passed with targeted exit-1 test failures
 artifact_or_environment: local Go 1.26.5 and isolated temporary mutation copies, cleaned on exit
 unverified_boundary: pure-function evidence does not prove DB atomicity, scheduler recovery, payment confirmation, or production deployment
 external_asset:
@@ -104,10 +104,10 @@ ui_level_actual: UI0
 base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
 candidate_sha: 39c0ea43067f30e5befd48290e9cb45711415452
 candidate_status: INVALIDATED_BY_STANDARDS_GOVERNANCE_AUDIT
-phase: review-remediation
+phase: writer
 command_or_action: third-party governance audit; exported failing go function against old mutation harness; harden source and behavior-failure proof
-exit_result: old harness false PASS exit 0; remediated harness rejects setup failure with exit 82 and kills five real mutants with exit 1 plus named test markers
-sanitized_summary: old candidate and all old review/runtime receipts invalidated; mutation proof now distinguishes target assertion failures from infrastructure failures
+exit_result: PASS
+sanitized_summary: old candidate and all old review/runtime receipts invalidated; old harness falsely exited 0 for infrastructure exit 2, while the new shield exits 82 and all five targeted mutants exit 1 with named test markers
 artifact_or_environment: owned task artifacts and isolated temporary mutation copies
 unverified_boundary: replacement final SHA, new dual review, and detached full Gate are pending and cannot inherit any old result
 external_asset:
