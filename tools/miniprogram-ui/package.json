@@ -6,6 +6,7 @@
   "scripts": {
     "browser:install": "PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium --no-shell --no-progress",
     "ui1": "PLAYWRIGHT_BROWSERS_PATH=0 node run-ui1.mjs",
+    "ui1:composed": "PLAYWRIGHT_BROWSERS_PATH=0 node run-ui1-composed.mjs",
     "ui2": "node run-ui2.mjs"
   },
   "overrides": {
