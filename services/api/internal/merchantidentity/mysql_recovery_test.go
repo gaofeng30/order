@@ -274,6 +274,31 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
 		t.Fatal("disabled concurrent mismatch audit snapshot was incomplete")
 	}
+
+	samePhoneRequestID := "internal-concurrent-phone-disabled-same"
+	if _, err := repository.CompleteLogin(ctx, userID, primaryPhone, hashLoginCode("disabled-binding-same-phone-code"), samePhoneRequestID, now.Add(3*time.Microsecond)); !errors.Is(err, ErrMerchantAccountNotAvailable) {
+		t.Fatalf("disabled concurrent same-phone error = %v", err)
+	}
+	if err := db.QueryRowContext(ctx, `
+		SELECT account_id_snapshot,role_snapshot,auth_version_snapshot,result,reason
+		FROM merchant_action_audits WHERE request_id=?
+	`, []byte(samePhoneRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
+		t.Fatal("read disabled concurrent same-phone audit failed")
+	}
+	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "ACCOUNT_NOT_AVAILABLE" {
+		t.Fatal("disabled concurrent same-phone audit snapshot was incomplete")
+	}
+	if err := db.QueryRowContext(ctx, `
+		SELECT bound_user_id,bound_at,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
+	`, boundAccountID).Scan(&boundUserID, &boundAt, &enabled, &recordVersion, &authVersion); err != nil || boundUserID != beforeBoundUserID || !boundAt.Equal(beforeBoundAt) || enabled != beforeEnabled || recordVersion != beforeRecordVersion || authVersion != beforeAuthVersion {
+		t.Fatal("same-phone rejection changed the disabled concurrent binding")
+	}
+	if err := db.QueryRowContext(ctx, "SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=?", userID).Scan(&afterPrimaryPhone, &afterPrimaryPhoneBoundAt); err != nil || afterPrimaryPhone != primaryPhone || !afterPrimaryPhoneBoundAt.Equal(primaryPhoneBoundAt) {
+		t.Fatal("same-phone rejection changed the primary phone binding")
+	}
+	if err := db.QueryRowContext(ctx, "SELECT bound_user_id,bound_at,record_version,auth_version FROM merchant_accounts WHERE id=?", unboundAccountID).Scan(&otherBoundUser, &otherBoundAt, &otherRecordVersion, &otherAuthVersion); err != nil || otherBoundUser.Valid || otherBoundAt.Valid || otherRecordVersion != 1 || otherAuthVersion != 1 {
+		t.Fatal("same-phone rejection partially bound the peer account")
+	}
 }
 
 type signalingCompleteStore struct {
@@ -288,37 +313,6 @@ func (store *signalingCompleteStore) CompleteLogin(ctx context.Context, userID u
 		store.once.Do(func() { close(store.committed) })
 	}
 	return identity, err
-}
-
-type concurrentSameCodeProvider struct {
-	phone            string
-	secondAtProvider chan struct{}
-	committed        chan struct{}
-	mu               sync.Mutex
-	calls            int
-}
-
-func (provider *concurrentSameCodeProvider) Exchange(context.Context, string, string) (string, error) {
-	provider.mu.Lock()
-	provider.calls++
-	call := provider.calls
-	provider.mu.Unlock()
-	if call == 1 {
-		<-provider.secondAtProvider
-		return provider.phone, nil
-	}
-	if call == 2 {
-		close(provider.secondAtProvider)
-		<-provider.committed
-		return "", wechat.ErrPhoneCodeRejected
-	}
-	return "", errors.New("unexpected provider retry")
-}
-
-func (provider *concurrentSameCodeProvider) Calls() int {
-	provider.mu.Lock()
-	defer provider.mu.Unlock()
-	return provider.calls
 }
 
 func assertMerchantTransactionRecovery(t *testing.T, db *sql.DB) {

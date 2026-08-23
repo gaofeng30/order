@@ -5,13 +5,16 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"os"
 	"regexp"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/wechat"
 )
 
 var merchantSchemaPattern = regexp.MustCompile(`^order_merchant_identity_test_[0-9a-f]{32}$`)
@@ -91,6 +94,37 @@ type phoneProviderFunc func(context.Context, string, string) (string, error)
 
 func (provider phoneProviderFunc) Exchange(ctx context.Context, code, openID string) (string, error) {
 	return provider(ctx, code, openID)
+}
+
+type concurrentSameCodeProvider struct {
+	phone            string
+	secondAtProvider chan struct{}
+	committed        chan struct{}
+	mu               sync.Mutex
+	calls            int
+}
+
+func (provider *concurrentSameCodeProvider) Exchange(context.Context, string, string) (string, error) {
+	provider.mu.Lock()
+	provider.calls++
+	call := provider.calls
+	provider.mu.Unlock()
+	if call == 1 {
+		<-provider.secondAtProvider
+		return provider.phone, nil
+	}
+	if call == 2 {
+		close(provider.secondAtProvider)
+		<-provider.committed
+		return "", wechat.ErrPhoneCodeRejected
+	}
+	return "", errors.New("unexpected provider retry")
+}
+
+func (provider *concurrentSameCodeProvider) Calls() int {
+	provider.mu.Lock()
+	defer provider.mu.Unlock()
+	return provider.calls
 }
 
 func withMerchantSchema(t *testing.T, run func(*sql.DB)) {
