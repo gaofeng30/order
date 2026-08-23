@@ -224,9 +224,10 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	var beforeBoundUserID, beforeRecordVersion, beforeAuthVersion uint64
 	var beforeEnabled bool
 	var beforeBoundAt time.Time
+	var beforeRole Role
 	if err := db.QueryRowContext(ctx, `
-		SELECT bound_user_id,bound_at,enabled,record_version,auth_version FROM merchant_accounts WHERE id=?
-	`, boundAccountID).Scan(&beforeBoundUserID, &beforeBoundAt, &beforeEnabled, &beforeRecordVersion, &beforeAuthVersion); err != nil {
+		SELECT bound_user_id,bound_at,enabled,record_version,auth_version,role FROM merchant_accounts WHERE id=?
+	`, boundAccountID).Scan(&beforeBoundUserID, &beforeBoundAt, &beforeEnabled, &beforeRecordVersion, &beforeAuthVersion, &beforeRole); err != nil {
 		t.Fatal("snapshot disabled concurrent binding failed")
 	}
 	differentPhone := "+43"
@@ -270,7 +271,7 @@ func assertConcurrentSuccessfulPhoneMismatch(t *testing.T, db *sql.DB) {
 	`, []byte(disabledRequestID)).Scan(&snapshotID, &snapshotRole, &snapshotAuth, &result, &reason); err != nil {
 		t.Fatal("read disabled concurrent mismatch audit failed")
 	}
-	if snapshotID != boundAccountID || !validRole(snapshotRole) || snapshotAuth != 3 || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
+	if snapshotID != boundAccountID || snapshotRole != beforeRole || snapshotAuth != beforeAuthVersion || result != "REJECTED" || reason != "PRIMARY_PHONE_MISMATCH" {
 		t.Fatal("disabled concurrent mismatch audit snapshot was incomplete")
 	}
 }

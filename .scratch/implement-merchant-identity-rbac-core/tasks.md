@@ -23,6 +23,63 @@ gate_type: W3
 ui_level_target: UI0
 ui_level_actual: UI0
 base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: dd56e01ba56984c79ab08fbc05acb9840a00c977
+phase: red
+command_or_action: static exact-audit-snapshot checker over resolved rejection scenarios
+exit_result: FAIL
+sanitized_summary: audit assertions accepted any valid role and, in the general rejection matrix, any positive auth version; swapped or stale snapshots could pass, so the WIP SHA and both review axes were invalidated
+artifact_or_environment: exact externally pinned WIP SHA dd56e01ba56984c79ab08fbc05acb9840a00c977
+unverified_boundary: exact role/version assertions, fresh MySQL Green, full Writer Gate, replacement review and detached verification remained pending
+external_asset:
+  owner: Writer
+  missing: N/A
+  recovery: read the expected account role and auth version before the login attempt and compare both snapshot fields exactly after rejection
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: green
+command_or_action: same exact-audit-snapshot checker plus fresh MySQL 8.0.46 resolved-rejection matrix
+exit_result: PASS
+sanitized_summary: every resolved rejection now proves role_snapshot and auth_version_snapshot exactly match the pre-call account facts; unresolved snapshots remain all empty and recovery/concurrency test sizes remain within limits
+artifact_or_environment: owned merchantidentity MySQL tests; disposable loopback mysql:8.0.46-oraclelinux9 container cleaned after success
+unverified_boundary: full Writer Gate, replacement clean WIP SHA, fresh review, controller approval and detached verifier remained pending
+external_asset:
+  owner: N/A
+  missing: N/A
+  recovery: retain exact role and version comparisons after any rejection-matrix or audit-fixture refactor
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
+candidate_sha: not-yet-created
+phase: writer
+command_or_action: post-exact-audit-snapshot focused and race; fresh MySQL 8.0.46; repository-wide test and race; vet; controlled build; smoke; structure/format/diff/ownership/PII/evidence/clean checks
+exit_result: PASS
+sanitized_summary: complete Writer Gate passed with exact pre-call role and auth-version comparisons for every resolved rejection while all HTTP, migration, concurrency, authorization and privacy contracts remained green
+artifact_or_environment: final replacement WIP tree before commit; MySQL and build temporary paths cleaned
+unverified_boundary: replacement clean WIP SHA, fresh Standards/Spec review, controller approval and detached verifier remained pending
+external_asset:
+  owner: controller
+  missing: review approval and Candidate designation
+  recovery: commit only the strengthened snapshot assertions and lifecycle evidence, externally pin both reviews to clean HEAD, and prohibit verifier before controller approval
+```
+
+```yaml
+change: implement-merchant-identity-rbac-core
+gate_type: W3
+ui_level_target: UI0
+ui_level_actual: UI0
+base_sha: 122913c6bcc8c22acb73e05385d54449f27c2465
 candidate_sha: 4366df80fbe88832e1246e6d124fbccb017a2cf7
 phase: red
 command_or_action: static zero-partial-write proof checker over the bind-disable-different-phone fresh-MySQL scenario

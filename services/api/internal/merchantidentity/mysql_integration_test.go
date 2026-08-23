@@ -252,6 +252,13 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 		t.Run(test.name, func(t *testing.T) {
 			caller := insertMerchantTestUser(t, db, "opaque-provider-subject-rejection-"+strconv.Itoa(index), now)
 			accountID := test.setup(t, db, caller, now)
+			var expectedSnapshotRole Role
+			var expectedSnapshotAuth uint64
+			if accountID > 0 {
+				if err := db.QueryRowContext(ctx, "SELECT role,auth_version FROM merchant_accounts WHERE id=?", accountID).Scan(&expectedSnapshotRole, &expectedSnapshotAuth); err != nil {
+					t.Fatal("read expected rejection snapshot failed")
+				}
+			}
 			provider := &countingPhoneProvider{phone: test.phone}
 			requestID := "internal-rejection-" + strconv.Itoa(index)
 			service := newService(NewRepository(db), provider, func() time.Time { return now })
@@ -303,7 +310,7 @@ func assertResolvedMerchantRejections(t *testing.T, db *sql.DB) {
 				if snapshotID.Valid || snapshotRole.Valid || snapshotAuth.Valid {
 					t.Fatal("unresolved mismatch audit retained an account snapshot")
 				}
-			} else if !snapshotID.Valid || uint64(snapshotID.Int64) != accountID || !snapshotRole.Valid || !validRole(Role(snapshotRole.String)) || !snapshotAuth.Valid || snapshotAuth.Int64 <= 0 {
+			} else if !snapshotID.Valid || uint64(snapshotID.Int64) != accountID || !snapshotRole.Valid || Role(snapshotRole.String) != expectedSnapshotRole || !snapshotAuth.Valid || uint64(snapshotAuth.Int64) != expectedSnapshotAuth {
 				t.Fatal("resolved rejection audit snapshot was incomplete")
 			}
 		})

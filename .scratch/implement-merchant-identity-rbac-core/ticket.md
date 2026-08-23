@@ -2,7 +2,7 @@
 
 ## 状态与唯一结果
 
-- 状态：`IMPLEMENTING / REVIEWING_WIP`；旧 SHA `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878`、`9cd2ffa330e40af05e91e5424b9ad252327b15f1`、`e89a7561382b486c4958cceb455eb698736d129c`、`8f9937f38a72f0f9b744baed1e779c49993738a6`、`90d3792c485d833aac25b947160ccd082a13f2b5`、`d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b`、`a6e88d87c27c99a87a4c29c42cd018c15889a42a`、`b1a2d5a64c0d92559d01ba11a49f17ed544701f1`、`168265551f912647bbda1dd5e92ada83c4d102fe`、`6a40d0fe70602163983cb9f7373a0a0e293d8ae3` 与 `4366df80fbe88832e1246e6d124fbccb017a2cf7` 已失效，不得进入 verifier。
+- 状态：`IMPLEMENTING / REVIEWING_WIP`；旧 SHA `dbdb508194a7e5524c3f5abdb98c60e5fb0b9878`、`9cd2ffa330e40af05e91e5424b9ad252327b15f1`、`e89a7561382b486c4958cceb455eb698736d129c`、`8f9937f38a72f0f9b744baed1e779c49993738a6`、`90d3792c485d833aac25b947160ccd082a13f2b5`、`d50a8c0c2913f6acb0d8431a3b75fa1b34e11a8b`、`a6e88d87c27c99a87a4c29c42cd018c15889a42a`、`b1a2d5a64c0d92559d01ba11a49f17ed544701f1`、`168265551f912647bbda1dd5e92ada83c4d102fe`、`6a40d0fe70602163983cb9f7373a0a0e293d8ae3`、`4366df80fbe88832e1246e6d124fbccb017a2cf7` 与 `dd56e01ba56984c79ab08fbc05acb9840a00c977` 已失效，不得进入 verifier。
 - tracker：`BLOCKED_LOCAL_GOVERNANCE`。仓库缺少 `docs/agents/issue-tracker.md`；本 change 不创建/更新 GitHub Issue，不伪造 `READY`。
 - 唯一业务结果：实现 merchant identity 核心 v12/v13、`GET /api/v1/me/identity`、`POST /api/v1/me/merchant-login` 与 transaction-bound `AuthorizeInTx`；现有三条 Mini Program identity/phone API 保持不变。
 - 最小成功标准：严格 HTTP、schema、实时 RBAC、首次绑定/审计原子性及故障恢复在 fresh MySQL 8.0.46 闭环；Writer 全 Gate 与 fixed-base 双轴 Review 通过后形成 Candidate，等待主控独立审计批准。
