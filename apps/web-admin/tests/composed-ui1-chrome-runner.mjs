@@ -29,9 +29,16 @@ try {
   await context.addInitScript(token => window.sessionStorage.setItem('pc_session_token', token), sessionToken);
   const page = await context.newPage();
   const apiRequests = [];
+  const apiResponses = [];
   page.on('request', request => {
     const pathname = new URL(request.url()).pathname;
     if (pathname.startsWith('/api/v1/')) apiRequests.push(`${request.method()} ${pathname}`);
+  });
+  page.on('response', response => {
+    const pathname = new URL(response.url()).pathname;
+    if (pathname.startsWith('/api/v1/')) {
+      apiResponses.push({ method: response.request().method(), pathname, status: response.status() });
+    }
   });
 
   await page.goto(`${proxy.origin}/web-admin/index.html`, { waitUntil: 'networkidle' });
@@ -69,6 +76,8 @@ try {
     'GET /api/v1/admin/me',
     'GET /api/v1/admin/stats',
     'GET /api/v1/admin/orders',
+    'GET /api/v1/admin/finance/payments',
+    'GET /api/v1/admin/finance/refunds',
     'GET /api/v1/admin/finance/summary',
     'GET /api/v1/admin/pending-payments',
     'GET /api/v1/admin/products',
@@ -78,7 +87,11 @@ try {
     'GET /api/v1/admin/merchant-accounts',
   ];
   for (const expected of requiredRequests) {
-    record(checks, `${expected} observed`, apiRequests.some(value => value === expected));
+    const splitAt = expected.indexOf(' ');
+    const method = expected.slice(0, splitAt);
+    const pathname = expected.slice(splitAt + 1);
+    record(checks, `${expected} returned 200`, apiRequests.some(value => value === expected) &&
+      apiResponses.some(value => value.method === method && value.pathname === pathname && value.status === 200));
   }
   await context.close();
 } finally {

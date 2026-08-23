@@ -8,16 +8,22 @@
    - 退款按**退款日期**归集，不是原订单的支付日期。跨日退款在微信账单里出现在到账
      那天。所以「今天的退款」里可能有昨天的订单，这是对的。
 
-   自动拉取并比对微信账单需要后端调支付接口，一期未实现 —— 页面必须把这句说出来，
-   否则管理员会以为汇总数字是系统核过的。 */
+   后台按账单日拉取并比对微信账单，对账证据写入统一审计；本页仍只展示系统事实，
+   不把本地汇总误标成微信已核平。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
-  const TODAY = Api.today();            // 营业日由契约层单一下发，页面不硬编日期
-  let range = { from: TODAY, to: TODAY };
+  let today = '';                       // Api.bootstrap 完成后才有服务端营业日
+  let range = { from: '', to: '' };
   let tab = 'pay';                       // pay | refund
 
   function render(el) {
+    today = Api.today();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) {
+      el.innerHTML = '<div class="card card-pad"><b>财务日期暂不可用</b><div class="faint" style="margin-top:8px">请稍后重试，系统不会用本机日期代替服务端营业日。</div></div>';
+      return;
+    }
+    if (!range.from || !range.to) range = { from: today, to: today };
     el.innerHTML =
       `<div class="page-head">
          <span class="ph-s grow">收款按<b>支付日期</b>归集，与微信商户平台「交易账单」同口径；退款按<b>退款到账日期</b>归集，因此今天的退款里可能有前几天的订单。</span>
@@ -41,7 +47,7 @@
          对账口径：<b>净额 = 实收合计 − 退款合计</b>，均按金额相加；一期只有原路全额退款，每笔退款金额等于原订单实付。
          把净额与微信商户平台同一日期区间的「交易账单」核对即可。
          <b>已收款未建单的条目不计入实收合计</b>（它们没有订单），因此微信账单会比实收合计多出这部分 —— 差额见「支付待处理」页，处理完即回归一致。
-         <b>自动拉取并比对微信账单一期未实现</b>，本页数字只汇总本系统内的订单，不代表已与微信核平。
+         后台按账单日自动拉取并比对微信账单，对账结果写入统一审计；<b>本页数字只汇总本系统事实，不单独代表已与微信核平</b>。
        </div>`;
 
     const from = el.querySelector('#f-from'), to = el.querySelector('#f-to');
@@ -58,9 +64,9 @@
 
     el.querySelectorAll('[data-quick]').forEach(b => {
       b.onclick = () => {
-        const d = new Date(TODAY + 'T00:00:00');
+        const d = new Date(today + 'T00:00:00');
         if (b.dataset.quick === '7') d.setDate(d.getDate() - 6);
-        range = { from: d.toISOString().slice(0, 10), to: TODAY };
+        range = { from: d.toISOString().slice(0, 10), to: today };
         from.value = range.from; to.value = range.to;
         paint(el);
       };
