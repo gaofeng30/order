@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "488253591b137dcffaba556db8fb1a7c3c220b8c"
+    "inventory_base_sha": "4eceab6c33baf1d87b057edddce1e4b39b24e5fb"
   },
   "policy": {
     "exact_counts": {
@@ -638,6 +638,25 @@
           }
         },
         {
+          "evidence_id": "PAGE-U07:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-U07:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -892,6 +911,25 @@
           ]
         },
         {
+          "evidence_id": "PAGE-M02:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-M02:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -966,6 +1004,25 @@
           ]
         },
         {
+          "evidence_id": "PAGE-M03:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-M03:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -1025,6 +1082,25 @@
             "kind": "go-test",
             "package": "./services/api/internal/fulfillment",
             "test": "TestFulfillmentMySQLVerticalSlice"
+          }
+        },
+        {
+          "evidence_id": "PAGE-M04:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
           }
         },
         {
@@ -1093,6 +1169,25 @@
             "kind": "go-test",
             "package": "./services/api/internal/merchantsoldout",
             "test": "TestMySQL8MerchantSoldOutVerticalSlice"
+          }
+        },
+        {
+          "evidence_id": "PAGE-M05:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
           }
         },
         {
@@ -1642,6 +1737,20 @@
           }
         },
         {
+          "evidence_id": "PAGE-PC05:web_composed_catalog_image_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC05:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -1740,11 +1849,18 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC06:missing:L3",
+          "evidence_id": "PAGE-PC06:web_composed_catalog_image_ui1_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC06 against the composed local API, fresh MySQL and deterministic fake providers: perform \"分类增删改、启停、上移下移\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+            ]
+          }
         }
       ],
       "external_evidence": []
@@ -1937,6 +2053,20 @@
             "argv": [
               "node",
               "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC08:web_composed_catalog_image_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
             ]
           }
         },
@@ -2910,6 +3040,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "AC-09:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "AC-09:production_rules_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -3001,6 +3150,25 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-10:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-10:production_rules_l1",
           "level": "L1",
@@ -3146,6 +3314,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "AC-11:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "AC-11:fulfillment_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -3258,6 +3445,39 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-13:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
+          "evidence_id": "AC-13:web_composed_catalog_image_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-13:soldout_mysql_l2",
           "level": "L2",
@@ -3494,6 +3714,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "AC-16:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "AC-16:merchant_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -3568,6 +3807,20 @@
         "L3"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "AC-17:web_composed_catalog_image_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+            ]
+          }
+        },
         {
           "evidence_id": "AC-17:catalog_mysql_l2",
           "level": "L2",
@@ -4317,6 +4570,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-10:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-10:payment_rules_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -4676,6 +4948,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-15:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-15:order_query_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -4967,6 +5258,39 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "BE-20:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
+          "evidence_id": "BE-20:web_composed_catalog_image_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-20:soldout_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -4989,13 +5313,6 @@
             "file": "apps/wechat-miniprogram/tests/overnight-merchant-ui0.test.js",
             "name_pattern": ".*"
           }
-        },
-        {
-          "evidence_id": "BE-20:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-20 against the composed local API, fresh MySQL and deterministic fake providers: perform \"今日标售罄再查明日\" and assert HTTP, MySQL, visible result and zero false-success side effects."
         }
       ],
       "external_evidence": []
@@ -6284,6 +6601,25 @@
           }
         },
         {
+          "evidence_id": "INV-05:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-05:payment_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -6463,6 +6799,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "INV-07:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-07:production_rules_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -6607,6 +6962,25 @@
         "L2"
       ],
       "local_evidence": [
+        {
+          "evidence_id": "INV-08:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
         {
           "evidence_id": "INV-08:production_rules_l1",
           "level": "L1",
@@ -7050,6 +7424,25 @@
       ],
       "local_evidence": [
         {
+          "evidence_id": "INV-13:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-13:merchant_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -7307,6 +7700,25 @@
           }
         },
         {
+          "evidence_id": "INV-16:mini_composed_merchant_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "env",
+              "ORDER_COMPOSED_FLOW=merchant",
+              "npm",
+              "--prefix",
+              "tools/miniprogram-ui",
+              "run",
+              "ui1:composed"
+            ]
+          }
+        },
+        {
           "evidence_id": "INV-16:schema_no_inventory_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -7401,5 +7813,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "aaa08607e41c50cd8d389ddb7f40dc6f23e28aa57775fa0e38b938ade0d499c2"
+  "manifest_sha256": "cf90236fad2490514d274e8190401ae25dd69f8267121900e594b051aed6a034"
 }
