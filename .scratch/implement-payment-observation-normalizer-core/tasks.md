@@ -80,8 +80,8 @@ base_sha: 5e937f3599a16f4813d6021f4cd2dd637c3156a2
 candidate_sha: not-yet-created
 phase: red
 command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/paymentobservation -run '^TestNormalizeCanonicalizesSuccessfulCallbackAndQueryIdentically$' -count=1
-exit_result: FAIL exit-code-1
-sanitized_summary: fresh detached exact-base package build failed with no non-test Go files after copying only normalize_test.go; the public Normalize production seam was absent
+exit_result: FAIL
+sanitized_summary: exit code 1; fresh detached exact-base package build failed with no non-test Go files after copying only normalize_test.go; the public Normalize production seam was absent
 artifact_or_environment: disposable clean detached worktree; removed after RED; evidence/v13-red.md
 unverified_boundary: no production implementation from the writer worktree participated in this RED
 external_asset:
@@ -104,8 +104,8 @@ base_sha: b7f484f54decfa38bc36bbed1ada041828d87483
 candidate_sha: not-yet-created
 phase: writer
 command_or_action: first fresh loopback MySQL 8.0.46 run across every historical MySQL integration package plus wechatpay/paymentobservation
-exit_result: FAIL exit-code-1
-sanitized_summary: exact base has 13 migrations while five protected historical suites still require 10 or v1-v11; current v1-v13 merchantidentity, wechatpay and paymentobservation packages passed
+exit_result: FAIL
+sanitized_summary: exit code 1; exact base has 13 migrations while five protected historical suites still require 10 or v1-v11; current v1-v13 merchantidentity, wechatpay and paymentobservation packages passed
 artifact_or_environment: disposable isolated MySQL 8.0.46 container; cleaned after failure
 unverified_boundary: historical protected suites remain stale on the exact base and cannot be repaired within owned paths
 external_asset:
@@ -146,8 +146,8 @@ base_sha: b7f484f54decfa38bc36bbed1ada041828d87483
 candidate_sha: not-yet-created
 phase: red
 command_or_action: GOPROXY=off GOTOOLCHAIN=go1.26.5 go test ./services/api/internal/paymentobservation -run '^TestNormalizeCanonicalizesSuccessfulCallbackAndQueryIdentically$' -count=1
-exit_result: FAIL exit-code-1
-sanitized_summary: package build failed because paymentobservation had no non-test Go files; the public Normalize seam was absent
+exit_result: FAIL
+sanitized_summary: exit code 1; package build failed because paymentobservation had no non-test Go files; the public Normalize seam was absent
 artifact_or_environment: services/api/internal/paymentobservation/normalize_test.go at the first tracer bullet
 unverified_boundary: no behavior is implemented or proven at RED
 external_asset:
