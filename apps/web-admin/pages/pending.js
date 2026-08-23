@@ -61,8 +61,8 @@
     });
   }
 
-  /* 建单确认。先把当前的阻塞判定读出来展示 —— 让主账号在点之前就知道能不能成，
-     而不是点完看到一句红字。原因仍在时直接禁用确认按钮并给出解法。 */
+  /* 列表中的阻塞原因是最后一次投影结果。确认时仍交给服务端按当前事实重新校验；
+     前端不根据旧原因伪造可建单结论，也不永久锁死重试入口。 */
   function openBuild(el, p) {
     if (!p) return;
     const why = Api.blockingReason(p);
@@ -75,16 +75,15 @@
          <div class="kv"><span class="k">意向取餐</span><span class="v tnum">${T.esc(p.pickupDate)} ${T.esc(p.pickupTime)}</span></div>
          <div class="kv"><span class="k">菜品</span><span class="v">${T.esc(Api.itemsSummary(p.items))}</span></div>
          <div class="imp-note ${why ? 'warn' : ''}" style="margin-top:12px">
-           ${why ? `<b>暂时不能建单：</b>${T.esc(why)}`
+           ${why ? `<b>上次阻塞原因：</b>${T.esc(why)}<br>确认后服务端将按当前事实重新校验，未解除仍会拒绝。`
                  : '将按原支付金额与取餐信息生成订单，分配取餐号，并按取餐时间自动排产。该动作不可撤销。'}
          </div>`,
       footerHtml:
-        `<button class="btn btn--line" data-a="cancel">取消</button>` +
-        (why ? '' : `<button class="btn btn--blue" data-a="ok">确认建单</button>`),
+        `<button class="btn btn--line" data-a="cancel">取消</button>
+         <button class="btn btn--blue" data-a="ok">确认建单</button>`,
       onMount(root, done) {
         root.querySelector('[data-a="cancel"]').onclick = done;
-        const ok = root.querySelector('[data-a="ok"]');
-        if (ok) ok.onclick = () => {
+        root.querySelector('[data-a="ok"]').onclick = () => {
           Api.rebuildOrder(p.id).then(o => {
             done();
             paint(el);

@@ -83,7 +83,7 @@
          </div>
          <div class="fld">
            <div class="fld-lb">手机号 <span class="req">*</span></div>
-           <input class="inp tnum" id="f-phone" value="${a ? T.esc(a.phone) : ''}" placeholder="11 位手机号，用于微信登录时比对">
+           <input class="inp tnum" id="f-phone" value="" placeholder="${a ? T.esc(a.phone) + ' · 留空不修改' : '11 位手机号，用于微信登录时比对'}">
            <div class="fld-hint">商户首次在小程序点「商户登录」时授权手机号，命中本名单才获得商户端权限；PC 后台扫码登录比对同一份名单。</div>
          </div>
          <div class="fld">

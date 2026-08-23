@@ -18,6 +18,11 @@
                     ${s.status === b ? `style="background:${BIZ_C[b]};color:#fff"` : ''}>${b}</span>`).join('')}
                </div>
                <div class="fld-hint" style="margin-top:10px">切换后用户端首页与点单页会同步显示当前状态，「已截单」时不再接受新订单。</div>
+               <div class="fld-lb" style="margin-top:18px">可预约营业日期（今天 / 明天）</div>
+               <div class="biz-switch" id="service-dates">
+                 ${(s.serviceDates || []).map((d, index) => `<span class="biz-seg${d.status === 'open' ? ' on' : ''}" data-date="${d.date}" data-open="${d.status === 'open' ? 'true' : 'false'}">${index === 0 ? '今天' : '明天'} ${d.date.slice(5)}·${d.status === 'open' ? '营业' : '休息'}</span>`).join('')}
+               </div>
+               <div class="fld-hint" style="margin-top:10px">日期行缺失默认不可预约；保存后将今天、明天的营业事实一次写入服务端。</div>
              </div>
 
              <div class="sec-h" style="margin-top:8px"><span class="t">餐段与取餐时间</span></div>
@@ -35,7 +40,7 @@
                </div>
                <div class="fld" style="margin-bottom:0">
                  <div class="fld-lb">取餐地点</div>
-                 <input class="inp" id="f-pt" value="${T.esc(window.Seed.PICKUP_POINT)}" readonly>
+                 <input class="inp" id="f-pt" value="${T.esc(s.pickupPoint)}" readonly>
                  <div class="fld-hint">一期为单门店单取餐点，不提供多点选择（§3.1）。该地点显示在用户端首页与订单凭证上。</div>
                </div>
              </div>
@@ -70,6 +75,15 @@
           });
         };
       });
+      el.querySelectorAll('[data-date]').forEach(n => {
+        n.onclick = () => {
+          const open = n.dataset.open !== 'true';
+          n.dataset.open = open ? 'true' : 'false';
+          n.classList.toggle('on', open);
+          const label = n.textContent.split('·')[0];
+          n.textContent = label + '·' + (open ? '营业' : '休息');
+        };
+      });
 
       el.querySelector('#save').onclick = () => {
         const mealPeriods = s.mealPeriods.map(p => Object.assign({}, p));
@@ -83,6 +97,7 @@
           mealPeriods,
           pickupPoint: el.querySelector('#f-pt').value,
           notice: el.querySelector('#f-notice').value,
+          serviceDates: Array.from(el.querySelectorAll('[data-date]')).map(n => ({ date: n.dataset.date, status: n.dataset.open === 'true' ? 'open' : 'closed' })),
         }).then(() => {
           window.App.refreshChrome();
           window.Toast.show('设置已保存', { icon: 'check' });
@@ -92,5 +107,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['settings'] = { sub: '状态、餐段截单、取餐时间、取餐点与门店公告', render };
+  window.Pages['settings'] = { sub: '状态、营业日期、餐段截单、取餐时间、取餐点与门店公告', render };
 })();

@@ -26,7 +26,7 @@
            <div class="fld-lb">第二步 · 选择文件</div>
            <div class="imp-pick">
              <input type="file" id="f-file" accept=".xlsx">
-             <span class="faint">${state.file ? T.esc(state.file.name) : '只接受 .xlsx，单次最多 ' + window.Api.MAX_IMPORT_ROWS + ' 行'}</span>
+             <span class="faint">${state.file ? T.esc(state.file.name) : '只接受 .xlsx，单次最多 ' + (cfg.maxRows || window.Api.MAX_IMPORT_ROWS) + ' 行，文件不超过 10 MiB'}</span>
            </div>
          </div>
          <div id="imp-result"></div>`;

@@ -10,6 +10,7 @@
   const SCREEN_W = 375, SCREEN_H = 667, SCALE = 1;
   const PW = Math.round(SCREEN_W * SCALE);
   const PH = Math.round(SCREEN_H * SCALE);
+  const DEFAULT_LAYER = { src: '', enabled: false, size: 0.3, cx: 0.5, cy: 0.35, ar: 1, v: 1 };
 
   let cfg = null;      // 当前编辑态
   let mock = 'brand';  // 预览背景
@@ -119,7 +120,7 @@
               <div class="m-id-body"><div class="m-id-name serif">商户端</div><div class="m-id-desc">接单 · 制作 · 核销 · 菜品与经营管理</div></div>
               <div class="m-id-go">${I.svg('arrowRight', 18, '#ffffff')}</div>
             </div>
-            <div class="m-ver">${window.Seed.STORE.name}　小程序 v1.0</div>
+            <div class="m-ver">${T.esc(Api.storeView().name)}　小程序 v1.0</div>
           </div>
         </div>`;
     }
@@ -209,7 +210,7 @@
         if (!yes) return;
         // 与小程序一致：移除只是暂存状态，点「保存」才真正生效
         dirtyRemove = true;
-        cfg = Object.assign({}, window.Seed.LAYER_DEFAULTS);
+        cfg = Object.assign({}, DEFAULT_LAYER);
         paint(el);
         window.Toast.show('已移除，保存后生效');
       });
@@ -238,7 +239,7 @@
         cfg.ar = probe.height / probe.width;
         cfg.enabled = true;
         dirtyRemove = false;
-        if (cfg.cx === undefined) { cfg.cx = window.Seed.LAYER_DEFAULTS.cx; cfg.cy = window.Seed.LAYER_DEFAULTS.cy; }
+        if (cfg.cx === undefined) { cfg.cx = DEFAULT_LAYER.cx; cfg.cy = DEFAULT_LAYER.cy; }
         paint(el);
       };
       probe.onerror = () => window.Toast.show('图片读取失败', { icon: 'warn' });

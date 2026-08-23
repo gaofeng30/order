@@ -6,6 +6,7 @@
 
   let cat = '全部';
   let kw = '';
+  let categoryCache = [];
   const picked = new Set();
 
   /* 上下架与当日售罄是两个独立维度（§6.5）：status 只表达上下架，
@@ -32,11 +33,14 @@
     const kwEl = el.querySelector('#kw');
     kwEl.oninput = () => { kw = kwEl.value; paint(el, true); };
 
-    paint(el);
+    Api.listCategories().then(list => {
+      categoryCache = list;
+      paint(el);
+    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
   }
 
   function paint(el, keepFocus) {
-    const cats = ['全部'].concat(window.__store.cats.filter(c => c.on).map(c => c.name));
+    const cats = ['全部'].concat(categoryCache.filter(c => c.on).map(c => c.name));
     el.querySelector('#cats').innerHTML = cats.map(c =>
       `<span class="seg${c === cat ? ' on' : ''}" data-cat="${T.esc(c)}">${T.esc(c)}</span>`).join('');
     el.querySelectorAll('[data-cat]').forEach(n => {
@@ -72,6 +76,8 @@
           { t: '售价', w: '76px', cls: 'num', render: r => T.money(r.price) },
           { t: '状态', w: '82px', render: r => T.pill(label(r), tone(r)) },
           { t: '操作', w: '234px', cls: 'act', render: r => `
+            <button class="ibtn" data-act="up" data-id="${r.id}" title="上移">↑</button>
+            <button class="ibtn" data-act="down" data-id="${r.id}" title="下移">↓</button>
             <button class="btn btn--sm btn--line" data-act="sold" data-id="${r.id}">${Api.isSoldOut(r.id, Api.today()) ? '恢复售卖' : '标记售罄'}</button>
             <button class="btn btn--sm btn--line" data-act="shelf" data-id="${r.id}">${r.status === 'off' ? '上架' : '下架'}</button>
             <button class="btn btn--sm btn--ghost-blue" data-act="edit" data-id="${r.id}">编辑</button>` },
@@ -109,6 +115,8 @@
           });
         },
         edit(id) { openEdit(el, list.find(m => m.id === id)); },
+        up(id) { moveProduct(el, all, id, -1); },
+        down(id) { moveProduct(el, all, id, 1); },
       });
 
       if (keepFocus) {
@@ -117,6 +125,20 @@
         k.setSelectionRange(k.value.length, k.value.length);
       }
     });
+  }
+
+  function moveProduct(el, all, id, delta) {
+    const current = all.find(p => p.id === id);
+    if (!current) return;
+    const siblings = all.filter(p => p.categoryId === current.categoryId);
+    const index = siblings.findIndex(p => p.id === id);
+    const target = index + delta;
+    if (target < 0 || target >= siblings.length) return;
+    [siblings[index], siblings[target]] = [siblings[target], siblings[index]];
+    Api.reorderProducts(current.categoryId, siblings.map(p => p.id)).then(() => {
+      paint(el);
+      window.Toast.show('菜品顺序已保存', { icon: 'sort' });
+    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
   }
 
   /* ---------------- 批量操作条 ---------------- */
@@ -209,7 +231,7 @@
   /* ---------------- 编辑抽屉（原 admin-product-edit 页） ---------------- */
   function openEdit(el, p) {
     const isEdit = !!p;
-    const cats = window.__store.cats.filter(c => c.on).map(c => c.name);
+    const cats = categoryCache.filter(c => c.on).map(c => c.name);
     let imgs = (p && p.imgs ? p.imgs.slice() : []);
 
     window.Drawer.open({

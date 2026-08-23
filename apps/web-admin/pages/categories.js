@@ -19,7 +19,6 @@
 
   function paint(el) {
     Api.listCategories().then(list => {
-      const menu = window.__store.menu;
       const host = el.querySelector('#cat-host');
       host.innerHTML =
         `<div class="cat-head">
@@ -30,7 +29,7 @@
            <span style="width:72px;text-align:right">操作</span>
          </div>` +
         list.map(c => {
-          const count = menu.filter(m => m.cat === c.name).length;
+          const count = c.count;
           return `<div class="cat-row" draggable="true" data-id="${c.id}">
             <span class="cat-grip">${I.svg('sort', 16, '#b6b9a6')}</span>
             <span class="grow cat-nm">${T.esc(c.name)}</span>

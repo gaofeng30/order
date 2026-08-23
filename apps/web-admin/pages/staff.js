@@ -116,7 +116,7 @@
          </div>
          <div class="fld">
            <div class="fld-lb">手机号 <span class="req">*</span></div>
-           <input class="inp tnum" id="f-phone" value="${r ? T.esc(r.phone) : ''}" placeholder="11 位手机号，唯一识别键">
+           <input class="inp tnum" id="f-phone" value="" placeholder="${r ? T.esc(r.phone) + ' · 留空不修改' : '11 位手机号，唯一识别键'}">
          </div>
          ${isEdit ? `<div class="card card-pad staff-ro">
            <div class="fld-lb">系统字段（只读）</div>

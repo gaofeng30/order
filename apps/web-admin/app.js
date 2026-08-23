@@ -3,28 +3,7 @@
    零构建：按 <script> 顺序加载，页面模块挂在 window.Pages 上。
    ============================================================ */
 (function () {
-  const Seed = window.Seed;
   const Api = window.Api;
-  const clone = v => JSON.parse(JSON.stringify(v));
-
-  /* ---------------- 内存态数据源（对应小程序 app.js 的 globalData） ---------------- */
-  function initStore() {
-    window.__store = {
-      store: clone(Seed.STORE),
-      aOrders: clone(Seed.ADMIN_ORDERS),
-      pending: clone(Seed.PENDING_PAYMENTS),
-      voidedPending: [],
-      // 菜品多图：种子只有单图，统一收敛到 imgs 数组，img 保留为封面
-      menu: clone(Seed.MENU).map(m => Object.assign(m, { imgs: m.img ? [m.img] : [] })),
-      cats: clone(Seed.ADMIN_CATS),
-      settings: clone(Seed.SETTINGS),
-      layer: clone(Seed.LAYER_DEFAULTS),
-      staff: clone(Seed.STAFF_WHITELIST),
-      accounts: clone(Seed.MERCHANT_ACCOUNTS),
-      // 当日售罄记录 { productId, serviceDate }，与上下架分开存（§6.5）
-      soldOut: clone(Seed.PRODUCT_SOLD_OUT_DATES),
-    };
-  }
 
   /* ---------------- 导航（替代小程序 admin-profile 的入口聚合页） ---------------- */
   const NAV = [
@@ -72,30 +51,30 @@
   const BIZ = ['营业中', '休息中', '已截单'];
 
   function renderStatusPill() {
-    const s = window.__store.store.status;
+    const s = Api.storeView().status;
     const el = document.getElementById('tb-status');
     el.className = 'pill pill--' + Api.statusTone(s);
     el.innerHTML = `<i class="pd"></i>${s}`;
   }
 
   function renderAccount() {
-    const st = window.__store;
-    const mg = Seed.MANAGER;
+    const view = Api.storeView();
+    const mg = view.account || { name: '未登录', role: '—' };
     document.getElementById('acct-pop').innerHTML =
       `<div class="acct-card">
          <span class="ring r1"></span><span class="ring r2"></span>
          <div class="ac-in">
            <span class="ac-logo"><img src="../wechat-miniprogram/assets/emblem.png" alt=""></span>
            <div>
-             <div class="ac-nm">${Seed.STORE.name}</div>
-             <div class="ac-sub">${Seed.STORE.name} · ${mg.role} ${mg.name}</div>
+             <div class="ac-nm">${view.name}</div>
+             <div class="ac-sub">${view.name} · ${mg.role} ${mg.name}</div>
            </div>
          </div>
        </div>
        <div class="acct-sec">
          <div class="acct-lb">营业状态</div>
          <div class="segs">
-           ${BIZ.map(b => `<span class="seg${st.store.status === b ? ' on' : ''}" data-biz="${b}">${b}</span>`).join('')}
+           ${BIZ.map(b => `<span class="seg${view.status === b ? ' on' : ''}" data-biz="${b}">${b}</span>`).join('')}
          </div>
        </div>
        <div class="acct-sec">
@@ -124,15 +103,16 @@
           renderAccount();
           window.Toast.show(`已切换为「${s}」`, { icon: 'power' });
           if (current === 'dashboard' || current === 'settings') go(current, true);
-        });
+        }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         return;
       }
       const goTo = e.target.closest('[data-go]');
       if (goTo) { pop.classList.remove('open'); location.hash = '#/' + goTo.dataset.go; return; }
       if (e.target.closest('[data-logout]')) {
         pop.classList.remove('open');
-        // P0 原型不做鉴权：登录与账号体系是正式期的事，此处仅占位提示
-        window.Toast.show('原型阶段未接入账号体系 · 登录鉴权为正式期范围', { icon: 'warn' });
+        Api.logout();
+        window.Toast.show('登录已失效，请重新扫码登录', { icon: 'warn' });
+        location.reload();
       }
     });
   }
@@ -177,15 +157,65 @@
   }
 
   /* ---------------- 启动 ---------------- */
-  initStore();
   renderNav();
-  renderAccount();
   bindAccount();
-  renderStatusPill();
+  document.getElementById('tb-status').textContent = '连接中';
+  window.addEventListener('unhandledrejection', e => {
+    e.preventDefault();
+    const message = e.reason && e.reason.message ? e.reason.message : '请求失败，请重试';
+    window.Toast.show(message, { icon: 'warn' });
+  });
 
   window.addEventListener('hashchange', () => go(parseHash()));
-  if (!location.hash) location.hash = '#/dashboard';
-  go(parseHash(), true);
+  Api.bootstrap().then(() => {
+    renderAccount();
+    renderStatusPill();
+    if (!location.hash) location.hash = '#/dashboard';
+    go(parseHash(), true);
+  }).catch(e => {
+    if (e.status === 401) {
+      renderPCLogin();
+      return;
+    }
+    const host = document.getElementById('content');
+    host.innerHTML = `<div class="card card-pad"><b>后台服务不可用</b><div class="faint" style="margin-top:8px">${e.message}</div><button class="btn btn--primary" style="margin-top:16px" onclick="location.reload()">重试</button></div>`;
+    document.getElementById('tb-status').textContent = '不可用';
+    renderAccount();
+  });
+
+  function renderPCLogin() {
+    const host = document.getElementById('content');
+    host.innerHTML = `<div class="card card-pad" style="max-width:560px;margin:56px auto;text-align:center"><b>主账号扫码登录</b><div class="faint" style="margin-top:8px">请用商户小程序扫码并授权手机号。登录挑战有效 2 分钟；会话固定 12 小时，不续期、不记住设备。</div><div id="pc-qr" class="card card-pad" style="margin:18px auto 0;min-height:244px;display:flex;align-items:center;justify-content:center"><span class="faint">正在创建登录挑战…</span></div><button class="btn btn--line" style="margin-top:16px" data-retry>重新生成</button></div>`;
+    host.querySelector('[data-retry]').onclick = renderPCLogin;
+    Api.beginPCLogin().then(login => {
+      const code = host.querySelector('#pc-qr');
+      if (!code) return;
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.setAttribute('aria-label', 'PC 登录二维码');
+        window.PCQRCode.render(canvas, login.qr_payload, 228);
+        code.replaceChildren(canvas);
+      } catch (error) {
+        code.innerHTML = `<span class="faint">二维码生成失败：${window.Toast.esc(error.message)}</span>`;
+        return;
+      }
+      poll(login.login_id, login.poll_secret, login.expires_at);
+    }).catch(e => {
+      const code = host.querySelector('#pc-qr');
+      if (code) code.textContent = e.message;
+    });
+  }
+
+  function poll(loginID, pollSecret, expiresAt) {
+    if (Date.now() >= Date.parse(expiresAt)) {
+      window.Toast.show('登录挑战已过期，请重新生成', { icon: 'warn' });
+      return;
+    }
+    Api.pollPCLogin(loginID, pollSecret).then(result => {
+      if (result.state === 'APPROVED') { location.reload(); return; }
+      setTimeout(() => poll(loginID, pollSecret, expiresAt), 1500);
+    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+  }
 
   // 页面间跳转与外壳刷新
   window.App = {

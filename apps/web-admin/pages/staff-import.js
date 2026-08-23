@@ -5,6 +5,7 @@
   function render(el) {
     window.ImportFlow.render(el, {
       backRoute: 'staff',
+      maxRows: Api.MAX_STAFF_IMPORT_ROWS,
       hint: '按模板整理员工后上传 .xlsx。手机号已在名单中的会被覆盖更新，其状态、加入时间、微信绑定与累计统计一律保留 —— 导入不会把已停用的员工重新启用。',
       sample: '林建国 | 13800006620',
       columns: [
