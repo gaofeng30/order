@@ -16,17 +16,23 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/catalog"
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
+	"github.com/gaofeng30/order/services/api/internal/fulfillment"
 	"github.com/gaofeng30/order/services/api/internal/httpapi"
 	"github.com/gaofeng30/order/services/api/internal/identity"
 	"github.com/gaofeng30/order/services/api/internal/importbatch"
 	"github.com/gaofeng30/order/services/api/internal/menu"
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
+	"github.com/gaofeng30/order/services/api/internal/merchantsoldout"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/objectstore"
+	"github.com/gaofeng30/order/services/api/internal/orderadvance"
+	"github.com/gaofeng30/order/services/api/internal/orderquery"
 	"github.com/gaofeng30/order/services/api/internal/paymentorder"
 	"github.com/gaofeng30/order/services/api/internal/quote"
+	"github.com/gaofeng30/order/services/api/internal/refund"
 	"github.com/gaofeng30/order/services/api/internal/staffdiscount"
 	"github.com/gaofeng30/order/services/api/internal/storefront"
+	"github.com/gaofeng30/order/services/api/internal/storestatus"
 	"github.com/gaofeng30/order/services/api/internal/subscription"
 	"github.com/gaofeng30/order/services/api/migrations"
 )
@@ -115,18 +121,20 @@ func run() int {
 	var paymentProvider paymentorder.PaymentProvider
 	var paymentParser paymentorder.NotificationParser
 	var paymentConfig paymentorder.Config
+	var productionPaymentRuntime productionWeChatPayRuntime
 	if cfg.Environment == config.Production {
 		material, materialErr := config.LoadProductionWeChatPayMaterial(context.Background(), os.Getenv("ORDER_TENCENT_REGION"))
 		if materialErr != nil {
 			logger.Error("wechat payment configuration error", "reason", config.Reason(materialErr))
 			return 1
 		}
-		provider, providerConfig, providerErr := composeProductionWeChatPayment(cfg.MiniProgram.AppID, material)
+		runtime, providerErr := composeProductionWeChatPayRuntime(cfg.MiniProgram.AppID, material)
 		if providerErr != nil {
 			logger.Error("wechat payment provider configuration error")
 			return 1
 		}
-		paymentProvider, paymentParser, paymentConfig = provider, provider, providerConfig
+		productionPaymentRuntime = runtime
+		paymentProvider, paymentParser, paymentConfig = runtime.payment, runtime.payment, runtime.config
 	} else {
 		provider := newLocalPaymentProvider(time.Now)
 		paymentProvider, paymentParser = provider, provider
@@ -137,24 +145,6 @@ func run() int {
 	}
 	paymentApplication := paymentorder.NewMySQLApplication(db, quoteApplication, paymentProvider, paymentConfig)
 	registrars = append(registrars, newPaymentRoutes(paymentorder.NewHandler(sessionService, paymentApplication, paymentParser)))
-	if cfg.Environment != config.Production {
-		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
-		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
-		importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
-		adminFeatureRoutes := []adminGroupRegistrar{
-			catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
-			storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
-			staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
-			importHandler,
-			adminreport.NewHandler(adminreport.NewMySQLApplication(db, nil)),
-			audit.NewHandler(audit.NewMySQLSearcher(db)),
-		}
-		ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
-		registrars = append(registrars,
-			newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
-			localObjects,
-		)
-	}
 	var notificationService *subscription.Service
 	var subscriptionTemplateVersion uint64
 	if cfg.Environment != config.Production {
@@ -181,6 +171,63 @@ func run() int {
 		subscriptionTemplateVersion = providerConfig.templateConfigVersion
 	}
 	registrars = append(registrars, httpapi.NewSubscriptionHandler(sessionService, notificationService, subscriptionTemplateVersion))
+	tokenCipher, err := composeRedemptionTokenCipher(cfg.Environment, os.Getenv("ORDER_TENCENT_REGION"))
+	if err != nil {
+		logger.Error("redemption token configuration error")
+		return 1
+	}
+	orderRepository := orderquery.NewRepository(db, merchantIdentityService, tokenCipher, time.Now)
+	fulfillmentApplication := fulfillment.NewMySQLApplication(db, merchantIdentityRepository, tokenCipher, notificationService)
+	storeStatusCore := storestatus.New(db, merchantIdentityRepository, func() time.Time { return time.Now().UTC() })
+	soldOutCommander := merchantsoldout.New(db, merchantIdentityRepository, time.Now)
+	registrars = append(registrars,
+		orderquery.NewHandler(sessionService, orderRepository),
+		fulfillment.NewHandler(sessionService, fulfillmentApplication, orderRepository,
+			fulfillment.WithStoreStatus(storeStatusCore), fulfillment.WithSoldOut(soldOutCommander)),
+	)
+	var refundProvider refund.Provider
+	var refundParser refund.NotificationParser
+	var refundNotifyURL string
+	if cfg.Environment == config.Production {
+		refundProvider, err = refund.NewWeChatProvider(productionPaymentRuntime.client, paymentConfig.MerchantID)
+		if err == nil {
+			refundParser, err = refund.NewWeChatNotificationParser(productionPaymentRuntime.client)
+		}
+		if err == nil {
+			refundNotifyURL, err = productionRefundNotifyURL(paymentConfig.PaymentNotifyURL)
+		}
+		if err != nil {
+			logger.Error("wechat refund provider configuration error")
+			return 1
+		}
+	} else {
+		provider := refund.NewFakeProvider(paymentConfig.MerchantID)
+		refundProvider, refundParser = provider, provider
+		refundNotifyURL = "http://127.0.0.1:8080/api/v1/refunds/wechat/notify"
+	}
+	refundService := refund.New(db, refundProvider, refundNotifyURL).WithNotificationEnqueuer(newRefundSubscriptionAdapter(notificationService))
+	registrars = append(registrars, newRefundRoutes(refund.NewHandler(sessionService, refundService, orderRepository, refundParser)))
+	if cfg.Environment != config.Production {
+		merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
+		merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
+		importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
+		adminOrderReader := adminreport.NewMySQLApplication(db, nil)
+		adminCommands := newAdminCommandAdapter(paymentApplication, refundService, adminOrderReader)
+		adminFeatureRoutes := []adminGroupRegistrar{
+			catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
+			storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
+			staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
+			importHandler,
+			adminreport.NewHandler(adminreport.NewMySQLApplication(db, adminCommands)),
+			audit.NewHandler(audit.NewMySQLSearcher(db)),
+		}
+		ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
+		registrars = append(registrars,
+			newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
+			localObjects,
+		)
+	}
+	orderProductionService := orderadvance.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -190,6 +237,8 @@ func run() int {
 	if paymentApplication != nil {
 		go runPaymentWorker(ctx, paymentApplication, logger)
 	}
+	go runRefundWorker(ctx, refundService, logger)
+	go runOrderProductionWorker(ctx, orderProductionService, logger)
 
 	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen); err != nil {
 		logger.Error("order-api stopped with error", "error", err)

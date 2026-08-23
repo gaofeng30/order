@@ -34,6 +34,10 @@ func TestComposeProductionWeChatPaymentUsesOfficialAdapterAndRuntimeFacts(t *tes
 	}
 	var _ paymentorder.PaymentProvider = provider
 	var _ paymentorder.NotificationParser = provider
+	runtime, err := composeProductionWeChatPayRuntime("wx-production-app", material)
+	if err != nil || runtime.client == nil || runtime.payment == nil || runtime.config != paymentConfig {
+		t.Fatalf("composeProductionWeChatPayRuntime() = %#v/%v", runtime, err)
+	}
 }
 
 func TestComposeProductionWeChatPaymentFailsClosedWithoutAppID(t *testing.T) {
