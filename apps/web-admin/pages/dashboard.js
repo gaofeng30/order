@@ -49,11 +49,9 @@
         { t: '菜品', render: r => `<span class="ellipsis" style="display:block">${T.esc(Api.itemsSummary(r.items))}</span>` },
         { t: '取餐', w: '92px', render: r => `<span class="tnum">${T.esc(r.pickupTime)}</span><br><span class="faint tnum" style="font-size:11.5px">${T.esc((r.pickupDate || '').slice(5))}</span>` },
         { t: '状态', w: '84px', render: r => T.pill(r.status) },
-        { t: '', w: '88px', cls: 'act', render: r => { const m = Api.advanceMeta(r.status); return `<button class="btn btn--sm ${m.cls}" data-act="adv" data-id="${r.id}">${m.label}</button>`; } },
       ], rows: live, empty: '当前没有进行中的订单',
     });
     T.bind(host, {
-      adv(id) { Api.advanceOrder(id).then(r => { render(el); window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' }); }).catch(e => window.Toast.show(e.message, { icon: 'warn' })); },
       row(id) { window.__orderSel = id; window.App.go('orders'); },
     });
   }

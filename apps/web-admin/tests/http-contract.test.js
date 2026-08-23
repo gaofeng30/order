@@ -89,6 +89,15 @@ test('PC12 adapters reference all frozen server fact groups', () => {
   ].forEach(endpoint => assert.match(source, new RegExp(endpoint.replaceAll('/', '\\/'))));
 });
 
+test('PC order management is query and refund only; fulfillment remains in merchant mini program', () => {
+  const api = fs.readFileSync(path.join(root, 'data/api.js'), 'utf8');
+  const orders = fs.readFileSync(path.join(root, 'pages/orders.js'), 'utf8');
+  const dashboard = fs.readFileSync(path.join(root, 'pages/dashboard.js'), 'utf8');
+  assert.doesNotMatch(api, /\/admin\/orders\/[^'"`]*\/advance|advanceOrder|advanceMeta/);
+  assert.doesNotMatch(orders + dashboard, /data-adv|data-act="adv"|打印小票|打印机对接/);
+  assert.match(orders, /发起退款/);
+});
+
 test('PC QR exchanges use intrinsic dedupe and never send client idempotency keys', async () => {
   const calls = [];
   const window = {

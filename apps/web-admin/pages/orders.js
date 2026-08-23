@@ -72,10 +72,6 @@
           } },
           { t: '取餐', w: '92px', render: r => `<span class="tnum">${r.pickupTime}</span><br><span class="faint tnum" style="font-size:11.5px">${r.pickupDate.slice(5)}</span>` },
           { t: '状态', w: '84px', render: r => T.pill(r.status) },
-          { t: '', w: '84px', cls: 'act', render: r => {
-            const m = Api.advanceMeta(r.status);
-            return m.isView ? '' : `<button class="btn btn--sm ${m.cls}" data-act="adv" data-id="${r.id}">${m.label}</button>`;
-          } },
         ],
         rows: list,
         empty: kw.trim() ? `没有匹配「${T.esc(kw.trim())}」的订单` : `「${lane}」暂无订单`,
@@ -84,12 +80,6 @@
       });
 
       T.bind(host, {
-        adv(id) {
-          Api.advanceOrder(id).then(r => {
-            window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' });
-            paint(el);
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        },
         row(id) { selId = id; paint(el); },
       });
 
@@ -140,8 +130,6 @@
     const rows = o.items.map(([, iname, q, p, dp, flavor, note]) => (
       { name: iname, q, p, dp, sub: dp * q, band: [flavor, note].filter(Boolean).join(' · ') }
     ));
-    const m = Api.advanceMeta(o.status);
-
     host.innerHTML =
       `<div class="dt-hero">
          <span class="ring r1"></span>
@@ -174,26 +162,13 @@
          </div>
        </div>
        <div class="dt-foot">
-         <button class="btn btn--line" data-print>${I.svg('printer', 16)}打印小票</button>
          <span class="grow"></span>
          ${Api.canRefund(o.status) ? `<button class="btn btn--line danger" data-refund>发起退款</button>` : ''}
-         ${m.isView ? `<span class="faint" style="font-size:12.5px">该订单${o.status}</span>`
-                    : `<button class="btn ${m.cls}" data-adv>${m.label}</button>`}
+         <span class="faint" style="font-size:12.5px">履约操作请使用商户小程序</span>
        </div>`;
-
-    const printBtn = host.querySelector('[data-print]');
-    printBtn.onclick = () => window.Toast.show('打印机对接为后期演进 · 一期不含', { icon: 'warn' });
 
     const refundBtn = host.querySelector('[data-refund]');
     if (refundBtn) refundBtn.onclick = () => openRefund(el, o);
-
-    const advBtn = host.querySelector('[data-adv]');
-    if (advBtn) advBtn.onclick = () => {
-      Api.advanceOrder(o.id).then(r => {
-        window.Toast.show(`已${r.act}「${r.code}」`, { icon: 'check' });
-        paint(el);
-      }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-    };
   }
 
   /* 退款确认层。三件事必须让主账号看见后再点：
@@ -240,5 +215,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['orders'] = { sub: '履约流转：已预约 → 制作中 → 待取餐 → 已完成', flush: true, render };
+  window.Pages['orders'] = { sub: '订单查询、未取餐筛选与全额退款', flush: true, render };
 })();

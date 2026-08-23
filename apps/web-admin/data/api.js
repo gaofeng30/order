@@ -7,8 +7,6 @@
   const MEAL_LABEL = { all: '全天', lunch: '午餐', dinner: '晚餐' };
   const ROLES = ['owner', 'staff'];
   const ROLE_LABEL = { owner: '主账号', staff: '子账号' };
-  const NEXT = { 制作中: '待取餐', 待取餐: '已完成' };
-  const ACT = { 已预约: '待开做', 制作中: '备好', 待取餐: '核销', 已完成: '查看', 退款中: '查看', 已退款: '查看' };
   const LANES = ['已预约', '制作中', '待取餐', '已完成', '退款中', '已退款', '全部'];
   const MAX_IMPORT_ROWS = 500;
   const MAX_STAFF_IMPORT_ROWS = 5000;
@@ -178,10 +176,8 @@
   function findOrder(id) { return state.orders.find(o => o.id === String(id)); }
   function findOrderByCode(code) { return state.orders.find(o => o.code === String(code)); }
   function codeHint() { return ''; }
-  async function advanceOrder(id) { const before = findOrder(id); const act = before ? ACT[before.status] : ''; const r = orderOf(await request('/admin/orders/' + encodeURIComponent(id) + '/advance', { method: 'PUT', body: {} })); await listOrders('全部'); return { act, code: r.code, next: r.status }; }
   async function refundOrder(id, reason) { return request('/admin/orders/' + encodeURIComponent(id) + '/refund', { method: 'POST', body: { reason: String(reason || '').trim() } }); }
   const canRefund = status => ['已预约', '制作中', '待取餐', '已完成'].includes(status);
-  function advanceMeta(status) { const view = !NEXT[status]; return { label: ACT[status] || '查看', isView: view, cls: view ? 'btn--ghost-blue' : (status === '待取餐' ? 'btn--blue' : 'btn--primary'), scan: status === '待取餐' }; }
 
   const PENDING_REASON_LABEL = { PRODUCT_UNAVAILABLE: '商品不可售', PICKUP_EXPIRED: '取餐时间已过', SNAPSHOT_INVALID: '数据校验不通过' };
   async function listPendingPayments() {
@@ -270,7 +266,7 @@
     listCategories, addCategory, setCategoryEnabled, deleteCategory, reorderCategories,
     listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
     uncollectedCount, searchOrders, codeHint, listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
-    listPayments, listRefunds, financeSummary, buildPaymentExport, advanceOrder, advanceMeta, statusTone, NEXT, ACT, LANES,
+    listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,
     getSettings, saveSettings, setStoreStatus, getLayer, saveLayer, clearLayer, imgUrl, MEALS, MEAL_LABEL,
     listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
     previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, MAX_IMPORT_ROWS, MAX_STAFF_IMPORT_ROWS,
