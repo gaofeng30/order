@@ -9,4 +9,5 @@ import (
 var (
 	_ func(time.Time, time.Time) (orderproduction.State, error)                           = orderproduction.InitialState
 	_ func(orderproduction.State, time.Time, time.Time) (orderproduction.Decision, error) = orderproduction.Advance
+	_ func(orderproduction.TransitionInput) (orderproduction.Decision, error)             = orderproduction.Transition
 )
