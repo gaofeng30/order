@@ -309,11 +309,17 @@ func TestAcceptanceUserBoundariesAreFailClosed(t *testing.T) {
 		t.Fatal("BE-26 redemption replay was not monotonic")
 	}
 
-	// The next service date starts again at 0001. Manual code redemption is
-	// still scoped to the real current business date and cannot touch it.
+	// The next service date starts again at 0001. Manual code redemption uses
+	// the real current business date, not this test's transaction clock, so the
+	// repeated 0001 resolves today's already-completed order monotonically and
+	// cannot touch tomorrow's order.
 	runtimeClock = boundaryAt(t, tomorrow, "04:00", shanghai)
 	tomorrowOrderID := boundaryMaterializeOrder(t, client, server.URL, unboundToken, "boundary-tomorrow-order", tomorrow, lunchProductID)
-	boundaryExpectError(t, acceptanceHTTP(t, client, http.MethodPost, server.URL+"/api/v1/verify/code", ownerToken, "boundary-cross-date-code", map[string]any{"pickup_number": "0001"}, http.StatusConflict), "TRANSITION_NOT_ALLOWED")
+	crossDate := acceptanceHTTP(t, client, http.MethodPost, server.URL+"/api/v1/verify/code", ownerToken, "boundary-cross-date-code", map[string]any{"pickup_number": "0001"}, http.StatusOK)
+	crossDateOrder := acceptanceObject(t, crossDate, "order")
+	if acceptanceString(t, crossDateOrder, "id") != todayOrderID || acceptanceString(t, crossDateOrder, "state") != "COMPLETED" {
+		t.Fatalf("BE-26 real-date code replay touched the wrong order: %#v", crossDateOrder)
+	}
 	tomorrowOrder := acceptanceHTTP(t, client, http.MethodGet, server.URL+"/api/v1/orders/"+tomorrowOrderID, unboundToken, "", nil, http.StatusOK)
 	boundaryAssertOrderNoToken(t, tomorrowOrder, "RESERVED", "BE-26 cross-date")
 
