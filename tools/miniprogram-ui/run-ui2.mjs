@@ -126,12 +126,15 @@ try {
   if (entryRoute !== 'pages/launch/launch') throw new Error(`configured first route was ${entryRoute || 'missing'}`);
   let page = await miniProgram.reLaunch(`/${entryRoute}`);
   if (!page) throw new Error('launch page did not launch');
-  await page.waitFor(500);
-  const userEntry = requireElement(await page.$('.id-card.primary'), 'launch user entry');
-  await userEntry.tap();
-  await page.waitFor(500);
-  page = await miniProgram.currentPage();
-  if (!page || page.path !== 'pages/home/home') throw new Error('launch user entry did not navigate to the home page');
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await page.waitFor(100);
+    const current = await miniProgram.currentPage();
+    if (current && current.path === 'pages/home/home') {
+      page = current;
+      break;
+    }
+  }
+  if (!page || page.path !== 'pages/home/home') throw new Error('unbound cold start did not route directly to the home page');
   const greeting = requireElement(await page.$('.greet'), 'home greeting');
   requireIncludes(await greeting.text(), '你好，欢迎光临', 'home greeting');
   const phonePrompt = await page.$('button[open-type="getPhoneNumber"]');

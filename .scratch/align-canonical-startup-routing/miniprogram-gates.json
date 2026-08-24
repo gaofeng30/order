@@ -47,6 +47,11 @@
       "first_error": "merchant.bound=true with a blank role produced entryRouting merchant instead of error",
       "correction": "the shared identity parser accepts bound merchants only with the exact OWNER or SUBACCOUNT role"
     },
+    "ui2_runner_review": {
+      "status": "STATIC_RED_CORRECTED",
+      "first_error": "run-ui2 still searched for and tapped the removed unbound launch user card",
+      "correction": "WeChat DevTools now waits for the canonical server-routed home page before asserting anonymous browse and zero phone authorization"
+    },
     "refactor": {
       "production_change": "only cold-start entry routing and the profile-owned first merchant binding handoff",
       "evidence_change": "PAGE-U01 matrix, exact browser selectors and acceptance manifest only",
