@@ -5,6 +5,7 @@ const menuTemplate = require('../../../../apps/wechat-miniprogram/pages/menu/men
 const profileTemplate = require('../../../../apps/wechat-miniprogram/pages/profile/profile.wxml');
 const customizeTemplate = require('../../../../apps/wechat-miniprogram/components/customize/customize.wxml');
 const iconTemplate = require('../../../../apps/wechat-miniprogram/components/icon/icon.wxml');
+const imagephTemplate = require('../../../../apps/wechat-miniprogram/components/imageph/imageph.wxml');
 const moneyTemplate = require('../../../../apps/wechat-miniprogram/components/money/money.wxml');
 const navbarTemplate = require('../../../../apps/wechat-miniprogram/components/navbar/navbar.wxml');
 const pillTemplate = require('../../../../apps/wechat-miniprogram/components/pill/pill.wxml');
@@ -89,6 +90,8 @@ globalThis.wx = {
 
 require('../../../../apps/wechat-miniprogram/components/icon/icon.js');
 const iconDefinition = componentDefinition;
+require('../../../../apps/wechat-miniprogram/components/imageph/imageph.js');
+const imagephDefinition = componentDefinition;
 require('../../../../apps/wechat-miniprogram/components/money/money.js');
 const moneyDefinition = componentDefinition;
 require('../../../../apps/wechat-miniprogram/components/navbar/navbar.js');
@@ -341,11 +344,12 @@ function globalComponents(suffix, includeMenu = false) {
     pill: registerComponent({ definition: pillDefinition, template: pillTemplate, id: `pill-${suffix}`, tagName: 'pill' }),
   };
   if (includeMenu) {
+    components.imageph = registerComponent({ definition: imagephDefinition, template: imagephTemplate, id: `imageph-${suffix}`, tagName: 'imageph' });
     components.money = registerComponent({ definition: moneyDefinition, template: moneyTemplate, id: `money-${suffix}`, tagName: 'money' });
     components.stepper = registerComponent({ definition: stepperDefinition, template: stepperTemplate, id: `stepper-${suffix}`, tagName: 'stepper' });
     components.customize = registerComponent({
       definition: customizeDefinition, template: customizeTemplate, id: `customize-${suffix}`, tagName: 'customize',
-      usingComponents: { icon, money: components.money, stepper: components.stepper },
+      usingComponents: { icon, imageph: components.imageph, money: components.money, stepper: components.stepper },
     });
   }
   return components;
