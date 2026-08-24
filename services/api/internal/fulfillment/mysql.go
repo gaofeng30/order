@@ -183,6 +183,24 @@ func (application *MySQLApplication) executeOnce(
 	if now.IsZero() {
 		return Result{}, ErrUnavailable
 	}
+	if (command.Kind == CommandRedeemToken || command.Kind == CommandRedeemCurrentDateCode) && validCompletedOrder(order, now) {
+		role, ok := receiptRole(authorization.Actor)
+		if !ok {
+			return Result{}, ErrUnavailable
+		}
+		response := receiptResponse{OrderID: order.id, State: orderquery.StateCompleted, Changed: true}
+		if err := application.receipts.AppendInTx(ctx, transaction, audit.CommandMeta{
+			ActorUserID: meta.ActorUserID, ActorAccountID: authorization.MerchantAccountID,
+			ActorRole: role, ActorAuthVersion: authorization.AuthVersion,
+			IdempotencyKey: meta.IdempotencyKey, RequestID: meta.RequestID,
+		}, action, "ORDER", command.OrderID, request, response); err != nil {
+			return Result{}, err
+		}
+		if err := transaction.Commit(); err != nil {
+			return Result{}, err
+		}
+		return Result{OrderID: response.OrderID, State: response.State, Changed: response.Changed, Replay: true}, nil
+	}
 	var tokenHash [sha256.Size]byte
 	var keyVersion uint16
 	var ciphertext []byte
@@ -451,6 +469,14 @@ func validReadyOrder(order lockedOrder, now time.Time) bool {
 		len(order.redemptionHash) == sha256.Size && len(order.ciphertext) > 0 && len(order.ciphertext) <= 192 &&
 		order.keyVersion.Valid && order.keyVersion.Int64 > 0 && order.keyVersion.Int64 <= 65535 && order.issuedAt.Valid &&
 		!order.issuedAt.Time.Before(order.readyAt.Time) && !order.issuedAt.Time.After(now) && !order.redeemedBy.Valid && !order.redeemedAt.Valid
+}
+
+func validCompletedOrder(order lockedOrder, now time.Time) bool {
+	return order.state == orderquery.StateCompleted && order.preparingAt.Valid && order.readyAt.Valid && order.completedAt.Valid &&
+		!order.readyAt.Time.Before(order.preparingAt.Time) && !order.completedAt.Time.Before(order.readyAt.Time) && !order.completedAt.Time.After(now) &&
+		len(order.redemptionHash) == sha256.Size && len(order.ciphertext) == 0 && !order.keyVersion.Valid && order.issuedAt.Valid &&
+		!order.issuedAt.Time.Before(order.readyAt.Time) && !order.issuedAt.Time.After(order.completedAt.Time) &&
+		order.redeemedBy.Valid && order.redeemedBy.Int64 > 0 && order.redeemedAt.Valid && order.redeemedAt.Time.Equal(order.completedAt.Time)
 }
 
 func (application *MySQLApplication) validateCurrentRedemption(ctx context.Context, order lockedOrder, now time.Time) error {

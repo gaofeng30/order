@@ -15,6 +15,10 @@ const DETAIL = Object.assign({}, ORDER, {
   transaction_id: 'tx', paid_at: '2026-08-25T08:00:00Z', redemption_token: null,
   transition_times: {}, notification_options: [], order_note: '',
 });
+const STOREFRONT = { statusCode: 200, data: { storefront: {
+  name: '绥安食品', address: '党政办公中心后院老食堂', pickup_point: '北门', announcement: '',
+  business_status: 'open', flavors: [],
+} } };
 function readyHarness(requests, native) {
   const harness = createHarness(Object.assign({ logins: [{ code: 'code' }], requests: [SESSION].concat(requests || []) }, native || {}));
   harness.loadApp();
@@ -24,7 +28,9 @@ function readyHarness(requests, native) {
 test('PAGE-M02 has exactly five lanes, server search and server store-status write', async () => {
   const harness = readyHarness([
     { statusCode: 200, data: { orders: [ORDER] } },
+    STOREFRONT,
     { statusCode: 200, data: { orders: [ORDER] } },
+    STOREFRONT,
     { statusCode: 200, data: { store_status: 'closed' } },
   ]);
   await harness.flush();
@@ -33,9 +39,9 @@ test('PAGE-M02 has exactly five lanes, server search and server store-status wri
   assert.deepEqual(page.data.lanes, ['已预约', '制作中', '待取餐', '已完成', '已退款']);
   assert.equal(harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/merchant/orders?state=RESERVED&limit=20');
   await page.onKw({ detail: { value: '0013' } });
-  assert.equal(harness.requestCalls[2].url, 'http://127.0.0.1:8080/api/v1/merchant/orders?q=0013&limit=20');
+  assert.equal(harness.requestCalls[3].url, 'http://127.0.0.1:8080/api/v1/merchant/orders?q=0013&limit=20');
   assert.equal(await page.setBiz({ currentTarget: { dataset: { b: 'closed' } } }), true);
-  assert.deepEqual(harness.requestCalls[3].data, { status: 'closed' });
+  assert.deepEqual(harness.requestCalls[5].data, { status: 'closed' });
   assert.equal(page.data.storeStatus, 'closed');
 });
 

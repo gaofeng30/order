@@ -24,8 +24,7 @@
 .pa-soldout { font-size: 25rpx; color: var(--gold-2); font-weight: 600; }
 .pa-soldout.green { color: var(--green-600); }
 .pa-edit { font-size: 25rpx; color: var(--ink-2); }
-.pa-shelf { margin-left: auto; display: flex; align-items: center; gap: 14rpx; }
-.pa-shelf-lbl { font-size: 23rpx; color: var(--ink-3); }
+.sale-error { padding-top: 0; padding-bottom: 8rpx; color: #9a493e; font-size: 23rpx; }
 
 /* 软开关 (蓝) */
 .toggle { width: 88rpx; height: 52rpx; border-radius: 999rpx; background: #d8d8cd; position: relative; transition: .18s; }

@@ -130,10 +130,24 @@ func TestFulfillmentMySQLVerticalSlice(t *testing.T) {
 		if replay, err := application.Execute(context.Background(), scanMeta, Command{Kind: CommandRedeemToken, Token: userDetail.RedemptionToken}); err != nil || !replay.Replay || replay.OrderID != 401 {
 			t.Fatalf("completed token replay = %#v, %v", replay, err)
 		}
+		freshScanMeta := WriteMeta{ActorUserID: 2, IdempotencyKey: "scan-401-new-key", RequestID: "request-scan-401-new-key"}
+		if replay, err := application.Execute(context.Background(), freshScanMeta, Command{Kind: CommandRedeemToken, Token: userDetail.RedemptionToken}); err != nil || !replay.Replay || replay.OrderID != 401 || replay.State != orderquery.StateCompleted {
+			t.Fatalf("completed token replay with fresh key = %#v, %v", replay, err)
+		}
+		if _, err := application.Execute(context.Background(), freshScanMeta, Command{Kind: CommandRedeemToken, Token: strings.Repeat("x", 43)}); !errors.Is(err, ErrIdempotencyConflict) {
+			t.Fatalf("fresh token key reused for different digest error = %v, want conflict", err)
+		}
 		codeMeta := WriteMeta{ActorUserID: 2, IdempotencyKey: "code-402", RequestID: "request-code-402"}
 		codeRedeemed, err := application.Execute(context.Background(), codeMeta, Command{Kind: CommandRedeemCurrentDateCode, PickupNumber: "0014"})
 		if err != nil || codeRedeemed.OrderID != 402 || codeRedeemed.State != orderquery.StateCompleted {
 			t.Fatalf("manual redeem = %#v, %v", codeRedeemed, err)
+		}
+		freshCodeMeta := WriteMeta{ActorUserID: 2, IdempotencyKey: "code-402-new-key", RequestID: "request-code-402-new-key"}
+		if replay, err := application.Execute(context.Background(), freshCodeMeta, Command{Kind: CommandRedeemCurrentDateCode, PickupNumber: "0014"}); err != nil || !replay.Replay || replay.OrderID != 402 || replay.State != orderquery.StateCompleted {
+			t.Fatalf("completed code replay with fresh key = %#v, %v", replay, err)
+		}
+		if _, err := application.Execute(context.Background(), freshCodeMeta, Command{Kind: CommandRedeemCurrentDateCode, PickupNumber: "0015"}); !errors.Is(err, ErrIdempotencyConflict) {
+			t.Fatalf("fresh code key reused for different digest error = %v, want conflict", err)
 		}
 
 		now = now.Add(24 * time.Hour)
@@ -154,7 +168,7 @@ func TestFulfillmentMySQLVerticalSlice(t *testing.T) {
 		if err := db.QueryRowContext(context.Background(), `SELECT COUNT(redemption_token_ciphertext),COUNT(redemption_token_hash) FROM orders WHERE id IN (401,402,403)`).Scan(&cipherRows, &hashRows); err != nil {
 			t.Fatal(err)
 		}
-		if receipts != 6 || cipherRows != 0 || hashRows != 3 {
+		if receipts != 8 || cipherRows != 0 || hashRows != 3 {
 			t.Fatalf("durable fulfillment facts receipts=%d ciphertext=%d hash=%d", receipts, cipherRows, hashRows)
 		}
 	})

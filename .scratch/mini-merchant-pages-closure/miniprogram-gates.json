@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "change": "mini-merchant-pages-closure",
+  "base_sha": "00cf26f0815ed58979b228806f1f99519b6c40bf",
+  "branch": "codex/close-mini-merchant-pages",
+  "candidate_sha": "pending-post-commit-binding",
+  "gate_type": "UI1_COMPOSED",
+  "ui_level_target": "UI3_FOR_CAMERA_ONLY",
+  "ui_level_actual": "L3_LOCAL_COMPOSED",
+  "status": "LOCAL_L3_PASS_EXACT_CANDIDATE_RERUN_PENDING",
+  "pages": ["PAGE-M02", "PAGE-M03", "PAGE-M04", "PAGE-M05"],
+  "seams": [
+    "production WXML and page scripts rendered by miniprogram-simulate in locked Chrome 151",
+    "fresh v1-v44 MySQL schema bootstrapped by order-bootstrap",
+    "private root order-api with deterministic local WeChat, payment, refund, and subscription providers",
+    "authenticated root HTTP setup and page mutations; MySQL read-only evidence after the browser flow"
+  ],
+  "tdd": {
+    "red": {
+      "ui0": "0/5: store status was not server-read, failed status/READY writes were invisible, closed/cutoff product management failed, and the page rendered an out-of-scope shelf control",
+      "mysql": "same QR/token under a fresh Idempotency-Key returned TRANSITION_NOT_ALLOWED instead of the first durable COMPLETED result"
+    },
+    "green": {
+      "ui0": "9/9 focused merchant tests PASS",
+      "fulfillment": "fresh-key same-token and same-current-day-code replay COMPLETED; same key with a different digest remains conflict",
+      "ui1": "Chrome 151 PAGE-M02..M05 4/4 PASS; 86 root requests; five order states and today-only sold-out fact read from fresh MySQL"
+    },
+    "refactor": {
+      "scope": "three merchant pages, focused tests/runner, and fulfillment replay semantic only",
+      "overdesign": "no table, migration, cache, dependency, package script, inventory, shelf, or client-side business truth added",
+      "fail_closed": "write errors stay visible and never project local success; invalid/refunded redemption stays error"
+    }
+  },
+  "page_evidence": {
+    "PAGE-M02": "five server lanes, cross-lane order-number search, server store status close, identity reset",
+    "PAGE-M03": "PREPARING detail to server-confirmed READY_FOR_PICKUP; encrypted-token/outbox/audit supplied by the same fulfillment transaction",
+    "PAGE-M04": "scan, fresh-key replay, current-day four-digit manual redeem, refunded token and invalid code rejection",
+    "PAGE-M05": "closed-store lunch/dinner product merge and today-only sold-out with tomorrow isolation"
+  },
+  "supporting_limits": {
+    "cross_date_direct_redeem": "fresh-MySQL fulfillment test supplies cross-date direct-order semantics; the rendered page supplies READY direct-redeem action",
+    "notification_delivery_failure": "provider failure occurs in the post-commit worker seam and is covered by subscription tests; the L3 local provider succeeds",
+    "camera": "rendered wx.scanCode seam validates page-to-root HTTP; real camera remains UI3 external"
+  },
+  "blocked_external": {
+    "ui3": "real camera scan requires logged-in WeChat Developer Tools or a physical device"
+  },
+  "forbidden_actions_not_taken": ["npm install", "second Docker container", "raw SQL business write", "push", "PR", "preview", "upload", "deploy", "real funds"]
+}

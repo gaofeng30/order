@@ -13,6 +13,7 @@
       bindtap="setBiz"
     >{{item.label}}</view>
   </view>
+  <view wx:if="{{statusWriteState === 'error'}}" class="pad biz-error">营业状态保存失败，请稍后重试</view>
 
   <!-- 搜索：取餐号 / 订单号 / 手机号，跨泳道（§6.6） -->
   <view class="pad search-wrap">

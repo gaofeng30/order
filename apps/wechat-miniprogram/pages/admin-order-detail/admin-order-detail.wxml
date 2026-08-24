@@ -48,6 +48,7 @@
   </scroll-view>
 
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+    <view wx:if="{{actionState === 'error'}}" class="action-error">操作失败，请确认订单状态后重试</view>
     <view wx:if="{{meta.isView}}" class="btn btn--mute foot-main">{{o.status}}</view>
     <view wx:else class="btn btn--primary foot-main" bindtap="advance">{{meta.label}}</view>
   </view>

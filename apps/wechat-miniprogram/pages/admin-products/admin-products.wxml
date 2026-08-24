@@ -6,6 +6,7 @@
       <icon name="search" size="16" color="#8f9384" /><input class="search-in" placeholder="搜索菜品名称" value="{{search}}" bindinput="onSearch" />
     </view>
   </view>
+  <view wx:if="{{actionState === 'error'}}" class="pad sale-error">售罄状态保存失败，请稍后重试</view>
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
     <view wx:for="{{list}}" wx:key="id" class="card prod {{item.s === 'off' ? 'off' : ''}}">
@@ -24,9 +25,6 @@
         </view>
         <view class="prod-actions">
           <text class="pa-soldout {{item.soldOut ? 'green' : ''}}" data-id="{{item.id}}" catchtap="toggleSoldout">{{item.soldoutLabel}}</text>
-          <view class="pa-shelf">
-            <text class="pa-shelf-lbl">上架</text>
-          </view>
         </view>
       </view>
     </view>

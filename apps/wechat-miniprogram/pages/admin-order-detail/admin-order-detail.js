@@ -3,7 +3,7 @@ const merchantStore = require('../../utils/merchantStore.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: { detailState: 'loading', o: null, rows: [], meta: {}, flavorShow: false, flavorText: '' },
+  data: { detailState: 'loading', actionState: 'idle', o: null, rows: [], meta: {}, flavorShow: false, flavorText: '' },
   async onLoad(opts) { this._id = String(opts.id || ''); return this.load(); },
   onShow() { if (this._id && this.data.detailState !== 'loading') return this.load(); },
   async load() {
@@ -23,8 +23,9 @@ Page({
   },
   async markReady() {
     if (!this.data.o || this.data.o.state !== 'PREPARING' || !this.data.o.available_actions.includes('READY')) return false;
-    try { this.build(await merchantStore.markReady(this.data.o.id, api.newIdempotencyKey('ready'))); return true; }
-    catch (error) { return false; }
+    this.setData({ actionState: 'loading' });
+    try { this.build(await merchantStore.markReady(this.data.o.id, api.newIdempotencyKey('ready'))); this.setData({ actionState: 'ready' }); return true; }
+    catch (error) { this.setData({ actionState: 'error' }); return false; }
   },
   advance() {
     if (this.data.o && this.data.o.available_actions.includes('READY')) return this.markReady();
@@ -33,7 +34,8 @@ Page({
   },
   async redeem() {
     if (!this.data.o || !this.data.o.available_actions.includes('REDEEM')) return false;
-    try { this.build(await merchantStore.redeem(this.data.o.id, api.newIdempotencyKey('redeem'))); return true; }
-    catch (error) { return false; }
+    this.setData({ actionState: 'loading' });
+    try { this.build(await merchantStore.redeem(this.data.o.id, api.newIdempotencyKey('redeem'))); this.setData({ actionState: 'ready' }); return true; }
+    catch (error) { this.setData({ actionState: 'error' }); return false; }
   },
 });

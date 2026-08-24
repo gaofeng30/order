@@ -4,21 +4,28 @@ const menuStore = require('../../utils/reservationMenuStore.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: { listState: 'loading', list: [], search: '' },
+  data: { listState: 'loading', actionState: 'idle', list: [], search: '' },
   onShow() { return this.load(); },
   async load() {
     this.setData({ listState: 'loading', list: [] });
     try {
       const options = await menuStore.loadPickupOptions();
       const day = options.dates[0];
-      const meal = day && day.mealPeriods.find(item => item.available && item.pickupTimes.length);
-      if (!day || !meal) throw new Error('no merchant product selection');
+      const meals = day && day.mealPeriods.filter(item => item.pickupTimes.length);
+      if (!day || !meals || !meals.length) throw new Error('no merchant product selection');
       this._serviceDate = day.date;
-      const menu = await menuStore.loadMenu({ date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] });
-      this._all = menu.categories.flatMap(category => category.products.map(product => Object.assign({}, product, {
+      const menus = await Promise.all(meals.map(meal => menuStore.loadMenu({
+        date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0],
+      })));
+      const products = new Map();
+      for (const menu of menus) for (const category of menu.categories) for (const product of category.products) {
+        if (products.has(product.id)) continue;
+        products.set(product.id, Object.assign({}, product, {
         cat: category.name, price: product.price_text, soldoutLabel: product.soldOut ? '恢复售卖' : '标记售罄',
         pillLabel: product.soldOut ? '售罄' : '可售', pillTone: product.soldOut ? 'mute' : 'ok',
-      })));
+        }));
+      }
+      this._all = [...products.values()];
       this.applySearch();
       return true;
     } catch (error) { this._all = []; this.setData({ listState: 'error', list: [] }); return false; }
@@ -33,6 +40,7 @@ Page({
     const id = e.currentTarget.dataset.id;
     const product = this._all.find(item => item.id === id);
     if (!product || !this._serviceDate) return false;
+    this.setData({ actionState: 'loading' });
     try {
       const result = await merchantStore.setSoldOut(id, this._serviceDate, !product.soldOut, api.newIdempotencyKey('soldout'));
       product.soldOut = result.sold_out;
@@ -40,7 +48,8 @@ Page({
       product.pillLabel = product.soldOut ? '售罄' : '可售';
       product.pillTone = product.soldOut ? 'mute' : 'ok';
       this.applySearch();
+      this.setData({ actionState: 'ready' });
       return true;
-    } catch (error) { return false; }
+    } catch (error) { this.setData({ actionState: 'error' }); return false; }
   },
 });
