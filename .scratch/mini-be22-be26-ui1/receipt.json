@@ -1,0 +1,510 @@
+{
+  "schema": "order.mini-be22-be26.ui1.v1",
+  "candidate_sha": "3805d9abe5256006a02cc3858220b01de939c7fc",
+  "generated_at": "2026-08-24T00:19:27.897Z",
+  "browser": "Google Chrome for Testing 151.0.7922.34",
+  "evidence_level": "L3_LOCAL_COMPOSED",
+  "cases": [
+    "BE-22",
+    "BE-26"
+  ],
+  "status": "PASS",
+  "database": {
+    "kind": "fresh_ephemeral_mysql8_schema",
+    "name": "order_be22_be26_f02056432943464d",
+    "facts": {
+      "users": 1,
+      "orders": 5,
+      "quotes": 5,
+      "bound_users": 1,
+      "prepayments": 5,
+      "redemptions": 1,
+      "ready_orders": 0,
+      "schema_version": 44,
+      "completed_orders": 1
+    }
+  },
+  "bootstrap": {
+    "classification": "BOOTSTRAP_ROOT_OF_TRUST_FIXTURE",
+    "evidence": false,
+    "rows": [
+      "merchant_accounts OWNER singleton",
+      "storefront_settings singleton",
+      "discount_settings singleton"
+    ],
+    "todo_code": "P0: fresh production schema has no first-owner/storefront bootstrap path; do not mistake this fixture for deploy readiness"
+  },
+  "requests": [
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/auth/miniprogram/session",
+      "status": 201,
+      "request_id": "dkwqrtmxpizk-2"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtn3ii4w-3"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtndiis8-4"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtpe3ets-5"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/bind-phone",
+      "status": 200,
+      "request_id": "dkwqrtpguml4-6"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtpkcjrk-7"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/admin/auth/qrcode",
+      "status": 201,
+      "request_id": "dkwqrtplxeu0-8"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/me/admin-login/approve",
+      "status": 200,
+      "request_id": "dkwqrtpnstj4-9"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/admin/auth/poll",
+      "status": 200,
+      "request_id": "dkwqrtpuacxs-a"
+    },
+    {
+      "phase": "browser",
+      "method": "PUT",
+      "path": "/api/v1/admin/settings",
+      "status": 200,
+      "request_id": "dkwqrtpw0ruo-b"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/admin/categories",
+      "status": 201,
+      "request_id": "dkwqrtq1inb4-c"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/admin/products",
+      "status": 201,
+      "request_id": "dkwqrtq3vkeo-d"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwqrtq8y5pk-e"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-24&time=08%3A34",
+      "status": 200,
+      "request_id": "dkwqrtqay0wg-f"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtr11zmw-g"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwqrtrg0hfs-h"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwqrtrmu1ps-i"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwqrtrxwsnk-j"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/1",
+      "status": 200,
+      "request_id": "dkwqrtsafub4-k"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/storefront/settings",
+      "status": 200,
+      "request_id": "dkwqrtsdp7m8-l"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 200,
+      "request_id": "dkwqrtsdwyxs-m"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/1",
+      "status": 200,
+      "request_id": "dkwqrtt4j5jc-n"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/code",
+      "status": 409,
+      "request_id": "dkwqrttxi5dk-o"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/code",
+      "status": 404,
+      "request_id": "dkwqrtubjklc-p"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwqrtuk02s8-q"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-24&time=08%3A34",
+      "status": 200,
+      "request_id": "dkwqrtumam8g-r"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrtvk3l6w-s"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwqrtvyf98g-t"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwqrtw4st4g-u"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwqrtwd56e8-v"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/2",
+      "status": 200,
+      "request_id": "dkwqrtwv4nt4-w"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/merchant/orders/2",
+      "status": 200,
+      "request_id": "dkwqrtwxonjc-x"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/merchant/orders/2/ready",
+      "status": 200,
+      "request_id": "dkwqrtx4gbww-y"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwqrtxcens8-z"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=08%3A34",
+      "status": 200,
+      "request_id": "dkwqrtxdycew-10"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqrty50imo-11"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwqrtyiwrw0-12"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwqrtyozoag-13"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwqrtywwdio-14"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/3",
+      "status": 200,
+      "request_id": "dkwqrtz85czs-15"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwqrtzarh40-16"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=08%3A34",
+      "status": 200,
+      "request_id": "dkwqrtzc8fqw-17"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqru04ti1k-18"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwqru0in1b4-19"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwqru0oigf4-1a"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwqru0w4msg-1b"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/4",
+      "status": 200,
+      "request_id": "dkwqru17yg9k-1c"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu/pickup-options",
+      "status": 200,
+      "request_id": "dkwqru1ak81c-1d"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/menu?date=2026-08-25&time=08%3A34",
+      "status": 200,
+      "request_id": "dkwqru1c4yh4-1e"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/me/primary-phone",
+      "status": 200,
+      "request_id": "dkwqru220lts-1f"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/quotes",
+      "status": 201,
+      "request_id": "dkwqru2fyj9s-1g"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/prepay",
+      "status": 201,
+      "request_id": "dkwqru2ligsw-1h"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/orders/confirm",
+      "status": 200,
+      "request_id": "dkwqru2tfkow-1i"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/5",
+      "status": 200,
+      "request_id": "dkwqru35mrnc-1j"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/code",
+      "status": 404,
+      "request_id": "dkwqru3eflig-1k"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/storefront/settings",
+      "status": 200,
+      "request_id": "dkwqru3lprs8-1l"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 200,
+      "request_id": "dkwqru3lshs0-1m"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/2",
+      "status": 200,
+      "request_id": "dkwqru462lq8-1n"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/scan",
+      "status": 401,
+      "request_id": "dkwqru4diud4-1o"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/scan",
+      "status": 503,
+      "deterministic_transport_failure": true
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/2",
+      "status": 200,
+      "request_id": "dkwqru4rbmmg-1p"
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/scan",
+      "status": 200,
+      "request_id": "dkwqru5cnz48-1q",
+      "network_attempt": 1
+    },
+    {
+      "phase": "browser",
+      "method": "POST",
+      "path": "/api/v1/verify/scan",
+      "status": 200,
+      "request_id": "dkwqru5id128-1r",
+      "network_attempt": 2
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders/2",
+      "status": 200,
+      "request_id": "dkwqru5qai2g-1s"
+    },
+    {
+      "phase": "browser",
+      "method": "GET",
+      "path": "/api/v1/orders?active=true",
+      "status": 200,
+      "request_id": "dkwqru5we3xk-1t"
+    }
+  ],
+  "cleanup": [
+    {
+      "target": "private proxy",
+      "ok": true
+    },
+    {
+      "target": "private API",
+      "ok": true
+    },
+    {
+      "target": "ephemeral schema order_be22_be26_f02056432943464d",
+      "ok": true
+    }
+  ]
+}

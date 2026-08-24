@@ -26,6 +26,7 @@
 
 .manual { padding-top: 8rpx; }
 .manual-tip { font-size: 24rpx; color: rgba(255, 255, 255, .5); margin-bottom: 18rpx; }
+.verify-error { margin-bottom: 18rpx; color: #f4c3be; font-size: 24rpx; line-height: 1.5; }
 .manual-row { display: flex; gap: 20rpx; }
 .manual-in {
   flex: 1; height: 96rpx; border-radius: 28rpx; border: 1rpx solid rgba(255, 255, 255, .18);

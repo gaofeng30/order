@@ -18,6 +18,7 @@
     <!-- 手动兜底 -->
     <view class="manual" style="padding-bottom:{{safeBottom + 24}}px">
       <view class="manual-tip">无法扫码？手动输入取餐号</view>
+      <view wx:if="{{lookupState === 'error'}}" class="verify-error">核销失败，请核对取餐码、日期与订单状态后重试</view>
       <view class="manual-row">
         <input class="manual-in" placeholder="如 0118" placeholder-class="manual-ph" value="{{code}}" bindinput="onCode" confirm-type="done" bindconfirm="manual" />
         <view class="btn btn--primary manual-btn" bindtap="manual">核销</view>

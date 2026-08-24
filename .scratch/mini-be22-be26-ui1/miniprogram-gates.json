@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "change": "mini-be22-be26-exact-composed-ui1",
+  "base_sha": "3805d9abe5256006a02cc3858220b01de939c7fc",
+  "branch": "codex/mini-be22-be26-l3",
+  "gate_type": "UI1_COMPOSED_FRESH_MYSQL",
+  "ui_level_target": "UI2",
+  "ui_level_actual": "UI1",
+  "candidate_sha": "pending-post-commit-binding",
+  "status": "LOCAL_READY_UI1_PASS_UI2_UI3_BLOCKED_EXTERNAL",
+  "cases": ["BE-22", "BE-26"],
+  "seams": [
+    "rendered Mini Program WXML controls in locked Chrome 151",
+    "fresh v1-v44 ephemeral schema in the one order-mysql-w3 container",
+    "private exact-worktree root-composed API on a random loopback port",
+    "deterministic local WeChat/payment providers",
+    "real customer and merchant HTTP controls; no projected phone/order responses"
+  ],
+  "tdd": {
+    "red": {
+      "gate": "0/1: BE-22/BE-26 composed runner and spec absent",
+      "merchant_failure_feedback": "real PREPARING /verify/code returned 409 and no redemption, but admin-verify rendered no error feedback"
+    },
+    "green": {
+      "static_contract": "1/1 PASS",
+      "full_node_wxml": "98/98 PASS",
+      "chrome151": "1/1 PASS; 65 root HTTP requests",
+      "mysql": "v44; users/bound=1/1, quotes=5, prepayments=5, orders=5, redemptions=1, completed=1",
+      "cleanup": "private proxy/API/ephemeral schema all true"
+    },
+    "refactor": {
+      "status": "PASS",
+      "scope": "one visible merchant verification error line only; no client or backend state machine change",
+      "overdesign": "no new API, table, provider, dependency, package script, Docker container, or business model"
+    }
+  },
+  "case_evidence": {
+    "BE-22": "fresh persisted unbound session; two rejected native events make zero bind/quote/prepay/navigation and preserve the rendered cart; a later accepted event binds through real HTTP and returns to the same checkout",
+    "BE-26": "real PREPARING order has no token/take-code navigation; wrong, non-READY, cross-date, 401 and deterministic 503 redemption attempts render no success; READY exposes only the server token; exact same-request network replay returns COMPLETED once and the terminal user detail hides the token"
+  },
+  "bootstrap": {
+    "classification": "BOOTSTRAP_ROOT_OF_TRUST_FIXTURE",
+    "evidence": false,
+    "rows": ["one OWNER", "storefront_settings singleton", "discount_settings singleton"],
+    "constraint": "all later phone binding, PC QR approval, settings, catalog, Quote, Prepay, Order, fulfillment and redemption writes use public HTTP"
+  },
+  "todo_code": [
+    "P0: fresh production schema has no first-owner/storefront singleton bootstrap path; the local fixture must not be mistaken for deploy readiness"
+  ],
+  "receipt": ".scratch/mini-be22-be26-ui1/receipt.json",
+  "blocked_external": {
+    "ui2": "real WeChat Developer Tools login and native phone UI remain external",
+    "ui3": ["real getPhoneNumber", "physical-device camera", "real payment and funds"]
+  },
+  "forbidden_actions_not_taken": ["npm install", "second Docker container", "8080 access", "push", "PR", "preview", "upload", "deploy", "real funds"]
+}
