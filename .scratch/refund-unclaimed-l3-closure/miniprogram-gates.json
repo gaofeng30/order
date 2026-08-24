@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "change": "refund-unclaimed-l3-closure",
+  "base_sha": "c5ab765b82f6869e6fb2176b2adb812a81b925d3",
+  "branch": "codex/refund-unclaimed-l3-closure",
+  "gate_type": "UI1_COMPOSED_FRESH_MYSQL",
+  "ui_level_target": "UI2_UI3_L4",
+  "ui_level_actual": "L3_LOCAL_COMPOSED",
+  "candidate_sha": "pending-post-commit-binding",
+  "status": "WRITER_GATE_PASS_PRECOMMIT_EXACT_SHA_RERUN_PENDING",
+  "cases": ["AC-14", "BE-14", "BE-19", "INV-10"],
+  "seams": [
+    "rendered user and Merchant Mini Program WXML in locked Chrome 151",
+    "rendered real PC Admin pages in locked Chrome 151",
+    "private root-composed HTTP from a test-only Go server",
+    "one random fresh-v44 schema in order-mysql-w3",
+    "controlled fake refund provider UNKNOWN, PROCESSING and SUCCESS outcomes"
+  ],
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "node --test tools/miniprogram-ui/test/refund-unclaimed-l3-closure-contract.test.mjs",
+      "result": "0/1",
+      "first_error": "missing refund/unclaimed L3 runner",
+      "rendered_errors": [
+        "service_dates harness fixture used nonexistent created_at and then an unqualified record_version",
+        "production worker response exposed Go field casing instead of the test control contract",
+        "same-day pickup was already inside the real cancellation boundary",
+        "facts queried nonexistent products.sold_out instead of product_sold_out_dates",
+        "PC bootstrap timed out because the private harness omitted the existing storefront Admin registrar"
+      ]
+    },
+    "green": {
+      "status": "WRITER_GATE_PASS_PRECOMMIT",
+      "evidence": [
+        "contract 1/1",
+        "private server compile PASS",
+        "WXML lint PASS",
+        "Chrome151 rendered Mini 1/1 plus real PC pages",
+        "one random fresh-v44 schema and 92 root HTTP observations",
+        "API stopped and schema residual zero"
+      ]
+    },
+    "refactor": {
+      "status": "NO_PRODUCTION_CHANGE_BEFORE_RENDERED_RED"
+    }
+  },
+  "failure_shields": [
+    "provider unknown or processing keeps the order REFUNDING and cannot project REFUNDED",
+    "one refund creates one provider request and terminal work is not repeated",
+    "only provider SUCCESS projects one immutable full refund",
+    "refund clears redemption capability and later redeem is rejected",
+    "past READY and REFUNDING or REFUNDED orders are excluded from effective revenue and product sales",
+    "no inventory or stock model is created and sold-out truth is not changed"
+  ],
+  "blocked_external": {
+    "ui2": "WeChat Developer Tools login remains external",
+    "ui3_l4": ["real WeChat refund and funds arrival", "real refund callback", "physical-device confirmation"]
+  },
+  "forbidden_actions_not_taken": ["npm install", "second Docker container", "8080 access", "schema change", "manifest change", "push", "PR", "preview", "upload", "deploy", "real funds"]
+}
