@@ -30,6 +30,13 @@
 - 存在依赖或共享路径时，必须在当前任务工件中声明依赖或重新划分所有权后再开工。
 - 不得直接在 `main` 上提交。提交只包含当前 change 的 owned paths，不得覆盖或回退其他人改动。
 
+## GitHub 传输
+
+- GitHub 的 fetch、pull、push 和远端 SHA 校验统一使用 SSH 地址，例如 `git@github.com:<owner>/<repo>.git`；禁止使用 HTTPS 或在 SSH 失败时回退到 HTTPS。
+- 执行 GitHub push 时使用显式 SSH remote 与完整 refspec；除非用户另行明确要求，不修改仓库持久化的 `origin`。
+- push 前通过 SSH 读取目标远端分支并确认集成方式；push 后再次通过 SSH 读取远端 SHA，只有远端 ref 精确等于预期 SHA 才算完成。
+- SSH 认证、权限或网络不可用时立即停止并原样报告阻断，不通过替换协议、绕过认证或猜测凭据继续。
+
 ## TDD 与实现
 
 - 行为实现严格遵循 Red → Green → Refactor：先得到可观察的失败证据，再完成最小实现，重构后重跑同一验证。
