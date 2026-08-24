@@ -185,6 +185,38 @@ describe('PAGE-M02..M05 rendered merchant closure against root HTTP and fresh My
     if (page.instance.data.lookupState !== 'error' || !page.dom.textContent.includes('核销失败')) throw new Error('M04 invalid code was not visibly rejected');
   });
 
+  it('PAGE-M04 renders and directly redeems today and tomorrow orders with the same four-digit code', async () => {
+    const pair = fixture.crossDateOrders;
+    if (!pair || pair.code !== '0001') throw new Error(`M04 cross-date fixture ${JSON.stringify(pair)}`);
+    for (const [label, order] of [['today', pair.today], ['tomorrow', pair.tomorrow]]) {
+      const page = render('admin-order-detail', `m04-cross-${label}`, { id: order.id });
+      await waitFor(() => page.instance.data.detailState !== 'loading', () => `M04 ${label} detail ${page.instance.data.detailState}`);
+      if (page.instance.data.o.id !== order.id || page.instance.data.o.pickupDate !== order.date
+        || page.instance.data.o.code !== pair.code || page.instance.data.o.state !== 'READY_FOR_PICKUP'
+        || page.instance.data.meta.label !== '核销') {
+        throw new Error(`M04 ${label} ready mismatch ${JSON.stringify(page.instance.data.o)}`);
+      }
+      page.querySelector('.foot-main').dispatchEvent('touchstart');
+      page.querySelector('.foot-main').dispatchEvent('touchend');
+      await waitFor(() => page.instance.data.o && page.instance.data.o.state === 'COMPLETED',
+        () => `M04 ${label} direct redeem ${page.instance.data.actionState}/${page.instance.data.o && page.instance.data.o.state}`);
+      if (page.instance.data.actionState !== 'ready' || page.instance.data.o.id !== order.id
+        || page.instance.data.o.pickupDate !== order.date || page.instance.data.o.code !== pair.code) {
+        throw new Error(`M04 ${label} completion crossed order/date ${JSON.stringify(page.instance.data.o)}`);
+      }
+    }
+
+    const verify = render('admin-verify', 'm04-cross-code');
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      verify.instance.setData({ code: pair.code, lookupState: 'idle', lastResult: null });
+      await pageDefinitions['admin-verify'].manual.call(verify.instance);
+      if (verify.instance.data.lookupState !== 'completed' || verify.instance.data.lastResult.id !== pair.today.id
+        || verify.instance.data.lastResult.pickupDate !== pair.today.date || verify.instance.data.lastResult.id === pair.tomorrow.id) {
+        throw new Error(`M04 same-code service-date scope ${attempt} ${JSON.stringify(verify.instance.data.lastResult)}`);
+      }
+    }
+  });
+
   it('PAGE-M05 loads while closed, merges meal products, and writes today-only sold-out fact', async () => {
     const page = render('admin-products', 'm05');
     await waitFor(() => page.instance.data.listState !== 'loading', () => `M05 load ${page.instance.data.listState}`);

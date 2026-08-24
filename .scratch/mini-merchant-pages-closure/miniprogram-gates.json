@@ -45,5 +45,18 @@
   "blocked_external": {
     "ui3": "real camera scan requires logged-in WeChat Developer Tools or a physical device"
   },
-  "forbidden_actions_not_taken": ["npm install", "second Docker container", "raw SQL business write", "push", "PR", "preview", "upload", "deploy", "real funds"]
+  "page_m04_cross_date_extension": {
+    "base_sha": "7a3fd996a4702c5514dc69aeff6c49f7145bb7ae",
+    "branch": "codex/page-m04-cross-date-redeem-l3",
+    "status": "WRITER_W3_PASS",
+    "target": "PAGE-M04 L3 cross-date per-order redemption",
+    "scenario": "today and tomorrow orders share pickup code 0001; rendered details redeem each exact order, while manual code lookup remains scoped to the current service date and fresh-key replay returns the first durable result",
+    "seams": [
+      "both orders are created through private root HTTP against one fresh v1-v44 schema",
+      "one guarded test-fixture SQL transition advances only the future order from RESERVED to PREPARING; it is not evidence for production scheduling",
+      "READY, rendered detail reads, direct redemption, manual code replay, audit, and final state evidence use root HTTP and MySQL"
+    ],
+    "w3": "Chrome 151 rendered 5/5 PASS; 106 root requests; same-code orders 2026-08-24/2026-08-25 both COMPLETED; fulfillment.redeem_order audit count 2; cleanup schema count 0"
+  },
+  "forbidden_actions_not_taken": ["npm install", "second Docker container", "production raw SQL business write", "push", "PR", "preview", "upload", "deploy", "real funds"]
 }

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
@@ -19,7 +19,7 @@ const karma = dependencyRequire('karma');
 const { chromium } = dependencyRequire('playwright');
 const browserPath = chromium.executablePath();
 const browserVersion = existsSync(browserPath) ? execFileSync(browserPath, ['--version'], { encoding: 'utf8' }).trim() : '';
-const fixture = { mini_token: '', expires_at: '', lanes: {}, products: {} };
+const fixture = { mini_token: '', expires_at: '', lanes: {}, products: {}, crossDateOrders: {} };
 let proxy;
 let exitCode = 1;
 let failure = '';
@@ -55,6 +55,25 @@ try {
   }
 
   const make = async (name, time, productID) => materializeOrder(fixture.mini_token, schedule.today, time, productID, name);
+  const crossToday = await make('cross-today', schedule.nearTime, fixture.products.lunch);
+  const crossTomorrow = await materializeOrder(fixture.mini_token, schedule.tomorrow, schedule.nearTime, fixture.products.lunch, 'cross-tomorrow');
+  await waitOrderState(crossToday.id, 'PREPARING');
+  const tomorrowBeforeAdvance = await userOrder(crossTomorrow.id);
+  if (tomorrowBeforeAdvance.state !== 'RESERVED') throw new Error(`cross-date tomorrow order started ${tomorrowBeforeAdvance.state}`);
+  advanceTomorrowFixtureToPreparing(crossTomorrow.id, schedule.tomorrow);
+  await waitOrderState(crossTomorrow.id, 'PREPARING');
+  await markReady(crossToday.id);
+  await markReady(crossTomorrow.id);
+  const crossTodayDetail = await userOrder(crossToday.id);
+  const crossTomorrowDetail = await userOrder(crossTomorrow.id);
+  if (crossTodayDetail.pickup_number !== crossTomorrowDetail.pickup_number || crossTodayDetail.pickup_number !== '0001') {
+    throw new Error(`cross-date pickup numbers are not the same first number: ${crossTodayDetail.pickup_number}/${crossTomorrowDetail.pickup_number}`);
+  }
+  fixture.crossDateOrders = {
+    code: crossTodayDetail.pickup_number,
+    today: { id: crossToday.id, date: schedule.today },
+    tomorrow: { id: crossTomorrow.id, date: schedule.tomorrow },
+  };
   const reserved = await make('reserved', schedule.farTime, fixture.products.dinner);
   const preparing = await make('preparing', schedule.nearTime, fixture.products.lunch);
   const readyPage = await make('ready-page', schedule.nearTime, fixture.products.lunch);
@@ -111,6 +130,12 @@ try {
     server.start().catch(reject);
   });
   if (exitCode !== 0) throw new Error(`rendered Karma gate exited ${exitCode}`);
+  const codeReplays = requestLog.filter(item => item.phase === 'rendered-ui' && item.method === 'POST'
+    && item.path === '/api/v1/verify/code' && item.status >= 200 && item.status < 300).slice(-2);
+  if (codeReplays.length !== 2 || !codeReplays.every(item => item.idempotency_key_hash)
+    || codeReplays[0].idempotency_key_hash === codeReplays[1].idempotency_key_hash) {
+    throw new Error('same-code replay did not use two fresh idempotency keys');
+  }
 
   const tomorrowMenu = await request('GET', `/api/v1/menu?date=${encodeURIComponent(schedule.tomorrow)}&time=${encodeURIComponent(schedule.nearTime)}`, { bearer: fixture.mini_token });
   const tomorrowProduct = (tomorrowMenu.categories || []).flatMap(item => item.products || []).find(item => item.id === fixture.products.lunch);
@@ -118,7 +143,10 @@ try {
   const mysqlEvidence = verifyMySQL(fixture);
   const requiredPaths = [
     '/api/v1/merchant/orders', '/api/v1/merchant/store-status', `/api/v1/merchant/orders/${fixture.ready_order_id}/ready`,
-    '/api/v1/verify/scan', '/api/v1/verify/code', `/api/v1/merchant/products/${fixture.products.lunch}/soldout`,
+    '/api/v1/verify/scan', '/api/v1/verify/code',
+    `/api/v1/merchant/orders/${fixture.crossDateOrders.today.id}/redeem`,
+    `/api/v1/merchant/orders/${fixture.crossDateOrders.tomorrow.id}/redeem`,
+    `/api/v1/merchant/products/${fixture.products.lunch}/soldout`,
   ];
   for (const pathname of requiredPaths) {
     if (!requestLog.some(item => item.path.startsWith(pathname) && item.status >= 200 && item.status < 300)) {
@@ -139,6 +167,10 @@ function writeReceipt(status, mysqlEvidence) {
     schema: 'order.merchant-pages-closure.ui1.v1', candidate_sha: candidateSHA,
     generated_at: new Date().toISOString(), status, evidence_level: 'L3_LOCAL_COMPOSED', browser: browserVersion,
     cases: ['PAGE-M02', 'PAGE-M03', 'PAGE-M04', 'PAGE-M05'], fixture: redactFixture(fixture),
+    claims: [
+      'same pickup code is scoped to the current service date',
+      'direct redemption stays bound to the rendered order id and service date',
+    ],
     requests: requestLog, mysql_evidence: mysqlEvidence,
     external: [{ case: 'PAGE-M04', level: 'UI3', status: 'BLOCKED_EXTERNAL', reason: 'real camera requires logged-in WeChat DevTools or device' }],
     error: failure || undefined,
@@ -252,7 +284,7 @@ function verifyMySQL(values) {
   const user = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_USER;
   const password = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_PASSWORD;
   if (!/^[A-Za-z0-9_.-]+$/.test(container || '') || !/^[A-Za-z0-9_]+$/.test(database || '') || !user || !password) throw new Error('MySQL evidence settings invalid');
-  const sql = `SELECT state,COUNT(*) FROM orders GROUP BY state ORDER BY state; SELECT action,COUNT(*) FROM action_audits WHERE action IN ('store.status.set','fulfillment.mark_ready','fulfillment.redeem_token','fulfillment.redeem_current_date_code','product.sold_out.set') GROUP BY action ORDER BY action; SELECT service_date FROM product_sold_out_dates WHERE product_id=${Number(values.products.lunch)} ORDER BY service_date;`;
+  const sql = `SELECT state,COUNT(*) FROM orders GROUP BY state ORDER BY state; SELECT action,COUNT(*) FROM action_audits WHERE action IN ('store.status.set','fulfillment.mark_ready','fulfillment.redeem_token','fulfillment.redeem_current_date_code','fulfillment.redeem_order','product.sold_out.set') GROUP BY action ORDER BY action; SELECT service_date FROM product_sold_out_dates WHERE product_id=${Number(values.products.lunch)} ORDER BY service_date; SELECT pickup_date,pickup_number,state FROM orders WHERE id IN (${Number(values.crossDateOrders.today.id)},${Number(values.crossDateOrders.tomorrow.id)}) ORDER BY pickup_date;`;
   const output = execFileSync('/opt/homebrew/bin/docker', ['exec', '-e', `MYSQL_PWD=${password}`, container,
     'mysql', '--batch', '--raw', '--skip-column-names', '-u', user, `--database=${database}`, '--execute', sql], { encoding: 'utf8' }).trim();
   const lines = output.split('\n').filter(Boolean);
@@ -260,14 +292,35 @@ function verifyMySQL(values) {
     if (!lines.some(line => line.startsWith(`${state}\t`))) throw new Error(`MySQL omitted ${state}`);
   }
   if (!lines.includes(values.today) || lines.includes(values.tomorrow)) throw new Error('MySQL sold-out date scope mismatch');
+  const directAudit = lines.find(line => line.startsWith('fulfillment.redeem_order\t'));
+  if (!directAudit || Number(directAudit.split('\t')[1]) !== 2) throw new Error(`MySQL direct redemption audit mismatch ${directAudit || 'missing'}`);
+  for (const item of [values.crossDateOrders.today, values.crossDateOrders.tomorrow]) {
+    if (!lines.includes(`${item.date}\t1\tCOMPLETED`)) throw new Error(`MySQL cross-date order mismatch ${item.date}`);
+  }
   return lines;
+}
+
+// The target behavior is cross-date direct redemption, not production timing.
+// This exact fixture advances only the HTTP-created future order so the same
+// rendered merchant page can exercise tomorrow without changing system time.
+function advanceTomorrowFixtureToPreparing(orderID, serviceDate) {
+  const container = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_CONTAINER;
+  const database = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_DATABASE;
+  const user = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_USER;
+  const password = process.env.ORDER_MERCHANT_CLOSURE_MYSQL_PASSWORD;
+  if (!/^[A-Za-z0-9_.-]+$/.test(container || '') || !/^[A-Za-z0-9_]+$/.test(database || '') || !user || !password
+    || !/^[1-9]\d*$/.test(String(orderID)) || !/^\d{4}-\d{2}-\d{2}$/.test(serviceDate)) throw new Error('cross-date fixture settings invalid');
+  const sql = `UPDATE orders SET state='PREPARING',preparing_at=materialized_at,record_version=record_version+1 WHERE id=${Number(orderID)} AND pickup_date='${serviceDate}' AND state='RESERVED' AND preparing_at IS NULL AND ready_at IS NULL AND completed_at IS NULL; SELECT ROW_COUNT();`;
+  const output = execFileSync('/opt/homebrew/bin/docker', ['exec', '-e', `MYSQL_PWD=${password}`, container,
+    'mysql', '--batch', '--raw', '--skip-column-names', '-u', user, `--database=${database}`, '--execute', sql], { encoding: 'utf8' }).trim();
+  if (output.split('\n').filter(Boolean).at(-1) !== '1') throw new Error(`advance tomorrow fixture affected ${output || 'zero'} rows`);
 }
 
 function redactFixture(values) {
   return {
     lanes: values.lanes, search_order_id: values.search_order_id, ready_order_id: values.ready_order_id,
     scan_order_id: values.scan_order_id, manual_order_id: values.manual_order_id,
-    today: values.today, tomorrow: values.tomorrow, products: values.products,
+    today: values.today, tomorrow: values.tomorrow, products: values.products, crossDateOrders: values.crossDateOrders,
   };
 }
 
@@ -280,7 +333,13 @@ async function startProxy(origin, log) {
     const headers = Object.assign({}, incoming.headers, { host: target.host });
     delete headers.connection;
     const upstream = http.request({ hostname: target.hostname, port: target.port, method: incoming.method, path: incoming.url, headers }, response => {
-      log.push({ phase: 'rendered-ui', method: incoming.method, path: incoming.url, status: response.statusCode || 0 });
+      const rawKey = incoming.headers['idempotency-key'];
+      const idempotencyKey = Array.isArray(rawKey) ? rawKey[0] : rawKey;
+      log.push({
+        phase: 'rendered-ui', method: incoming.method, path: incoming.url, status: response.statusCode || 0,
+        idempotency_key_hash: typeof idempotencyKey === 'string' && idempotencyKey
+          ? createHash('sha256').update(idempotencyKey).digest('hex') : undefined,
+      });
       const responseHeaders = Object.assign({}, response.headers, corsHeaders());
       delete responseHeaders.connection;
       outgoing.writeHead(response.statusCode || 502, responseHeaders); response.pipe(outgoing);
