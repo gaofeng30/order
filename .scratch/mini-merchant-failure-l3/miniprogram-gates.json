@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "change": "mini-merchant-failure-l3",
+  "base_sha": "c5ab765b82f6869e6fb2176b2adb812a81b925d3",
+  "branch": "codex/mini-merchant-failure-l3",
+  "owned_cases": ["PAGE-M02", "PAGE-M03", "PAGE-M05"],
+  "success_contract": "fresh v1-v44 schema -> production bootstrap/Admin/transaction facts -> private root merchant HTTP -> rendered Chrome 151 Mini -> exact MySQL failure shields -> cleanup",
+  "seams": [
+    "production M02/M03/M05 WXML and page scripts rendered through miniprogram-simulate in locked Chrome 151",
+    "production root HTTP and a fresh v1-v44 MySQL schema; all normal business facts are created through public APIs",
+    "loopback proxy injects only explicit HTTP 503 or a mismatched sold-out response at the external boundary",
+    "accepted READY consent is created through production HTTP; notification enqueue failure temporarily renames only the fresh schema outbox table and restores it before evidence",
+    "MySQL is read only for evidence except the controlled schema-level outbox failure fixture"
+  ],
+  "tdd": {
+    "red": {
+      "status": "STATIC_HARNESS_ABSENT_ON_BASE",
+      "evidence": "base has supporting happy-path Merchant UI1 but no selector for M02 close failure, M03 illegal/503/enqueue rollback, or M05 503/fact drift/tomorrow isolation",
+      "production_red": "pending first exact W3 run; production pages remain untouched until a real rendered failure"
+    },
+    "green": {
+      "static": "four dedicated Node syntax checks, JSON/shell syntax, git diff --check and WXML/WXSS lint PASS",
+      "full_miniprogram": "98/98 PASS on the static tree",
+      "chrome": "pending exact-candidate Writer Gate",
+      "mysql": "pending exact-candidate Writer Gate"
+    },
+    "implementation": {
+      "production_change": "none before a real rendered Red",
+      "runner": "dedicated PAGE-M02/M03/M05 runner/spec/config only; no manifest, package, backend, migration, or shared runner edit",
+      "cache_policy": "reuse existing Node modules, Chromium 151, Go caches and order-mysql-w3; no install or second Docker"
+    }
+  },
+  "case_contract": {
+    "PAGE-M02": "five exact server lanes and cross-lane search; injected close 503 stays visibly open with no durable write, then one real close succeeds; reset returns identity selection",
+    "PAGE-M03": "RESERVED blocks locally with zero write; injected 503 and real notification enqueue SQL failure stay PREPARING with token/receipt/outbox zero; one legal PREPARING to READY creates all exact facts",
+    "PAGE-M05": "injected 503 and mismatched-date response stay visibly unchanged; one today sold-out write succeeds and tomorrow remains available"
+  },
+  "controlled_fixture_limit": "temporary notification_outbox rename is copied from the production fulfillment MySQL integration failure seam; it is not a schema capability claim and Writer cleanup drops the whole dedicated schema",
+  "writer_gate": {
+    "command": ".scratch/mini-merchant-failure-l3/verify-writer.sh",
+    "candidate_binding": "external receipt binds the exact clean committed SHA",
+    "required": [
+      "owned-path and clean SHA checks",
+      "full Mini regression and WXML/WXSS lint",
+      "fresh clean migrations v1-v44 and production bootstrap",
+      "three rendered Chrome 151 cases through private root HTTP",
+      "exact MySQL state/token/receipt/outbox/audit/date-scope evidence",
+      "API stopped, outbox restored, dedicated schema dropped"
+    ]
+  },
+  "ui_level_actual_after_writer_gate": "UI1_L3_LOCAL_COMPOSED",
+  "external_only": [],
+  "forbidden_claims": [
+    "supporting happy-path evidence does not satisfy these failure rows",
+    "an injected external failure is not a production outage reproduction",
+    "local Chrome evidence is not WeChat Developer Tools or physical-device evidence"
+  ]
+}
