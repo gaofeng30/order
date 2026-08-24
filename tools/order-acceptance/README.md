@@ -21,7 +21,7 @@ node tools/order-acceptance/run.mjs run \
   --output .scratch/overnight-acceptance/evidence.jsonl
 ```
 
-`validate` checks structure/source binding and may exit zero while local gaps remain. `inventory` and `run` emit one JSON object per CaseID plus one summary. They exit nonzero unless all 95 local requirements pass. A run also fails when the worktree is dirty, an exact test selector disappears, a required test skips, or any required command exits nonzero. L4 rows stay separately visible as `BLOCKED_EXTERNAL` and do not satisfy or invalidate L1-L3.
+`validate` checks structure/source binding and exits zero when that structure is valid. Its `structure.local_available` count means selectors are bound, not executed; the separate `inventory` field therefore reports those rows as `local_not_run` with `ok:false`. `inventory` and `run` emit one JSON object per CaseID plus one summary. They exit nonzero unless all 95 local requirements pass. A run also fails when the worktree is dirty, an exact test selector disappears, a required test skips, or any required command exits nonzero. L4 rows stay separately visible as `BLOCKED_EXTERNAL` and do not satisfy or invalidate L1-L3.
 
 The runner starts no Docker container and installs no dependency. It inherits the existing Go/Node/Chrome/MySQL environment and therefore reuses the machine's caches and the single already-running MySQL gate. Fresh-MySQL tests require the repository's complete `ORDER_TEST_MYSQL_*` environment; absence causes a skip, which the harness rejects.
 

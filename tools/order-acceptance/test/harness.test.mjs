@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   extractMatrixCases,
@@ -91,6 +93,31 @@ test('go test JSON requires an actual selected pass and rejects skip/nonzero', (
   assert.throws(() => parseGoTestJSON(JSON.stringify({ Action: 'skip', Package: 'p', Test: 'TestExact' }), 0, 'TestExact'), /skipped/);
   assert.throws(() => parseGoTestJSON(JSON.stringify({ Action: 'pass', Package: 'p' }), 0, 'TestExact'), /did not pass/);
   assert.throws(() => parseGoTestJSON('', 1, 'TestExact'), /exit code 1/);
+});
+
+test('validate reports structural availability without claiming runtime readiness', () => {
+  const output = execFileSync(process.execPath, [
+    fileURLToPath(new URL('../run.mjs', import.meta.url)),
+    'validate',
+  ], { encoding: 'utf8' });
+  const result = JSON.parse(output);
+  assert.equal(result.valid, true);
+  assert.deepEqual(result.structure, {
+    total: 95,
+    local_available: 95,
+    local_missing: 0,
+    external_blocked: 23,
+  });
+  assert.equal('local_ready' in result.structure, false);
+  assert.deepEqual(result.inventory, {
+    total: 95,
+    local_ready: 0,
+    local_missing: 0,
+    local_not_run: 95,
+    local_failed: 0,
+    external_blocked: 23,
+    ok: false,
+  });
 });
 
 test('AC19 exact integration inventory resolves the pinned refund dependency without hiding L4', async () => {

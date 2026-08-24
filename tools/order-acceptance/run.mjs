@@ -23,8 +23,26 @@ validateManifest(manifest);
 await validateSourceBinding(manifest);
 
 if (command === 'validate') {
-  const summary = summarizeManifest(manifest.cases);
-  process.stdout.write(`${JSON.stringify({ type: 'validation', valid: true, counts: manifest.policy.exact_counts, inventory: summary })}\n`);
+  const structural = summarizeManifest(manifest.cases);
+  const runtimeEvidence = new Map();
+  for (const entry of manifest.cases) {
+    for (const evidence of entry.local_evidence) {
+      runtimeEvidence.set(evidence.evidence_id, evidenceRuntime(evidence, new Map(), 'inventory'));
+    }
+  }
+  const inventory = summarizeManifest(manifest.cases, runtimeEvidence);
+  process.stdout.write(`${JSON.stringify({
+    type: 'validation',
+    valid: true,
+    counts: manifest.policy.exact_counts,
+    structure: {
+      total: structural.total,
+      local_available: structural.local_ready,
+      local_missing: structural.local_missing,
+      external_blocked: structural.external_blocked,
+    },
+    inventory,
+  })}\n`);
   process.exit(0);
 }
 
