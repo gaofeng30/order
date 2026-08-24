@@ -62,7 +62,9 @@
         <view wx:if="{{g.products.length === 0}}" class="group-empty">该分类暂无商品</view>
         <view wx:for="{{g.products}}" wx:for-item="m" wx:key="id" class="dish-row">
           <image wx:if="{{m.cover}}" class="dish-cover" src="{{m.cover.url}}" mode="aspectFill" data-id="{{m.id}}" bindtap="goDetail" />
-          <view wx:else class="dish-cover dish-cover--empty" data-id="{{m.id}}" bindtap="goDetail">暂无图片</view>
+          <view wx:else class="dish-cover dish-cover--empty" data-id="{{m.id}}" bindtap="goDetail">
+            <imageph item="{{m}}" h="{{176}}" radius="{{18}}" tag="{{false}}" />
+          </view>
           <view class="dish-info">
             <view data-id="{{m.id}}" bindtap="goDetail">
               <view class="dish-name">{{m.name}}<text wx:if="{{!m.orderable}}"> · {{m.availabilityLabel}}</text></view>

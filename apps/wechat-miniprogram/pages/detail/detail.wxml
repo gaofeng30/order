@@ -28,6 +28,7 @@
           data-url="{{m.images[0].url}}"
           bindtap="previewImage"
         />
+        <imageph wx:else item="{{m}}" h="{{480}}" radius="{{22}}" tag="{{false}}" />
         <view class="card info-card">
           <view class="info-name serif">{{m.name}}</view>
           <view class="info-price">

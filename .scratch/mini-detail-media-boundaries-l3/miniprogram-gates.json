@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "change": "mini-detail-media-boundaries-l3",
+  "base_sha": "734ce4933fff04f4d73c348950c2d47a81f8d782",
+  "branch": "codex/mini-detail-media-boundaries-l3",
+  "owned_cases": ["PAGE-U04", "BE-34", "BE-35"],
+  "success_contract": "fresh v1-v44 schema -> production bootstrap -> production Admin HTTP facts -> private root HTTP -> rendered Chrome 151 miniprogram-simulate -> exact cleanup",
+  "candidate_binding": "verify-writer.sh emits the authoritative external receipt because a committed file cannot contain its own candidate SHA",
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "karma start tools/miniprogram-ui/karma.detail-media-static.conf.cjs --single-run --no-colors",
+      "result": "1 FAILED, 1 SUCCESS",
+      "first_production_error": "BE-34 menu did not render ImagePH; zero-image row rendered literal '暂无图片'"
+    },
+    "green": {
+      "status": "PASS_CURRENT_TREE",
+      "focused_static": "Chrome 151 rendered 2/2: production zero-image gradient/first-character/no external src and single-image no swiper/count/second position",
+      "composed": "pending exact-candidate writer Gate",
+      "full_miniprogram": "98/98",
+      "wxml_wxss_lint": "PASS"
+    },
+    "refactor": {
+      "production_change": "only zero-image WXML presentation in menu and detail; existing ImagePH is the canonical gradient/serif component",
+      "runner": "one uniquely named focused runner; all business facts are created and cleaned through production HTTP on a fresh schema",
+      "cache_policy": "reuse the existing Karma, Playwright, Chromium, Node modules and Go caches; no install or second Docker"
+    }
+  },
+  "case_contract": {
+    "BE-34": "root facts have zero images; menu/detail render ImagePH gradient plus serif first character, no fake URL, no image preview/request source",
+    "BE-35": "root facts have exactly one image; detail renders one static image without count/swiper/second position and previews only that URL",
+    "PAGE-U04": "detail requires current pickup date/time, root missing date/time returns exact 400, and 503 clears stale content and renders visible retry"
+  },
+  "writer_gate": {
+    "command": ".scratch/mini-detail-media-boundaries-l3/verify-writer.sh",
+    "status_source": "MINI_DETAIL_MEDIA_WRITER_GATE marker plus external exact-SHA receipt",
+    "first_red": "0a52800 passed Chrome151 static 2/2, mini 98/98, lint, fresh v1-v44 and production bootstrap, then production Admin settings correctly returned 409 STOREFRONT_CONFLICT because the runner fixture put cutoff after pickup; API stopped, schema dropped and the runner now uses 11:00->11:30 and 17:00->17:30",
+    "second_red": "c84c946 passed every functional step including Chrome151 composed 1/1, root 400 and injected 503, then cleanup demanded deletion of temporary service_dates although the production Admin contract is upsert-only; API stopped and schema dropped, and cleanup now verifies every restorable field plus the original date subset before the writer performs the authoritative fresh-schema drop",
+    "required": [
+      "candidate is clean and contains only owned paths",
+      "fresh schema has exactly clean migrations v1-v44",
+      "production bootstrap and private root API are used",
+      "PAGE-U04, BE-34 and BE-35 rendered cases pass in Chrome 151",
+      "API stops and dedicated schema is dropped"
+    ]
+  },
+  "ui_level_actual_after_writer_gate": "UI1_L3_LOCAL_COMPOSED",
+  "ui_level_target": "UI2_UI3",
+  "blocked_external": ["WeChat Developer Tools UI2", "physical-device UI3"],
+  "forbidden_claims": [
+    "Chrome or miniprogram-simulate is not WeChat Developer Tools UI2",
+    "BLOCKED_EXTERNAL is not independent verification or submission readiness"
+  ]
+}
