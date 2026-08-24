@@ -52,6 +52,30 @@ func TestUserCancelReturnsFrozenOrderAndRefund(t *testing.T) {
 	}
 }
 
+func TestUserCancelMapsFrozenCancellationBoundaryToConflict(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	now := time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC)
+	reader := &userOrderReaderStub{details: []orderquery.Detail{sampleUserOrder(now, orderquery.StatePreparing)}}
+	application := &handlerApplicationStub{err: ErrTransitionNotAllowed}
+	router := gin.New()
+	router.Use(func(ctx *gin.Context) { ctx.Set("request_id", "request-cancel-boundary"); ctx.Next() })
+	NewHandler(handlerAuthenticatorStub{userID: 17}, application, reader, handlerParserStub{}).RegisterRoutes(router.Group("/api/v1"))
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/orders/301/cancel", bytes.NewBufferString(`{"reason":"USER_CANCEL"}`))
+	request.Header.Set("Authorization", "Bearer mini-session")
+	request.Header.Set("Idempotency-Key", "cancel-boundary")
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusConflict || response.Body.String() != `{"error":{"code":"CANCELLATION_NOT_ALLOWED","message":"request could not be completed"}}` {
+		t.Fatalf("boundary cancellation = %d body=%s", response.Code, response.Body.String())
+	}
+	if application.requestCalls != 1 || reader.calls != 1 {
+		t.Fatalf("boundary calls = request:%d read:%d", application.requestCalls, reader.calls)
+	}
+}
+
 func TestUserCancelRejectsAmbiguousContentTypeBeforeMutation(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	now := time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC)

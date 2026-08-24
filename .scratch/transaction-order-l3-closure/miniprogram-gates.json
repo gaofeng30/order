@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "change": "transaction-order-l3-closure",
+  "base_sha": "fd33f58fb2e812ede1057b9ae3822e047cbfe497",
+  "branch": "codex/transaction-order-l3-closure",
+  "gate_type": "UI1_COMPOSED_FRESH_MYSQL",
+  "ui_level_target": "UI2_UI3",
+  "ui_level_actual": "L3_LOCAL_COMPOSED",
+  "candidate_sha": "pending-post-commit-binding",
+  "status": "LOCAL_L3_PASS_EXACT_CANDIDATE_RERUN_PENDING",
+  "cases": ["AC-06", "AC-07", "AC-15", "BE-07", "BE-13", "BE-21", "INV-09"],
+  "seams": [
+    "rendered Mini Program WXML controls in locked Chrome 151",
+    "private root-composed HTTP API from a test-only Go server",
+    "one random fresh-v44 schema in order-mysql-w3",
+    "deterministic payment and subscription providers controlled only at external boundaries",
+    "test-only clock and one explicit order-insert SQL failure trigger"
+  ],
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "node --test tools/miniprogram-ui/test/transaction-order-l3-closure-contract.test.mjs",
+      "result": "0/1",
+      "first_error": "missing transaction/order L3 runner",
+      "rendered_errors": [
+        "requestPayment:fail cancel became success /pages/result/result?id=4",
+        "POST /api/v1/orders/1/cancel returned 422/CANCELLATION_NOT_ALLOWED",
+        "rejected READY consent has a supplemental entry on the rendered home page",
+        "notification_provider_failure worker diverged because the test-only response used Go field casing"
+      ]
+    },
+    "green": {
+      "status": "WRITER_GATE_PASS_PRECOMMIT",
+      "evidence": [
+        "transaction contract 1/1",
+        "checkout UI0 4/4",
+        "Mini Program Node regression 109/109",
+        "refund 30-minute boundary maps 409",
+        "private server compile PASS",
+        "WX lint PASS",
+        "Chrome151 rendered private-root fresh-v44 selector 1/1 with 55 HTTP observations"
+      ]
+    },
+    "refactor": {
+      "status": "PAYMENT_409_SUPPLEMENT_AND_PROVIDER_FAILURE_RED_GREEN_COMPLETE"
+    }
+  },
+  "failure_shields": [
+    "native payment cancel/fail cannot call confirm, clear cart, navigate or create an order",
+    "retry reuses the same prepayment and provider Create; uncertain server payment truth only uses Query",
+    "Apply SQL failure leaves the ACTIVE_QUERY observation durable with zero order",
+    "less than or exactly thirty minutes exposes no active cancel control and server cancel remains 409",
+    "rejected READY consent leaves supplemental home/detail controls; accepted supplement writes once",
+    "temporary notification provider failure leaves the order READY and outbox retryable"
+  ],
+  "blocked_external": {
+    "ui2": "WeChat Developer Tools login remains external",
+    "ui3": ["real wx.requestPayment and funds", "real subscription consent UI and template assets", "physical-device network"]
+  },
+  "forbidden_actions_not_taken": ["npm install", "second Docker container", "8080 access", "push", "PR", "preview", "upload", "deploy", "real funds"]
+}

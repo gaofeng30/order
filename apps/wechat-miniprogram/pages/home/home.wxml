@@ -36,6 +36,7 @@
       <view wx:if="{{ongoing}}" class="ob {{ongoing.ready ? 'ob--ready' : ''}}" bindtap="tapOngoing">
         <icon name="{{ongoing.ready ? 'ticket' : 'calendarClock'}}" size="17" color="{{ongoing.ready ? '#ffffff' : '#467a32'}}" />
         <text class="ob-txt">{{ongoing.text}}</text>
+        <view wx:if="{{ongoing.ready}}" class="supplement-ready" catchtap="supplementReady">开启提醒</view>
         <icon name="arrowRight" size="15" color="{{ongoing.ready ? 'rgba(255,255,255,0.9)' : '#8f9384'}}" />
       </view>
 

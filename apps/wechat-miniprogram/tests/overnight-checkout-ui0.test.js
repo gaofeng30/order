@@ -82,9 +82,12 @@ test('PAGE-U05/U06 checkout uses Quote -> durable wx_request_payment -> server c
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/result/result?id=301');
 });
 
-test('BE-07/BE-08 payment failure plus pending confirm keeps cart and never navigates', async () => {
+test('BE-07/BE-08 native cancel retries the same payment before confirm-only pending checks', async () => {
   const pending = { statusCode: 202, data: { state: 'PENDING' } };
-  const { app, harness } = readyCheckout([PHONE, QUOTE, PREPAY, pending, pending], [{ errMsg: 'requestPayment:fail cancel' }]);
+  const { app, harness } = readyCheckout(
+    [PHONE, QUOTE, PREPAY, pending, pending],
+    [{ errMsg: 'requestPayment:fail cancel' }, { ok: true }],
+  );
   await harness.flush();
   seedCart(app);
   const page = harness.loadPage('pages/confirm/confirm.js');
@@ -96,14 +99,26 @@ test('BE-07/BE-08 payment failure plus pending confirm keeps cart and never navi
   await harness.flush();
 
   assert.equal(paid, false);
+  assert.equal(page.data.paymentState, 'error');
+  assert.equal(Object.keys(app.globalData.cart).length, 1);
+  assert.equal(harness.navigationCalls.length, 0);
+  assert.equal(page._prepayment.id, '101');
+  assert.equal(harness.requestCalls.filter(call => call.url.endsWith('/api/v1/orders/confirm')).length, 0);
+  assert.equal(harness.paymentCalls.length, 1);
+
+  assert.equal(await page.pay(), false);
   assert.equal(page.data.paymentState, 'pending');
   assert.equal(Object.keys(app.globalData.cart).length, 1);
   assert.equal(harness.navigationCalls.length, 0);
-  assert.equal(harness.requestCalls.at(-1).url, 'http://127.0.0.1:8080/api/v1/orders/confirm');
   const firstConfirmKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
+  assert.equal(harness.paymentCalls.length, 2);
+  assert.deepEqual(harness.paymentCalls[0], harness.paymentCalls[1]);
+
   assert.equal(await page.pay(), false);
   const secondConfirmKey = harness.requestCalls.at(-1).header['Idempotency-Key'];
   assert.notEqual(secondConfirmKey, firstConfirmKey, 'a durable PENDING receipt requires a new key for the next observation query');
+  assert.equal(harness.paymentCalls.length, 2, 'durable PENDING retries confirm only');
+  assert.equal(harness.requestCalls.filter(call => call.url.endsWith('/api/v1/orders/prepay')).length, 1);
 });
 
 test('BE-08 confirm retry preserves the key for transport ambiguity and rotates it only after durable PENDING', async () => {

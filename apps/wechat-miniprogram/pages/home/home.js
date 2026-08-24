@@ -1,5 +1,6 @@
 const api = require('../../utils/apiClient.js');
 const storefrontStore = require('../../utils/storefrontStore.js');
+const subscriptionStore = require('../../utils/subscriptionStore.js');
 const { nav } = require('../../utils/util.js');
 
 const ACTIVE = new Set(['RESERVED', 'PREPARING', 'READY_FOR_PICKUP']);
@@ -67,6 +68,10 @@ Page({
     if (this.data.settingsState !== 'ready' || !this.data.ongoing) return false;
     nav.go('order-detail', { id: this.data.ongoing.orderId });
     return true;
+  },
+  async supplementReady() {
+    if (!this.data.ongoing || !this.data.ongoing.ready) return false;
+    return (await subscriptionStore.requestAndRecord(this.data.ongoing.orderId, 'READY')) === 'ACCEPTED';
   },
   toMenu() {
     if (this.data.settingsState !== 'ready') return false;

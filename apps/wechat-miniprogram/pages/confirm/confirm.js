@@ -93,11 +93,28 @@ Page({
       }
       cart.clear();
       this._prepayment = null;
+      this._needsPayment = false;
       this.setData({ paymentState: 'created' });
       nav.replace('result', { id: confirmed.orderID });
       return true;
     } catch (error) {
       this.setData({ paymentState: 'error', payBtn: '重试' });
+      return false;
+    }
+  },
+  async requestExistingPayment() {
+    this.setData({ paymentState: 'paying', payBtn: '等待微信支付…' });
+    try {
+      const paid = await transaction.requestPayment(this._prepayment.wx_request_payment);
+      if (!paid) {
+        this.setData({ paymentState: 'error', payBtn: '重试支付' });
+        return false;
+      }
+      this._needsPayment = false;
+      this.setData({ paymentState: 'confirming', payBtn: '正在确认支付结果…' });
+      return this.confirmExisting();
+    } catch (error) {
+      this.setData({ paymentState: 'error', payBtn: '重试支付' });
       return false;
     }
   },
@@ -109,7 +126,7 @@ Page({
   },
   async payOnce() {
     if (!cart.count() || !pickup.get()) return false;
-    if (this._prepayment) return this.confirmExisting();
+    if (this._prepayment) return this._needsPayment ? this.requestExistingPayment() : this.confirmExisting();
     if (this.data.phoneState !== 'bound') {
       this.selectComponent('#toast').show('请先绑定手机号', { icon: 'warn' });
       return false;
@@ -127,15 +144,14 @@ Page({
       });
       this._prepayment = await transaction.createPrepayment(quote.id, api.newIdempotencyKey('prepay'));
       this._confirmKey = api.newIdempotencyKey('confirm');
-      this.setData({ paymentState: 'paying', payBtn: '等待微信支付…' });
-      await transaction.requestPayment(this._prepayment.wx_request_payment);
-      this.setData({ paymentState: 'confirming', payBtn: '正在确认支付结果…' });
-      return this.confirmExisting();
+      this._needsPayment = true;
     } catch (error) {
       this._prepayment = null;
+      this._needsPayment = false;
       this.setData({ paymentState: 'error', payBtn: '重试', quote: null,
         payable_cents: this.data.subtotal_cents, payable_text: this.data.subtotal_text });
       return false;
     }
+    return this.requestExistingPayment();
   },
 });

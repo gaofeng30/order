@@ -58,7 +58,7 @@
 
       <view wx:if="{{canSubscribeReady}}" class="card cancel-card">
         <view class="cancel-title">待取餐提醒</view>
-        <view class="cancel-btn on" bindtap="subscribeReady">订阅提醒</view>
+        <view class="cancel-btn on supplement-ready" bindtap="subscribeReady">订阅提醒</view>
       </view>
 
       <view style="height:{{safeBottom + 30}}px"></view>

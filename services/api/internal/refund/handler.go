@@ -270,7 +270,7 @@ func writeRefundApplicationError(ctx *gin.Context, err error) {
 	case errors.Is(err, ErrIdempotencyConflict):
 		writeRefundHTTPError(ctx, http.StatusConflict, "IDEMPOTENCY_CONFLICT")
 	case errors.Is(err, ErrTransitionNotAllowed):
-		writeRefundHTTPError(ctx, http.StatusUnprocessableEntity, "CANCELLATION_NOT_ALLOWED")
+		writeRefundHTTPError(ctx, http.StatusConflict, "CANCELLATION_NOT_ALLOWED")
 	default:
 		writeRefundHTTPError(ctx, http.StatusServiceUnavailable, "UNAVAILABLE")
 	}
