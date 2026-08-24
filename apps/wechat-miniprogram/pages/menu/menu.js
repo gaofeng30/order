@@ -1,4 +1,5 @@
 const menuStore = require('../../utils/reservationMenuStore.js');
+const identityStore = require('../../utils/identityStore.js');
 const { nav, cart, pickup } = require('../../utils/util.js');
 
 const MEAL_LABELS = { lunch: '午餐', dinner: '晚餐' };
@@ -12,6 +13,30 @@ function firstBrowsable(options) {
     }
   }
   return null;
+}
+
+async function canShowStaffPrice() {
+  const session = getApp().globalData.session;
+  if (!session || session.state !== 'ready' || !session.accessToken) return false;
+  try {
+    const identity = await identityStore.load();
+    const pricing = identity && identity.pricing_identity;
+    return pricing && pricing.kind === 'STAFF' && Number.isSafeInteger(pricing.rate_percent)
+      && pricing.rate_percent >= 1 && pricing.rate_percent <= 100;
+  } catch (error) {
+    return false;
+  }
+}
+
+function maskStaffPrice(product) {
+  if (!product || !product.isStaffPrice) return product;
+  return Object.assign({}, product, {
+    staff_unit_price_cents: undefined,
+    isStaffPrice: false,
+    price_cents: product.original_unit_price_cents,
+    price_text: product.original_price_text,
+    staff_price_text: '',
+  });
 }
 
 Page({
@@ -97,13 +122,16 @@ Page({
     this._menuOrderable = false;
     this.setData({ listState: 'loading', groups: [], cats: [], active: '', canCheckout: false });
     try {
+      const showStaffPrice = await canShowStaffPrice();
       const menu = await menuStore.loadMenu(selected);
       if (menu.selection.date !== selected.date || menu.selection.time !== selected.time
         || menu.selection.mealPeriod !== selected.mealPeriod) throw new Error('selection drift');
-      this._allGroups = menu.categories;
+      this._allGroups = showStaffPrice ? menu.categories : menu.categories.map(group => Object.assign({}, group, {
+        products: group.products.map(maskStaffPrice),
+      }));
       this._menuOrderable = menu.orderable;
       this._productsById = {};
-      menu.categories.forEach(group => group.products.forEach(product => { this._productsById[product.id] = product; }));
+      this._allGroups.forEach(group => group.products.forEach(product => { this._productsById[product.id] = product; }));
       this.applySearch(this.data.search);
       this.refresh();
       return true;

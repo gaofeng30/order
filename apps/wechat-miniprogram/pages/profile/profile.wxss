@@ -2,8 +2,9 @@
 .id-inner { display: flex; align-items: center; gap: 28rpx; position: relative; z-index: 2; }
 .avatar {
   width: 120rpx; height: 120rpx; border-radius: 36rpx; background: linear-gradient(135deg, #5b8f3f, #3d6b2f);
-  display: flex; align-items: center; justify-content: center; font-size: 52rpx; font-weight: 700; color: #fff;
+  display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 52rpx; font-weight: 700; color: #fff;
 }
+.avatar-img { width: 100%; height: 100%; display: block; }
 .id-body { flex: 1; }
 .id-head { display: flex; align-items: center; gap: 16rpx; }
 .id-name { font-size: 40rpx; font-weight: 700; }

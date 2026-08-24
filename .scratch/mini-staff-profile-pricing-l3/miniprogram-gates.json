@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "change": "mini-staff-profile-pricing-l3",
+  "base_sha": "53e7f427a978e1ed737c8965b76239647ecd523e",
+  "branch": "codex/mini-staff-profile-pricing-l3",
+  "owned_cases": ["PAGE-U03", "PAGE-U09", "AC-04", "AC-05"],
+  "success_contract": "fresh v1-v44 schema -> production bootstrap/Admin facts -> private root menu/detail/Quote/identity -> rendered Chrome 151 Mini -> exact MySQL pricing/audit facts -> cleanup",
+  "candidate_binding": "verify-writer.sh emits the authoritative external receipt because a committed file cannot contain its own candidate SHA",
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "karma start tools/miniprogram-ui/karma.staff-profile-static.conf.cjs --single-run --no-colors",
+      "result": "1 FAILED, 1 SUCCESS",
+      "first_production_error": "chooseProfile stored a one-time avatarUrl but Profile never rendered the avatar",
+      "composed_command": ".scratch/mini-staff-profile-pricing-l3/verify-writer.sh at exact a8be007c7c41aca50227246c8ef5d334d3f18484",
+      "composed_result": "identity 503 menu rendered server STAFF price 1104 instead of original 1255; API stopped and dedicated schema dropped"
+    },
+    "green": {
+      "status": "PASS_CURRENT_TREE",
+      "focused_static": "Chrome 151 rendered 2/2: identity/profile/contact failure stays neutral with zero business HTTP; one-time cosmetic avatar renders locally",
+      "composed": "Chrome 151 rendered 2/2 at c2e6db71; pending exact-candidate rerun after correcting one read-only evidence column name",
+      "full_miniprogram": "98/98 after adding only the new identity response to five existing fixtures",
+      "wxml_wxss_lint": "PASS"
+    },
+    "implementation": {
+      "production_change": "Profile renders the local cosmetic avatar; menu/detail retain a server staff price only after an exact STAFF identity with a valid 1..100 rate and mask it to original price on anonymous, 503 or malformed identity",
+      "runner": "one unique runner creates product/settings/discount/staff and visitor Quote only through production HTTP, then renders Mini and reads exact MySQL evidence; no raw SQL writes",
+      "cache_policy": "reuse one existing Karma, Playwright, Chromium, Node modules, Go caches and order-mysql-w3; no install or second Docker"
+    }
+  },
+  "case_contract": {
+    "PAGE-U03": "same product under anonymous, identity-unknown and trusted staff menu/detail states using server pickup facts",
+    "PAGE-U09": "cosmetic profile/contact failure stays visibly neutral, performs zero business HTTP and cannot create staff/merchant identity; existing extra-phone and merchant-switch evidence remains supporting",
+    "AC-04": "anonymous/before-bind and identity 503/malformed display original only; trusted staff displays original plus exact staff price",
+    "AC-05": "menu/detail/visitor Quote/staff Quote share exact integer cents; client price/phone/name fields are rejected and create no Quote"
+  },
+  "writer_gate": {
+    "command": ".scratch/mini-staff-profile-pricing-l3/verify-writer.sh",
+    "status_source": "MINI_STAFF_PROFILE_WRITER_GATE marker plus external exact-SHA receipt",
+    "required": [
+      "candidate is clean and contains only owned paths",
+      "fresh schema has exactly clean migrations v1-v44",
+      "production bootstrap/Admin HTTP/private root API are used",
+      "PAGE-U03, PAGE-U09, AC-04 and AC-05 rendered cases pass in Chrome 151",
+      "exact visitor/staff Quote rows, tamper zero-write and two Quote receipts are read from MySQL",
+      "API stops and dedicated schema is dropped"
+    ]
+  },
+  "ui_level_actual_after_writer_gate": "UI1_L3_LOCAL_COMPOSED",
+  "ui_level_target": "UI2_UI3",
+  "blocked_external": ["real WeChat profile/contact UI", "WeChat Developer Tools UI2", "physical-device UI3"],
+  "forbidden_claims": [
+    "mocked native failure is not real WeChat UI evidence",
+    "Chrome or miniprogram-simulate is not WeChat Developer Tools UI2",
+    "BLOCKED_EXTERNAL is not independent verification or submission readiness"
+  ]
+}

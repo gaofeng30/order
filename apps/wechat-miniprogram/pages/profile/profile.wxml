@@ -7,7 +7,10 @@
       <view class="ring r1"></view>
       <view class="ring r2"></view>
       <view class="id-inner">
-        <view class="avatar serif" bindtap="chooseProfile">{{avatarText}}</view>
+        <view class="avatar serif" bindtap="chooseProfile">
+          <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill" />
+          <text wx:else>{{avatarText}}</text>
+        </view>
         <view class="id-body">
           <view class="id-head">
             <text class="serif id-name">{{nick}}</text>

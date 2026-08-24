@@ -8,6 +8,18 @@ const SESSION = {
   data: { access_token: 'menu-token', token_type: 'Bearer', expires_at: '2999-08-25T08:00:00Z' },
 };
 
+const VISITOR_IDENTITY = {
+  statusCode: 200,
+  data: {
+    identity: {
+      primary_phone: { bound: true, masked_phone: '+******0000' },
+      extra_phone: { set: false, masked_phone: '' },
+      pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
+      merchant: { bound: false },
+    },
+  },
+};
+
 const OPTIONS = {
   statusCode: 200,
   data: {
@@ -48,7 +60,7 @@ function readyHarness(requests) {
 }
 
 test('PAGE-U03 pickup options skip cut-off meals and menu sold-out stays non-addable', async () => {
-  const { app, harness } = readyHarness([OPTIONS, MENU]);
+  const { app, harness } = readyHarness([OPTIONS, VISITOR_IDENTITY, MENU]);
   await harness.flush();
   const page = harness.loadPage('pages/menu/menu.js');
   await harness.invoke(page, 'onShow');
@@ -56,7 +68,7 @@ test('PAGE-U03 pickup options skip cut-off meals and menu sold-out stays non-add
 
   assert.deepEqual(app.globalData.pickup, { date: '2026-08-25', mealPeriod: 'dinner', time: '17:30' });
   assert.equal(harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/menu/pickup-options');
-  assert.equal(harness.requestCalls[2].url, 'http://127.0.0.1:8080/api/v1/menu?date=2026-08-25&time=17%3A30');
+  assert.equal(harness.requestCalls[3].url, 'http://127.0.0.1:8080/api/v1/menu?date=2026-08-25&time=17%3A30');
   assert.equal(page.data.listState, 'ready');
   assert.equal(page.data.groups[0].products[1].availabilityLabel, '已售罄');
 
@@ -74,7 +86,7 @@ test('BE-02 selecting a different available point reloads /menu and never synthe
   const secondMenu = JSON.parse(JSON.stringify(MENU));
   secondMenu.data.selection = { date: '2026-08-26', time: '11:40', meal_period: 'lunch' };
   secondMenu.data.categories[0].products = secondMenu.data.categories[0].products.filter(product => product.meal_period === 'all' || product.meal_period === 'lunch');
-  const { app, harness } = readyHarness([OPTIONS, MENU, secondMenu]);
+  const { app, harness } = readyHarness([OPTIONS, VISITOR_IDENTITY, MENU, VISITOR_IDENTITY, secondMenu]);
   await harness.flush();
   const page = harness.loadPage('pages/menu/menu.js');
   await harness.invoke(page, 'onShow');
@@ -101,14 +113,14 @@ test('PAGE-U04 detail requires pickup facts, renders images/specification and bl
       },
     },
   };
-  const { app, harness } = readyHarness([detail]);
+  const { app, harness } = readyHarness([VISITOR_IDENTITY, detail]);
   await harness.flush();
   app.globalData.pickup = { date: '2026-08-25', mealPeriod: 'dinner', time: '17:30' };
   const page = harness.loadPage('pages/detail/detail.js');
   await harness.invoke(page, 'onLoad', { id: '70' });
   await harness.flush();
 
-  assert.equal(harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/catalog/products/70?date=2026-08-25&time=17%3A30');
+  assert.equal(harness.requestCalls[2].url, 'http://127.0.0.1:8080/api/v1/catalog/products/70?date=2026-08-25&time=17%3A30');
   assert.equal(page.data.detailState, 'ready');
   assert.equal(page.data.m.images.length, 1);
   assert.equal(page.data.m.orderable, true);

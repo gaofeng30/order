@@ -8,6 +8,18 @@ const SESSION = {
   data: { access_token: 'menu-public-read', token_type: 'Bearer', expires_at: '2999-08-25T08:00:00Z' },
 };
 
+const STAFF_IDENTITY = {
+  statusCode: 200,
+  data: {
+    identity: {
+      primary_phone: { bound: true, masked_phone: '+******0000' },
+      extra_phone: { set: false, masked_phone: '' },
+      pricing_identity: { kind: 'STAFF', rate_percent: 85 },
+      merchant: { bound: false },
+    },
+  },
+};
+
 const OPTIONS = {
   statusCode: 200,
   data: {
@@ -38,7 +50,7 @@ const MENU = {
 };
 
 test('frozen menu uses staff unit price in display and the cart while retaining original price', async () => {
-  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, OPTIONS, MENU] });
+  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, OPTIONS, STAFF_IDENTITY, MENU] });
   const app = harness.loadApp();
   await harness.flush();
   const page = harness.loadPage('pages/menu/menu.js');
@@ -93,7 +105,7 @@ test('legacy pickup facts fail closed before menu request and never write cart o
 test('closed store remains browsable but every product is non-orderable', async () => {
   const closed = JSON.parse(JSON.stringify(MENU));
   closed.data.store_status.business_status = 'closed';
-  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, OPTIONS, closed] });
+  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, OPTIONS, STAFF_IDENTITY, closed] });
   const app = harness.loadApp();
   await harness.flush();
   const page = harness.loadPage('pages/menu/menu.js');

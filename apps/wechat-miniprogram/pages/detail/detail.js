@@ -1,5 +1,31 @@
 const productStore = require('../../utils/productStore.js');
+const identityStore = require('../../utils/identityStore.js');
 const { cart, pickup } = require('../../utils/util.js');
+
+async function canShowStaffPrice() {
+  const session = getApp().globalData.session;
+  if (!session || session.state !== 'ready' || !session.accessToken) return false;
+  try {
+    const identity = await identityStore.load();
+    const pricing = identity && identity.pricing_identity;
+    return pricing && pricing.kind === 'STAFF' && Number.isSafeInteger(pricing.rate_percent)
+      && pricing.rate_percent >= 1 && pricing.rate_percent <= 100;
+  } catch (error) {
+    return false;
+  }
+}
+
+function maskStaffPrice(product) {
+  if (!product || !product.isStaffPrice) return product;
+  return Object.assign({}, product, {
+    staff_unit_price_cents: undefined,
+    staffUnitPriceCents: undefined,
+    isStaffPrice: false,
+    price_cents: product.original_unit_price_cents,
+    price_text: product.original_price_text,
+    staff_price_text: '',
+  });
+}
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
@@ -19,8 +45,10 @@ Page({
     }
     this.setData({ detailState: 'loading', m: null, qty: 0, imageIndex: 0 });
     try {
+      const showStaffPrice = await canShowStaffPrice();
       const product = await productStore.load(this._id, selection);
-      this.setData({ detailState: 'ready', m: product, qty: cart.qty(product.id), imageIndex: 0 });
+      const visibleProduct = showStaffPrice ? product : maskStaffPrice(product);
+      this.setData({ detailState: 'ready', m: visibleProduct, qty: cart.qty(visibleProduct.id), imageIndex: 0 });
       return true;
     } catch (error) {
       this.setData({
