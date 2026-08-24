@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
+import zlib from 'node:zlib';
 
 const testsRoot = path.dirname(fileURLToPath(import.meta.url));
 const appsRoot = path.resolve(testsRoot, '../..');
@@ -80,6 +81,9 @@ try {
 
   await templateScenario('product-import', '菜品批量导入', ['菜品名称', '售价', '分类', '餐段可售', '描述']);
   await templateScenario('staff-import', '员工批量导入', ['姓名', '手机号']);
+  await missingHeaderImportScenario();
+  await importSizeAndRowLimitScenarios();
+  await existingProductImportScenario();
   await uploadFailureScenario();
   await unreadableLayerScenario();
   await settingsPositiveScenario();
@@ -132,6 +136,99 @@ async function templateScenario(route, title, headers) {
   const after = await businessCounts();
   const factsUnchanged = JSON.stringify(before) === JSON.stringify(after);
   record(`${title} header-only template is canonical and fails closed until rows are added`, response.status() === 422 && body?.error?.code === 'INVALID_TEMPLATE' && headers.every(value => visible.includes(value)) && factsUnchanged, { status: response.status(), code: body?.error?.code || '', facts_unchanged: factsUnchanged });
+}
+
+async function missingHeaderImportScenario() {
+  const before = await businessCounts();
+  const file = buildXlsx([
+    ['菜品名称', '售价', '分类', '描述'],
+    [`缺表头-${suffix}`, '19.9', `缺表头分类-${suffix}`, '不得写入'],
+  ], { numericCols: [1] });
+  const result = await previewThroughUI('product-import', '菜品批量导入', `missing-header-${suffix}.xlsx`, file);
+  const after = await businessCounts();
+  record('BE-28 missing required header is visibly rejected with zero business writes',
+    result.status === 422 && result.code === 'INVALID_TEMPLATE' && result.warning && sameCounts(before, after),
+    { status: result.status, code: result.code, facts_unchanged: sameCounts(before, after) });
+}
+
+async function importSizeAndRowLimitScenarios() {
+  await navigate('product-import', '菜品批量导入', '#f-file');
+  const beforeSize = await businessCounts();
+  let previewRequests = 0;
+  const countPreview = request => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname.endsWith('/import/preview')) previewRequests += 1;
+  };
+  page.on('request', countPreview);
+  await page.locator('#f-file').setInputFiles({
+    name: `over-10mib-${suffix}.xlsx`,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer: Buffer.alloc(10 * 1024 * 1024 + 1),
+  });
+  await page.locator('.toast').filter({ hasText: '文件不能超过 10 MiB' }).last().waitFor({ state: 'visible' });
+  const afterSize = await businessCounts();
+  record('BE-29 file over 10 MiB fails before HTTP with zero business writes', previewRequests === 0 && sameCounts(beforeSize, afterSize),
+    { preview_requests: previewRequests, facts_unchanged: sameCounts(beforeSize, afterSize) });
+  page.off('request', countPreview);
+
+  const beforeProductRows = await businessCounts();
+  const productLimit = await previewThroughUI('product-import', '菜品批量导入', `products-501-${suffix}.xlsx`, buildXlsx(productRows(501), { numericCols: [1] }));
+  const afterProductRows = await businessCounts();
+  record('BE-29 product xlsx with 501 rows is visibly rejected with zero business writes',
+    productLimit.status === 422 && productLimit.code === 'TOO_MANY_ROWS' && productLimit.warning && sameCounts(beforeProductRows, afterProductRows),
+    { status: productLimit.status, code: productLimit.code, facts_unchanged: sameCounts(beforeProductRows, afterProductRows) });
+
+  const beforeStaffRows = await businessCounts();
+  const staffLimit = await previewThroughUI('staff-import', '员工批量导入', `staff-5001-${suffix}.xlsx`, buildXlsx(staffRows(5001)));
+  const afterStaffRows = await businessCounts();
+  record('BE-29 staff xlsx with 5001 rows is visibly rejected with zero business writes',
+    staffLimit.status === 422 && staffLimit.code === 'TOO_MANY_ROWS' && staffLimit.warning && sameCounts(beforeStaffRows, afterStaffRows),
+    { status: staffLimit.status, code: staffLimit.code, facts_unchanged: sameCounts(beforeStaffRows, afterStaffRows) });
+}
+
+async function existingProductImportScenario() {
+  const settings = await adminGET('/api/v1/admin/settings');
+  const products = (await adminGET(`/api/v1/admin/products?service_date=${encodeURIComponent(settings.service_date)}`)).products;
+  const existing = products[0];
+  if (!existing?.id || !existing.name || !existing.category_name) throw new Error('BE-30 seeded product is missing');
+  const beforeCounts = await businessCounts();
+  const beforeProduct = JSON.stringify(existing);
+  const file = buildXlsx([
+    ['菜品名称', '售价', '分类', '餐段可售', '描述'],
+    [existing.name, '9999', existing.category_name, '全天', `不得覆盖-${suffix}`],
+  ], { numericCols: [1] });
+  const result = await previewThroughUI('product-import', '菜品批量导入', `existing-product-${suffix}.xlsx`, file);
+  const visible = await page.locator('#content').innerText();
+  const after = await adminGET(`/api/v1/admin/products/${existing.id}?service_date=${encodeURIComponent(settings.service_date)}`);
+  const afterCounts = await businessCounts();
+  const commitEnabled = await page.locator('#imp-result [data-ok]:not([disabled])').count();
+  record('BE-30 existing product is isolated as an error and cannot be committed or overwritten',
+    result.status === 201 && Number(result.body?.new_count || 0) === 0 && Number(result.body?.update_count || 0) === 0 &&
+      Number(result.body?.error_count || 0) === 1 && visible.includes('异常 1 条') && visible.includes('已存在') &&
+      commitEnabled === 0 && JSON.stringify(after.product) === beforeProduct && sameCounts(beforeCounts, afterCounts),
+    { status: result.status, error_count: Number(result.body?.error_count || 0), commit_enabled: commitEnabled, facts_unchanged: sameCounts(beforeCounts, afterCounts) });
+}
+
+async function previewThroughUI(route, title, filename, buffer) {
+  await navigate(route, title, '#f-file');
+  const responsePromise = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname.endsWith('/import/preview'));
+  await page.locator('#f-file').setInputFiles({
+    name: filename,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    buffer,
+  });
+  const response = await responsePromise;
+  let body = null;
+  try { body = await response.json(); } catch {}
+  if (response.status() >= 400) await page.locator('.toast .ti--warn').last().waitFor({ state: 'visible' });
+  return { status: response.status(), code: body?.error?.code || '', warning: response.status() < 400 || await page.locator('.toast .ti--warn').last().isVisible(), body };
+}
+
+function productRows(count) {
+  return [['菜品名称', '售价', '分类', '餐段可售', '描述'], ...Array.from({ length: count }, (_, index) => [`边界菜品-${suffix}-${index}`, '10', `边界分类-${suffix}`, '全天', '不得写入'])];
+}
+
+function staffRows(count) {
+  return [['姓名', '手机号'], ...Array.from({ length: count }, (_, index) => [`边界员工-${suffix}-${index}`, `1${String(3000000000 + index).padStart(10, '0')}`])];
 }
 
 async function uploadFailureScenario() {
@@ -307,6 +404,7 @@ function exactSchema(value) { if (!/^order_acceptance_[a-z0-9_]+$/.test(value)) 
 function exactString(value, name) { if (typeof value !== 'string' || !value.trim()) throw new Error(`${name} missing`); return value; }
 function isRejected(status) { return Number.isInteger(status) && status >= 400 && status < 500; }
 function settingsWriteBody(value) { return { store_status: value.store_status, pickup_step_min: value.pickup_step_min, pickup_point: value.pickup_point, notice: value.notice, meal_periods: value.meal_periods, service_dates: value.service_dates }; }
+function sameCounts(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 function sameSettings(actual, expected) {
   const normalize = value => ({
     store_status: value.store_status, pickup_step_min: value.pickup_step_min, pickup_point: value.pickup_point, notice: value.notice,
@@ -317,3 +415,65 @@ function sameSettings(actual, expected) {
 }
 function safeMessage(error) { return String(error?.message || error || 'unknown').replace(/Bearer\s+\S+/g, 'Bearer [REDACTED]'); }
 function record(name, ok, detail) { checks.push({ name, ok: Boolean(ok), ...(detail === undefined ? {} : { detail }) }); }
+
+function crc32(buffer) {
+  const table = new Int32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) value = value & 1 ? 0xEDB88320 ^ (value >>> 1) : value >>> 1;
+    table[index] = value;
+  }
+  let value = -1;
+  for (const byte of buffer) value = table[(value ^ byte) & 0xff] ^ (value >>> 8);
+  return (value ^ -1) >>> 0;
+}
+
+function zip(entries) {
+  const locals = [], central = [];
+  let offset = 0;
+  for (const { name, data, deflate } of entries) {
+    const raw = Buffer.from(data, 'utf8');
+    const body = deflate ? zlib.deflateRawSync(raw) : raw;
+    const nameBuffer = Buffer.from(name, 'utf8');
+    const crc = crc32(raw);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0); local.writeUInt16LE(20, 4); local.writeUInt16LE(deflate ? 8 : 0, 8);
+    local.writeUInt32LE(crc, 14); local.writeUInt32LE(body.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(nameBuffer.length, 26);
+    locals.push(local, nameBuffer, body);
+    const directory = Buffer.alloc(46);
+    directory.writeUInt32LE(0x02014b50, 0); directory.writeUInt16LE(20, 4); directory.writeUInt16LE(20, 6); directory.writeUInt16LE(deflate ? 8 : 0, 10);
+    directory.writeUInt32LE(crc, 16); directory.writeUInt32LE(body.length, 20); directory.writeUInt32LE(raw.length, 24); directory.writeUInt16LE(nameBuffer.length, 28); directory.writeUInt32LE(offset, 42);
+    central.push(directory, nameBuffer);
+    offset += local.length + nameBuffer.length + body.length;
+  }
+  const directory = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(entries.length, 8); end.writeUInt16LE(entries.length, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
+  return Buffer.concat([Buffer.concat(locals), directory, end]);
+}
+
+function buildXlsx(rows, options = {}) {
+  const shared = [];
+  const indexOf = value => { const found = shared.indexOf(value); return found >= 0 ? found : shared.push(value) - 1; };
+  const sheetRows = rows.map((row, rowIndex) => `<row r="${rowIndex + 1}">${row.map((value, columnIndex) => {
+    if (value === '' || value == null) return '';
+    const reference = `${columnName(columnIndex + 1)}${rowIndex + 1}`;
+    if (options.numericCols?.includes(columnIndex) && /^-?\d+(\.\d+)?$/.test(value)) return `<c r="${reference}"><v>${value}</v></c>`;
+    return `<c r="${reference}" t="s"><v>${indexOf(String(value))}</v></c>`;
+  }).join('')}</row>`).join('');
+  const sheet = `<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+  const strings = `<?xml version="1.0"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${shared.length}" uniqueCount="${shared.length}">${shared.map(value => `<si><t>${escapeXML(value)}</t></si>`).join('')}</sst>`;
+  return zip([
+    { name: '[Content_Types].xml', data: '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/></Types>', deflate: false },
+    { name: 'xl/workbook.xml', data: '<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>', deflate: true },
+    { name: 'xl/sharedStrings.xml', data: strings, deflate: true },
+    { name: 'xl/worksheets/sheet1.xml', data: sheet, deflate: true },
+  ]);
+}
+
+function columnName(value) {
+  let name = '', number = value;
+  while (number > 0) { const remainder = (number - 1) % 26; name = String.fromCharCode(65 + remainder) + name; number = (number - remainder - 1) / 26; }
+  return name;
+}
+function escapeXML(value) { return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;'); }

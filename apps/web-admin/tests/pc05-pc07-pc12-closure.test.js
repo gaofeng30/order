@@ -10,6 +10,7 @@ const productImport = source('pages/product-import.js');
 const staffImport = source('pages/staff-import.js');
 const products = source('pages/products.js');
 const layer = source('pages/layer.js');
+const closureRunner = source('tests/composed-ui1-pc05-pc07-pc12-closure-runner.mjs');
 
 assert.match(importFlow, /data-template/,
   'PC11/PC12 must expose a visible template download action');
@@ -30,5 +31,16 @@ assert.match(layer, /Api\.saveLayer\(cfg\)[\s\S]*?\.catch\(/,
   'PC08 save failure must not produce an unhandled false-success path');
 assert.match(layer, /id="lay-img"[^>]+onerror="this\.hidden=true"/,
   'PC08 must hide a persisted object that becomes unreadable');
+
+assert.match(closureRunner, /missingHeaderImportScenario/,
+  'PC import L3 must select a missing-header xlsx through the visible file input');
+assert.match(closureRunner, /10 \* 1024 \* 1024 \+ 1/,
+  'PC import L3 must exercise the browser-side 10 MiB fail-closed boundary');
+assert.match(closureRunner, /productRows\(501\)/,
+  'PC11 must exercise the 501-row server boundary through the page');
+assert.match(closureRunner, /staffRows\(5001\)/,
+  'PC12 must exercise the 5001-row server boundary through the page');
+assert.match(closureRunner, /existingProductImportScenario/,
+  'PC11 must prove a same-name existing product is not overwritten');
 
 console.log('pc05-pc07-pc12 closure static contract: PASS');
