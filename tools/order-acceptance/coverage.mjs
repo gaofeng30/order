@@ -2,6 +2,25 @@ const go = (packagePath, test) => ({ kind: 'go-test', package: packagePath, test
 const node = file => ({ kind: 'node-test', file, name_pattern: '.*' });
 const command = (...argv) => ({ kind: 'command', argv });
 
+// Preserve the dependency provenance while rebinding execution to the exact
+// integration HEAD. The historical Writer Gate cannot be replayed after other
+// owned changes are integrated because its source-scope check is base-bound.
+export const dependencyPins = Object.freeze([Object.freeze({
+  dependency_id: 'refund_unclaimed_l3',
+  case_ids: Object.freeze(['AC-14', 'BE-14', 'BE-19', 'INV-10']),
+  source_selector: Object.freeze({
+    kind: 'command',
+    argv: Object.freeze(['bash', '.scratch/refund-unclaimed-l3-closure/verify-writer.sh', 'full']),
+  }),
+  candidate_sha: '74e558d74a0994600d5781ea0c2be99814a201dd',
+  integrated_head: '7889f7d6c5be8ecd09a34abc462fe8acbe6af4c3',
+  exact_head_selector: Object.freeze({
+    kind: 'command',
+    argv: Object.freeze(['node', 'tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs']),
+  }),
+  state: 'INTEGRATED_REBOUND',
+})]);
+
 export const profiles = Object.freeze({
   mini_entry_ui0: evidence('UI0', 'Mini entry/home Node harness covers client fail-closed behavior only; it is not rendered UI1.',
     node('apps/wechat-miniprogram/tests/overnight-entry-home-ui0.test.js')),
@@ -24,9 +43,9 @@ export const profiles = Object.freeze({
   mini_composed_merchant_ui1_l3: evidence('L3', 'One rendered Merchant Mini Chrome scenario uses the root-composed HTTP API and MySQL to create a near-time PREPARING order, authenticate an OWNER, write and restore store status, advance PREPARING to READY, expose the user token only at READY, atomically scan it COMPLETED with an idempotency key, and toggle the selected date sold-out true then false. The integrated Red receipt records the former unkeyed scan returning a real 400; runner cleanup fails unless saved Admin settings and sold-out baseline are restored. This remains supporting evidence only: it does not cover all five lanes/search, manual and cross-date code redemption, replay/refunded rejection, notification failure, tomorrow isolation, or real WeChat payment/camera UI3.',
     command('env', 'ORDER_COMPOSED_FLOW=merchant', 'npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
   mini_composed_user_boundaries_ui1_l3: evidence('L3', 'One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.',
-    command('node', 'tools/miniprogram-ui/run-ui1-composed-boundaries.mjs')),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'user-pages')),
   mini_composed_be22_be26_ui1_l3: evidence('L3', 'One exact rendered Mini selector starts from a fresh v44 MySQL schema and real unbound session. It proves BE-22 denial and authorization failure preserve the cart with zero bind/Quote/prepay/navigation side effects before accepted phone binding resumes the same checkout; it proves BE-26 no-READY toast/no navigation/no token, READY-only token display, 401/503 no false redemption, exact replay, completion and stale-token removal. Writer, detached and integrated receipts each recorded 65 root-HTTP responses; real WeChat consent remains L4.',
-    command('node', 'tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs')),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'be22-be26')),
   web_contract_ui0: evidence('UI0', 'PC Admin contract suite proves twelve-page wiring and no browser truth, not rendered full-flow E2E.',
     node('apps/web-admin/tests/http-contract.test.js')),
   web_chrome_ui1_fixture: evidence('UI1', 'PC Chrome smoke renders login/nav against a local fixture, not the composed MySQL API.',
@@ -38,7 +57,7 @@ export const profiles = Object.freeze({
   web_composed_imports_ui1_l3: evidence('L3', 'Eleven PC Chrome checks drive non-xlsx rejection, product preview/commit with one generated category, staff duplicate-phone isolation, preview-token replay/conflict, visible server readback, masked PII and durable import audits. This is supporting import evidence only: template download, header and size/row limits, existing-name/disabled-row behavior and every batch failure shield are not all asserted.',
     command('node', 'apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs')),
   web_composed_catalog_image_ui1_l3: evidence('L3', 'Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.',
-    command('node', 'apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs')),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'pc-remaining')),
   web_composed_transactions_ui1_l3: evidence('L3', 'Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.',
     command('node', 'apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs')),
 
@@ -141,6 +160,49 @@ export const profiles = Object.freeze({
     go('./services/api/internal/objectstore', 'TestCOSAdapterPutUsesOfficialCOSRequest'),
     go('./services/api/internal/objectstore', 'TestCOSAdapterFailsClosedForInvalidKeyAndProviderError'),
   ]),
+  final_core_governance_l1: evidence('L1', 'The integrated core contract selector rejects alternate fulfillment, client-owned payment truth and PRD-out-of-scope persistence vocabulary before application writes.',
+    go('./services/api/cmd/order-api', 'TestAcceptanceCoreContractRejectsAlternateFacts')),
+  final_core_composed_l2: multi('L2', 'The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.', [
+    go('./services/api/cmd/order-api', 'TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts'),
+    go('./services/api/cmd/order-api', 'TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed'),
+    go('./services/api/cmd/order-api', 'TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields'),
+    go('./services/api/cmd/order-api', 'TestAcceptanceImportBoundariesAreDurable'),
+    go('./services/api/cmd/order-api', 'TestAcceptanceUserBoundariesAreFailClosed'),
+    go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund'),
+  ]),
+  final_user_rendered_l3: multi('L3', 'Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.', [
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'user-pages'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'staff-profile'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'detail-media'),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'be22-be26'),
+    command('node', 'tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs'),
+  ]),
+  final_merchant_rendered_l3: multi('L3', 'Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.', [
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'merchant-pages'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'merchant-failure'),
+  ]),
+  final_pc_rendered_l3: multi('L3', 'Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.', [
+    command('node', 'apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs'),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'pc-remaining'),
+    command('node', 'apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs'),
+    command('node', 'apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs'),
+  ]),
+  final_local_governance_l3: multi('L3', 'AC-19-LOCAL is the strict aggregate of every integrated rendered user, merchant and PC exact selector. It remains local-only and cannot satisfy any L4 platform or real-funds evidence.', [
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'user-pages'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'staff-profile'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'detail-media'),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'be22-be26'),
+    command('node', 'tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'merchant-pages'),
+    command('bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'merchant-failure'),
+    command('node', 'tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs'),
+    command('node', 'apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs'),
+    command('bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'pc-remaining'),
+    command('node', 'apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs'),
+    command('node', 'apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs'),
+  ]),
+  final_refund_unclaimed_rendered_l3: evidence('L3', 'The integrated refund/unclaimed exact selector renders accepted-but-unknown refund shields, confirmed refund monotonicity and READY post-processing without effective-revenue inflation.',
+    command('node', 'tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs')),
 });
 
 const caseProfiles = new Map();
@@ -271,6 +333,41 @@ assign(['INV-15'], ['subscription_l1']);
 assign(['INV-16'], ['schema_no_inventory_l1', 'payment_mysql_l2', 'mini_ui1_fixture']);
 assign(['INV-05', 'INV-07', 'INV-11', 'INV-15', 'INV-16'], ['composed_order_refund_l2']);
 assign(['INV-08', 'INV-10', 'INV-13'], [['composed_order_refund_l2', true]]);
+
+// Final integrated selectors. These bindings are conservative at the CaseID
+// level: the four refund/unclaimed cases below remain unassigned until their
+// dependency is integrated, so inventory cannot reach 95/95 early.
+assign(['AC-19', 'INV-01', 'INV-16'], [['final_core_governance_l1', true]]);
+assign([
+  'PAGE-U05', 'PAGE-U09', 'PAGE-PC03',
+  'AC-05', 'AC-09', 'AC-16', 'AC-18', 'AC-19',
+  'BE-10', 'BE-17',
+  'INV-01', 'INV-11', 'INV-14', 'INV-15', 'INV-16',
+], [['final_core_composed_l2', true]]);
+
+assign([
+  'PAGE-U01', 'PAGE-U02', 'PAGE-U03', 'PAGE-U04', 'PAGE-U05', 'PAGE-U06', 'PAGE-U07', 'PAGE-U08', 'PAGE-U09',
+  'AC-01', 'AC-02', 'AC-03', 'AC-04', 'AC-05', 'AC-06', 'AC-07', 'AC-08', 'AC-09', 'AC-10', 'AC-11', 'AC-15',
+  'BE-07', 'BE-08', 'BE-09', 'BE-10', 'BE-12', 'BE-13', 'BE-15', 'BE-21', 'BE-34', 'BE-35',
+  'INV-01', 'INV-02', 'INV-04', 'INV-05', 'INV-06', 'INV-07', 'INV-09', 'INV-11', 'INV-15', 'INV-16',
+], [['final_user_rendered_l3', true]]);
+
+assign([
+  'PAGE-M02', 'PAGE-M03', 'PAGE-M04', 'PAGE-M05',
+  'AC-10', 'AC-11', 'AC-12', 'AC-13', 'AC-16',
+  'BE-16', 'BE-17', 'BE-18',
+  'INV-07', 'INV-13', 'INV-14',
+], [['final_merchant_rendered_l3', true]]);
+
+assign([
+  'PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC04', 'PAGE-PC05', 'PAGE-PC07', 'PAGE-PC08', 'PAGE-PC09', 'PAGE-PC10', 'PAGE-PC11', 'PAGE-PC12',
+  'AC-16', 'AC-17', 'AC-18',
+  'BE-09', 'BE-27', 'BE-28', 'BE-29', 'BE-30', 'BE-31', 'BE-32', 'BE-33',
+  'INV-06', 'INV-13', 'INV-16',
+], [['final_pc_rendered_l3', true]]);
+
+assign(['AC-19'], [['final_local_governance_l3', true]]);
+assign(['AC-14', 'BE-14', 'BE-19', 'INV-10'], [['final_refund_unclaimed_rendered_l3', true]]);
 
 export function coverageFor(caseID) {
   return (caseProfiles.get(caseID) || []).map(([profileID, satisfies]) => ({

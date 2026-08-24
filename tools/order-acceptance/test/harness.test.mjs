@@ -8,6 +8,7 @@ import {
   summarizeManifest,
   validateManifest,
 } from '../lib.mjs';
+import { dependencyPins, profiles } from '../coverage.mjs';
 
 const expectedCounts = Object.freeze({
   total: 95,
@@ -92,7 +93,7 @@ test('go test JSON requires an actual selected pass and rejects skip/nonzero', (
   assert.throws(() => parseGoTestJSON('', 1, 'TestExact'), /exit code 1/);
 });
 
-test('committed inventory keeps every case explicit and preserves current gaps', async () => {
+test('AC19 exact integration inventory resolves the pinned refund dependency without hiding L4', async () => {
   const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url), 'utf8'));
   validateManifest(manifest);
   const summary = summarizeManifest(manifest.cases);
@@ -101,15 +102,42 @@ test('committed inventory keeps every case explicit and preserves current gaps',
     localReady: summary.local_ready,
     localMissing: summary.local_missing,
     externalBlocked: summary.external_blocked,
-  }, { total: 95, localReady: 17, localMissing: 78, externalBlocked: 23 });
+  }, { total: 95, localReady: 95, localMissing: 0, externalBlocked: 23 });
+  const missing = manifest.cases.filter(entry => entry.local_evidence.some(item => item.status === 'MISSING')).map(entry => entry.case_id).sort();
+  assert.deepEqual(missing, []);
+  assert.deepEqual(dependencyPins, [{
+    dependency_id: 'refund_unclaimed_l3',
+    case_ids: ['AC-14', 'BE-14', 'BE-19', 'INV-10'],
+    source_selector: {
+      kind: 'command',
+      argv: ['bash', '.scratch/refund-unclaimed-l3-closure/verify-writer.sh', 'full'],
+    },
+    candidate_sha: '74e558d74a0994600d5781ea0c2be99814a201dd',
+    integrated_head: '7889f7d6c5be8ecd09a34abc462fe8acbe6af4c3',
+    exact_head_selector: {
+      kind: 'command',
+      argv: ['node', 'tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs'],
+    },
+    state: 'INTEGRATED_REBOUND',
+  }]);
+  assert.deepEqual(profiles.final_user_rendered_l3.selectors.slice(0, 3).map(selector => selector.argv), [
+    ['bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'user-pages'],
+    ['bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'staff-profile'],
+    ['bash', '.scratch/overnight-acceptance/run-fresh-root-ui1.sh', 'detail-media'],
+  ]);
+  assert.deepEqual(profiles.mini_composed_be22_be26_ui1_l3.selector.argv,
+    ['bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'be22-be26']);
+  assert.equal(Object.values(profiles).flatMap(profile => profile.selector ? [profile.selector] : profile.selectors)
+    .some(selector => selector.argv?.join(' ') === 'node tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs'), false);
+  assert.deepEqual(profiles.web_composed_catalog_image_ui1_l3.selector.argv,
+    ['bash', '.scratch/overnight-acceptance/run-self-contained-ui1.sh', 'pc-remaining']);
+  assert.equal(profiles.final_local_governance_l3.selectors.some(selector =>
+    selector.argv?.join(' ') === 'node tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs'), true);
   for (const caseID of ['BE-22', 'BE-26']) {
     const entry = manifest.cases.find(item => item.case_id === caseID);
     assert.equal(entry.local_evidence.some(item => item.evidence_id === `${caseID}:mini_composed_be22_be26_ui1_l3` && item.satisfies), true);
   }
-  for (const caseID of ['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC04']) {
-    const entry = manifest.cases.find(item => item.case_id === caseID);
-    assert.equal(entry.local_evidence.some(item => item.evidence_id === `${caseID}:web_composed_transactions_ui1_l3` && !item.satisfies), true);
-  }
+  assert.equal(manifest.source.inventory_base_sha, 'cefc290539b45abb0d7435dacae9345552f57157');
   assert.equal(manifest.cases.every(entry => entry.local_evidence.length > 0), true);
 });
 

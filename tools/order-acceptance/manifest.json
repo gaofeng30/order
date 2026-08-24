@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "247d84d8816346ab665174594d7f62cc7b41e6f3"
+    "inventory_base_sha": "cefc290539b45abb0d7435dacae9345552f57157"
   },
   "policy": {
     "exact_counts": {
@@ -93,11 +93,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U01:missing:L3",
+          "evidence_id": "PAGE-U01:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U01 against the composed local API, fresh MySQL and deterministic fake providers: perform \"入口页选择「用户端/商户端」；用户端直接进入，商户端点击后触发微信手机号授权\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -137,11 +178,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U02:missing:L3",
+          "evidence_id": "PAGE-U02:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"首页看门店/公告/进行中单；点菜单、订单、取餐码\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -216,11 +298,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U03:missing:L3",
+          "evidence_id": "PAGE-U03:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U03 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选今天/明天与离散时间；搜索；加购\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -266,11 +389,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U04:missing:L3",
+          "evidence_id": "PAGE-U04:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看图片、说明、只读规格、口味与价格\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -370,18 +534,91 @@
           }
         },
         {
-          "evidence_id": "PAGE-U05:missing:L2",
+          "evidence_id": "PAGE-U05:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for PAGE-U05: execute POST /me/bind-phone; POST /me/extra-phone; POST /quotes, assert users、staff、quotes、quoteitems, expected \"服务端手机号快照与算价；封面 key 入 digest\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "PAGE-U05:missing:L3",
+          "evidence_id": "PAGE-U05:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"编辑联系人/附加号、时间、口味、备注；提交 Quote\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -522,11 +759,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U06:missing:L3",
+          "evidence_id": "PAGE-U06:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U06 against the composed local API, fresh MySQL and deterministic fake providers: perform \"调起支付；等待确认；请求待取餐订阅\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -669,11 +947,52 @@
           }
         },
         {
-          "evidence_id": "PAGE-U07:missing:L3",
+          "evidence_id": "PAGE-U07:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U07 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看订单/取餐码；补订阅；规则内取消\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -737,11 +1056,52 @@
           ]
         },
         {
-          "evidence_id": "PAGE-U08:missing:L3",
+          "evidence_id": "PAGE-U08:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U08 against the composed local API, fresh MySQL and deterministic fake providers: perform \"固定筛选「全部/已预约/制作中/待取餐/已完成/已退款」并翻页；退款中只在全部出现\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -812,18 +1172,91 @@
           }
         },
         {
-          "evidence_id": "PAGE-U09:missing:L2",
+          "evidence_id": "PAGE-U09:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for PAGE-U09: execute GET /me/identity; GET /orders; phone/extra/merchant writes；客服 open-type=\"contact\" 无 HTTP, assert users、staff、merchantaccounts、audit；cosmetic 不落库, expected \"cosmetic 仅用户主动触发后的微信当次 profile，缺失用中性占位且不参与身份；客服走微信原生\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "PAGE-U09:missing:L3",
+          "evidence_id": "PAGE-U09:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-U09 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看头像/昵称/脱敏手机号；进我的订单/客服；绑主号、设附加号、商户登录/切端\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -930,11 +1363,29 @@
           }
         },
         {
-          "evidence_id": "PAGE-M02:missing:L3",
+          "evidence_id": "PAGE-M02:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-M02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看五泳道「已预约/制作中/待取餐/已完成/已退款」与搜索；切营业状态；返回身份选择\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -1035,11 +1486,29 @@
           }
         },
         {
-          "evidence_id": "PAGE-M03:missing:L3",
+          "evidence_id": "PAGE-M03:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-M03 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看订单详情；标记备好\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -1116,11 +1585,29 @@
           }
         },
         {
-          "evidence_id": "PAGE-M04:missing:L3",
+          "evidence_id": "PAGE-M04:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-M04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"扫 QR；输当日 4 位码；跨日逐单核销\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -1191,11 +1678,29 @@
           }
         },
         {
-          "evidence_id": "PAGE-M05:missing:L3",
+          "evidence_id": "PAGE-M05:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-M05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"对商品切今日可售/售罄\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -1314,11 +1819,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC01:missing:L3",
+          "evidence_id": "PAGE-PC01:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC01 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看今日/月指标、待制作、销量\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -1449,11 +1985,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC02:missing:L3",
+          "evidence_id": "PAGE-PC02:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"搜索/筛选订单；退款；处理未取餐\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -1555,18 +2122,81 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC03:missing:L2",
+          "evidence_id": "PAGE-PC03:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for PAGE-PC03: execute GET /admin/finance/payments; /refunds; /summary; /export, assert orders、prepayments、observations、refunds、audit, expected \"逐笔派生账单与单边账\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "PAGE-PC03:missing:L3",
+          "evidence_id": "PAGE-PC03:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC03 against the composed local API, fresh MySQL and deterministic fake providers: perform \"看支付/退款/汇总；下载 CSV；核对微信账单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -1682,11 +2312,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC04:missing:L3",
+          "evidence_id": "PAGE-PC04:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"查看支付待处理；人工建单或退款\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -1801,17 +2462,49 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         },
         {
-          "evidence_id": "PAGE-PC05:missing:L3",
+          "evidence_id": "PAGE-PC05:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"商品增删改/上下架/图片/上移下移/日期售罄\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -1913,8 +2606,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         }
@@ -2016,11 +2710,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC07:missing:L3",
+          "evidence_id": "PAGE-PC07:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC07 against the composed local API, fresh MySQL and deterministic fake providers: perform \"配门店、两餐段、今天/明天营业日期\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2121,17 +2846,49 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         },
         {
-          "evidence_id": "PAGE-PC08:missing:L3",
+          "evidence_id": "PAGE-PC08:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC08 against the composed local API, fresh MySQL and deterministic fake providers: perform \"上传/定位/启停开屏 PNG\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -2225,11 +2982,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC09:missing:L3",
+          "evidence_id": "PAGE-PC09:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC09 against the composed local API, fresh MySQL and deterministic fake providers: perform \"设全局折扣；员工手工 CRUD/停启/统计\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2301,11 +3089,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC10:missing:L3",
+          "evidence_id": "PAGE-PC10:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC10 against the composed local API, fresh MySQL and deterministic fake providers: perform \"商户账号增删改/停启/角色；PC 扫码登录\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -2392,11 +3211,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC11:missing:L3",
+          "evidence_id": "PAGE-PC11:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC11 against the composed local API, fresh MySQL and deterministic fake providers: perform \"下载模板；上传菜品 xlsx；预览并提交\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2477,11 +3327,42 @@
           }
         },
         {
-          "evidence_id": "PAGE-PC12:missing:L3",
+          "evidence_id": "PAGE-PC12:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for PAGE-PC12 against the composed local API, fresh MySQL and deterministic fake providers: perform \"下载模板；上传员工 xlsx；预览并提交\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2573,11 +3454,52 @@
           ]
         },
         {
-          "evidence_id": "AC-01:missing:L3",
+          "evidence_id": "AC-01:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-01 against the composed local API, fresh MySQL and deterministic fake providers: perform \"启动浏览，首次提交才授权手机\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -2630,11 +3552,52 @@
           }
         },
         {
-          "evidence_id": "AC-02:missing:L3",
+          "evidence_id": "AC-02:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"填附加手机号+姓名\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2680,11 +3643,52 @@
           }
         },
         {
-          "evidence_id": "AC-03:missing:L3",
+          "evidence_id": "AC-03:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-03 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选择今天/明天时间\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2742,11 +3746,52 @@
           }
         },
         {
-          "evidence_id": "AC-04:missing:L3",
+          "evidence_id": "AC-04:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"浏览菜单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2817,18 +3862,91 @@
           }
         },
         {
-          "evidence_id": "AC-05:missing:L2",
+          "evidence_id": "AC-05:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for AC-05: execute GET menu/detail; POST quotes, assert products、quoteitems, expected \"每项员工价一致且整数分\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "AC-05:missing:L3",
+          "evidence_id": "AC-05:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"比对菜单/详情/结算单价\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -2939,11 +4057,52 @@
           }
         },
         {
-          "evidence_id": "AC-06:missing:L3",
+          "evidence_id": "AC-06:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-06 against the composed local API, fresh MySQL and deterministic fake providers: perform \"取消/失败/成功支付\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -3019,11 +4178,52 @@
           ]
         },
         {
-          "evidence_id": "AC-07:missing:L3",
+          "evidence_id": "AC-07:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-07 against the composed local API, fresh MySQL and deterministic fake providers: perform \"丢 callback 后跑 query\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3069,11 +4269,52 @@
           }
         },
         {
-          "evidence_id": "AC-08:missing:L3",
+          "evidence_id": "AC-08:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-08 against the composed local API, fresh MySQL and deterministic fake providers: perform \"截单边界提交\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3173,18 +4414,91 @@
           }
         },
         {
-          "evidence_id": "AC-09:missing:L2",
+          "evidence_id": "AC-09:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for AC-09: execute worker; GET order, assert orders, expected \"准时 PREPARING；近时新单直接 PREPARING\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "AC-09:missing:L3",
+          "evidence_id": "AC-09:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-09 against the composed local API, fresh MySQL and deterministic fake providers: perform \"观察 30m 自动排产/近时支付\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3344,11 +4658,77 @@
           }
         },
         {
-          "evidence_id": "AC-10:missing:L3",
+          "evidence_id": "AC-10:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-10 against the composed local API, fresh MySQL and deterministic fake providers: perform \"触发合法/非法六态转换\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "AC-10:final_merchant_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3425,11 +4805,77 @@
           }
         },
         {
-          "evidence_id": "AC-11:missing:L3",
+          "evidence_id": "AC-11:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-11 against the composed local API, fresh MySQL and deterministic fake providers: perform \"READY 展码并重复核销\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "AC-11:final_merchant_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3476,11 +4922,29 @@
           }
         },
         {
-          "evidence_id": "AC-12:missing:L3",
+          "evidence_id": "AC-12:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-12 against the composed local API, fresh MySQL and deterministic fake providers: perform \"输入跨日同号\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3529,8 +4993,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         },
@@ -3559,11 +5024,29 @@
           }
         },
         {
-          "evidence_id": "AC-13:missing:L3",
+          "evidence_id": "AC-13:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-13 against the composed local API, fresh MySQL and deterministic fake providers: perform \"今日售罄后选明天\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3657,11 +5140,18 @@
           }
         },
         {
-          "evidence_id": "AC-14:missing:L3",
+          "evidence_id": "AC-14:final_refund_unclaimed_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-14 against the composed local API, fresh MySQL and deterministic fake providers: perform \"自助取消、后台退款、模拟退款未知\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "The integrated refund/unclaimed exact selector renders accepted-but-unknown refund shields, confirmed refund monotonicity and READY post-processing without effective-revenue inflation.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs"
+            ]
+          }
         }
       ],
       "external_evidence": [
@@ -3737,11 +5227,52 @@
           }
         },
         {
-          "evidence_id": "AC-15:missing:L3",
+          "evidence_id": "AC-15:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-15 against the composed local API, fresh MySQL and deterministic fake providers: perform \"支付页/取消弹窗订阅；拒绝后补订阅\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -3825,18 +5356,106 @@
           }
         },
         {
-          "evidence_id": "AC-16:missing:L2",
+          "evidence_id": "AC-16:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for AC-16: execute merchant/admin auth routes, assert accounts、pcsessions、audit, expected \"server RBAC；PC 仅 OWNER\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "AC-16:missing:L3",
+          "evidence_id": "AC-16:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-16 against the composed local API, fresh MySQL and deterministic fake providers: perform \"尝试各权限及 PC 扫码\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "AC-16:final_pc_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -3872,8 +5491,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         },
@@ -3914,11 +5534,42 @@
           }
         },
         {
-          "evidence_id": "AC-17:missing:L3",
+          "evidence_id": "AC-17:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-17 against the composed local API, fresh MySQL and deterministic fake providers: perform \"改分类/开屏后换设备看\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -3984,18 +5635,81 @@
           ]
         },
         {
-          "evidence_id": "AC-18:missing:L2",
+          "evidence_id": "AC-18:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for AC-18: execute GET admin orders/stats, assert READY orders、refunds, expected \"未取餐可筛且不算完成/有效营收\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "AC-18:missing:L3",
+          "evidence_id": "AC-18:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-18 against the composed local API, fresh MySQL and deterministic fake providers: perform \"查未取餐与营收\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -4031,25 +5745,155 @@
           }
         },
         {
-          "evidence_id": "AC-19:missing:L1",
+          "evidence_id": "AC-19:final_core_governance_l1",
           "level": "L1",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact pure-rule selector for AC-19: assert \"LOCAL Gate 仅对应阶段生效且无敏感数据；L4 单独列状态\" and the fail-closed boundary \"L4 BLOCKEDEXTERNAL 绝不冒充 LOCAL 通过或完整提测\"."
+          "claim": "The integrated core contract selector rejects alternate fulfillment, client-owned payment truth and PRD-out-of-scope persistence vocabulary before application writes.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceCoreContractRejectsAlternateFacts"
+          }
         },
         {
-          "evidence_id": "AC-19:missing:L2",
+          "evidence_id": "AC-19:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for AC-19: execute n/a, assert LOCAL sanitized audit/evidence；L4 不写本地假回执, expected \"LOCAL Gate 仅对应阶段生效且无敏感数据；L4 单独列状态\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "AC-19:missing:L3",
+          "evidence_id": "AC-19:final_local_governance_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for AC-19 against the composed local API, fresh MySQL and deterministic fake providers: perform \"AC-19-LOCAL 执行 L1–L3 governance/Gate；AC-19-L4 独立查看真实微信/资金状态\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "AC-19-LOCAL is the strict aggregate of every integrated rendered user, merchant and PC exact selector. It remains local-only and cannot satisfy any L4 platform or real-funds evidence.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -4085,8 +5929,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4154,8 +5999,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4223,8 +6069,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4305,8 +6152,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4374,8 +6222,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4444,8 +6293,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -4553,11 +6403,52 @@
           }
         },
         {
-          "evidence_id": "BE-07:missing:L3",
+          "evidence_id": "BE-07:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-07 against the composed local API, fresh MySQL and deterministic fake providers: perform \"取消/失败支付后重试\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -4639,11 +6530,52 @@
           }
         },
         {
-          "evidence_id": "BE-08:missing:L3",
+          "evidence_id": "BE-08:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-08 against the composed local API, fresh MySQL and deterministic fake providers: perform \"支付结果未确认\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -4706,11 +6638,90 @@
           }
         },
         {
-          "evidence_id": "BE-09:missing:L3",
+          "evidence_id": "BE-09:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-09 against the composed local API, fresh MySQL and deterministic fake providers: perform \"有支付无订单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "BE-09:final_pc_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -4810,18 +6821,91 @@
           ]
         },
         {
-          "evidence_id": "BE-10:missing:L2",
+          "evidence_id": "BE-10:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-10: execute confirm/get order, assert orders timestamps, expected \"新单即 PREPARING，无取消\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "BE-10:missing:L3",
+          "evidence_id": "BE-10:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-10 against the composed local API, fresh MySQL and deterministic fake providers: perform \"支付时不足 30m\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -4946,11 +7030,52 @@
           ]
         },
         {
-          "evidence_id": "BE-12:missing:L3",
+          "evidence_id": "BE-12:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-12 against the composed local API, fresh MySQL and deterministic fake providers: perform \">30m 自助取消\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5015,11 +7140,52 @@
           ]
         },
         {
-          "evidence_id": "BE-13:missing:L3",
+          "evidence_id": "BE-13:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-13 against the composed local API, fresh MySQL and deterministic fake providers: perform \"<=30m 尝试取消\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5084,11 +7250,18 @@
           ]
         },
         {
-          "evidence_id": "BE-14:missing:L3",
+          "evidence_id": "BE-14:final_refund_unclaimed_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-14 against the composed local API, fresh MySQL and deterministic fake providers: perform \"退款受理但未知\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "The integrated refund/unclaimed exact selector renders accepted-but-unknown refund shields, confirmed refund monotonicity and READY post-processing without effective-revenue inflation.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs"
+            ]
+          }
         }
       ],
       "external_evidence": []
@@ -5178,11 +7351,52 @@
           }
         },
         {
-          "evidence_id": "BE-15:missing:L3",
+          "evidence_id": "BE-15:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-15 against the composed local API, fresh MySQL and deterministic fake providers: perform \"RESERVED/PREPARING 看详情\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5229,11 +7443,29 @@
           }
         },
         {
-          "evidence_id": "BE-16:missing:L3",
+          "evidence_id": "BE-16:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-16 against the composed local API, fresh MySQL and deterministic fake providers: perform \"重复核销完成单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5268,18 +7500,68 @@
           }
         },
         {
-          "evidence_id": "BE-17:missing:L2",
+          "evidence_id": "BE-17:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for BE-17: execute verify, assert orders, expected \"提示已退款并拒绝\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "BE-17:missing:L3",
+          "evidence_id": "BE-17:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-17 against the composed local API, fresh MySQL and deterministic fake providers: perform \"扫已退款单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5326,11 +7608,29 @@
           }
         },
         {
-          "evidence_id": "BE-18:missing:L3",
+          "evidence_id": "BE-18:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-18 against the composed local API, fresh MySQL and deterministic fake providers: perform \"输入跨日同号\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -5395,11 +7695,18 @@
           ]
         },
         {
-          "evidence_id": "BE-19:missing:L3",
+          "evidence_id": "BE-19:final_refund_unclaimed_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-19 against the composed local API, fresh MySQL and deterministic fake providers: perform \"营业日后筛未取餐并退款/核销\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "The integrated refund/unclaimed exact selector renders accepted-but-unknown refund shields, confirmed refund monotonicity and READY post-processing without effective-revenue inflation.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs"
+            ]
+          }
         }
       ],
       "external_evidence": []
@@ -5448,8 +7755,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "pc-remaining"
             ]
           }
         },
@@ -5533,11 +7841,52 @@
           }
         },
         {
-          "evidence_id": "BE-21:missing:L3",
+          "evidence_id": "BE-21:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-21 against the composed local API, fresh MySQL and deterministic fake providers: perform \"拒绝待取餐订阅\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -5590,8 +7939,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -5604,8 +7954,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "be22-be26"
             ]
           }
         },
@@ -5692,8 +8043,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -5749,8 +8101,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -5818,8 +8171,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -5875,8 +8229,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-boundaries.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+              "user-pages"
             ]
           }
         },
@@ -5889,8 +8244,9 @@
           "selector": {
             "kind": "command",
             "argv": [
-              "node",
-              "tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs"
+              "bash",
+              ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+              "be22-be26"
             ]
           }
         },
@@ -6020,11 +8376,42 @@
           }
         },
         {
-          "evidence_id": "BE-27:missing:L3",
+          "evidence_id": "BE-27:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-27 against the composed local API, fresh MySQL and deterministic fake providers: perform \"上传非 xlsx\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6090,11 +8477,42 @@
           }
         },
         {
-          "evidence_id": "BE-28:missing:L3",
+          "evidence_id": "BE-28:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-28 against the composed local API, fresh MySQL and deterministic fake providers: perform \"上传缺必填表头 xlsx\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6160,11 +8578,42 @@
           }
         },
         {
-          "evidence_id": "BE-29:missing:L3",
+          "evidence_id": "BE-29:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-29 against the composed local API, fresh MySQL and deterministic fake providers: perform \"超 10MiB/500/5000 行\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6230,11 +8679,42 @@
           }
         },
         {
-          "evidence_id": "BE-30:missing:L3",
+          "evidence_id": "BE-30:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-30 against the composed local API, fresh MySQL and deterministic fake providers: perform \"菜品导入命中同名\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6314,11 +8794,42 @@
           }
         },
         {
-          "evidence_id": "BE-31:missing:L3",
+          "evidence_id": "BE-31:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-31 against the composed local API, fresh MySQL and deterministic fake providers: perform \"菜品分类不存在\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6398,11 +8909,42 @@
           }
         },
         {
-          "evidence_id": "BE-32:missing:L3",
+          "evidence_id": "BE-32:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-32 against the composed local API, fresh MySQL and deterministic fake providers: perform \"员工文件内 phone 重复\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6482,11 +9024,42 @@
           }
         },
         {
-          "evidence_id": "BE-33:missing:L3",
+          "evidence_id": "BE-33:final_pc_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-33 against the composed local API, fresh MySQL and deterministic fake providers: perform \"重复提交同 preview token\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6532,11 +9105,52 @@
           }
         },
         {
-          "evidence_id": "BE-34:missing:L3",
+          "evidence_id": "BE-34:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-34 against the composed local API, fresh MySQL and deterministic fake providers: perform \"浏览无图商品\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6582,11 +9196,52 @@
           }
         },
         {
-          "evidence_id": "BE-35:missing:L3",
+          "evidence_id": "BE-35:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-35 against the composed local API, fresh MySQL and deterministic fake providers: perform \"浏览单图商品并预览\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6641,25 +9296,103 @@
           ]
         },
         {
-          "evidence_id": "INV-01:missing:L1",
+          "evidence_id": "INV-01:final_core_governance_l1",
           "level": "L1",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact pure-rule selector for INV-01: assert \"单门店单取餐点，仅预约自提\" and the fail-closed boundary \"拒绝配送/即时/第二取餐点\"."
+          "claim": "The integrated core contract selector rejects alternate fulfillment, client-owned payment truth and PRD-out-of-scope persistence vocabulary before application writes.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceCoreContractRejectsAlternateFacts"
+          }
         },
         {
-          "evidence_id": "INV-01:missing:L2",
+          "evidence_id": "INV-01:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-01: execute storefront/pickup, assert singleton storefront, expected \"单门店单取餐点，仅预约自提\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "INV-01:missing:L3",
+          "evidence_id": "INV-01:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-01 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选择履约方式/门店\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6714,11 +9447,52 @@
           }
         },
         {
-          "evidence_id": "INV-02:missing:L3",
+          "evidence_id": "INV-02:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-02 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选择日期餐段\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6817,11 +9591,52 @@
           }
         },
         {
-          "evidence_id": "INV-04:missing:L3",
+          "evidence_id": "INV-04:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-04 against the composed local API, fresh MySQL and deterministic fake providers: perform \"选择取餐点\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -6969,11 +9784,52 @@
           }
         },
         {
-          "evidence_id": "INV-05:missing:L3",
+          "evidence_id": "INV-05:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-05 against the composed local API, fresh MySQL and deterministic fake providers: perform \"支付各结果\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -7050,11 +9906,90 @@
           ]
         },
         {
-          "evidence_id": "INV-06:missing:L3",
+          "evidence_id": "INV-06:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-06 against the composed local API, fresh MySQL and deterministic fake providers: perform \"处理有支付无订单\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "INV-06:final_pc_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -7215,11 +10150,77 @@
           }
         },
         {
-          "evidence_id": "INV-07:missing:L3",
+          "evidence_id": "INV-07:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-07 against the composed local API, fresh MySQL and deterministic fake providers: perform \"推进/查看订单状态\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "INV-07:final_merchant_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -7410,11 +10411,52 @@
           ]
         },
         {
-          "evidence_id": "INV-09:missing:L3",
+          "evidence_id": "INV-09:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-09 against the composed local API, fresh MySQL and deterministic fake providers: perform \">/<30m 取消\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -7510,11 +10552,18 @@
           }
         },
         {
-          "evidence_id": "INV-10:missing:L3",
+          "evidence_id": "INV-10:final_refund_unclaimed_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-10 against the composed local API, fresh MySQL and deterministic fake providers: perform \"退款并观察未知/成功\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "The integrated refund/unclaimed exact selector renders accepted-but-unknown refund shields, confirmed refund monotonicity and READY post-processing without effective-revenue inflation.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs"
+            ]
+          }
         }
       ],
       "external_evidence": []
@@ -7602,18 +10651,91 @@
           }
         },
         {
-          "evidence_id": "INV-11:missing:L2",
+          "evidence_id": "INV-11:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-11: execute session/phone/quotes, assert users/staff/quote snapshots, expected \"浏览免手机号；提交前可信主号；附加双要素\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "INV-11:missing:L3",
+          "evidence_id": "INV-11:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-11 against the composed local API, fresh MySQL and deterministic fake providers: perform \"浏览、提交、附加号识别\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -7758,11 +10880,67 @@
           }
         },
         {
-          "evidence_id": "INV-13:missing:L3",
+          "evidence_id": "INV-13:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-13 against the composed local API, fresh MySQL and deterministic fake providers: perform \"尝试越权/PC 登录\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "INV-13:final_pc_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -7832,18 +11010,68 @@
           }
         },
         {
-          "evidence_id": "INV-14:missing:L2",
+          "evidence_id": "INV-14:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-14: execute confirm/verify, assert pickupsequences/orders, expected \"按日期 0001..9999；同单幂等；手码限当日\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "INV-14:missing:L3",
+          "evidence_id": "INV-14:final_merchant_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-14 against the composed local API, fresh MySQL and deterministic fake providers: perform \"并发建单/跨日核销\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact Merchant Mini selectors jointly render five lanes, state/search/store and sold-out failures, READY/token shields, scan/manual/cross-date redemption and refunded/replay rejection.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "merchant-failure"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
@@ -7902,18 +11130,91 @@
           }
         },
         {
-          "evidence_id": "INV-15:missing:L2",
+          "evidence_id": "INV-15:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-15: execute subscriptions/outbox worker, assert consents/outbox, expected \"仅待取餐与退款结果，主动授权\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "INV-15:missing:L3",
+          "evidence_id": "INV-15:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-15 against the composed local API, fresh MySQL and deterministic fake providers: perform \"授权/发送订阅\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": [
@@ -8068,29 +11369,145 @@
           }
         },
         {
-          "evidence_id": "INV-16:missing:L1",
+          "evidence_id": "INV-16:final_core_governance_l1",
           "level": "L1",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact pure-rule selector for INV-16: assert \"仅服务端 MySQL/provider observation 是事实源\" and the fail-closed boundary \"mock/内存/前端结果不得晋升生产事实\"."
+          "claim": "The integrated core contract selector rejects alternate fulfillment, client-owned payment truth and PRD-out-of-scope persistence vocabulary before application writes.",
+          "selector": {
+            "kind": "go-test",
+            "package": "./services/api/cmd/order-api",
+            "test": "TestAcceptanceCoreContractRejectsAlternateFacts"
+          }
         },
         {
-          "evidence_id": "INV-16:missing:L2",
+          "evidence_id": "INV-16:final_core_composed_l2",
           "level": "L2",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA composed HTTP/worker + fresh MySQL scenario for INV-16: execute all, assert authoritative MySQL facts, expected \"仅服务端 MySQL/provider observation 是事实源\", and the failure shield."
+          "claim": "The integrated fresh-v44 root HTTP selectors jointly close identity/pricing/RBAC/governance, payment/production/sequence/subscription, PC derived facts, imports and user boundary facts. This aggregate is deliberately strict: every selector must pass.",
+          "selectors": [
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCoreIdentityPricingRBACAndGovernanceAreServerFacts"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceCorePaymentProductionRefundSubscriptionAndSequenceAreClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptancePCPagesCloseWithDerivedFactsAndFailureShields"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceImportBoundariesAreDurable"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceUserBoundariesAreFailClosed"
+            },
+            {
+              "kind": "go-test",
+              "package": "./services/api/cmd/order-api",
+              "test": "TestAcceptanceLocalThreeRoleOrderToRefund"
+            }
+          ]
         },
         {
-          "evidence_id": "INV-16:missing:L3",
+          "evidence_id": "INV-16:final_user_rendered_l3",
           "level": "L3",
-          "status": "MISSING",
+          "status": "AVAILABLE",
           "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for INV-16 against the composed local API, fresh MySQL and deterministic fake providers: perform \"注入 mock/客户端 success/简化状态\" and assert HTTP, MySQL, visible result and zero false-success side effects."
+          "claim": "Integrated exact user selectors jointly render all nine user pages, staff/profile pricing, media boundaries, payment/order failure shields and the frozen BE user boundaries against private root HTTP and fresh v44 MySQL.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "user-pages"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "staff-profile"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-fresh-root-ui1.sh",
+                "detail-media"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "be22-be26"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "tools/miniprogram-ui/run-ui1-transaction-order-l3.mjs"
+              ]
+            }
+          ]
+        },
+        {
+          "evidence_id": "INV-16:final_pc_rendered_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "Integrated exact PC selectors jointly render PAGE-PC01 through PAGE-PC12 against fresh v44/private root APIs, including derived dashboards, finance/pending shields, CRUD/config/import/RBAC and staff statistics.",
+          "selectors": [
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc01-pc04-closure-chrome-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "bash",
+                ".scratch/overnight-acceptance/run-self-contained-ui1.sh",
+                "pc-remaining"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-pc09-pc12-final-l3-runner.mjs"
+              ]
+            },
+            {
+              "kind": "command",
+              "argv": [
+                "node",
+                "apps/web-admin/tests/composed-ui1-ac17-three-client-source-runner.mjs"
+              ]
+            }
+          ]
         }
       ],
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "b0840340be51047ab815cb540a56feb706fddc7205283f71fbf2d03a743d5365"
+  "manifest_sha256": "ead48f7f8397ddb5c10bc6d01cc44089fb111edf0a76fbed82751888e75c86c0"
 }
