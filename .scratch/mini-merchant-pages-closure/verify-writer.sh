@@ -30,6 +30,7 @@ verify_source() {
       apps/wechat-miniprogram/pages/admin-order-detail/*|\
       apps/wechat-miniprogram/pages/admin-products/*|\
       apps/wechat-miniprogram/tests/merchant-pages-closure-*|\
+      apps/wechat-miniprogram/tests/run-merchant-pages-closure-*|\
       apps/wechat-miniprogram/tests/overnight-merchant-ui0.test.js|\
       services/api/internal/fulfillment/*) ;;
       *) printf 'out-of-scope path: %s\n' "${closure_path}" >&2; exit 97 ;;
