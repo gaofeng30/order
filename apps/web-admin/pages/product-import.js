@@ -8,6 +8,7 @@
       maxRows: Api.MAX_IMPORT_ROWS,
       hint: '按模板整理菜品后上传 .xlsx。导入只新增不覆盖：同名菜品会被标为异常并跳过，改价请用菜品管理的批量调价。',
       sample: '商务双拼饭 | 32 | 今日套餐 | 全天 | 双主菜配例汤',
+      templateRows: [['菜品名称', '售价', '分类', '餐段可售', '描述']],
       columns: [
         { name: '菜品名称', required: true },
         { name: '售价', required: true, note: '大于 0 的数值，单位元' },

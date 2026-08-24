@@ -314,6 +314,9 @@
             imgs = imgs.concat(urls).slice(0, 3);
             file.value = '';
             paintImgs();
+          }).catch(e => {
+            file.value = '';
+            window.Toast.show(e.message, { icon: 'warn' });
           });
         };
 

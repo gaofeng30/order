@@ -34,7 +34,7 @@
            </div>
            <div class="phone" id="phone" style="width:${PW}px;height:${PH}px">
              ${mockBg()}
-             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" draggable="false" style="z-index:3">` : ''}
+             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" onerror="this.hidden=true" draggable="false" style="z-index:3">` : ''}
            </div>
            <div class="faint" style="font-size:12px;margin-top:10px">按 iPhone 逻辑分辨率 ${SCREEN_W}×${SCREEN_H} 1:1 预览 · 拖动图片调整位置</div>
          </div>
@@ -222,10 +222,12 @@
     el.querySelector('#save').onclick = () => {
       const done = () => window.Toast.show('图层已保存', { icon: 'check' });
       if (dirtyRemove && !cfg.src) {
-        Api.clearLayer().then(() => { dirtyRemove = false; done(); });
+        Api.clearLayer().then(() => { dirtyRemove = false; done(); })
+          .catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         return;
       }
-      Api.saveLayer(cfg).then(() => { dirtyRemove = false; done(); });
+      Api.saveLayer(cfg).then(() => { dirtyRemove = false; done(); })
+        .catch(e => window.Toast.show(e.message, { icon: 'warn' }));
     };
 
     bindDrag(el);
@@ -245,7 +247,7 @@
       };
       probe.onerror = () => window.Toast.show('图片读取失败', { icon: 'warn' });
       probe.src = Api.imgUrl(objectKey);
-    });
+    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
   }
 
   // 预览上拖动图片：按下记录偏移，移动时改 left/top，松开折算回中心比例
