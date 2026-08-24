@@ -51,6 +51,7 @@ try {
   setup = await prepareFacts();
   runChild('customer', 'run-ui1-composed.mjs', {
     ORDER_COMPOSED_FLOW: 'customer', ORDER_COMPOSED_PAYMENT_EXPECTATION: 'success',
+    ORDER_COMPOSED_ENTRY_EXPECTATION: 'merchant',
   });
   runChild('consent', 'run-ui1-composed.mjs', {
     ORDER_COMPOSED_FLOW: 'consent', ORDER_COMPOSED_PAYMENT_EXPECTATION: 'success',

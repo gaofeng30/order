@@ -14,6 +14,7 @@ const browserPath = chromium.executablePath();
 const upstreamOrigin = process.env.ORDER_COMPOSED_API_ORIGIN;
 const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION || 'success';
 const composedFlow = process.env.ORDER_COMPOSED_FLOW || 'customer';
+const entryExpectation = process.env.ORDER_COMPOSED_ENTRY_EXPECTATION || 'user';
 const composedRunID = `ui1-consent-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const mysqlContainer = process.env.ORDER_COMPOSED_MYSQL_CONTAINER || '';
 const mysqlDatabase = process.env.ORDER_COMPOSED_MYSQL_DATABASE || '';
@@ -32,6 +33,9 @@ if (!['success', 'pending'].includes(paymentExpectation)) {
 if (!['customer', 'merchant', 'consent'].includes(composedFlow)
   || (['merchant', 'consent'].includes(composedFlow) && paymentExpectation !== 'success')) {
   throw new Error('ORDER_COMPOSED_FLOW must be customer, merchant, or consent; merchant/consent require success payment expectation');
+}
+if (!['user', 'merchant'].includes(entryExpectation)) {
+  throw new Error('ORDER_COMPOSED_ENTRY_EXPECTATION must be user or merchant');
 }
 if (composedFlow === 'consent' && (!/^[A-Za-z0-9_.-]+$/.test(mysqlContainer)
   || !/^[A-Za-z0-9_]+$/.test(mysqlDatabase) || !/^[A-Za-z0-9_]+$/.test(mysqlUser) || !mysqlPassword)) {
@@ -314,6 +318,7 @@ try {
 process.env.ORDER_COMPOSED_PROXY_ORIGIN = proxy.origin;
 process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION = paymentExpectation;
 process.env.ORDER_COMPOSED_FLOW = composedFlow;
+process.env.ORDER_COMPOSED_ENTRY_EXPECTATION = entryExpectation;
 process.env.ORDER_COMPOSED_RUN_ID = composedRunID;
 process.env.ORDER_COMPOSED_MERCHANT_SETUP = merchantSetup ? JSON.stringify({
   service_date: merchantSetup.serviceDate,
@@ -330,6 +335,7 @@ console.log('UI1_COMPOSED_ENV', JSON.stringify({
   proxy: `${proxy.origin} (random loopback)`,
   payment_expectation: paymentExpectation,
   flow: composedFlow,
+  entry_expectation: entryExpectation,
   merchant_setup: merchantSetup ? {
     service_date: merchantSetup.serviceDate,
     pickup_time: merchantSetup.pickupTime,

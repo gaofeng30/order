@@ -8,6 +8,7 @@ module.exports = function configure(config) {
   const proxyOrigin = process.env.ORDER_COMPOSED_PROXY_ORIGIN;
   const paymentExpectation = process.env.ORDER_COMPOSED_PAYMENT_EXPECTATION;
   const composedFlow = process.env.ORDER_COMPOSED_FLOW;
+  const entryExpectation = process.env.ORDER_COMPOSED_ENTRY_EXPECTATION;
   const composedRunID = process.env.ORDER_COMPOSED_RUN_ID;
   const merchantSetup = process.env.ORDER_COMPOSED_MERCHANT_SETUP;
   config.set({
@@ -29,6 +30,7 @@ module.exports = function configure(config) {
           ORDER_COMPOSED_PROXY_ORIGIN: JSON.stringify(proxyOrigin),
           ORDER_COMPOSED_PAYMENT_EXPECTATION: JSON.stringify(paymentExpectation),
           ORDER_COMPOSED_FLOW: JSON.stringify(composedFlow),
+          ORDER_COMPOSED_ENTRY_EXPECTATION: JSON.stringify(entryExpectation),
           ORDER_COMPOSED_RUN_ID: JSON.stringify(composedRunID),
           ORDER_COMPOSED_MERCHANT_SETUP: merchantSetup,
         }),

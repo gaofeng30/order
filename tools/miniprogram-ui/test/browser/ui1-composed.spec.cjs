@@ -1,4 +1,4 @@
-/* global App, Behavior, Component, ORDER_COMPOSED_FLOW, ORDER_COMPOSED_MERCHANT_SETUP, ORDER_COMPOSED_PAYMENT_EXPECTATION, ORDER_COMPOSED_RUN_ID, Page, describe, getApp, getCurrentPages, it, simulate, wx */
+/* global App, Behavior, Component, ORDER_COMPOSED_ENTRY_EXPECTATION, ORDER_COMPOSED_FLOW, ORDER_COMPOSED_MERCHANT_SETUP, ORDER_COMPOSED_PAYMENT_EXPECTATION, ORDER_COMPOSED_RUN_ID, Page, describe, getApp, getCurrentPages, it, simulate, wx */
 const adminOrderDetailTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-order-detail/admin-order-detail.wxml');
 const adminOrdersTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-orders/admin-orders.wxml');
 const adminProductsTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-products/admin-products.wxml');
@@ -33,6 +33,7 @@ const confirmRequestKeys = [];
 const confirmResponseStatuses = [];
 const paymentExpectation = ORDER_COMPOSED_PAYMENT_EXPECTATION;
 const composedFlow = ORDER_COMPOSED_FLOW;
+const entryExpectation = ORDER_COMPOSED_ENTRY_EXPECTATION;
 const merchantSetup = ORDER_COMPOSED_MERCHANT_SETUP;
 const composedRunID = ORDER_COMPOSED_RUN_ID;
 const requestObservations = [];
@@ -297,10 +298,8 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
     const common = globalComponents(suffix);
     const launch = renderPage({ definition: pageDefinitions.launch, template: launchTemplate, id: `launch-${suffix}`, usingComponents: common });
 
-    await waitFor(
-      () => lastNavigation !== null,
-      () => `anonymous entry remained ${app.globalData.entryRouting.state}`,
-    );
+    await waitFor(() => app.globalData.entryRouting.state !== 'loading',
+      () => `server entry routing remained ${app.globalData.entryRouting.state}`);
     await waitFor(
       () => app.globalData.session.state !== 'loading',
       () => `silent session remained ${app.globalData.session.state}`,
@@ -308,9 +307,26 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
     if (app.globalData.session.state !== 'ready') {
       throw new Error(`real silent session ended ${app.globalData.session.state}`);
     }
-    if (lastNavigation !== '/pages/home/home' || app.globalData.entryRouting.state !== 'user'
-      || launch.querySelector('.cards') || launch.querySelector('button[open-type="getPhoneNumber"]')) {
-      throw new Error(`anonymous cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
+    if (entryExpectation === 'user') {
+      if (lastNavigation !== '/pages/home/home' || app.globalData.entryRouting.state !== 'user'
+        || launch.querySelector('.cards') || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+        throw new Error(`unbound cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
+      }
+    } else {
+      await waitFor(() => launch.instance.data.storefrontState !== 'loading',
+        () => `bound storefront remained ${launch.instance.data.storefrontState}`);
+      const userEntry = launch.querySelector('.id-card.primary');
+      if (app.globalData.entryRouting.state !== 'merchant' || !userEntry || !launch.querySelector('.id-plain')
+        || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+        throw new Error(`bound cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
+      }
+      const beforeSelection = observations.length;
+      const entered = pageDefinitions.launch.go.call(launch.instance, {
+        currentTarget: { dataset: { to: userEntry.dom.dataset.to } },
+      });
+      if (!entered || lastNavigation !== '/pages/home/home' || observations.length !== beforeSelection) {
+        throw new Error(`bound user selection ended ${entered}/${lastNavigation || 'nothing'}`);
+      }
     }
 
     const home = renderPage({ definition: pageDefinitions.home, template: homeTemplate, id: `home-${suffix}`, usingComponents: common });

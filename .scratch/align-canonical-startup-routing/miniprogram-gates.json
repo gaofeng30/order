@@ -22,6 +22,12 @@
       "ui1_required": "fresh unbound BE22 selector plus bound user-pages selector",
       "ui2_required": "exact-candidate WeChat DevTools compile and cold-start route inspection"
     },
+    "ui1_red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "bash .scratch/overnight-acceptance/run-fresh-root-ui1.sh user-pages",
+      "first_error": "customer child expected an unbound route after the same fresh-schema setup had already bound the fixed local openid as OWNER",
+      "correction": "declare the child identity expectation as merchant, choose the rendered user entry with zero HTTP, and keep fresh-unbound routing solely in the independent BE22 selector"
+    },
     "refactor": {
       "production_change": "only cold-start entry routing and the profile-owned first merchant binding handoff",
       "evidence_change": "PAGE-U01 matrix, exact browser selectors and acceptance manifest only",
