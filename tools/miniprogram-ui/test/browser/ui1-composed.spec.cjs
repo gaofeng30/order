@@ -320,11 +320,11 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
         || launch.querySelector('button[open-type="getPhoneNumber"]')) {
         throw new Error(`bound cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
       }
-      const beforeSelection = observations.length;
+      const beforeSelection = requestObservations.length;
       const entered = pageDefinitions.launch.go.call(launch.instance, {
         currentTarget: { dataset: { to: userEntry.dom.dataset.to } },
       });
-      if (!entered || lastNavigation !== '/pages/home/home' || observations.length !== beforeSelection) {
+      if (!entered || lastNavigation !== '/pages/home/home' || requestObservations.length !== beforeSelection) {
         throw new Error(`bound user selection ended ${entered}/${lastNavigation || 'nothing'}`);
       }
     }
