@@ -89,6 +89,7 @@ try {
   await settingsPositiveScenario();
   await invalidBoundariesScenario();
   await ownerAndSessionScenario();
+  await subaccountRBACScenario();
   await page.screenshot({ path: path.join(evidenceRoot, 'final-state.png'), fullPage: true });
 } catch (error) {
   failure = error;
@@ -328,6 +329,79 @@ async function ownerAndSessionScenario() {
   record('PC10 two concurrent QR sessions remain independently usable', first !== second && firstMe.status === 200 && secondMe.status === 200 && !persistedOutsideSession);
 }
 
+async function subaccountRBACScenario() {
+  const ownerMe = await rawGET('/api/v1/admin/me', pcToken);
+  record('AC-16 OWNER PC session reaches the owner workspace normally', ownerMe.status === 200 && await page.evaluate(() => window.Api.currentAccount()?.role) === 'owner');
+
+  const subMiniToken = await miniSessionToken(apiOrigin);
+  const subContext = await browser.newContext();
+  const subPage = await subContext.newPage();
+  const challengePromise = subPage.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/v1/admin/auth/qrcode');
+  await subPage.goto(`${proxy.origin}/web-admin/index.html`, { waitUntil: 'networkidle' });
+  const challengeResponse = await challengePromise;
+  const challenge = await challengeResponse.json();
+  await subPage.locator('#pc-qr canvas').waitFor({ state: 'visible' });
+
+  await navigate('accounts', '商户账号名单', '#acc-host');
+  const currentAccounts = (await adminGET('/api/v1/admin/merchant-accounts')).accounts;
+  const boundOwner = currentAccounts.find(account => account.role === 'OWNER' && account.enabled && account.bound);
+  if (!boundOwner) throw new Error('bound OWNER account missing before AC-16 setup');
+  const backupName = `RBAC备用主账号-${suffix}`;
+  const backupPhone = `199${String(parseInt(suffix.slice(0, 8), 16) % 100000000).padStart(8, '0')}`;
+  await page.locator('[data-new]').click();
+  await page.locator('.drawer #f-name').fill(backupName);
+  await page.locator('.drawer #f-phone').fill(backupPhone);
+  await page.locator('.drawer #f-role').selectOption('owner');
+  const backupResponse = page.waitForResponse(response => response.request().method() === 'POST' && new URL(response.url()).pathname === '/api/v1/admin/merchant-accounts');
+  await page.locator('.drawer [data-a="ok"]').click();
+  if ((await backupResponse).status() !== 201) throw new Error('backup OWNER setup failed');
+  await page.locator('#acc-host tr[data-id]').filter({ hasText: backupName }).waitFor({ state: 'visible' });
+
+  const ownerRow = page.locator('#acc-host tr[data-id]').filter({ hasText: boundOwner.name });
+  await ownerRow.locator('[data-act="edit"]').click();
+  await page.locator('.drawer #f-role').selectOption('staff');
+  const downgradeResponse = page.waitForResponse(response => response.request().method() === 'PUT' && new URL(response.url()).pathname === `/api/v1/admin/merchant-accounts/${boundOwner.id}`);
+  await page.locator('.drawer [data-a="ok"]').click();
+  if ((await downgradeResponse).status() !== 200) throw new Error('bound account SUBACCOUNT setup failed');
+
+  const before = await publicBusinessSnapshot();
+  const payload = new URL(exactString(challenge.qr_payload, 'RBAC qr_payload'));
+  const approval = await rawJSON('/api/v1/me/admin-login/approve', {
+    method: 'POST', bearer: subMiniToken,
+    body: {
+      login_id: exactString(challenge.login_id, 'RBAC login_id'),
+      approval_secret: exactString(payload.searchParams.get('approval_secret'), 'RBAC approval_secret'),
+      code: `rbac-subaccount-${randomUUID()}`,
+    },
+  });
+  const poll = await rawJSON('/api/v1/admin/auth/poll', {
+    method: 'POST', body: { login_id: challenge.login_id, poll_secret: challenge.poll_secret },
+  });
+  const forged = await subPage.evaluate(async token => {
+    window.sessionStorage.setItem('pc_session_token', token);
+    window.Api.currentAccount = () => ({ role: 'owner' });
+    try { await window.Api.listMerchantAccounts(''); return { status: 200 }; }
+    catch (error) { return { status: error.status, code: error.code }; }
+  }, subMiniToken);
+  const after = await publicBusinessSnapshot();
+  const browserState = await subPage.evaluate(() => ({
+    token: window.sessionStorage.getItem('pc_session_token'),
+    qr: !!document.querySelector('#pc-qr canvas'),
+    login_visible: (document.querySelector('#content')?.textContent || '').includes('主账号扫码登录'),
+  }));
+
+  record('INV-13 real SUBACCOUNT approval returns 403 and challenge stays waiting',
+    approval.status === 403 && approval.body?.error?.code === 'FORBIDDEN' && poll.status === 202 && poll.body?.state === 'WAITING',
+    { approval_status: approval.status, approval_code: approval.body?.error?.code || '', poll_status: poll.status, challenge_state: poll.body?.state || '' });
+  record('AC-16 client role spoof cannot grant an owner-only PC route or enter the workspace',
+    forged.status === 401 && browserState.token === subMiniToken && browserState.qr && browserState.login_visible,
+    { route_status: forged.status, route_code: forged.code || '', qr_visible: browserState.qr, login_visible: browserState.login_visible });
+  record('AC-16 denied SUBACCOUNT PC flow writes no business facts and creates no PC session',
+    JSON.stringify(before) === JSON.stringify(after) && !poll.body?.session,
+    { facts_unchanged: JSON.stringify(before) === JSON.stringify(after), session_issued: !!poll.body?.session });
+  await subContext.close();
+}
+
 async function navigate(route, title, ready) {
   await page.locator(`a[data-r="${route}"]`).click();
   await page.waitForFunction(expected => document.querySelector('#tb-title')?.textContent === expected, title);
@@ -348,6 +422,14 @@ async function acquirePCSession(origin) {
   const poll = await jsonRequest(origin, '/api/v1/admin/auth/poll', { method: 'POST', body: { login_id: login.login_id, poll_secret: login.poll_secret } }, 200);
   return exactString(poll.session?.token, 'PC token');
 }
+async function miniSessionToken(origin) {
+  const session = await jsonRequest(origin, '/api/v1/auth/miniprogram/session', { method: 'POST', body: { code: `pc-rbac-${randomUUID()}` } }, 201);
+  return exactString(session.access_token, 'RBAC mini token');
+}
+async function publicBusinessSnapshot() {
+  const storefront = await jsonRequest(apiOrigin, '/api/v1/storefront/settings', { method: 'GET' }, 200);
+  return storefront;
+}
 async function adminGET(pathname) { return jsonRequest(apiOrigin, pathname, { method: 'GET', bearer: pcToken }, 200); }
 async function adminRaw(pathname, method, body) {
   const response = await fetch(`${apiOrigin}${pathname}`, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${pcToken}`, 'Idempotency-Key': randomUUID() }, body: JSON.stringify(body) });
@@ -355,6 +437,14 @@ async function adminRaw(pathname, method, body) {
   return { status: response.status, body: payload };
 }
 async function rawGET(pathname, token) { const response = await fetch(`${apiOrigin}${pathname}`, { headers: { Authorization: `Bearer ${token}` } }); return { status: response.status }; }
+async function rawJSON(pathname, options) {
+  const headers = { Accept: 'application/json' };
+  if (options.body !== undefined) headers['Content-Type'] = 'application/json';
+  if (options.bearer) headers.Authorization = `Bearer ${options.bearer}`;
+  const response = await fetch(`${apiOrigin}${pathname}`, { method: options.method, headers, body: options.body === undefined ? undefined : JSON.stringify(options.body), redirect: 'error' });
+  let body = null; try { body = await response.json(); } catch {}
+  return { status: response.status, body };
+}
 async function jsonRequest(origin, pathname, options, expected) {
   const headers = { Accept: 'application/json' };
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';

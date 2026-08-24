@@ -42,5 +42,11 @@ assert.match(closureRunner, /staffRows\(5001\)/,
   'PC12 must exercise the 5001-row server boundary through the page');
 assert.match(closureRunner, /existingProductImportScenario/,
   'PC11 must prove a same-name existing product is not overwritten');
+assert.match(closureRunner, /subaccountRBACScenario/,
+  'AC-16/INV-13 must execute the SUBACCOUNT PC denial in an independent Chrome context');
+assert.match(closureRunner, /role:\s*'owner'/,
+  'the RBAC gate must prove a client-forged OWNER role cannot grant server authority');
+assert.match(closureRunner, /approval\.status\s*===\s*403/,
+  'SUBACCOUNT PC approval must be visibly bound to the canonical 403 response');
 
 console.log('pc05-pc07-pc12 closure static contract: PASS');
