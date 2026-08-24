@@ -169,14 +169,14 @@ func (a *MySQLApplication) Stats(ctx context.Context, userID uint64, at time.Tim
 		return Stats{}, err
 	}
 	var s Stats
-	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(IF(DATE(paid_at)=DATE(?) AND state NOT IN ('REFUNDING','REFUNDED'),payable_cents,0)),0),COALESCE(SUM(DATE(paid_at)=DATE(?) AND state NOT IN ('REFUNDING','REFUNDED')),0),COALESCE(SUM(IF(YEAR(paid_at)=YEAR(?) AND MONTH(paid_at)=MONTH(?) AND state NOT IN ('REFUNDING','REFUNDED'),payable_cents,0)),0),COALESCE(SUM(YEAR(paid_at)=YEAR(?) AND MONTH(paid_at)=MONTH(?) AND state NOT IN ('REFUNDING','REFUNDED')),0),COALESCE(SUM(state='PREPARING'),0) FROM orders`, at, at, at, at, at, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
+	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(IF(DATE(paid_at)=DATE(?) AND state='COMPLETED',payable_cents,0)),0),COALESCE(SUM(DATE(paid_at)=DATE(?) AND state='COMPLETED'),0),COALESCE(SUM(IF(YEAR(paid_at)=YEAR(?) AND MONTH(paid_at)=MONTH(?) AND state='COMPLETED',payable_cents,0)),0),COALESCE(SUM(YEAR(paid_at)=YEAR(?) AND MONTH(paid_at)=MONTH(?) AND state='COMPLETED'),0),COALESCE(SUM(state='PREPARING'),0) FROM orders`, at, at, at, at, at, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
 	if err != nil {
 		return Stats{}, ErrUnavailable
 	}
 	if a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(amount_cents),0) FROM refunds WHERE materialization_state='APPLIED' AND DATE(materialized_at)=DATE(?)`, at).Scan(&s.RefundCents) != nil {
 		return Stats{}, ErrUnavailable
 	}
-	rows, err := a.db.QueryContext(ctx, `SELECT oi.product_id,oi.product_name_snapshot,SUM(oi.quantity) FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE DATE(o.paid_at)=DATE(?) AND o.state NOT IN ('REFUNDING','REFUNDED') GROUP BY oi.product_id,oi.product_name_snapshot ORDER BY SUM(oi.quantity) DESC,oi.product_id LIMIT 10`, at)
+	rows, err := a.db.QueryContext(ctx, `SELECT oi.product_id,oi.product_name_snapshot,SUM(oi.quantity) FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE DATE(o.paid_at)=DATE(?) AND o.state='COMPLETED' GROUP BY oi.product_id,oi.product_name_snapshot ORDER BY SUM(oi.quantity) DESC,oi.product_id LIMIT 10`, at)
 	if err != nil {
 		return Stats{}, ErrUnavailable
 	}

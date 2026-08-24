@@ -11,6 +11,7 @@
   /* PC 扫码核销页已删（§15.5.3，扫码在手机上做）。手工核销的定位并到这里：
      按取餐号 / 订单号 / 手机号搜索，跨泳道 —— 要核销时并不知道单子在哪个状态。 */
   let kw = '';
+  let date = '';
 
   function render(el) {
     // 由工作台带过来的泳道 / 选中项
@@ -23,6 +24,7 @@
            <div class="segs" id="lanes"></div>
            <span class="sp"></span>
            <span id="unc-host"></span>
+           <input class="inp" id="f-date" type="date" value="${T.esc(date)}" aria-label="营业日期">
            <input class="inp" id="f-kw" placeholder="取餐号 / 订单号 / 手机号" value="${T.esc(kw)}" style="width:210px">
          </div>
          <div id="tbl-host"></div>
@@ -31,6 +33,8 @@
 
     const search = el.querySelector('#f-kw');
     search.oninput = () => { kw = search.value; paint(el); };
+    const dateInput = el.querySelector('#f-date');
+    if (dateInput) dateInput.onchange = () => { date = dateInput.value; paint(el); };
     paint(el);
   }
 
@@ -54,7 +58,7 @@
     });
 
     const q = kw.trim();
-    (q ? Api.searchOrders(q) : Api.listOrders(lane, { uncollected })).then(list => {
+    (q ? Api.searchOrders(q, { date }) : Api.listOrders(lane, { uncollected, date })).then(list => {
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 

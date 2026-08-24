@@ -64,8 +64,8 @@
 
     el.querySelectorAll('[data-quick]').forEach(b => {
       b.onclick = () => {
-        const d = new Date(today + 'T00:00:00');
-        if (b.dataset.quick === '7') d.setDate(d.getDate() - 6);
+        const d = new Date(today + 'T00:00:00Z');
+        if (b.dataset.quick === '7') d.setUTCDate(d.getUTCDate() - 6);
         range = { from: d.toISOString().slice(0, 10), to: today };
         from.value = range.from; to.value = range.to;
         paint(el);

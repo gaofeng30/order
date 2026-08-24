@@ -169,10 +169,17 @@
   async function reorderCategories(ids) { await request('/admin/categories/order', { method: 'PUT', body: { ids } }); return listCategories(); }
 
   async function listOrders(lane, opts) {
-    const body = await request('/admin/orders' + qs({ state: lane && lane !== '全部' ? lane : '', unclaimed: opts && opts.uncollected ? 'true' : '' }));
+    const body = await request('/admin/orders' + qs({
+      state: lane && lane !== '全部' ? lane : '',
+      date: opts && opts.date,
+      unclaimed: opts && opts.uncollected ? 'true' : '',
+    }));
     state.orders = listOf(body, 'orders').map(orderOf); return state.orders.slice();
   }
-  async function searchOrders(q) { const body = await request('/admin/orders' + qs({ q })); state.orders = listOf(body, 'orders').map(orderOf); return state.orders.slice(); }
+  async function searchOrders(q, opts) {
+    const body = await request('/admin/orders' + qs({ q, date: opts && opts.date }));
+    state.orders = listOf(body, 'orders').map(orderOf); return state.orders.slice();
+  }
   function laneCounts() { const c = {}; LANES.forEach(l => { c[l] = l === '全部' ? state.orders.length : state.orders.filter(o => o.status === l).length; }); return c; }
   function uncollectedCount() { return state.orders.filter(o => o.unclaimed).length; }
   function findOrder(id) { return state.orders.find(o => o.id === String(id)); }
@@ -189,7 +196,12 @@
   }
   const canRefund = status => ['已预约', '制作中', '待取餐', '已完成'].includes(status);
 
-  const PENDING_REASON_LABEL = { PRODUCT_UNAVAILABLE: '商品不可售', PICKUP_EXPIRED: '取餐时间已过', SNAPSHOT_INVALID: '数据校验不通过' };
+  const PENDING_REASON_LABEL = {
+    PRODUCT_UNAVAILABLE: '商品不可售',
+    PICKUP_EXPIRED: '取餐时间已过',
+    SNAPSHOT_INVALID: '数据校验不通过',
+    QUOTE_SNAPSHOT_INVALID: '数据校验不通过',
+  };
   async function listPendingPayments() {
     const b = await request('/admin/pending-payments');
     state.pending = listOf(b, 'prepayments').map(p => {
