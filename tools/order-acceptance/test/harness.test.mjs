@@ -101,7 +101,15 @@ test('committed inventory keeps every case explicit and preserves current gaps',
     localReady: summary.local_ready,
     localMissing: summary.local_missing,
     externalBlocked: summary.external_blocked,
-  }, { total: 95, localReady: 15, localMissing: 80, externalBlocked: 23 });
+  }, { total: 95, localReady: 17, localMissing: 78, externalBlocked: 23 });
+  for (const caseID of ['BE-22', 'BE-26']) {
+    const entry = manifest.cases.find(item => item.case_id === caseID);
+    assert.equal(entry.local_evidence.some(item => item.evidence_id === `${caseID}:mini_composed_be22_be26_ui1_l3` && item.satisfies), true);
+  }
+  for (const caseID of ['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC04']) {
+    const entry = manifest.cases.find(item => item.case_id === caseID);
+    assert.equal(entry.local_evidence.some(item => item.evidence_id === `${caseID}:web_composed_transactions_ui1_l3` && !item.satisfies), true);
+  }
   assert.equal(manifest.cases.every(entry => entry.local_evidence.length > 0), true);
 });
 

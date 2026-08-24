@@ -25,6 +25,8 @@ export const profiles = Object.freeze({
     command('env', 'ORDER_COMPOSED_FLOW=merchant', 'npm', '--prefix', 'tools/miniprogram-ui', 'run', 'ui1:composed')),
   mini_composed_user_boundaries_ui1_l3: evidence('L3', 'One locked-Chrome rendered Mini selector drives the real WXML controls against the root-composed HTTP API and MySQL for BE-01--06 and BE-22--26. It closes closed/cutoff browsing, sold-out and off-shelf cart revalidation, meal mismatch, cutoff and current-fact drift, byte-exact staff identity, visitor pricing, and empty-cart shields. BE-22 and BE-26 remain supporting projections because their receipt explicitly substitutes an unbound primary-phone response and filters unrelated READY rows inside the browser seam.',
     command('node', 'tools/miniprogram-ui/run-ui1-composed-boundaries.mjs')),
+  mini_composed_be22_be26_ui1_l3: evidence('L3', 'One exact rendered Mini selector starts from a fresh v44 MySQL schema and real unbound session. It proves BE-22 denial and authorization failure preserve the cart with zero bind/Quote/prepay/navigation side effects before accepted phone binding resumes the same checkout; it proves BE-26 no-READY toast/no navigation/no token, READY-only token display, 401/503 no false redemption, exact replay, completion and stale-token removal. Writer, detached and integrated receipts each recorded 65 root-HTTP responses; real WeChat consent remains L4.',
+    command('node', 'tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs')),
   web_contract_ui0: evidence('UI0', 'PC Admin contract suite proves twelve-page wiring and no browser truth, not rendered full-flow E2E.',
     node('apps/web-admin/tests/http-contract.test.js')),
   web_chrome_ui1_fixture: evidence('UI1', 'PC Chrome smoke renders login/nav against a local fixture, not the composed MySQL API.',
@@ -37,6 +39,8 @@ export const profiles = Object.freeze({
     command('node', 'apps/web-admin/tests/composed-ui1-imports-chrome-runner.mjs')),
   web_composed_catalog_image_ui1_l3: evidence('L3', 'Twenty-six PC Chrome checks use a root-composed OWNER session and server readback for category create/rename/enable/order/delete, normalized duplicate and FK 409 shields, product create/delete/order/shelf/date-sold-out, zero/one/three ordered images with public object reads, and launch PNG upload/geometry/enable/new-context projection/clear/audit/cleanup. This closes PAGE-PC06 and BE-20 exactly. It is supporting-only for PAGE-PC05, PAGE-PC08 and AC-17 because product-edit/upload-failure, unreadable-object rendering, and rendered Mini cross-client coverage remain absent.',
     command('node', 'apps/web-admin/tests/composed-ui1-catalog-image-chrome-runner.mjs')),
+  web_composed_transactions_ui1_l3: evidence('L3', 'Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.',
+    command('node', 'apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs')),
 
   composed_order_refund_l2: evidence('L2', 'One root-composed HTTP and worker selector uses a fresh v1-v44 MySQL schema plus deterministic local WeChat/payment/refund providers to prove trusted phone and staff Quote pricing, confirmed-payment order materialization, exact 30-minute production, READY token and scan redemption, SUBACCOUNT versus OWNER PC QR authorization, durable full refund, audit receipts and two sent notification outbox intents. It is not UI1 and does not claim unexercised boundary variants.',
     go('./services/api/cmd/order-api', 'TestAcceptanceLocalThreeRoleOrderToRefund')),
@@ -187,6 +191,7 @@ assign(['INV-05', 'INV-07', 'INV-08', 'INV-13', 'INV-16'], ['mini_composed_merch
 
 assign(['BE-01', 'BE-02', 'BE-03', 'BE-04', 'BE-05', 'BE-06', 'BE-23', 'BE-24', 'BE-25'], [['mini_composed_user_boundaries_ui1_l3', true]]);
 assign(['BE-22', 'BE-26'], ['mini_composed_user_boundaries_ui1_l3']);
+assign(['BE-22', 'BE-26'], [['mini_composed_be22_be26_ui1_l3', true]]);
 
 assign(['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC08', 'PAGE-PC09'], ['web_composed_reads_ui1_l3']);
 assign(['PAGE-PC05', 'PAGE-PC06', 'PAGE-PC07', 'PAGE-PC09'], ['web_composed_writes_ui1_l3']);
@@ -194,6 +199,7 @@ assign(['PAGE-PC11', 'PAGE-PC12'], ['web_composed_imports_ui1_l3']);
 assign(['BE-27', 'BE-31', 'BE-32', 'BE-33'], ['web_composed_imports_ui1_l3']);
 assign(['PAGE-PC05', 'PAGE-PC08', 'AC-13', 'AC-17'], ['web_composed_catalog_image_ui1_l3']);
 assign(['PAGE-PC06', 'BE-20'], [['web_composed_catalog_image_ui1_l3', true]]);
+assign(['PAGE-PC01', 'PAGE-PC02', 'PAGE-PC03', 'PAGE-PC04'], ['web_composed_transactions_ui1_l3']);
 
 // This first composed release selector is useful supporting evidence for the
 // broader rows below, but only the five exact L2 scenarios explicitly marked

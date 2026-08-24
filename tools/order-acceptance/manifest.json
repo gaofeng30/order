@@ -6,7 +6,7 @@
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
     "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
-    "inventory_base_sha": "a56d1257258b0db4cba030876510cb0a08b71e9e"
+    "inventory_base_sha": "247d84d8816346ab665174594d7f62cc7b41e6f3"
   },
   "policy": {
     "exact_counts": {
@@ -1300,6 +1300,20 @@
           }
         },
         {
+          "evidence_id": "PAGE-PC01:web_composed_transactions_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC01:missing:L3",
           "level": "L3",
           "status": "MISSING",
@@ -1409,6 +1423,20 @@
           }
         },
         {
+          "evidence_id": "PAGE-PC02:web_composed_transactions_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "PAGE-PC02:composed_order_refund_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -1509,6 +1537,20 @@
             "argv": [
               "node",
               "apps/web-admin/tests/composed-ui1-chrome-runner.mjs"
+            ]
+          }
+        },
+        {
+          "evidence_id": "PAGE-PC03:web_composed_transactions_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs"
             ]
           }
         },
@@ -1624,6 +1666,20 @@
               "test": "TestPaymentOrderMySQL8CorruptSnapshotDefersDurablePayment"
             }
           ]
+        },
+        {
+          "evidence_id": "PAGE-PC04:web_composed_transactions_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": false,
+          "claim": "Twenty-three Chrome checks against root-composed HTTP and MySQL use two Mini-created late paid prepayments to exercise OWNER login; PC04 MATERIALIZE/REFUND/replay/conflict/finality; PC02 six-state lanes, order-number search, unclaimed query and full refund through REFUNDING to REFUNDED; PC01 dashboard values; and PC03 payments/refunds/summary/export/date guard. This remains supporting-only: PC01 lacks independent no-mutation and unclaimed-revenue assertions; PC02 lacks date, pickup-number and phone searches; PC03 lacks fake-bill one-sided/unavailable reconciliation evidence; PC04 lacks corrupt-snapshot shielding. SUBACCOUNT 403 and real WeChat remain outside this selector.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "apps/web-admin/tests/composed-ui1-transactions-chrome-runner.mjs"
+            ]
+          }
         },
         {
           "evidence_id": "PAGE-PC04:missing:L3",
@@ -5540,6 +5596,20 @@
           }
         },
         {
+          "evidence_id": "BE-22:mini_composed_be22_be26_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One exact rendered Mini selector starts from a fresh v44 MySQL schema and real unbound session. It proves BE-22 denial and authorization failure preserve the cart with zero bind/Quote/prepay/navigation side effects before accepted phone binding resumes the same checkout; it proves BE-26 no-READY toast/no navigation/no token, READY-only token display, 401/503 no false redemption, exact replay, completion and stale-token removal. Writer, detached and integrated receipts each recorded 65 root-HTTP responses; real WeChat consent remains L4.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-22:identity_mysql_l2",
           "level": "L2",
           "status": "AVAILABLE",
@@ -5586,13 +5656,6 @@
             "package": "./services/api/cmd/order-api",
             "test": "TestAcceptanceUserBoundariesAreFailClosed"
           }
-        },
-        {
-          "evidence_id": "BE-22:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-22 against the composed local API, fresh MySQL and deterministic fake providers: perform \"未绑手机号点结算并返回\" and assert HTTP, MySQL, visible result and zero false-success side effects."
         }
       ],
       "external_evidence": [
@@ -5818,6 +5881,20 @@
           }
         },
         {
+          "evidence_id": "BE-26:mini_composed_be22_be26_ui1_l3",
+          "level": "L3",
+          "status": "AVAILABLE",
+          "satisfies": true,
+          "claim": "One exact rendered Mini selector starts from a fresh v44 MySQL schema and real unbound session. It proves BE-22 denial and authorization failure preserve the cart with zero bind/Quote/prepay/navigation side effects before accepted phone binding resumes the same checkout; it proves BE-26 no-READY toast/no navigation/no token, READY-only token display, 401/503 no false redemption, exact replay, completion and stale-token removal. Writer, detached and integrated receipts each recorded 65 root-HTTP responses; real WeChat consent remains L4.",
+          "selector": {
+            "kind": "command",
+            "argv": [
+              "node",
+              "tools/miniprogram-ui/run-ui1-composed-be22-be26.mjs"
+            ]
+          }
+        },
+        {
           "evidence_id": "BE-26:order_query_l1",
           "level": "L1",
           "status": "AVAILABLE",
@@ -5864,13 +5941,6 @@
             "package": "./services/api/cmd/order-api",
             "test": "TestAcceptanceUserBoundariesAreFailClosed"
           }
-        },
-        {
-          "evidence_id": "BE-26:missing:L3",
-          "level": "L3",
-          "status": "MISSING",
-          "satisfies": true,
-          "shortest_gap": "Add one exact-SHA rendered UI1 scenario for BE-26 against the composed local API, fresh MySQL and deterministic fake providers: perform \"无 READY 单点取餐码\" and assert HTTP, MySQL, visible result and zero false-success side effects."
         }
       ],
       "external_evidence": []
@@ -8022,5 +8092,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "480bbc373afb38c65382f6104d04646fb8c55e61c7a976f0efb5c1254ec0b4e1"
+  "manifest_sha256": "b0840340be51047ab815cb540a56feb706fddc7205283f71fbf2d03a743d5365"
 }
