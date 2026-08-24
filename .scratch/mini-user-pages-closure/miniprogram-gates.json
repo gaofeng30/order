@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "change": "mini-user-pages-closure",
+  "base_sha": "00cf26f0815ed58979b228806f1f99519b6c40bf",
+  "branch": "codex/mini-user-pages-closure",
+  "owned_pages": [
+    "PAGE-U01",
+    "PAGE-U02",
+    "PAGE-U03",
+    "PAGE-U04",
+    "PAGE-U05",
+    "PAGE-U06",
+    "PAGE-U07",
+    "PAGE-U08",
+    "PAGE-U09"
+  ],
+  "success_contract": "fresh v1-v44 schema -> order-bootstrap -> private root HTTP -> rendered Chrome 151 miniprogram-simulate -> MySQL read evidence -> exact cleanup",
+  "candidate_binding": "the external receipt emitted by verify-writer.sh is authoritative because a committed file cannot contain its own candidate SHA",
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "node --test apps/wechat-miniprogram/tests/mini-user-pages-closure-ui0.test.js",
+      "result": "0/1",
+      "first_error": "PAGE-U04 three-image detail had no imageIndex; undefined !== 0"
+    },
+    "bootstrap_red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "go test ./services/api/cmd/order-bootstrap -run '^TestBootstrapFlavorOptionsMatchCanonicalPRDOrder$' -count=1",
+      "result": "build failed: undefined bootstrapFlavorOptions before production implementation"
+    },
+    "green": {
+      "status": "PASS_CURRENT_TREE",
+      "focused": "new PAGE-U04 gallery test 1/1 plus existing menu/detail regression 4/4",
+      "bootstrap_flavors": "canonical ordered PRD flavor unit test PASS; fresh-v44 MySQL exact/replay/conflict runs in writer Gate",
+      "full_miniprogram": "98/98",
+      "wxml_wxss_lint": "PASS"
+    },
+    "refactor": {
+      "production_change": "only the missing PAGE-U04 0-3 image presentation: manual swiper, position and full preview",
+      "runner": "one uniquely named strict U01..U09 runner; all configurable business setup uses production HTTP after order-bootstrap; one separately marked specification content fixture is not configuration evidence",
+      "cache_policy": "reuse one existing Karma, Playwright, Chromium and Go module/build cache; no install or second Docker"
+    }
+  },
+  "ui1_cases": {
+    "PAGE-U01": "anonymous user entry plus rejected and accepted merchant phone paths",
+    "PAGE-U02": "shared storefront, notice, active order, menu/order/pickup-code entries",
+    "PAGE-U03": "two server dates, discrete pickup selection, search and quantity/flavors/note cart",
+    "PAGE-U04": "three ordered server images, read-only specification, position and preview",
+    "PAGE-U05": "primary phone, exact staff extra phone/name, contact, pickup, flavors, item/order notes and Quote",
+    "PAGE-U06": "existing customer and consent rendered flow covers prepay, requestPayment, confirm and READY consent",
+    "PAGE-U07": "existing customer and consent rendered flow covers detail, cancellation and refund consent/outbox",
+    "PAGE-U08": "six exact filters, owner-only 20+cursor pagination and REFUNDING only in all",
+    "PAGE-U09": "server identity, cosmetic zero-HTTP, native contact, extra phone and merchant switching"
+  },
+  "fail_closed_support": {
+    "PAGE-U01": "rejected merchant authorization has zero HTTP and zero navigation",
+    "PAGE-U02": "existing composed HTTP fault renders error and blocks navigation",
+    "PAGE-U03_U04_U05": "same fresh candidate invokes BE-01..BE-06 and BE-22..BE-25 rendered boundary Gate",
+    "PAGE-U06_U07": "same fresh candidate invokes confirm failure plus consent accepted/rejected/native-failure paths",
+    "PAGE-U08": "no pending/cancel/abnormal tab and no REFUNDING filter",
+    "PAGE-U09": "cosmetic identity has zero HTTP; wrong-name extra phone remains VISITOR; rejected merchant auth is zero-write"
+  },
+  "writer_gate": {
+    "command": ".scratch/mini-user-pages-closure/verify-writer.sh",
+    "status_source": "MINI_USER_PAGES_WRITER_GATE marker and external receipt",
+    "first_red": "b20a19e fresh v44 and bootstrap passed, then runner failed because it expected unconfigured service_dates instead of creating today/tomorrow through PC Admin HTTP",
+    "second_red": "79f55c5 reached public product GET 200 after three uploads and the authorized specification fixture, then the combined specification/image assertion failed; the next candidate separates the sanitized fields",
+    "third_red": "8a58914 isolated the public specification as mojibake from the test MySQL CLI default charset; the runner now pins utf8mb4 for the one fixture write and Chinese read evidence",
+    "fourth_red": "b9a9b26 reached bootstrap, customer 4/4, consent 1/1 and boundary 11/11, then the focused U01 rendered runner failed because miniprogram-simulate does not preserve the WXML open-type attribute as a selectable DOM attribute; the runner now selects the same native button by its stable id-plain class",
+    "fifth_red": "8c4923b reached the same prerequisite PASS set and rendered both U01 controls, then the runner checked navigation synchronously before miniprogram-simulate dispatched bindtap; the shared runner tap now follows the proven harness seam of touchstart plus one simulator tick",
+    "sixth_red": "f4edca2 proved the tick was not sufficient because the rejected merchant authorization had already caused setData to replace the rendered user-entry node; U01 now re-queries the current rendered control after that re-render instead of dispatching on a stale simulator node",
+    "seventh_red": "74dfe24 proved miniprogram-simulate does not rebind touch dispatch after the rejection re-render; because the exact candidate already passes the mature rendered customer user-entry dispatch, the focused row now reads the current rendered control dataset and invokes its production bound handler while retaining the unique rejection and merchant-acceptance assertions",
+    "eighth_red": "5288f07 closed all U01 paths and then hit the same focused-runner touch limitation on U02 ongoing; the focused runner now systematically requires each rendered control and its current DOM dataset before invoking the production handler, while the exact-candidate customer and boundary prerequisites remain the real rendered touch-dispatch evidence",
+    "ninth_red": "6de084f proved direct U02 ongoing works and isolated the next limitation to wx:for dynamic data attributes not being preserved by miniprogram-simulate; loop controls are now paired to the same server-backed page-state item by rendered order/text, and only that verified item supplies the production handler argument",
+    "tenth_red": "a0f2da6 isolated U02 tab navigation to the focused runner's impossible empty getCurrentPages stub, which makes nav.tabTo treat index -1 as the current page; render now exposes exactly its current route as the one-page stack, matching the mature passing customer harness and real Mini Program semantics",
+    "eleventh_red": "0051fbb closed U01 and U02 then exposed that miniprogram-simulate does not propagate the page's changed properties into a nested customize observer; the production customize component is now separately rendered with the same server-backed page item and flavors before its operations are returned to the production page handler",
+    "twelfth_red": "108b60d rendered all eight flavors and completed selection and note input, then showed that a parent component cannot query the isolated stepper's internal plus class; the focused assertion now requires the rendered production stepper child before invoking customize.add",
+    "thirteenth_red": "4aba83e showed the source-tag stepper lookup was absent after the quantity region rendered; the next runner keeps the production-child requirement while accepting either the source tag or miniprogram-simulate's transformed wx-stepper host tag",
+    "fourteenth_red": "396f634 closed U01 through U03 and rendered U04 at three of three, then showed the runner passed an upload setup URL instead of the public-read resolved image URL; preview now uses and verifies the third URL from the validated detail page state",
+    "fifteenth_red": "8b31b83 retained the preview failure with the exact page-state URL, isolating the false condition to a selector that cannot cross the native swiper boundary; U04 now counts three rendered image hosts from the swiper tree before invoking preview with that page-state URL",
+    "sixteenth_red": "4d976a0 closed U01 through U04 then showed U05 DOM input dispatch had not populated the confirm form before the extra-phone save; each rendered field now supplies its static dataset key to production confirm.onInput and the complete form is asserted before the HTTP write",
+    "seventeenth_red": "f0e08bc completed all focused U01 through U09 HTTP operations and MySQL pagination and identity evidence, then the quote snapshot check correctly failed because fresh bootstrap keeps the staff discount at 100 percent; setup now writes and verifies 88 percent through the production Admin API before checkout",
+    "required": [
+      "exact candidate is clean and contains only owned paths",
+      "fresh schema has exactly clean migrations v1-v44",
+      "root API is private loopback and ready",
+      "all PAGE-U01..U09 rendered cases pass in Chrome 151",
+      "quote, identity and pagination facts are read back from MySQL",
+      "API stops and dedicated schema is dropped"
+    ]
+  },
+  "fixture_exception": {
+    "marker": "BOOTSTRAP_CONTENT_FIXTURE_NOT_EVIDENCE",
+    "scope": "one HTTP-created product specification only",
+    "authorization": "canonical PRD section 10 keeps specification outside phase-one PC writes; controlled fresh-schema fixture is allowed only to prove PAGE-U04 read-only rendering",
+    "not_evidence_for": "PC product specification configuration"
+  },
+  "ui_level_actual_after_writer_gate": "UI1_L3_LOCAL_COMPOSED",
+  "ui_level_target": "UI2_UI3",
+  "blocked_external": [
+    "WeChat Developer Tools UI2",
+    "real getPhoneNumber, getUserProfile and customer-service UI",
+    "real wx.requestPayment and funds",
+    "real subscription template consent UI",
+    "physical-device UI3"
+  ],
+  "forbidden_claims": [
+    "Chrome or miniprogram-simulate is not WeChat Developer Tools UI2",
+    "fake payment is not real-fund validation",
+    "BLOCKED_EXTERNAL is not independent verification or submission readiness"
+  ]
+}

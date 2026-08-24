@@ -13,6 +13,8 @@ var (
 	errBootstrapUnavailable = errors.New("bootstrap storage unavailable")
 )
 
+var bootstrapFlavorOptions = [...]string{"少饭", "加饭", "少盐", "加辣", "酱汁分装", "免葱蒜", "打包分装", "多双餐具"}
+
 type bootstrapError struct {
 	kind  error
 	cause error
@@ -32,6 +34,7 @@ type storefrontBootstrapState struct {
 	launchNulls                                                bool
 	flavorType                                                 string
 	flavorCount                                                int
+	flavors                                                    [len(bootstrapFlavorOptions)]string
 	recordVersion                                              uint64
 }
 
@@ -93,8 +96,10 @@ func bootstrapInTransaction(ctx context.Context, tx *sql.Tx, input bootstrapInpu
 		INSERT INTO storefront_settings(
 			id,store_name,store_address,pickup_point,announcement,business_status,
 			launch_image_object_key,center_x,center_y,width_ratio,aspect_ratio,flavor_options_json,record_version
-		) VALUES(1,?,?,?,'','closed',NULL,NULL,NULL,NULL,NULL,JSON_ARRAY(),1)
-	`, input.StoreName, input.StoreAddress, input.PickupPoint); err != nil {
+		) VALUES(1,?,?,?,'','closed',NULL,NULL,NULL,NULL,NULL,JSON_ARRAY(?,?,?,?,?,?,?,?),1)
+	`, input.StoreName, input.StoreAddress, input.PickupPoint,
+		bootstrapFlavorOptions[0], bootstrapFlavorOptions[1], bootstrapFlavorOptions[2], bootstrapFlavorOptions[3],
+		bootstrapFlavorOptions[4], bootstrapFlavorOptions[5], bootstrapFlavorOptions[6], bootstrapFlavorOptions[7]); err != nil {
 		return "", unavailableBootstrapError(err)
 	}
 	if _, err := tx.ExecContext(ctx, `
@@ -136,11 +141,21 @@ func readBootstrapStateForUpdate(ctx context.Context, tx *sql.Tx) (bootstrapStat
 	err := tx.QueryRowContext(ctx, `
 		SELECT store_name,store_address,pickup_point,announcement,business_status,
 		       (launch_image_object_key IS NULL AND center_x IS NULL AND center_y IS NULL AND width_ratio IS NULL AND aspect_ratio IS NULL),
-		       JSON_TYPE(flavor_options_json),JSON_LENGTH(flavor_options_json),record_version
+		       JSON_TYPE(flavor_options_json),JSON_LENGTH(flavor_options_json),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[0]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[1]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[2]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[3]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[4]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[5]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[6]')),''),
+		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[7]')),''),record_version
 		FROM storefront_settings WHERE id=1 FOR UPDATE
 	`).Scan(
 		&storefront.storeName, &storefront.storeAddress, &storefront.pickupPoint, &storefront.announcement, &storefront.status,
-		&storefront.launchNulls, &storefront.flavorType, &storefront.flavorCount, &storefront.recordVersion,
+		&storefront.launchNulls, &storefront.flavorType, &storefront.flavorCount,
+		&storefront.flavors[0], &storefront.flavors[1], &storefront.flavors[2], &storefront.flavors[3],
+		&storefront.flavors[4], &storefront.flavors[5], &storefront.flavors[6], &storefront.flavors[7], &storefront.recordVersion,
 	)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return bootstrapState{}, err
@@ -189,7 +204,7 @@ func (state bootstrapState) exactlyMatches(input bootstrapInput) bool {
 		return false
 	}
 	storefront := state.storefront
-	if storefront.storeName != input.StoreName || storefront.storeAddress != input.StoreAddress || storefront.pickupPoint != input.PickupPoint || storefront.announcement != "" || storefront.status != "closed" || !storefront.launchNulls || storefront.flavorType != "ARRAY" || storefront.flavorCount != 0 || storefront.recordVersion != 1 {
+	if storefront.storeName != input.StoreName || storefront.storeAddress != input.StoreAddress || storefront.pickupPoint != input.PickupPoint || storefront.announcement != "" || storefront.status != "closed" || !storefront.launchNulls || storefront.flavorType != "ARRAY" || storefront.flavorCount != len(bootstrapFlavorOptions) || storefront.flavors != bootstrapFlavorOptions || storefront.recordVersion != 1 {
 		return false
 	}
 	discount := state.discount

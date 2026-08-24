@@ -3,7 +3,7 @@ const { cart, pickup } = require('../../utils/util.js');
 
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
-  data: { detailState: 'loading', m: null, qty: 0, czVisible: false, czInit: null, flavors: [] },
+  data: { detailState: 'loading', m: null, qty: 0, imageIndex: 0, czVisible: false, czInit: null, flavors: [] },
   onLoad(opts) {
     this._id = String(opts.id || '');
     this.setData({ flavors: (getApp().globalData.storefrontFlavors || []).slice() });
@@ -17,10 +17,10 @@ Page({
       this.setData({ detailState: 'selection_required', m: null, qty: 0 });
       return false;
     }
-    this.setData({ detailState: 'loading', m: null, qty: 0 });
+    this.setData({ detailState: 'loading', m: null, qty: 0, imageIndex: 0 });
     try {
       const product = await productStore.load(this._id, selection);
-      this.setData({ detailState: 'ready', m: product, qty: cart.qty(product.id) });
+      this.setData({ detailState: 'ready', m: product, qty: cart.qty(product.id), imageIndex: 0 });
       return true;
     } catch (error) {
       this.setData({
@@ -49,6 +49,13 @@ Page({
     this.setData({ czVisible: false });
     this.refresh();
     this.selectComponent('#toast').show('已加入购物车', { icon: 'cart' });
+    return true;
+  },
+  onImageChange(e) {
+    const current = e && e.detail && e.detail.current;
+    if (!this.data.m || this.data.m.images.length < 2 || !Number.isSafeInteger(current)
+      || current < 0 || current >= this.data.m.images.length) return false;
+    this.setData({ imageIndex: current });
     return true;
   },
   previewImage(e) {

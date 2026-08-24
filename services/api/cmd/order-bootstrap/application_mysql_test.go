@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"os"
 	"strconv"
@@ -93,6 +94,21 @@ func TestBootstrapRejectsPartialDifferentAndAdditionalOwnerState(t *testing.T) {
 				t.Fatalf("additional-owner bootstrap = %q/%v", outcome, err)
 			}
 			assertBootstrapGroupCounts(t, db, 2, 1, 1)
+		})
+	})
+
+	t.Run("flavor order drift", func(t *testing.T) {
+		withFreshBootstrapSchema(t, configuration, func(db *sql.DB) {
+			if _, err := bootstrap(context.Background(), db, integrationInput); err != nil {
+				t.Fatal("seed exact bootstrap")
+			}
+			if _, err := db.ExecContext(context.Background(), `UPDATE storefront_settings SET flavor_options_json=JSON_ARRAY('加饭','少饭','少盐','加辣','酱汁分装','免葱蒜','打包分装','多双餐具') WHERE id=1`); err != nil {
+				t.Fatal("seed flavor order drift")
+			}
+			if outcome, err := bootstrap(context.Background(), db, integrationInput); outcome != "" || !errors.Is(err, errBootstrapConflict) {
+				t.Fatalf("flavor-drift bootstrap = %q/%v", outcome, err)
+			}
+			assertBootstrapGroupCounts(t, db, 1, 1, 1)
 		})
 	})
 }
@@ -331,16 +347,22 @@ func assertExactBootstrapState(t *testing.T, db *sql.DB, input bootstrapInput) {
 	var storeName, storeAddress, pickupPoint, announcement, status, flavorType string
 	var launchNulls bool
 	var flavorCount int
+	var flavorJSON []byte
 	var storeVersion uint64
 	if err := db.QueryRowContext(context.Background(), `
 		SELECT store_name,store_address,pickup_point,announcement,business_status,
 		       (launch_image_object_key IS NULL AND center_x IS NULL AND center_y IS NULL AND width_ratio IS NULL AND aspect_ratio IS NULL),
-		       JSON_TYPE(flavor_options_json),JSON_LENGTH(flavor_options_json),record_version
+		       JSON_TYPE(flavor_options_json),JSON_LENGTH(flavor_options_json),flavor_options_json,record_version
 		FROM storefront_settings WHERE id=1
-	`).Scan(&storeName, &storeAddress, &pickupPoint, &announcement, &status, &launchNulls, &flavorType, &flavorCount, &storeVersion); err != nil {
+	`).Scan(&storeName, &storeAddress, &pickupPoint, &announcement, &status, &launchNulls, &flavorType, &flavorCount, &flavorJSON, &storeVersion); err != nil {
 		t.Fatal("read storefront state")
 	}
-	if storeName != input.StoreName || storeAddress != input.StoreAddress || pickupPoint != input.PickupPoint || announcement != "" || status != "closed" || !launchNulls || flavorType != "ARRAY" || flavorCount != 0 || storeVersion != 1 {
+	var flavors []string
+	if err := json.Unmarshal(flavorJSON, &flavors); err != nil {
+		t.Fatal("decode bootstrap flavors")
+	}
+	wantFlavors := []string{"少饭", "加饭", "少盐", "加辣", "酱汁分装", "免葱蒜", "打包分装", "多双餐具"}
+	if storeName != input.StoreName || storeAddress != input.StoreAddress || pickupPoint != input.PickupPoint || announcement != "" || status != "closed" || !launchNulls || flavorType != "ARRAY" || flavorCount != len(wantFlavors) || strings.Join(flavors, "\x00") != strings.Join(wantFlavors, "\x00") || storeVersion != 1 {
 		t.Fatal("storefront state is not the exact bootstrap default")
 	}
 	var rate int

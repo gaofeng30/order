@@ -4,9 +4,17 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 )
+
+func TestBootstrapFlavorOptionsMatchCanonicalPRDOrder(t *testing.T) {
+	want := []string{"少饭", "加饭", "少盐", "加辣", "酱汁分装", "免葱蒜", "打包分装", "多双餐具"}
+	if !slices.Equal(bootstrapFlavorOptions[:], want) {
+		t.Fatalf("bootstrap flavor options = %#v, want %#v", bootstrapFlavorOptions, want)
+	}
+}
 
 func TestLoadBootstrapInputAcceptsOnlyExplicitCanonicalValues(t *testing.T) {
 	values := map[string]string{

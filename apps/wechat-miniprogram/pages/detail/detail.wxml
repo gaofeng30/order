@@ -12,9 +12,22 @@
   <block wx:elif="{{detailState === 'ready'}}">
     <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
       <view class="detail-body">
-        <scroll-view wx:if="{{m.images.length}}" scroll-x class="detail-images">
-          <image wx:for="{{m.images}}" wx:key="objectKey" src="{{item.url}}" mode="aspectFill" data-url="{{item.url}}" bindtap="previewImage" />
-        </scroll-view>
+        <view wx:if="{{m.images.length > 1}}" class="detail-gallery">
+          <swiper class="detail-images" circular="{{false}}" autoplay="{{false}}" current="{{imageIndex}}" bindchange="onImageChange">
+            <swiper-item wx:for="{{m.images}}" wx:key="objectKey">
+              <image src="{{item.url}}" mode="aspectFill" data-url="{{item.url}}" bindtap="previewImage" />
+            </swiper-item>
+          </swiper>
+          <view class="image-count">{{imageIndex + 1}} / {{m.images.length}}</view>
+        </view>
+        <image
+          wx:elif="{{m.images.length === 1}}"
+          class="detail-single-image"
+          src="{{m.images[0].url}}"
+          mode="aspectFill"
+          data-url="{{m.images[0].url}}"
+          bindtap="previewImage"
+        />
         <view class="card info-card">
           <view class="info-name serif">{{m.name}}</view>
           <view class="info-price">
