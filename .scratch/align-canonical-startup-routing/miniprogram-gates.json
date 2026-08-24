@@ -40,6 +40,13 @@
       "bound": "user-pages fresh-v44 Chrome customer 4/4, consent 1/1, boundaries 11/11 and U01..U09 1/1; 29 focused requests; quote/pagination/identity MySQL facts true",
       "final_binding": "authoritative results must come from the clean exact-candidate 95-case ledger because this tracked file cannot contain its own final SHA"
     },
+    "review_red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "node --test apps/wechat-miniprogram/tests/overnight-entry-home-ui0.test.js",
+      "result": "4/5",
+      "first_error": "merchant.bound=true with a blank role produced entryRouting merchant instead of error",
+      "correction": "the shared identity parser accepts bound merchants only with the exact OWNER or SUBACCOUNT role"
+    },
     "refactor": {
       "production_change": "only cold-start entry routing and the profile-owned first merchant binding handoff",
       "evidence_change": "PAGE-U01 matrix, exact browser selectors and acceptance manifest only",

@@ -5,7 +5,8 @@ function parse(body) {
   if (!identity || !identity.primary_phone || typeof identity.primary_phone.bound !== 'boolean'
     || !identity.extra_phone || typeof identity.extra_phone.set !== 'boolean'
     || !identity.pricing_identity || typeof identity.pricing_identity.kind !== 'string'
-    || !identity.merchant || typeof identity.merchant.bound !== 'boolean') {
+    || !identity.merchant || typeof identity.merchant.bound !== 'boolean'
+    || (identity.merchant.bound && !['OWNER', 'SUBACCOUNT'].includes(identity.merchant.role))) {
     throw new api.APIError('IDENTITY_UNAVAILABLE');
   }
   return identity;

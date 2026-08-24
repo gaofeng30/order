@@ -27,7 +27,7 @@ const STOREFRONT = {
   },
 };
 
-function identity(bound) {
+function identity(bound, role = bound ? 'OWNER' : '') {
   return {
     statusCode: 200,
     data: {
@@ -35,7 +35,7 @@ function identity(bound) {
         primary_phone: { bound: false, masked_phone: '' },
         extra_phone: { set: false, masked_phone: '' },
         pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
-        merchant: { bound, role: bound ? 'OWNER' : '' },
+        merchant: { bound, role },
       },
     },
   };
@@ -94,6 +94,16 @@ test('PAGE-U01 bound merchant chooses either side without a second phone authori
   assert.equal(page.goMerchant(), true);
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/admin-orders/admin-orders');
   assert.equal(harness.requestCalls.length, 3, 'selection must not repeat merchant phone authorization');
+});
+
+test('PAGE-U01 malformed bound identity never exposes or enters the merchant side', async () => {
+  const { app, harness } = readyHarness([identity(true, ''), STOREFRONT]);
+  const page = harness.loadPage('pages/launch/launch.js');
+  await harness.invoke(page, 'onShow');
+  assert.deepEqual(app.globalData.entryRouting, { state: 'error' });
+  assert.equal(page.data.entryState, 'error');
+  assert.equal(page.goMerchant(), false);
+  assert.equal(harness.navigationCalls.length, 0);
 });
 
 test('PAGE-U02 home reads storefront and active orders without local fallback', async () => {
