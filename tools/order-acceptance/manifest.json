@@ -5,7 +5,7 @@
     "frozen_architecture": "docs/architecture/order-mvp-domain-schema-interfaces.md",
     "acceptance_matrix": "docs/quality/order-mvp-prd-acceptance-matrix.md",
     "matrix_revision": "ORDER-MVP-R2.2",
-    "matrix_sha256": "b8db8d2526cd5edce599cff4101768a5285438a1b99eeef96d3e8b1503bbf93d",
+    "matrix_sha256": "cbc3b92a152dce695c1c08e098110dd0b6d772a1c01b5f86dbeda152a4c9f0d9",
     "inventory_base_sha": "cefc290539b45abb0d7435dacae9345552f57157"
   },
   "policy": {
@@ -35,13 +35,13 @@
       "group": "PAGE",
       "scenario": {
         "role": "所有用户",
-        "ui_operation": "入口页选择「用户端/商户端」；用户端直接进入，商户端点击后触发微信手机号授权",
-        "http": "GET `/storefront/settings`; POST `/me/merchant-login`",
+        "ui_operation": "冷启动静默建会话；未绑定商户直接进首页；已绑定商户在身份页选用户端或商户端",
+        "http": "POST `/auth/miniprogram/session`; GET `/me/identity`; GET `/storefront/settings`",
         "mysql_facts": "users、merchant_accounts、storefront",
-        "expected": "所有用户先选端；用户端免授权；商户端由服务端手机号比对；员工/访客仍服务端派生且不可选择",
-        "failure_protection": "拒绝商户授权时停留入口并说明原因，但用户端入口始终可用"
+        "expected": "服务端按 openid 绑定事实分流；普通用户不见身份页且零手机号授权；已绑定商户不重复授权手机号",
+        "failure_protection": "身份事实不可读时不猜商户身份，用户端入口仍可用；商户页面继续由服务端 RBAC"
       },
-      "matrix_evidence": "L3 user path; L4 merchant phone/UI3",
+      "matrix_evidence": "L3",
       "required_local_levels": [
         "L3"
       ],
@@ -141,13 +141,7 @@
           ]
         }
       ],
-      "external_evidence": [
-        {
-          "level": "L4",
-          "status": "BLOCKED_EXTERNAL",
-          "reason": "Real WeChat profile, phone, platform UI or customer asset evidence remains external to local acceptance."
-        }
-      ]
+      "external_evidence": []
     },
     {
       "case_id": "PAGE-U02",
@@ -11509,5 +11503,5 @@
       "external_evidence": []
     }
   ],
-  "manifest_sha256": "ead48f7f8397ddb5c10bc6d01cc44089fb111edf0a76fbed82751888e75c86c0"
+  "manifest_sha256": "a5e086412a79f5fdf84c7a78282e3ad1599aacf3dfdd1b929e353dab59826e02"
 }

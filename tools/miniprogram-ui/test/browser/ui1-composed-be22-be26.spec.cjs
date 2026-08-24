@@ -3,6 +3,7 @@ const adminOrderDetailTemplate = require('../../../../apps/wechat-miniprogram/pa
 const adminVerifyTemplate = require('../../../../apps/wechat-miniprogram/pages/admin-verify/admin-verify.wxml');
 const confirmTemplate = require('../../../../apps/wechat-miniprogram/pages/confirm/confirm.wxml');
 const homeTemplate = require('../../../../apps/wechat-miniprogram/pages/home/home.wxml');
+const launchTemplate = require('../../../../apps/wechat-miniprogram/pages/launch/launch.wxml');
 const menuTemplate = require('../../../../apps/wechat-miniprogram/pages/menu/menu.wxml');
 const orderDetailTemplate = require('../../../../apps/wechat-miniprogram/pages/order-detail/order-detail.wxml');
 const customizeTemplate = require('../../../../apps/wechat-miniprogram/components/customize/customize.wxml');
@@ -95,6 +96,7 @@ const customizeDefinition = componentDefinition;
 require('../../../../apps/wechat-miniprogram/app.js');
 registeringPage = 'confirm'; require('../../../../apps/wechat-miniprogram/pages/confirm/confirm.js');
 registeringPage = 'home'; require('../../../../apps/wechat-miniprogram/pages/home/home.js');
+registeringPage = 'launch'; require('../../../../apps/wechat-miniprogram/pages/launch/launch.js');
 registeringPage = 'menu'; require('../../../../apps/wechat-miniprogram/pages/menu/menu.js');
 registeringPage = 'order-detail'; require('../../../../apps/wechat-miniprogram/pages/order-detail/order-detail.js');
 registeringPage = 'admin-order-detail'; require('../../../../apps/wechat-miniprogram/pages/admin-order-detail/admin-order-detail.js');
@@ -269,6 +271,19 @@ async function launchFreshSession() {
   app.onLaunch();
   await waitFor(() => app.globalData.session.state !== 'loading', () => `fresh session remained ${app.globalData.session.state}`);
   if (app.globalData.session.state !== 'ready') throw new Error(`fresh session ended ${app.globalData.session.state}`);
+  document.body.innerHTML = '';
+  lastNavigation = null;
+  const entry = renderPage({
+    definition: pages.launch, template: launchTemplate, id: `unbound-entry-${runID}`,
+    usingComponents: globalComponents(`unbound-entry-${runID}`),
+  });
+  if (entry.querySelector('.cards') || entry.querySelector('.id-plain')) {
+    throw new Error('PAGE-U01 unbound cold start rendered identity-selection controls before server routing');
+  }
+  await waitFor(() => lastNavigation !== null, () => 'PAGE-U01 unbound cold start did not leave the launch route');
+  if (lastNavigation !== '/pages/home/home' || app.globalData.entryRouting.state !== 'user') {
+    throw new Error(`PAGE-U01 unbound cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
+  }
 }
 
 function seedVisibleCheckoutFixture(date, time) {

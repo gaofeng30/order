@@ -27,6 +27,20 @@ const STOREFRONT = {
   },
 };
 
+function identity(bound) {
+  return {
+    statusCode: 200,
+    data: {
+      identity: {
+        primary_phone: { bound: false, masked_phone: '' },
+        extra_phone: { set: false, masked_phone: '' },
+        pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
+        merchant: { bound, role: bound ? 'OWNER' : '' },
+      },
+    },
+  };
+}
+
 function readyHarness(requests) {
   const harness = createHarness({
     logins: [{ code: 'fresh-session-code' }],
@@ -36,18 +50,38 @@ function readyHarness(requests) {
   return { app, harness };
 }
 
-test('PAGE-U01 app owns only client cart/selection and never seeds business truth', () => {
+test('PAGE-U01 app owns only client cart/selection and never seeds business truth', async () => {
   const { app } = readyHarness();
+  await app.sessionPromise;
   for (const key of ['store', 'orders', 'lastOrder', 'aOrders', 'menu', 'soldOut']) {
     assert.equal(Object.hasOwn(app.globalData, key), false, `${key} is still local business truth`);
   }
   assert.deepEqual(app.globalData.cart, {});
   assert.equal(app.globalData.pickup, null);
 });
-test('PAGE-U01 anonymous user entry remains available while merchant login is server-confirmed', async () => {
+
+test('PAGE-U01 cold start sends an unbound user directly home and keeps a bound merchant on identity selection', async () => {
+  const anonymous = readyHarness([identity(false)]);
+  const anonymousLaunch = anonymous.harness.loadPage('pages/launch/launch.js');
+  await anonymous.harness.invoke(anonymousLaunch, 'onShow');
+  assert.equal(anonymous.harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/me/identity');
+  assert.deepEqual(anonymous.harness.navigationCalls.at(-1), {
+    type: 'reLaunch', url: '/pages/home/home', delta: undefined,
+  });
+  assert.deepEqual(anonymous.app.globalData.entryRouting, { state: 'user' });
+
+  const merchant = readyHarness([identity(true), STOREFRONT]);
+  const merchantLaunch = merchant.harness.loadPage('pages/launch/launch.js');
+  await merchant.harness.invoke(merchantLaunch, 'onShow');
+  assert.equal(merchant.harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/me/identity');
+  assert.equal(merchant.harness.navigationCalls.length, 0);
+  assert.deepEqual(merchant.app.globalData.entryRouting, { state: 'merchant', role: 'OWNER' });
+  assert.equal(merchantLaunch.data.storefrontState, 'ready');
+});
+test('PAGE-U01 bound merchant chooses either side without a second phone authorization', async () => {
   const { harness } = readyHarness([
+    identity(true),
     STOREFRONT,
-    { statusCode: 200, data: { merchant: { bound: true, role: 'OWNER' } } },
   ]);
   await harness.flush();
   const page = harness.loadPage('pages/launch/launch.js');
@@ -57,20 +91,9 @@ test('PAGE-U01 anonymous user entry remains available while merchant login is se
   page.go({ currentTarget: { dataset: { to: 'home' } } });
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/home/home');
 
-  const denied = await page.onMerchantPhone({ detail: { errMsg: 'getPhoneNumber:fail user deny' } });
-  assert.equal(denied, false);
-  assert.match(page.data.hint, /用户端/);
-  assert.equal(harness.requestCalls.length, 2, 'denial must not call merchant-login');
-
-  const allowed = await page.onMerchantPhone({ detail: { code: 'merchant-phone-code' } });
-  assert.equal(allowed, true);
-  assert.equal(harness.requestCalls[2].url, 'http://127.0.0.1:8080/api/v1/me/merchant-login');
-  assert.deepEqual(harness.requestCalls[2].header, {
-    Authorization: 'Bearer overnight-session-token',
-    'content-type': 'application/json',
-  });
-  assert.deepEqual(harness.requestCalls[2].data, { code: 'merchant-phone-code' });
+  assert.equal(page.goMerchant(), true);
   assert.equal(harness.navigationCalls.at(-1).url, '/pages/admin-orders/admin-orders');
+  assert.equal(harness.requestCalls.length, 3, 'selection must not repeat merchant phone authorization');
 });
 
 test('PAGE-U02 home reads storefront and active orders without local fallback', async () => {

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "change": "align-canonical-startup-routing",
+  "base_sha": "f99bd04cefba9964c1e7beef762640aa8cbc9a8a",
+  "branch": "codex/order-delivery-integration",
+  "owned_pages": [
+    "PAGE-U01",
+    "PAGE-U09"
+  ],
+  "success_contract": "canonical PRD 4.4: silent Mini session -> server identity -> unbound user direct home or bound merchant identity selection; first merchant phone authorization remains profile-only",
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "node --test apps/wechat-miniprogram/tests/overnight-entry-home-ui0.test.js",
+      "result": "PAGE-U01 cold-start test failed before identity routing existed",
+      "first_error": "requestCalls[1] was undefined because launch never requested /api/v1/me/identity"
+    },
+    "green": {
+      "status": "PASS_CURRENT_TREE",
+      "focused": "overnight-entry-home-ui0 4/4",
+      "full_miniprogram": "100/100",
+      "ui1_required": "fresh unbound BE22 selector plus bound user-pages selector",
+      "ui2_required": "exact-candidate WeChat DevTools compile and cold-start route inspection"
+    },
+    "refactor": {
+      "production_change": "only cold-start entry routing and the profile-owned first merchant binding handoff",
+      "evidence_change": "PAGE-U01 matrix, exact browser selectors and acceptance manifest only",
+      "cache_policy": "reuse existing Go, Karma, Playwright and Chrome caches; install nothing and start no second Docker"
+    }
+  },
+  "main_paths": {
+    "unbound": "silent session and GET /me/identity route directly to /pages/home/home with no identity page or phone authorization",
+    "bound": "identity selection renders user and merchant entries without another phone authorization",
+    "first_merchant_binding": "profile getPhoneNumber -> /me/merchant-login -> reset to bound identity selection"
+  },
+  "adjacent_regressions": [
+    "identity read failure never guesses merchant authority and keeps the user browse entry",
+    "runtime/session failure remains fail closed without local business truth",
+    "merchant routes retain server-side RBAC",
+    "profile phone rejection performs zero write and zero merchant navigation"
+  ],
+  "ui_level_target": "UI2",
+  "blocked_external": [
+    "real getPhoneNumber consent and merchant account data",
+    "physical-device UI3"
+  ],
+  "forbidden_claims": [
+    "UI0 is not rendered UI1",
+    "Chrome miniprogram-simulate is not WeChat Developer Tools UI2",
+    "BLOCKED_EXTERNAL is not a local PASS"
+  ]
+}

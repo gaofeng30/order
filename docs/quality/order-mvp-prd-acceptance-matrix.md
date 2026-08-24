@@ -12,7 +12,7 @@
 
 | CaseID | 角色 | UI 操作 | HTTP | MySQL 事实 | 预期 | 失败保护 | 证据等级 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| PAGE-U01 | 所有用户 | 入口页选择「用户端/商户端」；用户端直接进入，商户端点击后触发微信手机号授权 | GET `/storefront/settings`; POST `/me/merchant-login` | users、merchant_accounts、storefront | 所有用户先选端；用户端免授权；商户端由服务端手机号比对；员工/访客仍服务端派生且不可选择 | 拒绝商户授权时停留入口并说明原因，但用户端入口始终可用 | L3 user path; L4 merchant phone/UI3 | NOT_RUN; L4 BLOCKED_EXTERNAL |
+| PAGE-U01 | 所有用户 | 冷启动静默建会话；未绑定商户直接进首页；已绑定商户在身份页选用户端或商户端 | POST `/auth/miniprogram/session`; GET `/me/identity`; GET `/storefront/settings` | users、merchant_accounts、storefront | 服务端按 openid 绑定事实分流；普通用户不见身份页且零手机号授权；已绑定商户不重复授权手机号 | 身份事实不可读时不猜商户身份，用户端入口仍可用；商户页面继续由服务端 RBAC | L3 | NOT_RUN |
 | PAGE-U02 | 用户 | 首页看门店/公告/进行中单；点菜单、订单、取餐码 | GET `/storefront/settings`; GET `/orders?active=true` | storefront、service_dates、orders | 服务端门店事实；进行中条准确 | 读失败不显示可下单/伪订单 | L3 | NOT_RUN |
 | PAGE-U03 | 用户 | 选今天/明天与离散时间；搜索；加购 | GET `/menu/pickup-options`; GET `/menu?date=&time=` | service_dates、meal_periods、products、soldout、discount | 餐段过滤；截单折叠；员工价正确 | 缺日期事实/售罄未知即不可加购 | L3 | NOT_RUN |
 | PAGE-U04 | 用户 | 看图片、说明、只读规格、口味与价格 | GET `/catalog/products/:id?date=&time=` | products.images_json/specification、soldout、staff | 强制 date/time；0–3 图；spec 只读 | 缺 date/time 400；当前事实不可读 503 | L3 | NOT_RUN |

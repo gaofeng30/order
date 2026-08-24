@@ -106,7 +106,7 @@ test('validate reports structural availability without claiming runtime readines
     total: 95,
     local_available: 95,
     local_missing: 0,
-    external_blocked: 23,
+    external_blocked: 22,
   });
   assert.equal('local_ready' in result.structure, false);
   assert.deepEqual(result.inventory, {
@@ -115,7 +115,7 @@ test('validate reports structural availability without claiming runtime readines
     local_missing: 0,
     local_not_run: 95,
     local_failed: 0,
-    external_blocked: 23,
+    external_blocked: 22,
     ok: false,
   });
 });
@@ -129,7 +129,7 @@ test('AC19 exact integration inventory resolves the pinned refund dependency wit
     localReady: summary.local_ready,
     localMissing: summary.local_missing,
     externalBlocked: summary.external_blocked,
-  }, { total: 95, localReady: 95, localMissing: 0, externalBlocked: 23 });
+  }, { total: 95, localReady: 95, localMissing: 0, externalBlocked: 22 });
   const missing = manifest.cases.filter(entry => entry.local_evidence.some(item => item.status === 'MISSING')).map(entry => entry.case_id).sort();
   assert.deepEqual(missing, []);
   assert.deepEqual(dependencyPins, [{

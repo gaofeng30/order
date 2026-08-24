@@ -47,7 +47,8 @@ Page({
     if (!code) return false;
     this.setData({ merchantLoginState: 'loading' });
     try {
-      await merchantLoginStore.login(code);
+      const merchant = await merchantLoginStore.login(code);
+      getApp().globalData.entryRouting = { state: 'merchant', role: merchant.role };
       this.setData({ merchantBound: true, merchantLoginState: 'ready' });
       nav.reset();
       return true;

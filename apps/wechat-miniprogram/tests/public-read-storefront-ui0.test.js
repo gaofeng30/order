@@ -8,6 +8,18 @@ const SESSION = {
   data: { access_token: 'public-read-session', token_type: 'Bearer', expires_at: '2999-08-25T08:00:00Z' },
 };
 
+const MERCHANT_IDENTITY = {
+  statusCode: 200,
+  data: {
+    identity: {
+      primary_phone: { bound: true, masked_phone: '+******0000' },
+      extra_phone: { set: false, masked_phone: '' },
+      pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
+      merchant: { bound: true, role: 'OWNER' },
+    },
+  },
+};
+
 async function readyStore() {
   const harness = createHarness({ logins: [{ code: 'public-read-code' }], requests: [SESSION] });
   harness.loadApp();
@@ -81,7 +93,7 @@ test('launch page exposes the server layer and blocks navigation when storefront
       },
     },
   };
-  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, frozen] });
+  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, MERCHANT_IDENTITY, frozen] });
   harness.loadApp();
   await harness.flush();
   const page = harness.loadPage('pages/launch/launch.js');
@@ -96,7 +108,7 @@ test('launch page exposes the server layer and blocks navigation when storefront
 
   const badHarness = createHarness({
     logins: [{ code: 'code' }],
-    requests: [SESSION, { statusCode: 200, data: { settings: { store_name: '旧契约' } } }],
+    requests: [SESSION, MERCHANT_IDENTITY, { statusCode: 200, data: { settings: { store_name: '旧契约' } } }],
   });
   badHarness.loadApp();
   await badHarness.flush();

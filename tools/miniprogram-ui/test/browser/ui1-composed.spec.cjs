@@ -298,12 +298,9 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
     const launch = renderPage({ definition: pageDefinitions.launch, template: launchTemplate, id: `launch-${suffix}`, usingComponents: common });
 
     await waitFor(
-      () => launch.instance.data.storefrontState !== 'loading',
-      () => `storefront remained ${launch.instance.data.storefrontState}`,
+      () => lastNavigation !== null,
+      () => `anonymous entry remained ${app.globalData.entryRouting.state}`,
     );
-    if (launch.instance.data.storefrontState !== 'ready') {
-      throw new Error(`real storefront ended ${launch.instance.data.storefrontState}`);
-    }
     await waitFor(
       () => app.globalData.session.state !== 'loading',
       () => `silent session remained ${app.globalData.session.state}`,
@@ -311,17 +308,10 @@ if (composedFlow === 'customer' && paymentExpectation === 'success') describe('m
     if (app.globalData.session.state !== 'ready') {
       throw new Error(`real silent session ended ${app.globalData.session.state}`);
     }
-    if (!launch.dom.textContent.includes('绥安食品')) throw new Error(`real store name was absent: ${launch.dom.textContent}`);
-
-    const userEntry = launch.querySelector('.id-card.primary');
-    if (!userEntry) throw new Error('anonymous user entry was not rendered');
-    if (userEntry.dom.closest('button[open-type="getPhoneNumber"]')) {
-      throw new Error('anonymous user entry was nested in a phone authorization control');
+    if (lastNavigation !== '/pages/home/home' || app.globalData.entryRouting.state !== 'user'
+      || launch.querySelector('.cards') || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+      throw new Error(`anonymous cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
     }
-    userEntry.dispatchEvent('touchstart');
-    userEntry.dispatchEvent('touchend');
-    await simulate.sleep(10);
-    if (lastNavigation !== '/pages/home/home') throw new Error(`user entry navigated to ${lastNavigation || 'nothing'}`);
 
     const home = renderPage({ definition: pageDefinitions.home, template: homeTemplate, id: `home-${suffix}`, usingComponents: common });
     await waitFor(
@@ -793,10 +783,12 @@ if (composedFlow === 'merchant') describe('mini-program UI1 merchant fulfillment
       () => launch.instance.data.storefrontState !== 'loading',
       () => `merchant entry remained ${launch.instance.data.storefrontState}`,
     );
-    if (!launch.querySelector('.id-plain')) throw new Error('merchant phone entry was not rendered');
-    const loggedIn = await pageDefinitions.launch.onMerchantPhone.call(launch.instance, { detail: { code: 'ui1-composed-merchant-phone-code' } });
-    if (!loggedIn || lastNavigation !== '/pages/admin-orders/admin-orders') {
-      throw new Error(`merchant entry ended ${loggedIn}/${lastNavigation || 'no navigation'}`);
+    if (!launch.querySelector('.id-plain') || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+      throw new Error('bound merchant entry repeated phone authorization or was not rendered');
+    }
+    const entered = pageDefinitions.launch.goMerchant.call(launch.instance);
+    if (!entered || lastNavigation !== '/pages/admin-orders/admin-orders') {
+      throw new Error(`merchant entry ended ${entered}/${lastNavigation || 'no navigation'}`);
     }
 
     document.body.innerHTML = '';

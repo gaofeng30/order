@@ -27,7 +27,7 @@ The runner starts no Docker container and installs no dependency. It inherits th
 
 ## AC19 exact-integration inventory
 
-At integration base `cefc290539b45abb0d7435dacae9345552f57157`, the reviewed mapping keeps all 95 canonical CaseIDs explicit and 23 L4 blocks separate. The refund/unclaimed dependency is pinned to independently verified candidate `74e558d74a0994600d5781ea0c2be99814a201dd` and its integration commit. Structural validation therefore reports 95 rows available and zero missing, but this is still `AVAILABLE_NOT_RUN`, not runtime PASS.
+The reviewed mapping keeps all 95 canonical CaseIDs explicit and 22 L4 blocks separate. The refund/unclaimed dependency is pinned to independently verified candidate `74e558d74a0994600d5781ea0c2be99814a201dd` and its integration commit. Structural validation therefore reports 95 rows available and zero missing, but this is still `AVAILABLE_NOT_RUN`, not runtime PASS.
 
 The historical refund Writer Gate remains recorded as provenance. Because that script's source-scope assertion is bound to its implementation base, the final ledger rebinds it to the integrated exact-HEAD runner `node tools/miniprogram-ui/run-ui1-refund-unclaimed-l3.mjs`. The same rule applies to earlier UI Writer Gates: `.scratch/overnight-acceptance/run-fresh-root-ui1.sh` provisions one fresh-v44 schema and one random private API for each non-self-contained integrated UI runner, then stops the API and drops the schema. `run-self-contained-ui1.sh` redirects mutable receipts to `/private/tmp` and removes only known untracked PC evidence paths, so exact-SHA execution cannot overwrite committed evidence or leave the candidate dirty.
 
@@ -38,4 +38,4 @@ The 95 available rows are backed by integrated exact selectors in four strict gr
 - Merchant L3: complete merchant pages, cross-date redemption and injected failure gates.
 - PC L3: PAGE-PC01–PC12 closure runners plus three-client source-of-truth coverage.
 
-Only a clean candidate command `node tools/order-acceptance/run.mjs run --candidate-sha <exact SHA> --output .scratch/overnight-acceptance/<receipt>.jsonl` can change that conclusion to local PASS. It executes every strict selector, rejects skips and failed commands, and keeps the 23 real-platform/funds rows separately `BLOCKED_EXTERNAL`. Until that SHA-bound run passes, this inventory is not local completion and not submission readiness.
+Only a clean candidate command `node tools/order-acceptance/run.mjs run --candidate-sha <exact SHA> --output .scratch/overnight-acceptance/<receipt>.jsonl` can change that conclusion to local PASS. It executes every strict selector, rejects skips and failed commands, and keeps the 22 real-platform/funds rows separately `BLOCKED_EXTERNAL`. Until that SHA-bound run passes, this inventory is not local completion and not submission readiness.

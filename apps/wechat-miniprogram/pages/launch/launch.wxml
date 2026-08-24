@@ -32,7 +32,7 @@
   </view>
 
   <!-- 身份卡 -->
-  <view class="cards">
+  <view wx:if="{{entryState !== 'loading'}}" class="cards">
     <view class="id-card primary fade-up" data-to="home" bindtap="go">
       <view class="id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
       <view class="id-body">
@@ -41,12 +41,11 @@
       <view class="id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
     </view>
 
-    <!-- 商户端：微信真实的手机号授权控件，不是自绘弹层 -->
-    <button
+    <!-- 仅服务端已判定绑定商户的会话会看到本入口；首次绑定在个人中心完成。 -->
+    <view
+      wx:if="{{entryState === 'merchant'}}"
       class="id-plain fade-up"
-      open-type="getPhoneNumber"
-      bindgetphonenumber="onMerchantPhone"
-      hover-class="none"
+      bindtap="goMerchant"
     >
       <view class="id-card">
         <view class="id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
@@ -55,7 +54,7 @@
         </view>
         <view class="id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
       </view>
-    </button>
+    </view>
 
     <view wx:if="{{hint}}" class="id-hint">{{hint}}</view>
 

@@ -170,22 +170,13 @@ describe('mini-program UI1 in real Chromium simulator', () => {
       id: `launch-page-${componentSuffix}`,
       usingComponents: components,
     });
-    if (!launch.dom.textContent.includes('用户端')) {
-      throw new Error(`cold start did not render the user entry: ${launch.dom.textContent}`);
-    }
-    const userEntry = launch.querySelector('.id-card.primary');
-    if (!userEntry) throw new Error('rendered launch page has no user entry');
-    const loadingResult = pageDefinitions.launch.go.call(launch.instance, { currentTarget: { dataset: { to: 'home' } } });
-    if (loadingResult !== false || lastNavigation !== null) throw new Error(`loading entry navigated to ${lastNavigation}`);
     await waitFor(
-      () => launch.instance.data.storefrontState === 'ready',
-      `storefront did not become ready: ${launch.instance.data.storefrontState}`,
+      () => lastNavigation !== null,
+      `anonymous cold start remained ${app.globalData.entryRouting.state}`,
     );
-    userEntry.dispatchEvent('touchstart');
-    userEntry.dispatchEvent('touchend');
-    await simulate.sleep(10);
-    if (lastNavigation !== '/pages/home/home') {
-      throw new Error(`user entry navigated to ${lastNavigation || 'nothing'}`);
+    if (lastNavigation !== '/pages/home/home' || app.globalData.entryRouting.state !== 'user'
+      || launch.querySelector('.cards') || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+      throw new Error(`anonymous cold start ended ${lastNavigation}/${app.globalData.entryRouting.state}`);
     }
 
     const home = renderPage({

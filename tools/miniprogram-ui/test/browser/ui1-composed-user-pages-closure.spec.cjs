@@ -127,30 +127,22 @@ describe('PAGE-U01 through PAGE-U09 strict composed rendered closure', () => {
     }
     const userEntry = launch.querySelector('.id-card.primary');
     const merchantEntry = launch.querySelector('.id-plain');
-    if (!userEntry || !merchantEntry || userEntry.dom.closest('button[open-type="getPhoneNumber"]')) {
-      throw new Error('PAGE-U01 entry controls violated anonymous browsing');
+    if (!userEntry || !merchantEntry || launch.querySelector('button[open-type="getPhoneNumber"]')) {
+      throw new Error('PAGE-U01 bound identity selection repeated phone authorization or omitted an entry');
     }
-    const beforeReject = observations.length;
+    const beforeSelection = observations.length;
     lastNavigation = null;
-    const rejected = await pageDefinitions.launch.onMerchantPhone.call(launch.instance, { detail: { errMsg: 'getPhoneNumber:fail user deny' } });
-    if (rejected !== false || observations.length !== beforeReject || lastNavigation !== null
-      || !launch.dom.textContent.includes('仍可从上方进入用户端浏览')) {
-      throw new Error('PAGE-U01 rejected merchant authorization produced a write or false success');
-    }
-    const currentUserEntry = launch.querySelector('.id-card.primary');
-    if (!currentUserEntry || currentUserEntry.dom.dataset.to !== 'home') {
-      throw new Error('PAGE-U01 rejected merchant authorization removed the anonymous user entry');
-    }
     const userNavigated = pageDefinitions.launch.go.call(launch.instance, {
-      currentTarget: { dataset: { to: currentUserEntry.dom.dataset.to } },
+      currentTarget: { dataset: { to: userEntry.dom.dataset.to } },
     });
     if (!userNavigated || lastNavigation !== '/pages/home/home') {
       throw new Error(`PAGE-U01 user entry navigated to ${lastNavigation || 'nothing'}`);
     }
     lastNavigation = null;
-    const merchantLoggedIn = await pageDefinitions.launch.onMerchantPhone.call(launch.instance, { detail: { code: 'u01-merchant-phone' } });
-    if (!merchantLoggedIn || lastNavigation !== '/pages/admin-orders/admin-orders') {
-      throw new Error(`PAGE-U01 merchant entry ended ${merchantLoggedIn}/${lastNavigation || 'nothing'}`);
+    const merchantNavigated = pageDefinitions.launch.goMerchant.call(launch.instance);
+    if (!merchantNavigated || lastNavigation !== '/pages/admin-orders/admin-orders'
+      || observations.length !== beforeSelection) {
+      throw new Error(`PAGE-U01 merchant selection ended ${merchantNavigated}/${lastNavigation || 'nothing'}`);
     }
 
     const home = render('home', homeTemplate, 'u02');

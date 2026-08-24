@@ -2,6 +2,7 @@
 const runtimeEndpointConfig = require('./utils/runtimeEndpointConfig.js');
 const { isRuntimeOrigin, resolveRuntimeEndpoint } = require('./utils/runtimeEndpoint.js');
 const sessionApi = require('./utils/sessionApi.js');
+const identityStore = require('./utils/identityStore.js');
 const subscriptionTemplateConfig = require('./utils/subscriptionTemplateConfig.js');
 const { resolveSubscriptionTemplateIds } = require('./utils/subscriptionTemplate.js');
 
@@ -10,6 +11,7 @@ App({
     apiBaseUrl: '',
     runtimeEndpoint: { state: 'idle', envVersion: '', origin: '', errorCode: '' },
     session: { state: 'idle', accessToken: '', expiresAt: '' },
+    entryRouting: { state: 'loading' },
     subscriptionTemplateIds: {},
 
     // ---- 屏幕适配信息（各机型自适应核心）----
@@ -33,10 +35,42 @@ App({
     g.apiBaseUrl = g.runtimeEndpoint.state === 'ready' ? g.runtimeEndpoint.origin : '';
     g.subscriptionTemplateIds = resolveSubscriptionTemplateIds(g.runtimeEndpoint.envVersion, subscriptionTemplateConfig);
     if (this.isSessionEndpointReady()) {
+      // 首屏 launch 的 onShow 在会话就绪后读取服务端身份并完成分流。
       this.startSession();
     } else {
       g.session = { state: 'error', accessToken: '', expiresAt: '' };
+      g.entryRouting = { state: 'error' };
     }
+  },
+
+  resolveEntryRoute() {
+    const g = this.globalData;
+    if (g.entryRouting.state === 'user' || g.entryRouting.state === 'merchant') {
+      return Promise.resolve(g.entryRouting);
+    }
+    if (this.entryRoutingPromise) return this.entryRoutingPromise;
+
+    g.entryRouting = { state: 'loading' };
+    const pending = this.startSession().then(session => {
+      if (!session || session.state !== 'ready') throw new Error('SESSION_UNAVAILABLE');
+      return identityStore.load();
+    }).then(identity => {
+      if (identity.merchant.bound) {
+        g.entryRouting = { state: 'merchant', role: identity.merchant.role || '' };
+        return g.entryRouting;
+      }
+      g.entryRouting = { state: 'user' };
+      wx.reLaunch({ url: '/pages/home/home' });
+      return g.entryRouting;
+    }).catch(() => {
+      // 身份事实不可读时不猜测商户身份；保留入口页的用户通道和显式重试。
+      g.entryRouting = { state: 'error' };
+      return g.entryRouting;
+    });
+    this.entryRoutingPromise = pending;
+    return pending.finally(() => {
+      if (this.entryRoutingPromise === pending) this.entryRoutingPromise = null;
+    });
   },
 
   isSessionEndpointReady() {
@@ -54,6 +88,7 @@ App({
       g.session = { state: 'error', accessToken: '', expiresAt: '' };
       return Promise.resolve(g.session);
     }
+    if (g.session.state === 'ready' && g.session.accessToken) return Promise.resolve(g.session);
     if (g.session.state === 'loading' && this.sessionPromise) return this.sessionPromise;
 
     g.session = { state: 'loading', accessToken: '', expiresAt: '' };

@@ -38,6 +38,15 @@ export async function startCatalogFixture() {
       writeJSON(response, 201, { access_token: 'ui1-session-token-abcdefghijklmnopqrstuvwxyz012345', token_type: 'Bearer', expires_at: '2999-08-25T08:00:00Z' });
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/api/v1/me/identity') {
+      writeJSON(response, 200, { identity: {
+        primary_phone: { bound: false, masked_phone: '' },
+        extra_phone: { set: false, masked_phone: '' },
+        pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
+        merchant: { bound: false },
+      } });
+      return;
+    }
     if (request.method === 'GET' && url.pathname === '/api/v1/storefront/settings') {
       writeJSON(response, 200, storefront);
       return;

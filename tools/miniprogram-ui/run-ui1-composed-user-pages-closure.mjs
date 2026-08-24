@@ -101,7 +101,7 @@ const receipt = {
   database_name_redacted: 'order_user_pages_*', status: passed ? 'PASS' : 'FAIL',
   cases: caseIDs,
   case_evidence: {
-    'PAGE-U01': 'rendered anonymous/rejected/local-fake merchant entry + root HTTP; real WeChat phone remains L4',
+    'PAGE-U01': 'fresh unbound cold-start routing is proven by the BE22 selector; this bound-session stage renders user/merchant selection with zero repeated phone authorization',
     'PAGE-U02': 'rendered storefront, notice, active-order strip and three entries from root HTTP',
     'PAGE-U03': 'rendered pickup facts, search and flavored cart against server menu',
     'PAGE-U04': 'rendered three ordered server images, specification, manual position and full preview',
