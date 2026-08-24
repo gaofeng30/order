@@ -290,7 +290,7 @@ async function openCheckout(suffix, contactName, note, selectedPickupTime = '', 
 }
 
 if (composedFlow === 'customer' && paymentExpectation === 'success') describe('mini-program UI1 against composed local API and MySQL', () => {
-  it('lets an anonymous user browse the storefront, pickup menu, categories, and products', async () => {
+  it('routes the server identity into user browsing, pickup menu, categories, and products', async () => {
     document.body.innerHTML = '';
     lastNavigation = null;
     app.onLaunch();
