@@ -10,6 +10,18 @@ const SESSION = {
   data: { access_token: 'user-pages-token', token_type: 'Bearer', expires_at: '2999-08-25T08:00:00Z' },
 };
 
+const VISITOR_IDENTITY = {
+  statusCode: 200,
+  data: {
+    identity: {
+      primary_phone: { bound: true, masked_phone: '+******0000' },
+      extra_phone: { set: false, masked_phone: '' },
+      pricing_identity: { kind: 'VISITOR', rate_percent: 100 },
+      merchant: { bound: false },
+    },
+  },
+};
+
 function product(images) {
   return {
     statusCode: 200,
@@ -23,14 +35,14 @@ function product(images) {
 }
 
 async function loadDetail(images) {
-  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, product(images)] });
+  const harness = createHarness({ logins: [{ code: 'code' }], requests: [SESSION, VISITOR_IDENTITY, product(images)] });
   const app = harness.loadApp();
   await harness.flush();
   app.globalData.pickup = { date: '2026-08-25', mealPeriod: 'lunch', time: '11:30' };
   const page = harness.loadPage('pages/detail/detail.js');
   await harness.invoke(page, 'onLoad', { id: '70' });
   await harness.flush();
-  return page;
+  return { harness, page };
 }
 
 test('PAGE-U04 multi-image detail exposes the current gallery position while a single image has no counter', async () => {
@@ -38,8 +50,10 @@ test('PAGE-U04 multi-image detail exposes the current gallery position while a s
     object_key: `products/70-${index}.png`,
     url: `https://img.example.com/products/70-${index}.png`,
   }));
-  const page = await loadDetail(images);
+  const { harness, page } = await loadDetail(images);
 
+  assert.equal(harness.requestCalls[1].url, 'http://127.0.0.1:8080/api/v1/me/identity');
+  assert.equal(harness.requestCalls[2].url, 'http://127.0.0.1:8080/api/v1/catalog/products/70?date=2026-08-25&time=11%3A30');
   assert.equal(page.data.detailState, 'ready');
   assert.equal(page.data.imageIndex, 0);
   page.onImageChange({ detail: { current: 2 } });

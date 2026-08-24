@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "change": "fix-mini-default-regression-gate",
+  "base_sha": "813e1036490b35d563458c1ba0b47e90a0e62a82",
+  "branch": "codex/fix-mini-default-regression-gate",
+  "owned_case": "PAGE-U04",
+  "scope": "test-only identity fixture repair and default Mini regression registration; production code unchanged",
+  "tdd": {
+    "red": {
+      "command": "node --test apps/wechat-miniprogram/tests/mini-user-pages-closure-ui0.test.js",
+      "result": "tests 1, pass 0, fail 1: detailState error was not ready because the product response was consumed by the new identity request"
+    },
+    "green": {
+      "focused": "tests 1, pass 1, fail 0",
+      "default_gate": "npm test: tests 99, pass 99, fail 0",
+      "wx_structure": "the default gate includes wx-compile-ui1.test.js and reports wxss and wxml structurally compilable"
+    },
+    "refactor": {
+      "result": "not applicable; the minimal fixture and default command registration are the complete change"
+    }
+  },
+  "request_contract": [
+    "GET /api/v1/me/identity",
+    "GET /api/v1/catalog/products/70?date=2026-08-25&time=11%3A30"
+  ],
+  "evidence_boundary": {
+    "actual": "UI0 regression-gate repair",
+    "does_not_upgrade": ["WeChat Developer Tools UI2", "physical-device UI3", "submission readiness"]
+  }
+}
