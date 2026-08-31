@@ -90,6 +90,17 @@ tools/miniprogram-ui/run-ui2.mjs
 
 **P0-6.5 未关闭**，阻断原因是既有 UI2 冷启动缺陷，不是外部资产缺失，因此**不标 `BLOCKED_EXTERNAL`**——那个标签是给平台/账号类外部依赖的，用在这里会掩盖一个自有缺陷。
 
+## 5b. 第二批：首页品牌与图标补齐
+
+- [x] 5b.1 Red：补 3 条源契约断言（五行图标齐备且图标名在 icons.js 内、首页无「服务功能」且 hero 已收紧、hero 含徽标品牌行）
+- [x] 5b.2 记录决定性失败 — `tests 18 / pass 15 / fail 3`
+- [x] 5b.3 `home.wxml` 删 `.sec-h` 标题；`home.wxss` hero 底部 `128rpx → 48rpx`、`.body` margin-top `-88rpx → 24rpx`
+- [x] 5b.4 `home.wxml` 加 `.hero-brand` 品牌锁定行；`home.wxss` 加 `.hero-brand` / `.hero-logo` / `.hero-emblem`
+- [x] 5b.5 `profile.wxml` 三行补 `.prow-ico`：`phone` 绿、`user` 绿、`store` 蓝
+- [x] 5b.6 转 Green — `tests 108 / pass 108 / fail 0`，含 wxml/wxss 编译门禁
+
+前置确认：全仓库测试无人引用「服务功能」或 `sec-h`；`.grid-item` 被三个 UI1 spec 断言（数量 3、文案、dataset），本次不动宫格项本身。
+
 ## 6. 本地验收
 
 - [ ] 6.1 `npm --prefix apps/wechat-miniprogram test`（14 套件）

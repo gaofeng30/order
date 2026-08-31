@@ -365,3 +365,61 @@ test('PAGE-U09 interactive rows never let a native button carry the row layout',
   // 收起态不得渲染输入框。
   assert.match(wxml, /wx:if="\{\{extraOpen\}\}"/);
 });
+
+// 卡片内五行必须风格一致地各带一个 .prow-ico，否则未绑定主手机号的用户
+// 会看到一行没有图标的缺口。
+test('PAGE-U09 every row in the profile card carries a same-style icon', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.resolve(__dirname, '..');
+  const wxml = fs.readFileSync(path.join(root, 'pages/profile/profile.wxml'), 'utf8');
+  assert.equal((wxml.match(/class="prow-ico"/g) || []).length, 5,
+    'profile card rows and icons are out of sync');
+  // 语义各异，主手机号与附加手机号不撞义。
+  for (const name of ['receipt', 'phone', 'user', 'store', 'headset']) {
+    assert.equal(wxml.includes(`name="${name}"`), true, `missing row icon: ${name}`);
+  }
+  // 图标名必须来自既有图标表，不新增资源。
+  const icons = require('../utils/icons.js');
+  for (const match of wxml.matchAll(/<icon[^>]*name="([a-zA-Z]+)"/g)) {
+    assert.equal(Object.prototype.hasOwnProperty.call(icons, match[1]), true,
+      `profile.wxml uses an undefined icon: ${match[1]}`);
+  }
+});
+
+// 首页「服务功能」标题被 .body 的负边距拉进深蓝 hero，深字压深底近乎隐形。
+// 删除后 hero 收紧，卡片紧随不重叠。
+test('PAGE-U01 home drops the invisible section heading and tightens the hero', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.resolve(__dirname, '..');
+  const wxml = fs.readFileSync(path.join(root, 'pages/home/home.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'pages/home/home.wxss'), 'utf8');
+
+  assert.equal(wxml.includes('服务功能'), false, 'home still renders the 服务功能 heading');
+  assert.equal(wxml.includes('sec-h'), false, 'home still renders a section heading row');
+  // 负边距曾把首个元素推进 hero；改为正向留白后圆角才完整可见。
+  assert.match(wxss, /\.body\s*\{[^}]*margin-top:\s*24rpx/);
+  assert.equal(/\.body\s*\{[^}]*margin-top:\s*-/.test(wxss), false,
+    'home body still pulls its first child into the hero');
+  assert.match(wxss, /\.home-hero\s*\{[^}]*padding:\s*0 36rpx 48rpx/);
+});
+
+// 冷启动改为直接进首页后启动页不再露面，logo 因此完全没有曝光位。
+test('PAGE-U01 home hero shows the store emblem beside the store name', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.resolve(__dirname, '..');
+  const wxml = fs.readFileSync(path.join(root, 'pages/home/home.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'pages/home/home.wxss'), 'utf8');
+
+  assert.match(wxml, /class="hero-brand"/);
+  assert.match(wxml, /src="\/assets\/emblem\.png"/);
+  // 完整展示而非裁切。
+  assert.match(wxml, /class="hero-emblem"[^>]*mode="aspectFit"|mode="aspectFit"[^>]*class="hero-emblem"/);
+  // 徽标与门店名同行才构成品牌锁定。
+  assert.match(wxml, /class="hero-brand"[\s\S]{0,400}class="store-name serif"/);
+  for (const selector of ['.hero-brand', '.hero-logo', '.hero-emblem']) {
+    assert.equal(wxss.includes(selector), true, `home.wxss is missing ${selector}`);
+  }
+});

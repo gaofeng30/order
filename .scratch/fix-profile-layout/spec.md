@@ -35,6 +35,38 @@
 - 三处必须保留 `<button>` 元素：两处 `open-type="getPhoneNumber"`、一处 `open-type="contact"`，换成 `view` 会丢失能力
 - 行宽占满卡片可用宽度，无灰底、无伪边框
 
+## 第二批：首页品牌与图标补齐
+
+用户看过真机效果后追加三项。因「个人中心图标」要再动 `profile.wxml`，与第一批 owned paths 重叠、按 AGENTS.md 不能并行，故并入本 change 重出候选 SHA。
+
+### 首页删「服务功能」标题
+
+`.body { margin-top: -88rpx }` 把首个元素推进深蓝 hero，而那个位置一直是 `.sec-h` 标题——深色字压深色底，真机上近乎隐形。
+
+删除标题；`.home-hero` 底部 padding `128rpx → 48rpx`，`.body` margin-top `-88rpx → 24rpx`。深蓝区收到搜索框下方，白卡片紧随其后不重叠，hero 的 52rpx 圆角完整可见。首屏纵向缩短约 184rpx。
+
+### 首页展示门店徽标
+
+`/assets/emblem.png` 原本只出现在启动页。远端改版后未绑定用户冷启动直接进首页、跳过启动页，徽标因此完全没有曝光位。
+
+在 hero 内把门店名包进品牌锁定行：徽标 92rpx 白底圆角容器 + 72rpx `aspectFit` 图，与 50rpx 门店名同行。「你好，欢迎光临」保持在最上方不动。
+
+类名用 `hero-*` 而非复用 `launch.wxss` 的 `.brand-*`：wxss 是页面作用域，同名类在两页各自定义会被误读成共享规则。
+
+### 个人中心补齐行图标
+
+卡片内五行全部带 `.prow-ico`，与既有的 `receipt` / `headset` 同风格。
+
+| 行 | 图标 | 颜色 |
+|---|---|---|
+| 我的订单 | `receipt` | `#467a32` |
+| 绑定主手机号 | `phone` | `#467a32` |
+| 附加手机号 | `user` | `#467a32` |
+| 商户登录 | `store` | `#2a5fa6` |
+| 联系客服 | `headset` | `#2a5fa6` |
+
+绑定主手机号未被点名但一并补上——不补则未绑定主手机号的用户会看到一行缺口。附加手机号用 `user` 而非 `phone`：它本质是「手机号 + 姓名」双要素身份匹配，与上一行不撞义。图标全部取自 `utils/icons.js` 已有的 50 个定义，不新增资源。
+
 ## 边界
 
 - **不改后端**。附加手机号维持单条：PRD §4.1 明确为「第 2 个手机号」，`000018_extend_miniprogram_users.sql` 以四列加 `chk_miniprogram_users_extra_group` 约束固化，`CONTEXT.md` 领域词汇为单数。不新增加号、不做多行。
