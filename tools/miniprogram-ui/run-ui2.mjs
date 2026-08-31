@@ -25,6 +25,29 @@ function requireIncludes(value, expected, label) {
   if (!String(value).includes(expected)) throw new Error(`${label} did not include the expected visible state`);
 }
 
+async function connectWithRetry(attempts = 30, intervalMs = 1000) {
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await automator.connect({ wsEndpoint: `ws://127.0.0.1:${automationPort}` });
+    } catch (error) {
+      lastError = error;
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+    }
+  }
+  throw blockedExternal(
+    'UI2 runner machine operator',
+    `WeChat Developer Tools automation port ${automationPort} never accepted a connection: ${sanitizedFailure(lastError)}`,
+    'open the project in WeChat Developer Tools with 设置 > 安全设置 > CLI/HTTP 调用 enabled, then rerun npm --prefix tools/miniprogram-ui run ui2',
+  );
+}
+
+// 真实布局引擎下的盒模型。UI0 无 DOM、UI1 不加载 wxss，几何只能在这里量。
+async function measure(element) {
+  const [size, offset] = await Promise.all([element.size(), element.offset()]);
+  return { width: size.width, height: size.height, left: offset.left, top: offset.top };
+}
+
 function sanitizedFailure(error) {
   const message = error instanceof Error ? error.message : String(error);
   return message
@@ -119,22 +142,30 @@ let fixture;
 try {
   assertProjectPermission();
   fixture = await startCatalogFixture();
-  miniProgram = await automator.connect({
-    wsEndpoint: `ws://127.0.0.1:${automationPort}`,
-  });
+  // `cli auto` 只是请求开发者工具打开项目窗口，自动化端口要等窗口就绪才监听；
+  // 立即连接会必然抢跑。有界重试，耗尽后仍失败才算真正的外部阻断。
+  miniProgram = await connectWithRetry();
 
   if (entryRoute !== 'pages/launch/launch') throw new Error(`configured first route was ${entryRoute || 'missing'}`);
   let page = await miniProgram.reLaunch(`/${entryRoute}`);
   if (!page) throw new Error('launch page did not launch');
-  for (let attempt = 0; attempt < 20; attempt += 1) {
-    await page.waitFor(100);
+  // 冷启动要串行走 session POST、identity GET 再 reLaunch；2 秒窗口在真实
+  // 开发者工具里会抢跑，尤其首次编译之后。
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await page.waitFor(250);
     const current = await miniProgram.currentPage();
     if (current && current.path === 'pages/home/home') {
       page = current;
       break;
     }
   }
-  if (!page || page.path !== 'pages/home/home') throw new Error('unbound cold start did not route directly to the home page');
+  if (!page || page.path !== 'pages/home/home') {
+    // 停在哪一页、入口状态机停在哪一档，是诊断冷启动分流的最短线索。
+    const stuck = await miniProgram.currentPage();
+    let entry = 'unavailable';
+    try { entry = JSON.stringify((await stuck.data()).entryState || null); } catch { /* 非 launch 页无此字段 */ }
+    throw new Error(`unbound cold start stopped at ${stuck ? stuck.path : 'no page'} with entryState=${entry}`);
+  }
   const greeting = requireElement(await page.$('.greet'), 'home greeting');
   requireIncludes(await greeting.text(), '你好，欢迎光临', 'home greeting');
   const phonePrompt = await page.$('button[open-type="getPhoneNumber"]');
@@ -167,6 +198,69 @@ try {
   const selectionSheet = requireElement(await page.$('.cz-sheet'), 'product-selection sheet');
   requireIncludes(await selectionSheet.text(), '口味偏好', 'product-selection sheet');
   receipt.scenarios.push({ id: 'menu-category-and-product-selection', status: 'PASS' });
+
+  // P0-6：个人中心布局。只有这一层有真实 wxss 与真实布局引擎，
+  // UI0 与 UI1 都测不出「标题逐字换行」和「行未占满卡片」。
+  page = await miniProgram.reLaunch('/pages/profile/profile');
+  if (!page) throw new Error('profile page did not launch');
+  await page.waitFor(600);
+
+  // 我的订单、绑定主手机号、附加手机号、商户登录、联系客服。
+  // fixture 的身份是「未绑主手机号、非商户」，五行全部渲染。
+  const rows = await page.$$('.prow');
+  if (rows.length !== 5) throw new Error(`profile rendered ${rows.length} rows, want 5`);
+  const rowBoxes = [];
+  for (const row of rows) rowBoxes.push(await measure(row));
+  const rowWidths = rowBoxes.map(box => box.width);
+  const widestRow = Math.max(...rowWidths);
+  for (const width of rowWidths) {
+    // 原生 button 的 margin:auto 会让行缩在卡片中部；四行必须等宽。
+    if (widestRow - width > 1) throw new Error(`a profile row is ${width}px wide against ${widestRow}px`);
+  }
+
+  const collapsedInputs = await page.$$('.extra-in');
+  if (collapsedInputs.length !== 0) throw new Error('collapsed extra-phone row rendered inputs');
+
+  const label = requireElement(await page.$('.prow--extra .prow-label'), 'extra phone label');
+  const labelBox = await measure(label);
+  // 逐字换行的直接判据：标题被压到近零宽，于是高度堆成多行。
+  const singleLine = labelBox.height;
+  if (labelBox.width < widestRow * 0.5) {
+    throw new Error(`extra phone label is ${labelBox.width}px wide inside a ${widestRow}px row`);
+  }
+  if (singleLine > 30) throw new Error(`extra phone label wrapped to ${singleLine}px tall`);
+
+  const head = requireElement(await page.$('.prow--extra .prow-head'), 'extra phone row head');
+  await head.tap();
+  await page.waitFor(300);
+
+  const phoneBox = await measure(requireElement(await page.$('.extra-in--phone'), 'extra phone input'));
+  const nameBox = await measure(requireElement(await page.$('.extra-in--name'), 'extra name input'));
+  const saveBox = await measure(requireElement(await page.$('.extra-save'), 'extra save button'));
+  for (const [box, name] of [[phoneBox, 'phone input'], [nameBox, 'name input'], [saveBox, 'save button']]) {
+    if (box.width <= 0 || box.height <= 0) throw new Error(`${name} rendered with a zero box`);
+    if (box.height < 36) throw new Error(`${name} is only ${box.height}px tall, below the tap target floor`);
+  }
+  // 5:3 分栏：手机号必须比姓名宽，且两者不得重叠。
+  if (phoneBox.width <= nameBox.width) {
+    throw new Error(`phone input ${phoneBox.width}px is not wider than name input ${nameBox.width}px`);
+  }
+  if (phoneBox.left + phoneBox.width > nameBox.left + 1) throw new Error('extra phone inputs overlap');
+  // 保存独占全宽行。
+  if (widestRow - saveBox.width > 1) throw new Error(`save button is ${saveBox.width}px inside a ${widestRow}px row`);
+  if (saveBox.top < phoneBox.top + phoneBox.height) throw new Error('save button shares the input row');
+
+  receipt.scenarios.push({
+    id: 'profile-layout-geometry',
+    status: 'PASS',
+    measurements: {
+      row_widths: rowWidths,
+      extra_label: labelBox,
+      extra_phone_input: phoneBox,
+      extra_name_input: nameBox,
+      extra_save: saveBox,
+    },
+  });
 
   receipt.status = 'PASS';
 } catch (error) {

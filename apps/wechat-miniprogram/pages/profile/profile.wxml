@@ -31,36 +31,51 @@
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
         </view>
-        <button wx:if="{{!phoneMask}}" class="prow" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+        <!-- 交互行：卡片是普通容器，微信按钮是它绝对定位的透明点击层。
+             按钮因此完全脱离布局流，原生 margin/padding/伪边框影响不到行。 -->
+        <view wx:if="{{!phoneMask}}" class="prow prow--tappable">
           <view class="prow-main"><view class="prow-label">绑定主手机号</view></view>
-        </button>
-        <view class="prow">
-          <view class="prow-main">
-            <view class="prow-label">附加手机号</view>
-            <view class="prow-sub">{{extraPhoneMask || '未设置'}}</view>
-            <view wx:if="{{extraState === 'unmatched'}}" class="prow-sub">手机号已保存，姓名未匹配员工名单，请核对</view>
-            <view wx:elif="{{extraState === 'matched'}}" class="prow-sub">已命中员工名单</view>
-            <view wx:elif="{{extraState === 'error'}}" class="prow-sub">保存结果不可用，请重试</view>
-          </view>
-          <input class="extra-phone" data-k="phone" bindinput="onExtraInput" placeholder="手机号" />
-          <input class="extra-name" data-k="name" bindinput="onExtraInput" placeholder="姓名" />
-          <view class="extra-save" bindtap="saveExtraPhone">保存</view>
+          <button class="prow-tap" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber"
+                  hover-class="none" aria-label="绑定主手机号"></button>
         </view>
-        <button wx:if="{{identityState === 'ready'}}" class="prow merchant-login" open-type="getPhoneNumber" bindgetphonenumber="onMerchantPhone">
+        <!-- 附加手机号：默认收起，收起态不展示脱敏号与命中结果。 -->
+        <view class="prow prow--extra {{extraOpen ? 'is-open' : ''}}">
+          <view class="prow-head" bindtap="toggleExtra">
+            <view class="prow-main"><view class="prow-label">附加手机号</view></view>
+            <view class="extra-caret"><icon name="chevron" size="17" color="#8f9384" /></view>
+          </view>
+          <view wx:if="{{extraOpen}}" class="extra-panel">
+            <view class="extra-result">{{extraPhoneMask ? extraPhoneMask + ' · ' + extraName : '未设置'}}</view>
+            <view wx:if="{{extraState === 'unmatched'}}" class="extra-hint">手机号已保存，姓名未匹配员工名单，请核对</view>
+            <view wx:elif="{{extraState === 'matched'}}" class="extra-hint">已命中员工名单</view>
+            <view wx:elif="{{extraState === 'error'}}" class="extra-hint">保存结果不可用，请重试</view>
+            <view class="extra-fields">
+              <input class="extra-in extra-in--phone" type="number" data-k="phone" bindinput="onExtraInput"
+                     value="{{extraForm.phone}}" placeholder="{{extraPhoneMask || '手机号'}}" placeholder-class="extra-ph" />
+              <input class="extra-in extra-in--name" data-k="name" bindinput="onExtraInput"
+                     value="{{extraForm.name}}" placeholder="姓名" placeholder-class="extra-ph" />
+            </view>
+            <view class="extra-save {{extraSavable ? '' : 'is-disabled'}}" bindtap="saveExtraPhone">保存</view>
+          </view>
+        </view>
+        <view wx:if="{{identityState === 'ready'}}" class="prow prow--tappable merchant-login">
           <view class="prow-main">
             <view class="prow-label">商户登录</view>
             <view class="prow-sub">{{merchantLoginState === 'error' ? '商户身份未核验，可重试' : '验证商户账号手机号'}}</view>
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
-        </button>
-        <button class="prow last" open-type="contact">
+          <button class="prow-tap" open-type="getPhoneNumber" bindgetphonenumber="onMerchantPhone"
+                  hover-class="none" aria-label="商户登录"></button>
+        </view>
+        <view class="prow prow--tappable last">
           <view class="prow-ico" style="background:var(--bg2)"><icon name="headset" size="19" color="#2a5fa6" /></view>
           <view class="prow-main">
             <view class="prow-label">联系客服</view>
             <view class="prow-sub">0596-388 1688</view>
           </view>
           <icon name="chevron" size="17" color="#8f9384" />
-        </button>
+          <button class="prow-tap" open-type="contact" hover-class="none" aria-label="联系客服"></button>
+        </view>
       </view>
 
       <view wx:if="{{identityState === 'ready' && merchantBound}}" class="switch-id" bindtap="reset">切换身份入口 ›</view>
