@@ -111,8 +111,32 @@ tools/miniprogram-ui/run-ui2.mjs
 
 ## 7. 独立验证
 
-- [ ] 7.1 另一个干净 detached worktree、精确候选 SHA、只读重跑全部门禁
-- [ ] 7.2 记录 PASS/FAIL、SHA、命令结果与剩余限制
+- [x] 7.1 另一个干净 detached worktree、精确候选 SHA、只读重跑全部门禁
+- [x] 7.2 记录 PASS/FAIL、SHA、命令结果与剩余限制
+
+### 验证结果：PASS（有限定）
+
+精确 SHA `ab3e77eafc241ecc2be0ebdac2e95472e31d8c2f`，全新 detached worktree，未复用实现 worktree 的任何产物。
+
+```
+npm --prefix apps/wechat-miniprogram test
+  → tests 108 / pass 108 / fail 0   （含 wxss/wxml 编译门禁）
+
+python3 apps/wechat-miniprogram/tests/lint_wx.py apps/wechat-miniprogram
+  → WX_LINT=PASS
+
+git status -s
+  → 空（验证过程未修改任何跟踪文件，满足只读要求）
+```
+
+### 剩余限制（未被本次验证覆盖）
+
+1. **几何证据缺失**。P0-6.5 要求断言真实 bounding box、行宽与无逐字换行的 rendered 回归，UI2 代码已就位但跑不出结果，阻断于既有冷启动缺陷（`entryRouting` 恒停 `loading`，基线代码同样复现）。本次交付**不含**几何证据，P0-6 第 5 条**未关闭**。
+2. **UI1 composed 门禁未跑**。它需要 `order-api` + MySQL 在跑，且 fixture 硬绑 `127.0.0.1:8080` 与之冲突，本次未纳入验证。
+3. **真机与开发者工具人工核对未做**。P0-6 第 4 条要求小屏与标准屏分别验证，未执行。
+4. 验证层级为 `UI0_LOCAL` + 静态源契约，不构成 UI2/UI3 证据。
+
+即：**代码层面的结构与状态机已独立验证；视觉与几何层面未取得证据。**
 
 ## 决定记录
 
