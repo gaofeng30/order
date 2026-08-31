@@ -18,7 +18,11 @@
       <view class="ring r2"></view>
       <view class="hero-inner">
         <view class="greet">你好，欢迎光临</view>
-        <view class="store-name serif">{{storeName}}</view>
+        <!-- 冷启动改为直接进首页后启动页不再露面，徽标在这里取得曝光位。 -->
+        <view class="hero-brand">
+          <view class="hero-logo"><image src="/assets/emblem.png" class="hero-emblem" mode="aspectFit" /></view>
+          <view class="store-name serif">{{storeName}}</view>
+        </view>
         <view class="store-meta">
           <icon name="pin" size="13" color="#b79a55" />
           <text class="addr">{{storeAddress}}</text>
@@ -47,7 +51,6 @@
       </view>
 
       <!-- 服务宫格 -->
-      <view class="sec-h"><text class="t">服务功能</text></view>
       <view class="card grid">
         <view wx:for="{{grid}}" wx:key="k" class="grid-item" data-k="{{item.k}}" bindtap="gridTap">
           <view class="grid-ico"><icon name="{{item.icon}}" size="24" color="#467a32" /></view>

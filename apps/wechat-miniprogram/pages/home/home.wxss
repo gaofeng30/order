@@ -1,4 +1,4 @@
-.home-hero { border-radius: 0 0 52rpx 52rpx; padding: 0 36rpx 128rpx; color: #fff; }
+.home-hero { border-radius: 0 0 52rpx 52rpx; padding: 0 36rpx 48rpx; color: #fff; }
 .launch-layer {
   position: fixed; z-index: 20; transform: translate(-50%, -50%);
   animation: home-launch-layer-in .18s ease-out;
@@ -7,7 +7,19 @@
 @keyframes home-launch-layer-in { from { opacity: 0; } to { opacity: 1; } }
 .hero-inner { position: relative; z-index: 2; padding-top: 8rpx; }
 .greet { font-size: 25rpx; color: rgba(255, 255, 255, .7); }
-.store-name { font-size: 50rpx; font-weight: 700; margin-top: 12rpx; letter-spacing: 2rpx; }
+
+/* 徽标与门店名同行构成品牌锁定。尺寸沿用 launch.wxss 已验证的比例，
+   白底容器让圆形徽标在深蓝背景上有完整轮廓。 */
+.hero-brand { display: flex; align-items: center; gap: 22rpx; margin-top: 12rpx; }
+.hero-logo {
+  width: 92rpx; height: 92rpx; border-radius: 28rpx; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 12rpx 36rpx rgba(0, 0, 0, .3);
+}
+.hero-emblem { width: 72rpx; height: 72rpx; }
+
+/* margin-top 移到 .hero-brand，否则徽标与名字基线错位。 */
+.store-name { font-size: 50rpx; font-weight: 700; letter-spacing: 2rpx; }
 .store-meta { display: flex; align-items: center; gap: 10rpx; margin-top: 18rpx; font-size: 24rpx; color: var(--ink-on-dark-2); }
 .store-meta .cut { color: #9fd3ff; }
 .search {
@@ -16,7 +28,9 @@
 }
 .search-ph { font-size: 27rpx; color: rgba(255, 255, 255, .7); }
 
-.body { padding: 0 32rpx; margin-top: -88rpx; position: relative; z-index: 3; }
+/* 原本是 -88rpx，把首个元素推进深蓝 hero；那个位置一直是「服务功能」标题，
+   深字压深底近乎隐形。标题删除后改为正向留白，hero 的 52rpx 圆角完整可见。 */
+.body { padding: 0 32rpx; margin-top: 24rpx; position: relative; z-index: 3; }
 
 /* 服务宫格 */
 .grid { padding: 36rpx 16rpx; display: flex; flex-wrap: wrap; }

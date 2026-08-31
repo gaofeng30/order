@@ -19,4 +19,40 @@
 .prow-label { font-size: 29rpx; color: var(--ink); font-weight: 500; }
 .prow-sub { font-size: 24rpx; color: var(--ink-3); margin-top: 6rpx; }
 
+/* 点击层：不赌能把原生 button 样式压干净，只让它不在布局流里。 */
+.prow--tappable { position: relative; }
+.prow-tap {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  margin: 0; padding: 0; opacity: 0; background: transparent; border-radius: 0;
+}
+.prow-tap::after { border: none; display: none; }
+
+/* 附加手机号行脱离 .prow 的单行 flex，改为可折叠的块级容器。 */
+.prow--extra { display: block; }
+.prow-head { display: flex; align-items: center; gap: 24rpx; }
+.extra-caret { display: flex; align-items: center; transition: transform .18s ease; }
+.prow--extra.is-open .extra-caret { transform: rotate(90deg); }
+
+.extra-panel { padding: 8rpx 0 4rpx; }
+.extra-result { font-size: 26rpx; color: var(--ink-2); margin-bottom: 12rpx; }
+.extra-hint { font-size: 24rpx; color: var(--ink-3); margin-bottom: 16rpx; }
+
+.extra-fields { display: flex; gap: 20rpx; }
+.extra-in {
+  min-width: 0; height: 80rpx; padding: 0 24rpx;
+  border-radius: 16rpx; background: var(--bg2);
+  font-size: 28rpx; color: var(--ink);
+}
+.extra-in--phone { flex: 5 1 0; }
+.extra-in--name { flex: 3 1 0; }
+.extra-ph { color: var(--ink-3); }
+
+.extra-save {
+  margin-top: 20rpx; height: 88rpx; line-height: 88rpx;
+  text-align: center; border-radius: 20rpx;
+  background: var(--brand, #3d6b2f); color: #fff;
+  font-size: 29rpx; font-weight: 500;
+}
+.extra-save.is-disabled { background: var(--line-2); color: var(--ink-3); }
+
 .switch-id { text-align: center; font-size: 25rpx; color: var(--ink-3); padding: 44rpx 0 8rpx; }
