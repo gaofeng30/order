@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "change": "allow-anonymous-miniprogram-entry",
+  "base_sha": "2d1400bd04f224c6c4da9eaca52e272514dff104",
+  "tdd": {
+    "red": {
+      "task_id": "2.2",
+      "command": "node --test apps/wechat-miniprogram/tests/anonymous-entry-ui1.test.js"
+    },
+    "green": {
+      "task_id": "3.2",
+      "command": "node --test apps/wechat-miniprogram/tests/anonymous-entry-ui1.test.js"
+    },
+    "refactor": {
+      "task_id": "4.1",
+      "command": "node --test apps/wechat-miniprogram/tests/anonymous-entry-ui1.test.js"
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI2",
+    "native_capabilities": [],
+    "scenarios": [
+      {
+        "id": "anonymous-user-entry",
+        "kind": "primary",
+        "steps": [
+          "在微信开发者工具 Stable 2.02.2608040 使用已分配测试号普通编译 exact candidate",
+          "在启动页点击用户端",
+          "检查进入后的页面、授权交互和调试器状态"
+        ],
+        "expected": [
+          "直接进入现有用户端首页，无需点击允许或拒绝",
+          "不出现昵称、头像、手机号或其他资料授权弹层",
+          "页面和调试器不展示敏感身份值，且没有 candidate 编译或运行错误"
+        ]
+      },
+      {
+        "id": "launch-adjacent-content-remains",
+        "kind": "regression",
+        "steps": [
+          "在同一 exact candidate 中冷重编译并停留启动页",
+          "检查品牌内容、用户端入口与既有商户端入口",
+          "检查启动页不存在已删除的授权文案和遮罩控件"
+        ],
+        "expected": [
+          "启动页品牌内容和两个既有入口均正常呈现",
+          "不存在微信授权登录、资料申请、允许或拒绝弹层内容",
+          "控制台没有本 change 引入的编译或运行错误"
+        ]
+      }
+    ]
+  }
+}
