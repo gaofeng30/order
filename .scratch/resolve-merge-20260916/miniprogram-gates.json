@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "change": "resolve-merge-20260916",
+  "base_sha": "319020d",
+  "branch": "codex/resolve-merge-20260916",
+  "owned_pages": [
+    "PAGE-U01",
+    "PAGE-U03",
+    "PAGE-U09"
+  ],
+  "success_contract": "Resolve merge conflicts while retaining frozen menu and identity contracts, stale-response isolation and unavailable-product guards",
+  "tdd": {
+    "red": {
+      "status": "FAIL_AS_EXPECTED",
+      "command": "npm --prefix apps/wechat-miniprogram test",
+      "result": "conflict markers break parsing; migrated regression suite initially fails 3/6"
+    },
+    "green": {
+      "status": "PASS",
+      "command": "npm --prefix apps/wechat-miniprogram test",
+      "result": "109 default tests and 6 migrated reservation regressions pass"
+    },
+    "refactor": {
+      "status": "PASS",
+      "result": "No new abstraction; same suites rerun"
+    }
+  },
+  "main_paths": [
+    "identity routing and merchant visibility",
+    "pickup menu selection and retry",
+    "stale menu success and failure cannot overwrite latest selection"
+  ],
+  "adjacent_regressions": [
+    "staff pricing",
+    "sold-out customization cannot mutate cart",
+    "WXML tag mismatch diagnostics"
+  ],
+  "ui_level_target": "UI2",
+  "ui2_status": "NOT_RUN",
+  "candidate_status": "NOT_CREATED",
+  "independent_verification_status": "NOT_RUN"
+}
