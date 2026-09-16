@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "change": "connect-miniprogram-reservation-menu",
+  "base_sha": "0dea0acc0ed8189b7bd7bf06cf3d32b5b8890d93",
+  "tdd": {
+    "red": {
+      "task_id": "2.2",
+      "command": "node --test apps/wechat-miniprogram/tests/reservation-menu-ui1.test.js"
+    },
+    "green": {
+      "task_id": "3.3",
+      "command": "node --test apps/wechat-miniprogram/tests/reservation-menu-ui1.test.js"
+    },
+    "refactor": {
+      "task_id": "4.1",
+      "command": "node --test apps/wechat-miniprogram/tests/reservation-menu-ui1.test.js"
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI2",
+    "native_capabilities": [],
+    "scenarios": [
+      {
+        "id": "reservation-menu-orderability",
+        "kind": "primary",
+        "steps": [
+          "在受控 loopback 菜单服务返回一个可购商品和一个当日售罄商品时，用微信开发者工具 Stable 2.02.2608040 普通编译 exact candidate",
+          "从启动页进入用户端并打开菜单",
+          "检查菜单顺序、价格、售罄标记、不可购动作和调试器状态"
+        ],
+        "expected": [
+          "菜单只展示受控服务响应且保持服务端顺序，可购商品保留选择动作，售罄商品显示售罄且不能新增购物车动作",
+          "页面不展示 seed 或旧 catalog fallback，不请求身份或资料权限",
+          "页面和调试器不显示敏感 query/身份值，且没有 candidate 编译或运行错误"
+        ]
+      },
+      {
+        "id": "reservation-menu-explicit-retry",
+        "kind": "regression",
+        "steps": [
+          "让同一受控服务对 exact candidate 的首次菜单请求返回 503",
+          "确认页面显示加载失败且没有自动重试或 mock 商品，再把服务切换为合法成功响应",
+          "点击页面重试并检查恢复后的菜单和调试器状态"
+        ],
+        "expected": [
+          "503 后页面保持可恢复 error，只有用户点击重试才产生第二次请求",
+          "重试后按成功响应恢复 ready，且不出现旧 catalog 或 seed 数据",
+          "控制台没有本 change 引入的编译或运行错误"
+        ]
+      }
+    ]
+  }
+}
