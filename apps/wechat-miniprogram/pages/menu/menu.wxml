@@ -20,13 +20,13 @@
     </view>
   </view>
 
-  <view wx:if="{{listState === 'loading'}}" class="catalog-state">目录加载中…</view>
+  <view wx:if="{{listState === 'loading'}}" class="catalog-state">菜单加载中…</view>
   <view wx:elif="{{listState === 'empty'}}" class="catalog-state">
-    <text>当前目录为空</text>
+    <text>当前菜单为空</text>
     <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载</view>
   </view>
   <view wx:elif="{{listState === 'error'}}" class="catalog-state">
-    <text>目录加载失败</text>
+    <text>菜单加载失败</text>
     <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">重试</view>
   </view>
 
@@ -91,7 +91,7 @@
           </view>
         </view>
       </view>
-      <view class="menu-end">—— 服务端目录 · 购物车待核价 ——</view>
+      <view class="menu-end">—— 预约菜单 · 以结算校验为准 ——</view>
       <view style="height:{{safeBottom + 200}}px"></view>
     </scroll-view>
   </block>
@@ -105,7 +105,7 @@
       <view class="cart-mid">
         <money wx:if="{{count > 0}}" v="{{total}}" size="42" />
         <text wx:else class="cart-empty">购物车是空的</text>
-        <view class="cart-hint">{{count > 0 ? '商品快照已保存 · 到店自提' : '从目录选择商品'}}</view>
+        <view class="cart-hint">{{count > 0 ? '商品快照已保存 · 到店自提' : '从菜单选择商品'}}</view>
       </view>
       <view class="btn {{canCheckout ? 'btn--primary' : 'btn--mute'}} cart-go" bindtap="goConfirm">去结算</view>
     </view>
