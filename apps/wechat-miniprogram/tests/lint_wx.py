@@ -33,36 +33,40 @@ for p in walk('.wxss'):
 # 两项检查共用同一次遍历与同一份 void 清单：两份清单迟早会漂移，
 # 届时同一个文件在两项检查里会被解析成不同的树。
 TAG = re.compile(r'<([a-zA-Z][\w-]*)((?:[^<>"\']|"[^"]*"|\'[^\']*\')*?)(/?)>|</([a-zA-Z][\w-]*)>', re.S)
-VOID = ('image', 'input', 'icon', 'br')
+VOID_TAGS = {'image', 'input', 'icon', 'br'}
 for p in walk('.wxml'):
     src = io.open(p, encoding='utf-8').read()
     rel = os.path.relpath(p, root)
     src_nc = re.sub(r'<!--.*?-->', lambda m: '\n' * m.group(0).count('\n'), src, flags=re.S)
-    # 每层: [上一个兄弟的条件类型, 开启该层的标签名, 行号]；根层名为 None
-    stack = [[None, None, 0]]
+    open_tags = []
+    sibling_conditions = [None]
     for m in TAG.finditer(src_nc):
         line = src_nc[:m.start()].count('\n') + 1
-        if m.group(4):                      # 闭合标签
-            name = m.group(4)
-            if len(stack) == 1:
-                fails.append(f"{rel}:{line}: 孤立 </{name}>")
+        if m.group(4):
+            closing_tag = m.group(4)
+            if not open_tags:
+                fails.append(f"{rel}:{line}: WXML_UNEXPECTED_CLOSE </{closing_tag}>")
                 continue
-            top = stack.pop()
-            if top[1] != name:
-                # 报出成对另一端的行号：工具只能指到错误暴露处，要改的常是另一端
-                fails.append(f"{rel}:{line}: </{name}> 与第 {top[2]} 行的 <{top[1]}> 不匹配")
+            opening_tag, opening_line = open_tags.pop()
+            sibling_conditions.pop()
+            if opening_tag != closing_tag:
+                fails.append(
+                    f"{rel}:{line}: WXML_CLOSE_MISMATCH expected </{opening_tag}> "
+                    f"for line {opening_line}, got </{closing_tag}>"
+                )
             continue
         attrs, selfclose = m.group(2) or '', m.group(3)
         cond = ('if' if re.search(r'\bwx:if\b', attrs) else
                 'elif' if re.search(r'\bwx:elif\b', attrs) else
                 'else' if re.search(r'\bwx:else\b', attrs) else None)
-        if cond in ('elif', 'else') and stack[-1][0] not in ('if', 'elif'):
+        if cond in ('elif', 'else') and sibling_conditions[-1] not in ('if', 'elif'):
             fails.append(f"{rel}:{line}: wx:{cond} 缺少同级 wx:if 前驱")
-        stack[-1][0] = cond
-        if not selfclose and m.group(1) not in VOID:
-            stack.append([None, m.group(1), line])
-    for _, name, line in stack[1:]:
-        fails.append(f"{rel}:{line}: <{name}> 未闭合")
+        sibling_conditions[-1] = cond
+        if not selfclose and m.group(1) not in VOID_TAGS:
+            open_tags.append((m.group(1), line))
+            sibling_conditions.append(None)
+    for opening_tag, opening_line in reversed(open_tags):
+        fails.append(f"{rel}:{opening_line}: WXML_UNCLOSED_TAG <{opening_tag}>")
 
 print('\n'.join(f"  {f}" for f in fails) if fails else '  clean')
 print('WX_LINT=' + ('FAIL' if fails else 'PASS'))
