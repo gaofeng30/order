@@ -44,6 +44,17 @@
       "tool_source_blob": "45fe3b8deadd193403f11e13830f268e30ccc730",
       "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
       "executor_source_blob": "8e82700469cb96d718b767e803a7b4a67812a40b"
+    },
+    {
+      "registry_version": "mechanical-profiles/v1",
+      "profile_id": "miniprogram-user-regression-gate-v1",
+      "change_name": "enforce-miniprogram-user-regression-gate",
+      "target_sha": "f5719e98690d0b1301ed567c8b616e074846b445",
+      "profile_definition_sha256": "f26eb3424236fdd88c1bda5daae3ecf52e839b72197e9c5b2b0830b626eefb5b",
+      "tool_source_path": "tools/lifecycle-receipts/profiles/miniprogram_user_regression_gate.py",
+      "tool_source_blob": "3ee4ef9013a9dfa56cdac4f65fe061de7cb9b4c6",
+      "executor_source_path": "tools/lifecycle-receipts/profile_runner.py",
+      "executor_source_blob": "4dcd6c8be3e46cff968f27d859f354e066bc7538"
     }
   ]
 }
