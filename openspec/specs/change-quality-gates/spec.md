@@ -3,7 +3,6 @@
 ## Purpose
 
 定义单个 OpenSpec change 如何按最高风险选择最低质量证据、形成 candidate、触发 exact-SHA 验证并满足集成 Gate。
-
 ## Requirements
 ### Requirement: Every change declares its highest risk gate
 
@@ -183,3 +182,17 @@ verifier FAIL MUST 返回原 writer 修复；任何实现、spec、tasks、base�
 - **WHEN** writer 或 verifier 比较本 change 与基线的 changed paths
 - **THEN** 所有路径均属于 proposal 声明的固定 owned paths
 - **AND** `.agents/skills/order-run-loop/**`、根 `AGENTS.md`、业务代码和产品/架构文档没有变化
+
+### Requirement: Mini Program TDD and user regression are separate hard gates
+
+质量协议 MUST 将小程序 TDD 与用户侧回归记录为两个不可互相替代的硬 Gate。TDD MUST 在形成 candidate 前提供真实 Red、Green、Refactor；用户侧回归 MUST 在 exact candidate 上按影响面达到 UI2 或 UI3。UI1、本地单元/契约测试、覆盖率、C/T/V/R 或另一个模块 PASS MUST NOT 代替用户侧回归。
+
+#### Scenario: TDD passes but user regression is absent
+- **WHEN** 小程序 change 已完成 Red/Green/Refactor，但 exact candidate 没有达到目标等级的用户回归
+- **THEN** 质量结论是 `BLOCKED_EXTERNAL` 或 FAIL，而不是模块完成
+- **AND** change 不得进入 `INDEPENDENT_VERIFIED` 或 `INTEGRATED`
+
+#### Scenario: User regression passes without TDD
+- **WHEN** UI2/UI3 用户路径通过但 candidate 缺真实 Red、Green 或 Refactor
+- **THEN** writer Gate 失败
+- **AND** 外部运行 PASS 不得补偿缺失的开发证据
