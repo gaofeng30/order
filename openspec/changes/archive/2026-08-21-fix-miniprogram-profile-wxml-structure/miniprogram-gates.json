@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "change": "fix-miniprogram-profile-wxml-structure",
+  "base_sha": "501e22ef22a87de0e2467de3dcb1a0e5b728f075",
+  "tdd": {
+    "red": {
+      "task_id": "2.2",
+      "command": "node --test apps/wechat-miniprogram/tests/wx-compile-ui1.test.js"
+    },
+    "green": {
+      "task_id": "3.2",
+      "command": "node --test apps/wechat-miniprogram/tests/wx-compile-ui1.test.js"
+    },
+    "refactor": {
+      "task_id": "4.1",
+      "command": "node --test apps/wechat-miniprogram/tests/wx-compile-ui1.test.js"
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI2",
+    "native_capabilities": [],
+    "scenarios": [
+      {
+        "id": "profile-compiles-and-renders",
+        "kind": "primary",
+        "steps": [
+          "在微信开发者工具 Stable 2.02.2608040 使用已分配测试号编译 exact candidate",
+          "从用户端路径进入个人中心",
+          "检查编译器和模拟器中的个人中心关键入口"
+        ],
+        "expected": [
+          "编译器不报告 WXML 标签闭合错误",
+          "身份卡、我的订单、联系客服、切换身份入口和用户 tabbar 可见",
+          "控制台没有本 change 引入的编译错误"
+        ]
+      },
+      {
+        "id": "launch-path-remains-usable",
+        "kind": "regression",
+        "steps": [
+          "在同一 exact candidate 中重新编译",
+          "打开启动页并进入用户端路径",
+          "检查相邻页面没有结构编译回归"
+        ],
+        "expected": [
+          "启动页正常呈现并可进入用户端",
+          "用户端导航保持可用",
+          "正式 AppID、真实登录、支付、上传和提审仍明确未验证"
+        ]
+      }
+    ]
+  }
+}
