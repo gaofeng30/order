@@ -358,17 +358,25 @@ Go profile steps MUST require an already-installed exact Go version and a safe l
 - **AND** it does not contact the network, weaken verification, or use recorded attestation as fallback
 
 ### Requirement: Archived recovery uses one append-only receipt
+
 After existing candidate verification, integration, and archive Gates, the control plane MUST add exactly one `lifecycle-receipt.md` in the dated archive, keep candidate checkpoint/tasks byte-identical, and store `receipt_head_verification=REQUIRED_DERIVED`. Recovery MUST verify exact Git objects/ancestry, archive path/diff, ownership, candidate artifact digests/tasks, retrospective, unique receipt add, and no later receipt touch.
 
-#### Scenario: Receipt history is valid
-- **WHEN** structural/Git checks and the required controlled mechanical replay all pass
-- **THEN** recovery reports the immutable receipt head and layered evidence result
+The sole exception is `enforce-miniprogram-user-regression-gate@f5719e98690d0b1301ed567c8b616e074846b445`, whose immutable checkpoint predates the runtime-section convention. It MUST use exactly one `legacy-lifecycle-receipt.md` and an independently verified exact-target compatibility verifier that pins and reuses the protected v1 control plane, preserves the recorded `IMPLEMENTING`/`none` facts, and passes both old v1 Gates and its separate receipt-head Gate. This exception MUST NOT be generalized or consumed by v1 `--list`.
+
+#### Scenario: Standard receipt history is valid
+- **WHEN** a non-exempt change's structural/Git checks and required controlled mechanical replay all pass
+- **THEN** recovery reports the immutable standard receipt head and layered evidence result
+- **AND** writes neither the derived head nor PASS back to repository evidence
+
+#### Scenario: Exact legacy receipt history is valid
+- **WHEN** the sole exempt change's fixed compatibility facts, old v1 Gates, structural/Git checks and controlled mechanical replay all pass at exact `R`
+- **THEN** recovery reports the immutable legacy receipt head, original checkpoint facts and exact-only compatibility rule
 - **AND** writes neither the derived head nor PASS back to repository evidence
 
 #### Scenario: Receipt is stale or tampered
-- **WHEN** the receipt is missing, duplicated, edited later, ancestry-inconsistent, task-inconsistent, or structurally ambiguous
+- **WHEN** the required standard or exact legacy receipt is missing, duplicated, edited later, ancestry-inconsistent, task-inconsistent, structurally ambiguous or supplied to the wrong verifier
 - **THEN** recovery returns non-zero `NO-GO`
-- **AND** archive presence alone does not close recovery
+- **AND** archive presence, recorded attestation or the exact exception name alone does not close recovery
 
 ### Requirement: Supersession recovery never launders the old failure
 The old-menu receipt MUST store expected verdict `FAILED`, later Gates `NOT_RUN`, and `mechanical_verification=REQUIRED_DERIVED`; the checker MUST re-derive `EXPECTED_MECHANICAL_FAIL` on every recovery. A reciprocal replacement receipt may support only `mechanically_reproducible=true` for the current delivery when its own re-derived mechanical result, integration/archive facts, receipts, links, and exact app/catalog/httpapi tree identities all agree.
@@ -474,3 +482,22 @@ Before APPROVED/implementation, the main Gate MUST read a current independent th
 - **WHEN** this repair itself has ordinary candidate PASS and is integrated and archived while the original control receipt remains unbound
 - **THEN** the repair may reach `ARCHIVED` without using the bootstrap profile to attest itself
 - **AND** the later exact `B`, independent binding-head PASS, receipt-only `R`, and separate receipt-head derivation remain required before Goal0 is closed
+
+### Requirement: Control plane blocks Mini Program promotion on missing gate evidence
+
+控制面 MUST 在小程序 change 的 `IMPLEMENTING → CANDIDATE` 转换校验结构化 manifest、candidate diff 和完整 TDD tasks，并在 `CANDIDATE → INDEPENDENT_VERIFIED` 转换校验绑定同一 SHA 的用户回归 receipt。任一校验失败 MUST 原子拒绝状态变更；`BLOCKED_EXTERNAL` MUST 保留既有 blocker 记录、在 task 证据中保留 owner/恢复条件并阻断更高状态。
+
+#### Scenario: Candidate transition lacks complete TDD gates
+- **WHEN** 小程序 change 请求进入 `CANDIDATE` 且 manifest/TDD task/candidate 绑定任一不满足
+- **THEN** checkpoint 返回非零且原状态不变
+- **AND** evidence 文本或手工 task 总完成数不能绕过
+
+#### Scenario: Verification transition lacks exact user regression
+- **WHEN** 小程序 candidate 请求进入 `INDEPENDENT_VERIFIED` 但 receipt 缺失、过期、低等级或不完整
+- **THEN** checkpoint 返回非零且保持 `CANDIDATE`
+- **AND** integration handler 不能继续
+
+#### Scenario: Complete gate evidence advances normally
+- **WHEN** TDD candidate Gate、exact-SHA user receipt、repository verifier 和既有全部 Gate 当前 PASS
+- **THEN** 控制面可按原七态相邻推进
+- **AND** 本规则不新增生命周期或绕过集成授权
