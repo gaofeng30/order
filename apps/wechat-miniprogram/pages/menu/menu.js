@@ -117,6 +117,8 @@ Page({
   },
   retryCatalog() { return this.loadOptionsAndMenu(); },
   async loadMenu() {
+    const requestID = (this._menuRequestID || 0) + 1;
+    this._menuRequestID = requestID;
     const selected = pickup.get();
     if (!selected) return false;
     this._menuOrderable = false;
@@ -124,6 +126,7 @@ Page({
     try {
       const showStaffPrice = await canShowStaffPrice();
       const menu = await menuStore.loadMenu(selected);
+      if (requestID !== this._menuRequestID) return false;
       if (menu.selection.date !== selected.date || menu.selection.time !== selected.time
         || menu.selection.mealPeriod !== selected.mealPeriod) throw new Error('selection drift');
       this._allGroups = showStaffPrice ? menu.categories : menu.categories.map(group => Object.assign({}, group, {
@@ -136,6 +139,7 @@ Page({
       this.refresh();
       return true;
     } catch (error) {
+      if (requestID !== this._menuRequestID) return false;
       this._allGroups = [];
       this._productsById = {};
       this._menuOrderable = false;
@@ -188,7 +192,12 @@ Page({
       czInit: { qty: entry.qty, flavors: entry.flavors, note: entry.note }, czLabel: '保存' });
   },
   onCzClose() { this.setData({ czVisible: false }); },
-  onCzConfirm(e) { cart.setPrefs(this.data.czItem, e.detail); this.setData({ czVisible: false }); this.refresh(); },
+  onCzConfirm(e) {
+    if (Object.hasOwn(this.data.czItem, 'orderable') && !this.data.czItem.orderable) return;
+    cart.setPrefs(this.data.czItem, e.detail);
+    this.setData({ czVisible: false });
+    this.refresh();
+  },
   jump(e) { this.setData({ active: e.currentTarget.dataset.id, intoView: `sec-${e.currentTarget.dataset.idx}` }); },
   onScroll() {},
   onReady() {},
