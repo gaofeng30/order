@@ -59,26 +59,36 @@ class RepositoryContractTest(unittest.TestCase):
         ):
             self.assertIn(token, runner)
 
-    def test_protected_governance_and_stage_skills_remain_byte_unchanged(self) -> None:
+    def test_frozen_runner_governance_remains_byte_unchanged(self) -> None:
         paths = [
-            "AGENTS.md",
             ".agents/skills/order-run-loop/SKILL.md",
             ".agents/skills/order-run-loop/references/self-evolution.md",
-            ".agents/skills/order-plan-change/SKILL.md",
-            ".agents/skills/order-implement-tdd/SKILL.md",
-            ".agents/skills/order-verify-change/SKILL.md",
-            ".agents/skills/order-integrate-change/SKILL.md",
         ]
         result = run(
             "git",
             "diff",
             "--quiet",
-            "d817aeb3ac5de29d2695ed17ed6277b737ba3ee8",
+            "2299da6013c06f4ae7dcad535373c67b66c80ebb",
             "--",
             *paths,
             cwd=REPO_ROOT,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_miniprogram_stages_use_the_single_machine_gate(self) -> None:
+        root_rules = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertIn("miniprogram-gates.json", root_rules)
+        self.assertIn("UI2", root_rules)
+        self.assertIn("UI3", root_rules)
+        expected = {
+            ".agents/skills/order-plan-change/SKILL.md": "miniprogram_gate.py plan",
+            ".agents/skills/order-implement-tdd/SKILL.md": "miniprogram_gate.py candidate",
+            ".agents/skills/order-verify-change/SKILL.md": "miniprogram_gate.py receipt",
+            ".agents/skills/order-integrate-change/SKILL.md": "./tools/harness check",
+        }
+        for path, token in expected.items():
+            source = (REPO_ROOT / path).read_text(encoding="utf-8")
+            self.assertIn(token, source)
 
 
 @unittest.skipUnless(HARNESS.is_file(), "requires tools/harness implementation")
