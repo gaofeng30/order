@@ -37,6 +37,19 @@ BOOTSTRAP_CHECKER_RELATIVE = "checks/verify_archive.py"
 BOOTSTRAP_EXPECTED_CANONICAL = (
     f"{BOOTSTRAP_ACTIVE_ROOT}/checks/expected-canonical-loop-engineering-control-plane-spec.md"
 )
+MINIPROGRAM_PROFILE_ID = "miniprogram-user-regression-gate-v1"
+MINIPROGRAM_TARGET_SHA = "f5719e98690d0b1301ed567c8b616e074846b445"
+MINIPROGRAM_TARGET_ARCHIVE_SHA = "b53cb520c4cac0505803a9d1e6dcc1807ac34540"
+MINIPROGRAM_PROFILE_CHANGE = "add-miniprogram-gate-receipt-profile"
+MINIPROGRAM_PROFILE_BASE_SHA = MINIPROGRAM_TARGET_ARCHIVE_SHA
+MINIPROGRAM_PROFILE_ACTIVE_ROOT = f"openspec/changes/{MINIPROGRAM_PROFILE_CHANGE}"
+MINIPROGRAM_PROFILE_ARCHIVE_RE = re.compile(
+    rf"^openspec/changes/archive/[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}-{MINIPROGRAM_PROFILE_CHANGE}$"
+)
+MINIPROGRAM_PROFILE_CHECKER_RELATIVE = "checks/verify_archives.py"
+MINIPROGRAM_PROFILE_CHECKER = (
+    f"{MINIPROGRAM_PROFILE_ACTIVE_ROOT}/{MINIPROGRAM_PROFILE_CHECKER_RELATIVE}"
+)
 CANONICAL_CONTROL_SPEC = "openspec/specs/loop-engineering-control-plane/spec.md"
 BINDINGS_REGISTRY_PATH = "tools/lifecycle-receipts/mechanical-bindings-v1.json"
 BOOTSTRAP_PROTECTED_PATHS = (
@@ -53,6 +66,7 @@ EXPECTED_TOOL_PATHS = {
     "old-menu-artifact-fail-v1": "tools/lifecycle-receipts/profiles/old_menu_artifact_fail.py",
     "menu-supersession-v1": "tools/lifecycle-receipts/profiles/menu_supersession.py",
     "lifecycle-receipt-control-v1": "tools/lifecycle-receipts/profiles/lifecycle_receipt_control.py",
+    MINIPROGRAM_PROFILE_ID: "tools/lifecycle-receipts/profiles/miniprogram_user_regression_gate.py",
 }
 ALLOWED_ENV_KEYS = {
     "GOCACHE",
@@ -160,8 +174,8 @@ def validate_registry_document(document: dict[str, Any]) -> dict[str, dict[str, 
     if document["registry_version"] != "mechanical-profiles/v1":
         fail("unsupported mechanical profile registry")
     profiles = document["profiles"]
-    if not isinstance(profiles, list) or len(profiles) != 4:
-        fail("registry must contain exactly four profiles")
+    if not isinstance(profiles, list) or len(profiles) != 5:
+        fail("registry must contain exactly five profiles")
     result: dict[str, dict[str, Any]] = {}
     for profile in profiles:
         if not isinstance(profile, dict) or set(profile) != PROFILE_KEYS:
@@ -228,7 +242,7 @@ def validate_registry_document(document: dict[str, Any]) -> dict[str, dict[str, 
                 fail(f"{identifier}/{step_id} output limit exceeds profile bound")
         result[identifier] = profile
     if set(result) != set(EXPECTED_TOOL_PATHS):
-        fail("four predeclared profile IDs are required")
+        fail("five predeclared profile IDs are required")
     return result
 
 
@@ -393,6 +407,8 @@ def _validate_bootstrap_binding_history(
     repo: Path,
     document: dict[str, Any],
     binding: dict[str, Any],
+    *,
+    controlled_profile_evolution: bool,
 ) -> None:
     candidate_sha, archive_sha, _ = _discover_archive(repo)
     touches = _git(
@@ -403,7 +419,8 @@ def _validate_bootstrap_binding_history(
         "--",
         BINDINGS_REGISTRY_PATH,
     ).splitlines()
-    if len(touches) != 1:
+    expected_touches = 2 if controlled_profile_evolution and len(document.get("bindings", [])) == 5 else 1
+    if len(touches) != expected_touches:
         fail("bootstrap binding commit is missing, ambiguous, or later edited")
     binding_sha = touches[0]
     if _git(repo, "merge-base", "--is-ancestor", archive_sha, binding_sha, check=False).returncode != 0:
@@ -432,15 +449,21 @@ def _validate_bootstrap_binding_history(
         or len(bound_bindings) != 4
         or bound_bindings[:3] != parent_bindings
         or bound_bindings[3] != binding
-        or binding_document != document
+        or not isinstance(document.get("bindings"), list)
+        or document["bindings"][:4] != bound_bindings
     ):
         fail("bootstrap binding is not one exact fourth append")
-    if _blob_at(repo, binding_sha, BINDINGS_REGISTRY_PATH) != _blob_at(
-        repo, "HEAD", BINDINGS_REGISTRY_PATH
-    ):
+    if not controlled_profile_evolution and _blob_at(
+        repo, binding_sha, BINDINGS_REGISTRY_PATH
+    ) != _blob_at(repo, "HEAD", BINDINGS_REGISTRY_PATH):
         fail("bootstrap bindings registry was later changed")
     for path in BOOTSTRAP_PROTECTED_PATHS:
         if path == BINDINGS_REGISTRY_PATH:
+            continue
+        if controlled_profile_evolution and path in {
+            "tools/lifecycle-receipts/mechanical-profiles-v1.json",
+            "tools/lifecycle-receipts/profile_runner.py",
+        }:
             continue
         if _blob_at(repo, archive_sha, path) != _blob_at(repo, "HEAD", path):
             fail(f"current protected blob differs from archive: {path}")
@@ -450,6 +473,205 @@ def _validate_bootstrap_binding_history(
         repo, candidate_sha, binding["executor_source_path"]
     ):
         fail("bootstrap executor source does not match candidate")
+
+
+def _load_miniprogram_archive_authority(
+    repo: Path, candidate_sha: str
+) -> dict[str, Any]:
+    source = _blob_bytes_at(repo, candidate_sha, MINIPROGRAM_PROFILE_CHECKER)
+    namespace: dict[str, Any] = {
+        "__name__": "miniprogram_profile_archive_authority",
+        "__file__": f"{candidate_sha}:{MINIPROGRAM_PROFILE_CHECKER}",
+    }
+    try:
+        exec(compile(source, namespace["__file__"], "exec"), namespace)
+    except Exception as exc:
+        fail(f"profile archive authority cannot load: {exc}")
+    for name in ("validate_governance_archive", "validate_profile_archive"):
+        if not callable(namespace.get(name)):
+            fail(f"profile archive authority is missing {name}")
+    return namespace
+
+
+def _validate_miniprogram_profile_candidate_paths(repo: Path, candidate_sha: str) -> None:
+    ancestor = _git(
+        repo,
+        "merge-base",
+        "--is-ancestor",
+        MINIPROGRAM_PROFILE_BASE_SHA,
+        candidate_sha,
+        check=False,
+    )
+    if ancestor.returncode != 0:
+        fail("active profile candidate does not descend from fixed base")
+    changed = _git(
+        repo,
+        "diff",
+        "--name-only",
+        f"{MINIPROGRAM_PROFILE_BASE_SHA}...{candidate_sha}",
+    ).splitlines()
+    allowed_exact = {
+        "tools/lifecycle-receipts/mechanical-profiles-v1.json",
+        "tools/lifecycle-receipts/profile_runner.py",
+        EXPECTED_TOOL_PATHS[MINIPROGRAM_PROFILE_ID],
+        "tools/lifecycle-receipts/tests/test_miniprogram_user_regression_profile.py",
+    }
+    unexpected = [
+        path
+        for path in changed
+        if not path.startswith(MINIPROGRAM_PROFILE_ACTIVE_ROOT + "/")
+        and path not in allowed_exact
+    ]
+    if unexpected:
+        fail(f"active profile candidate escapes owned paths: {unexpected[0]}")
+    if BINDINGS_REGISTRY_PATH in changed:
+        fail("active profile candidate changes bindings prematurely")
+
+
+def _validate_active_miniprogram_profile_candidate(repo: Path) -> str | None:
+    head = _git(repo, "rev-parse", "HEAD").strip()
+    checker = _git(
+        repo,
+        "cat-file",
+        "-e",
+        f"{head}:{MINIPROGRAM_PROFILE_CHECKER}",
+        check=False,
+    )
+    if checker.returncode != 0:
+        return None
+    _validate_miniprogram_profile_candidate_paths(repo, head)
+    return head
+
+
+def _discover_miniprogram_profile_archive(repo: Path) -> tuple[str, str, str] | None:
+    tree = _git(
+        repo,
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "HEAD",
+        "--",
+        "openspec/changes/archive",
+    )
+    suffix = "/" + MINIPROGRAM_PROFILE_CHECKER_RELATIVE
+    paths = [
+        path
+        for path in tree.splitlines()
+        if path.endswith(suffix)
+        and MINIPROGRAM_PROFILE_ARCHIVE_RE.fullmatch(path[: -len(suffix)])
+    ]
+    if not paths:
+        return None
+    if len(paths) != 1:
+        fail("profile archive checker path is ambiguous")
+    checker_path = paths[0]
+    archive_root = checker_path[: -len(suffix)]
+    touches = _git(repo, "log", "--format=%H", "--no-renames", "--", checker_path).splitlines()
+    if len(touches) != 1:
+        fail("profile archive commit is missing, ambiguous, or later edited")
+    archive_sha = touches[0]
+    parents = _git(repo, "rev-list", "--parents", "-n", "1", archive_sha).split()
+    if len(parents) != 2:
+        fail("profile archive must have one parent")
+    candidate_sha = parents[1]
+    _validate_miniprogram_profile_candidate_paths(repo, candidate_sha)
+    authority = _load_miniprogram_archive_authority(repo, candidate_sha)
+    try:
+        governance_root = authority["validate_governance_archive"](
+            repo,
+            authority_candidate=candidate_sha,
+            target=MINIPROGRAM_TARGET_SHA,
+            archive=MINIPROGRAM_TARGET_ARCHIVE_SHA,
+        )
+        resolved_root = authority["validate_profile_archive"](
+            repo,
+            authority_candidate=candidate_sha,
+            candidate=candidate_sha,
+            archive=archive_sha,
+        )
+    except Exception as exc:
+        fail(f"profile archive authority rejected history: {exc}")
+    if governance_root != "2026-08-21-enforce-miniprogram-user-regression-gate":
+        fail("governance archive path mismatch")
+    if resolved_root != archive_root.rsplit("/", 1)[1]:
+        fail("profile archive path mismatch")
+    return candidate_sha, archive_sha, archive_root
+
+
+def _profile_evolution_state(repo: Path) -> tuple[str, str | None]:
+    archived = _discover_miniprogram_profile_archive(repo)
+    if archived is not None:
+        return archived[0], archived[1]
+    candidate = _validate_active_miniprogram_profile_candidate(repo)
+    if candidate is None:
+        fail("controlled profile evolution source is missing")
+    return candidate, None
+
+
+def _validate_miniprogram_binding_history(
+    repo: Path,
+    document: dict[str, Any],
+    binding: dict[str, Any],
+    candidate_sha: str,
+    archive_sha: str | None,
+) -> None:
+    if archive_sha is None:
+        fail("Mini Program profile binding is premature before profile archive")
+    touches = _git(
+        repo,
+        "rev-list",
+        "--reverse",
+        f"{archive_sha}..HEAD",
+        "--",
+        BINDINGS_REGISTRY_PATH,
+    ).splitlines()
+    if len(touches) != 1:
+        fail("Mini Program profile binding commit is missing, ambiguous, or later edited")
+    binding_sha = touches[0]
+    parents = _git(repo, "rev-list", "--parents", "-n", "1", binding_sha).split()
+    if parents != [binding_sha, archive_sha]:
+        fail("Mini Program profile binding parent is not exact archive")
+    changed = _git(
+        repo, "diff-tree", "--no-commit-id", "--name-status", "-r", binding_sha
+    )
+    if changed != f"M\t{BINDINGS_REGISTRY_PATH}\n":
+        fail("Mini Program profile binding must change only the bindings registry")
+    parent_document = _load_json_blob(
+        repo, archive_sha, BINDINGS_REGISTRY_PATH, "profile archive bindings"
+    )
+    binding_document = _load_json_blob(
+        repo, binding_sha, BINDINGS_REGISTRY_PATH, "Mini Program binding commit"
+    )
+    parent_bindings = parent_document.get("bindings")
+    bound_bindings = binding_document.get("bindings")
+    if (
+        not isinstance(parent_bindings, list)
+        or len(parent_bindings) != 4
+        or not isinstance(bound_bindings, list)
+        or len(bound_bindings) != 5
+        or bound_bindings[:4] != parent_bindings
+        or bound_bindings[4] != binding
+        or binding_document != document
+    ):
+        fail("Mini Program profile binding is not one exact fifth append")
+    for path in (
+        "tools/lifecycle-receipts/mechanical-profiles-v1.json",
+        "tools/lifecycle-receipts/profile_runner.py",
+        EXPECTED_TOOL_PATHS[MINIPROGRAM_PROFILE_ID],
+        "tools/lifecycle-receipts/tests/test_miniprogram_user_regression_profile.py",
+    ):
+        if _blob_at(repo, candidate_sha, path) != _blob_at(repo, archive_sha, path):
+            fail(f"profile archive source drift: {path}")
+        if _blob_at(repo, archive_sha, path) != _blob_at(repo, "HEAD", path):
+            fail(f"current profile source drift: {path}")
+    if binding["tool_source_blob"] != _blob_at(
+        repo, candidate_sha, binding["tool_source_path"]
+    ):
+        fail("Mini Program profile tool source does not match candidate")
+    if binding["executor_source_blob"] != _blob_at(
+        repo, candidate_sha, binding["executor_source_path"]
+    ):
+        fail("Mini Program profile executor source does not match candidate")
 
 
 def validate_bindings_document(
@@ -464,10 +686,11 @@ def validate_bindings_document(
     if document["bindings_version"] != "mechanical-bindings/v1":
         fail("unsupported mechanical bindings registry")
     bindings = document["bindings"]
-    if not isinstance(bindings, list) or len(bindings) not in (3, 4):
+    if not isinstance(bindings, list) or len(bindings) not in (3, 4, 5):
         fail("bindings must be an array")
     result: dict[str, dict[str, Any]] = {}
     bootstrap_binding: dict[str, Any] | None = None
+    miniprogram_binding: dict[str, Any] | None = None
     for binding in bindings:
         if not isinstance(binding, dict) or set(binding) != BINDING_KEYS:
             fail("binding fields mismatch")
@@ -483,6 +706,9 @@ def validate_bindings_document(
         if identifier == BOOTSTRAP_PROFILE_ID:
             expected_target = BOOTSTRAP_TARGET_SHA
             bootstrap_binding = binding
+        elif identifier == MINIPROGRAM_PROFILE_ID:
+            expected_target = MINIPROGRAM_TARGET_SHA
+            miniprogram_binding = binding
         elif expected_target is None:
             fail(f"unexpected bound profile: {identifier}")
         if binding["target_sha"] != expected_target:
@@ -501,32 +727,42 @@ def validate_bindings_document(
             ("tool_source_path", "tool_source_blob"),
             ("executor_source_path", "executor_source_blob"),
         ):
-            if identifier == BOOTSTRAP_PROFILE_ID:
-                path = repo / binding[path_field]
-                if not path.is_file() or path.is_symlink():
-                    fail(f"{identifier} bound source is missing or unsafe: {binding[path_field]}")
-                if git_blob_id(path.read_bytes()) != binding[blob_field]:
-                    fail(f"{identifier} {blob_field} does not match source bytes")
-                head_blob = _git(repo, "rev-parse", f"HEAD:{binding[path_field]}").strip()
-                if head_blob != binding[blob_field]:
-                    fail(f"{identifier} bound source is not exact at HEAD")
-            else:
-                try:
-                    historical_bytes = _git(
-                        repo, "cat-file", "blob", binding[blob_field], binary=True
-                    )
-                except ProfileError:
-                    fail(f"{identifier} {blob_field} is not an available historical blob")
-                if git_blob_id(historical_bytes) != binding[blob_field]:
-                    fail(f"{identifier} {blob_field} historical blob mismatch")
+            try:
+                historical_bytes = _git(
+                    repo, "cat-file", "blob", binding[blob_field], binary=True
+                )
+            except ProfileError:
+                fail(f"{identifier} {blob_field} is not an available historical blob")
+            if git_blob_id(historical_bytes) != binding[blob_field]:
+                fail(f"{identifier} {blob_field} historical blob mismatch")
         result[identifier] = binding
     historical_ids = list(EXPECTED_PROFILE_TARGETS)
     identifiers = [binding["profile_id"] for binding in bindings]
     if identifiers == historical_ids:
         return result
-    if identifiers != [*historical_ids, BOOTSTRAP_PROFILE_ID] or bootstrap_binding is None:
-        fail("bindings must be the exact historical three or one exact later bootstrap append")
-    _validate_bootstrap_binding_history(repo, document, bootstrap_binding)
+    current_ids = [*historical_ids, BOOTSTRAP_PROFILE_ID]
+    later_ids = [*current_ids, MINIPROGRAM_PROFILE_ID]
+    if identifiers not in (current_ids, later_ids) or bootstrap_binding is None:
+        fail("bindings must be the exact historical, bootstrap, or fixed Mini Program sequence")
+    if identifiers == current_ids and not verify_git_blobs:
+        return result
+    candidate_sha, profile_archive_sha = _profile_evolution_state(repo)
+    _validate_bootstrap_binding_history(
+        repo,
+        document,
+        bootstrap_binding,
+        controlled_profile_evolution=True,
+    )
+    if identifiers == later_ids:
+        if miniprogram_binding is None:
+            fail("Mini Program profile binding is missing")
+        _validate_miniprogram_binding_history(
+            repo,
+            document,
+            miniprogram_binding,
+            candidate_sha,
+            profile_archive_sha,
+        )
     return result
 
 
