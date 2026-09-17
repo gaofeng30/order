@@ -15,6 +15,13 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
+from miniprogram_gate import (
+    GateViolation as MiniprogramGateViolation,
+    candidate_manifest as miniprogram_candidate_manifest,
+    load_receipt as load_miniprogram_receipt,
+    validate_change as validate_miniprogram_change,
+)
+
 
 SCHEMA_VERSION = 1
 LIFECYCLE = (
@@ -416,7 +423,13 @@ def validate_transition(old: Optional[str], new: str, bootstrap: bool) -> None:
     )
 
 
-def validate_record(root: Path, change: str, record: Dict[str, Any], tasks: List[Dict[str, Any]]) -> List[str]:
+def validate_record(
+    root: Path,
+    change: str,
+    change_path: Path,
+    record: Dict[str, Any],
+    tasks: List[Dict[str, Any]],
+) -> List[str]:
     issues: List[str] = []
     lifecycle = record.get("lifecycle")
     if lifecycle not in LIFECYCLE:
@@ -478,6 +491,19 @@ def validate_record(root: Path, change: str, record: Dict[str, Any], tasks: List
                 issues.append(f"{change}: integrated_sha is not in the current checkout history")
     elif integrated_sha is not None and (not isinstance(integrated_sha, str) or not commit_exists(root, integrated_sha)):
         issues.append(f"{change}: optional integrated_sha is invalid")
+    if lifecycle in {"CANDIDATE", "INDEPENDENT_VERIFIED", "INTEGRATED", "ARCHIVED"}:
+        try:
+            validate_miniprogram_change(
+                root,
+                change,
+                change_path,
+                lifecycle,
+                candidate_sha if isinstance(candidate_sha, str) else None,
+                blocker,
+                record.get("user_regression"),
+            )
+        except MiniprogramGateViolation as exc:
+            issues.append(f"{change}: {exc}")
     return issues
 
 
@@ -536,6 +562,7 @@ def build_snapshot(root: Path, common: Path) -> Dict[str, Any]:
                 "next": record.get("next") if record else None,
                 "candidate_sha": record.get("candidate_sha") if record else None,
                 "integrated_sha": record.get("integrated_sha") if record else None,
+                "user_regression": record.get("user_regression") if record else None,
                 "evidence": record.get("evidence", []) if record else [],
                 "tasks": visible_tasks,
                 "task_summary": {
@@ -584,6 +611,12 @@ def command_status(args: argparse.Namespace, root: Path, common: Path) -> int:
             print(f"  [{task['state']}] {task['id']} {task['title']}")
         if change["blocker"]:
             print(f"  BLOCKER {change['blocker']['kind']}: {change['blocker']['summary']}")
+        if change["user_regression"]:
+            receipt = change["user_regression"]
+            print(
+                f"  USER_REGRESSION {receipt['ui_level']} "
+                f"candidate={receipt['candidate_sha'][:12]} scenarios={len(receipt['scenario_ids'])}"
+            )
         print(f"  NEXT {change['next'] or 'checkpoint required'}")
     observations = snapshot["observations"]
     print(f"OBSERVATIONS {observations['count']} {json.dumps(observations['by_class'], sort_keys=True)}")
@@ -610,7 +643,7 @@ def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
     state = load_state(state_path)
     observations = load_observations(observations_path)
     sources, issues = change_sources(root, common, state)
-    for name, (path, _source_root) in sources.items():
+    for name, (path, source_root) in sources.items():
         record = state["changes"].get(name)
         if not isinstance(record, dict):
             issues.append(f"{name}: checkpoint is missing")
@@ -620,7 +653,7 @@ def command_check(_args: argparse.Namespace, root: Path, common: Path) -> int:
         except HarnessError as exc:
             issues.append(f"{name}: {exc.what}: {exc.why}")
             continue
-        issues.extend(validate_record(root, name, record, tasks))
+        issues.extend(validate_record(source_root, name, path, record, tasks))
     for name, record in state["changes"].items():
         if name in sources:
             continue
@@ -728,14 +761,46 @@ def command_checkpoint(args: argparse.Namespace, root: Path, common: Path) -> in
                 "summary": args.blocker.strip(),
                 "task": args.blocked_task,
             }
+        candidate_sha = args.candidate_sha if args.candidate_sha is not None else record.get("candidate_sha")
+        user_regression = record.get("user_regression")
+        if args.state == "IMPLEMENTING" or candidate_sha != record.get("candidate_sha"):
+            user_regression = None
+        if args.user_regression_receipt is not None:
+            if args.state not in {"INDEPENDENT_VERIFIED", "INTEGRATED", "ARCHIVED"}:
+                fail(
+                    "user regression receipt is premature",
+                    f"{args.state} does not accept a user regression receipt",
+                    "attach the exact-SHA receipt when advancing to INDEPENDENT_VERIFIED or later",
+                )
+            if not isinstance(candidate_sha, str):
+                fail(
+                    "user regression receipt has no candidate",
+                    "the receipt cannot be bound without candidate_sha",
+                    "provide --candidate-sha with the exact tested candidate",
+                )
+            try:
+                manifest = miniprogram_candidate_manifest(root, args.change, candidate_sha)
+                user_regression = load_miniprogram_receipt(
+                    Path(args.user_regression_receipt),
+                    args.change,
+                    candidate_sha,
+                    manifest,
+                )
+            except MiniprogramGateViolation as exc:
+                fail(
+                    "user regression receipt is invalid",
+                    str(exc),
+                    "repair the exact-SHA receipt and rerun the checkpoint without changing lifecycle state",
+                )
         record.update(
             {
                 "lifecycle": args.state,
                 "current_task": current_task,
                 "blocker": blocker,
                 "next": args.next.strip(),
-                "candidate_sha": args.candidate_sha if args.candidate_sha is not None else record.get("candidate_sha"),
+                "candidate_sha": candidate_sha,
                 "integrated_sha": args.integrated_sha if args.integrated_sha is not None else record.get("integrated_sha"),
+                "user_regression": user_regression,
                 "worktree": str(root),
                 "branch": branch_name(root),
                 "updated_at": utc_now(),
@@ -744,7 +809,7 @@ def command_checkpoint(args: argparse.Namespace, root: Path, common: Path) -> in
         evidence = list(record.get("evidence") or [])
         evidence.append({"at": record["updated_at"], "summary": args.evidence.strip()})
         record["evidence"] = evidence
-        issues = validate_record(root, args.change, record, tasks)
+        issues = validate_record(root, args.change, active[args.change], record, tasks)
         if issues:
             raise format_issues(issues)
         state["changes"][args.change] = record
@@ -808,6 +873,7 @@ def build_parser() -> FriendlyParser:
     checkpoint.add_argument("--clear-blocker", action="store_true")
     checkpoint.add_argument("--candidate-sha")
     checkpoint.add_argument("--integrated-sha")
+    checkpoint.add_argument("--user-regression-receipt")
     checkpoint.add_argument("--bootstrap", action="store_true")
 
     observe = subparsers.add_parser("observe", help="append an observation without changing the runner")
