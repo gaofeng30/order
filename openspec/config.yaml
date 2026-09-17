@@ -16,4 +16,5 @@ rules:
     - 每条 requirement 必须可由测试或验收命令验证，并覆盖关键失败场景。
   tasks:
     - 按 Red、Green、Refactor、本地验证、独立 worktree 验证的依赖顺序拆分。
+    - 触及 apps/wechat-miniprogram 的 change 必须提供 miniprogram-gates.json；普通功能用户侧回归最低 UI2，微信原生能力最低 UI3，并在 exact candidate 后提交完整场景 receipt。
     - 每个任务完成后记录决定性命令、结果或设计理由。
