@@ -37,6 +37,14 @@
 
 未实际运行的等级不得写 PASS。所选等级依赖的工具、权限、账号、版本或设备缺失时，记录 `BLOCKED_EXTERNAL`，不得用低一级结果冒充。
 
+### 小程序双 Gate
+
+任何实际 diff 触及 `apps/wechat-miniprogram/**` 的新 change 必须在 change 目录提交 `miniprogram-gates.json`。manifest 固定声明完整 `base_sha`、Red/Green/Refactor 的 task ID 与命令、最低 UI 等级、原生能力，以及至少一个 `primary` 和一个 `regression` 用户场景。普通小程序功能最低 UI2；涉及 `wx.login`、手机号授权、支付、扫码或订阅消息等微信原生能力最低 UI3。
+
+Writer 形成 candidate 后运行 `python3 tools/miniprogram_gate.py candidate --change <name> --candidate-sha <full-sha>`；TDD 三阶段任务缺失或未完成即失败。用户侧回归必须针对该 exact SHA 实际执行全部声明场景，再以仓库外普通 JSON 文件运行 `python3 tools/miniprogram_gate.py receipt --change <name> --candidate-sha <full-sha> --receipt <path>`，并在进入 `INDEPENDENT_VERIFIED` 的 checkpoint 使用同一 `--user-regression-receipt <path>`。receipt 只保存规范化等级、场景、环境、未验证边界与 SHA256，不替代 verifier 对真实运行证据的核对。
+
+manifest、candidate SHA、场景、运行环境或依赖发生变化时旧 receipt 失效。缺少 UI2/UI3 资产时允许停在 CANDIDATE 并记录 `BLOCKED_EXTERNAL`，但低层测试、自由文本或截图数量均不能替代用户侧 Gate。
+
 ### W0-W3 × UI0-UI3 决策表
 
 每格先满足行内 W Gate，再追加列内 UI 证据：
