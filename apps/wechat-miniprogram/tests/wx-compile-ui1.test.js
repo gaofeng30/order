@@ -1,5 +1,7 @@
 const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { miniprogramRoot } = require('./page-harness.js');
@@ -20,4 +22,27 @@ test('wxss and wxml are structurally compilable', () => {
     assert.fail(`wx lint failed:\n${out}`);
   }
   assert.match(out, /WX_LINT=PASS/);
+});
+
+test('wxml lint rejects mismatched nested closing tags', () => {
+  const script = path.join(miniprogramRoot, 'tests', 'lint_wx.py');
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'order-wx-lint-mismatch-'));
+
+  try {
+    fs.writeFileSync(
+      path.join(fixtureRoot, 'mismatch.wxml'),
+      '<scroll-view><view></scroll-view></view>\n',
+      'utf8',
+    );
+    const result = spawnSync('python3', [script, fixtureRoot], { encoding: 'utf8' });
+    assert.equal(result.error, undefined, 'wx lint process did not start');
+    assert.equal(typeof result.status, 'number', 'wx lint process did not return an exit status');
+    assert.notEqual(result.status, 0, `wx lint falsely accepted mismatched tags:\n${result.stdout}`);
+    assert.match(`${result.stdout}${result.stderr}`, /WXML_CLOSE_MISMATCH/);
+  } finally {
+    assert.equal(path.dirname(fixtureRoot), os.tmpdir());
+    assert.match(path.basename(fixtureRoot), /^order-wx-lint-mismatch-/);
+    assert.equal(fs.lstatSync(fixtureRoot).isSymbolicLink(), false);
+    fs.rmSync(fixtureRoot, { recursive: true });
+  }
 });
