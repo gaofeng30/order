@@ -15,6 +15,10 @@
   </view>
   <view wx:if="{{statusWriteState === 'error'}}" class="pad biz-error">营业状态保存失败，请稍后重试</view>
 
+  <view wx:if="{{merchantRole === 'OWNER'}}" class="pad pc-entry-row">
+    <button class="btn btn--ghost-blue btn--block" bindtap="goPCLogin">登录电脑后台</button>
+  </view>
+
   <!-- 搜索：取餐号 / 订单号 / 手机号，跨泳道（§6.6） -->
   <view class="pad search-wrap">
     <view class="search-box">
@@ -49,9 +53,14 @@
   </view>
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
-    <view wx:if="{{list.length === 0}}" class="empty">
+    <view wx:if="{{listState === 'loading'}}" class="empty"><view class="empty-txt">正在读取订单…</view></view>
+    <view wx:elif="{{listState === 'error'}}" class="empty">
+      <view class="empty-txt">订单暂时无法读取，请重试</view>
+      <button class="btn btn--ghost-blue" bindtap="load">重新读取</button>
+    </view>
+    <view wx:elif="{{listState === 'empty'}}" class="empty">
       <icon name="layers" size="46" color="#d8d8cd" stroke="1.5" />
-      <view class="empty-txt">「{{lane}}」暂无订单</view>
+      <view class="empty-txt">{{kw ? '没有匹配的订单' : '「' + lane + '」暂无订单'}}</view>
     </view>
 
     <view wx:for="{{list}}" wx:key="id" class="card aorder" data-id="{{item.id}}" bindtap="cardTap">
@@ -62,12 +71,8 @@
           <money cents="{{item.total}}" blue size="34" />
         </view>
         <view class="aorder-meta">
-          <text>{{item.contact}}</text><text>·</text><text>{{item.itemCount}} 件</text><text>·</text><text>{{item.paidTime}} 下单</text>
+          <text>取餐 {{item.pickupDate}} {{item.pickupTime}}</text><text>·</text><text>{{item.paidTime}} 下单</text>
         </view>
-        <view wx:if="{{item.showBand}}" class="aorder-band">
-          <icon name="flame" size="13" color="#a4873f" /><text>{{item.band}}</text>
-        </view>
-        <view class="aorder-summary ellipsis-1">{{item.summary}}</view>
         <view class="aorder-foot">
           <view
             wx:if="{{item.meta.isView}}"
