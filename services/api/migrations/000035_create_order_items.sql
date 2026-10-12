@@ -1,0 +1,20 @@
+CREATE TABLE order_items (
+  order_id BIGINT UNSIGNED NOT NULL,
+  line_number SMALLINT UNSIGNED NOT NULL,
+  product_id BIGINT UNSIGNED NOT NULL,
+  product_name_snapshot TEXT NOT NULL,
+  product_source_version BINARY(32) NOT NULL,
+  image_object_key_snapshot VARBINARY(1024) NULL,
+  original_unit_price_cents BIGINT UNSIGNED NOT NULL,
+  discounted_unit_price_cents BIGINT UNSIGNED NOT NULL,
+  quantity BIGINT UNSIGNED NOT NULL,
+  original_subtotal_cents BIGINT UNSIGNED NOT NULL,
+  payable_subtotal_cents BIGINT UNSIGNED NOT NULL,
+  flavors_json JSON NOT NULL,
+  line_note TEXT NOT NULL,
+  PRIMARY KEY (order_id,line_number),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT chk_order_items_line CHECK (line_number>0 AND product_id>0 AND CHAR_LENGTH(TRIM(product_name_snapshot))>0 AND (image_object_key_snapshot IS NULL OR OCTET_LENGTH(image_object_key_snapshot) BETWEEN 1 AND 1024)),
+  CONSTRAINT chk_order_items_amounts CHECK (quantity>0 AND discounted_unit_price_cents<=original_unit_price_cents AND original_unit_price_cents<=18446744073709551615 DIV quantity AND discounted_unit_price_cents<=18446744073709551615 DIV quantity AND original_subtotal_cents=original_unit_price_cents*quantity AND payable_subtotal_cents=discounted_unit_price_cents*quantity),
+  CONSTRAINT chk_order_items_flavors CHECK (JSON_TYPE(flavors_json)='ARRAY')
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
