@@ -49,17 +49,39 @@
 
   /* ---------------- 顶栏：营业状态 + 账号下拉（原 admin-profile 商户中心） ---------------- */
   const BIZ = ['营业中', '休息中', '已截单'];
+  const BIZ_LABEL = { open: '营业中', closed: '休息中', cutoff: '已截单' };
+  let settingsWrite = null;
+  let settingsDirty = false;
+
+  function runSettingsWrite(action) {
+    if (settingsWrite) return null;
+    const pending = Promise.resolve().then(action).finally(() => {
+      if (settingsWrite === pending) settingsWrite = null;
+    });
+    settingsWrite = pending;
+    return pending;
+  }
 
   function renderStatusPill() {
-    const s = Api.storeView().status;
+    const value = Api.storeView().status;
+    const s = BIZ_LABEL[value] || value;
     const el = document.getElementById('tb-status');
     el.className = 'pill pill--' + Api.statusTone(s);
     el.innerHTML = `<i class="pd"></i>${s}`;
   }
 
+  function renderAccountIdentity(account) {
+    const name = account ? account.name : '未登录';
+    const btn = document.getElementById('acct-btn');
+    btn.querySelector('.acct-nm').textContent = name;
+    btn.querySelector('.acct-av').textContent = account ? Array.from(name)[0] : '—';
+    btn.title = name;
+  }
+
   function renderAccount() {
     const view = Api.storeView();
     const mg = view.account || { name: '未登录', role: '—' };
+    renderAccountIdentity(view.account);
     document.getElementById('acct-pop').innerHTML =
       `<div class="acct-card">
          <span class="ring r1"></span><span class="ring r2"></span>
@@ -72,9 +94,9 @@
          </div>
        </div>
        <div class="acct-sec">
-         <div class="acct-lb">营业状态</div>
+         <div class="acct-lb">营业状态 · 点击立即生效</div>
          <div class="segs">
-           ${BIZ.map(b => `<span class="seg${view.status === b ? ' on' : ''}" data-biz="${b}">${b}</span>`).join('')}
+           ${BIZ.map(b => `<span class="seg${(BIZ_LABEL[view.status] || view.status) === b ? ' on' : ''}" data-biz="${b}">${b}</span>`).join('')}
          </div>
        </div>
        <div class="acct-sec">
@@ -98,11 +120,17 @@
     pop.addEventListener('click', e => {
       const biz = e.target.closest('[data-biz]');
       if (biz) {
-        Api.setStoreStatus(biz.dataset.biz).then(s => {
+        if (settingsWrite || settingsDirty) {
+          window.Toast.show(settingsWrite ? '正在保存设置，请稍候' : '请先处理营业设置中的未保存修改', { icon: 'warn' });
+          return;
+        }
+        const write = runSettingsWrite(() => Api.setStoreStatus(biz.dataset.biz));
+        if (current === 'settings') go(current, true);
+        write.then(s => {
           renderStatusPill();
           renderAccount();
           window.Toast.show(`已切换为「${s}」`, { icon: 'power' });
-          if (current === 'dashboard' || current === 'settings') go(current, true);
+          if (current === 'dashboard') go(current, true);
         }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         return;
       }
@@ -110,15 +138,30 @@
       if (goTo) { pop.classList.remove('open'); location.hash = '#/' + goTo.dataset.go; return; }
       if (e.target.closest('[data-logout]')) {
         pop.classList.remove('open');
-        Api.logout();
-        window.Toast.show('登录已失效，请重新扫码登录', { icon: 'warn' });
-        location.reload();
+        Api.logout().then(showLogin).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
       }
     });
   }
 
   /* ---------------- 路由 ---------------- */
   let current = '';
+  let loginVisible = false;
+
+  function showLogin() {
+    if (loginVisible) return;
+    loginVisible = true;
+    renderAccountIdentity(null);
+    current = '';
+    window.Drawer.close(); window.Modal.close();
+    const pop = document.getElementById('acct-pop');
+    pop.classList.remove('open'); pop.innerHTML = '';
+    document.getElementById('tb-title').textContent = '登录';
+    document.getElementById('tb-sub').textContent = '';
+    document.getElementById('tb-status').textContent = '未登录';
+    renderPCLogin();
+  }
+
+  window.addEventListener('pc-session-expired', showLogin);
 
   function parseHash() {
     const h = (location.hash || '').replace(/^#\/?/, '').trim();
@@ -126,8 +169,10 @@
   }
 
   function go(route, force) {
+    if (loginVisible) return;
     if (!force && route === current) return;
     current = route;
+    settingsDirty = false;
     window.Drawer.close();
     window.Modal.close();
 
@@ -174,7 +219,7 @@
     go(parseHash(), true);
   }).catch(e => {
     if (e.status === 401) {
-      renderPCLogin();
+      showLogin();
       return;
     }
     const host = document.getElementById('content');
@@ -219,8 +264,11 @@
 
   // 页面间跳转与外壳刷新
   window.App = {
+    settingsWrite() { return settingsWrite; },
+    runSettingsWrite,
+    setSettingsDirty(value) { settingsDirty = !!value; },
     go(route) { location.hash = '#/' + route; },
     reload() { go(current, true); },
-    refreshChrome() { renderStatusPill(); renderAccount(); },
+    refreshChrome() { if (!loginVisible) { renderStatusPill(); renderAccount(); } },
   };
 })();
