@@ -21,6 +21,16 @@
         </view>
       </view>
     </view>
+
+    <view wx:if="{{canSubscribeReady}}" class="card reminder-card">
+      <view class="reminder-title">餐品备好时提醒你</view>
+      <button class="btn btn--primary ready-reminder-btn" bindtap="requestReadySubscription"
+        disabled="{{readySubscriptionState === 'requesting' || readySubscriptionState === 'accepted'}}">
+        {{readySubscriptionState === 'accepted' ? '已开启取餐提醒' : readySubscriptionState === 'requesting' ? '正在开启' : '开启取餐提醒'}}
+      </button>
+      <view wx:if="{{readySubscriptionState === 'rejected'}}" class="reminder-hint">未开启提醒，可在订单中查看进度</view>
+      <view wx:if="{{readySubscriptionState === 'error'}}" class="reminder-hint">提醒暂未开启，请重试</view>
+    </view>
   </scroll-view>
 
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">

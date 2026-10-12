@@ -16,6 +16,12 @@
   font-size: 25rpx; color: #9fd3ff; display: flex; align-items: center; justify-content: center; gap: 12rpx;
 }
 
+.reminder-card { margin-top: 28rpx; padding: 32rpx; }
+.reminder-title { font-size: 28rpx; color: var(--ink); margin-bottom: 24rpx; }
+.ready-reminder-btn { width: 100%; font-size: 28rpx; }
+.ready-reminder-btn[disabled] { opacity: .65; }
+.reminder-hint { font-size: 24rpx; color: var(--ink-2); margin-top: 18rpx; }
+
 .bottom-bar { flex: 0 0 auto; padding: 20rpx 32rpx; display: flex; gap: 24rpx; }
 .result-btn { flex: 1; }
 .result-btn.primary { flex: 1.4; }
