@@ -1,0 +1,20 @@
+CREATE TABLE order_items (
+  order_id NUMERIC(20,0) CHECK (order_id BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  line_number INTEGER CHECK (line_number BETWEEN 0 AND 65535) NOT NULL,
+  product_id NUMERIC(20,0) CHECK (product_id BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  product_name_snapshot TEXT NOT NULL,
+  product_source_version BYTEA CHECK (octet_length(product_source_version) = 32) NOT NULL,
+  image_object_key_snapshot BYTEA CHECK (octet_length(image_object_key_snapshot) <= 1024) NULL,
+  original_unit_price_cents NUMERIC(20,0) CHECK (original_unit_price_cents BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  discounted_unit_price_cents NUMERIC(20,0) CHECK (discounted_unit_price_cents BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  quantity NUMERIC(20,0) CHECK (quantity BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  original_subtotal_cents NUMERIC(20,0) CHECK (original_subtotal_cents BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  payable_subtotal_cents NUMERIC(20,0) CHECK (payable_subtotal_cents BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  flavors_json JSONB NOT NULL,
+  line_note TEXT NOT NULL,
+  PRIMARY KEY (order_id,line_number),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT chk_order_items_line CHECK (line_number>0 AND product_id>0 AND CHAR_LENGTH(TRIM(product_name_snapshot))>0 AND (image_object_key_snapshot IS NULL OR OCTET_LENGTH(image_object_key_snapshot) BETWEEN 1 AND 1024)),
+  CONSTRAINT chk_order_items_amounts CHECK (quantity>0 AND discounted_unit_price_cents<=original_unit_price_cents AND original_unit_price_cents<=floor(18446744073709551615 / NULLIF(quantity,0)) AND discounted_unit_price_cents<=floor(18446744073709551615 / NULLIF(quantity,0)) AND original_subtotal_cents=original_unit_price_cents*quantity AND payable_subtotal_cents=discounted_unit_price_cents*quantity),
+  CONSTRAINT chk_order_items_flavors CHECK (jsonb_typeof(flavors_json)='array')
+);

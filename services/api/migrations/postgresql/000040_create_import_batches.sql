@@ -1,0 +1,32 @@
+CREATE SEQUENCE import_batches_id_seq AS BIGINT;
+CREATE TABLE import_batches (
+  id NUMERIC(20,0) DEFAULT nextval('import_batches_id_seq') CHECK (id BETWEEN 0 AND 18446744073709551615) NOT NULL ,
+  kind TEXT CHECK (kind IN ('PRODUCT','STAFF')) NOT NULL,
+  actor_account_id NUMERIC(20,0) CHECK (actor_account_id BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  file_object_key BYTEA CHECK (octet_length(file_object_key) <= 1024) NULL,
+  file_digest BYTEA CHECK (octet_length(file_digest) = 32) NOT NULL,
+  file_size_bytes NUMERIC(20,0) CHECK (file_size_bytes BETWEEN 0 AND 18446744073709551615) NOT NULL,
+  row_count BIGINT CHECK (row_count BETWEEN 0 AND 4294967295) NOT NULL,
+  preview_token_hash BYTEA CHECK (octet_length(preview_token_hash) = 32) NOT NULL,
+  preview_json JSONB NULL,
+  new_count BIGINT CHECK (new_count BETWEEN 0 AND 4294967295) NOT NULL,
+  update_count BIGINT CHECK (update_count BETWEEN 0 AND 4294967295) NOT NULL,
+  error_count BIGINT CHECK (error_count BETWEEN 0 AND 4294967295) NOT NULL,
+  state TEXT CHECK (state IN ('PREVIEWED','COMMITTED','EXPIRED')) NOT NULL,
+  commit_idempotency_key_hash BYTEA CHECK (octet_length(commit_idempotency_key_hash) = 32) NULL,
+  skip_invalid BOOLEAN NULL,
+  result_json JSONB NULL,
+  expires_at TIMESTAMPTZ(6) NOT NULL,
+  committed_at TIMESTAMPTZ(6) NULL,
+  record_version NUMERIC(20,0) CHECK (record_version BETWEEN 0 AND 18446744073709551615) NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ(6) NOT NULL,
+  updated_at TIMESTAMPTZ(6) NOT NULL,
+  PRIMARY KEY (id),
+  CONSTRAINT uq_import_batches_preview_token UNIQUE (preview_token_hash),
+  CONSTRAINT uq_import_batches_commit UNIQUE (actor_account_id,commit_idempotency_key_hash),
+  CONSTRAINT fk_import_batches_actor FOREIGN KEY (actor_account_id) REFERENCES merchant_accounts (id) ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT chk_import_batches_file CHECK ((file_object_key IS NULL OR OCTET_LENGTH(file_object_key) BETWEEN 1 AND 1024) AND file_size_bytes BETWEEN 1 AND 10485760 AND ((kind='PRODUCT' AND row_count BETWEEN 1 AND 500) OR (kind='STAFF' AND row_count BETWEEN 1 AND 5000)) AND new_count+update_count+error_count=row_count),
+  CONSTRAINT chk_import_batches_state CHECK ((state='PREVIEWED' AND preview_json IS NOT NULL AND commit_idempotency_key_hash IS NULL AND skip_invalid IS NULL AND result_json IS NULL AND committed_at IS NULL AND expires_at>created_at) OR (state='COMMITTED' AND commit_idempotency_key_hash IS NOT NULL AND skip_invalid IS NOT NULL AND result_json IS NOT NULL AND committed_at IS NOT NULL AND committed_at<=expires_at AND (kind<>'STAFF' OR preview_json IS NULL)) OR (state='EXPIRED' AND preview_json IS NULL AND commit_idempotency_key_hash IS NULL AND skip_invalid IS NULL AND result_json IS NULL AND committed_at IS NULL)),
+  CONSTRAINT chk_import_batches_record_version CHECK (record_version>0)
+);
+ALTER SEQUENCE import_batches_id_seq OWNED BY import_batches.id;
