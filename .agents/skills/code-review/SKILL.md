@@ -10,15 +10,15 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-The issue tracker should have been provided to you. If `docs/agents/issue-tracker.md` is missing, tell the user to run `$setup-matt-pocock-skills`.
+Resolve sources through the [repository artifact routing](../../../docs/agents/issue-tracker.md). Existing local specs and tasks are sufficient for local review; do not require remote tracker setup or publish anything as a review prerequisite.
 
 ## Process
 
 ### 1. Pin the fixed point
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+Use the user's fixed point, or the approved change's declared base SHA when called from implementation. Resolve a moving ref to a full SHA once. If neither source identifies the intended base unambiguously, ask for it.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+Capture the review target and diff command once. For a committed candidate, use `git diff <fixed-point>...<candidate-sha>` and its commit list. For pre-commit implementation review, use `git diff <fixed-point>` to include staged and unstaged task changes, and inspect task-owned untracked files reported by `git ls-files --others --exclude-standard`; do not mistake an empty committed diff for no work. Scope the review to owned paths and preserve the index. Note commits with `git log <fixed-point>..HEAD --oneline`.
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
@@ -28,7 +28,7 @@ Look for the originating spec, in this order:
 
 1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
 2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
+3. The associated `openspec/changes/<change>/` spec and tasks, then relevant files under `openspec/specs/`, `docs/`, `specs/`, or `.scratch/`. Follow the artifact routing's authority boundaries; a draft does not override an approved contract.
 4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
@@ -75,7 +75,7 @@ If the spec is missing, skip the Spec sub-agent and note this in the final repor
 
 Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings, because the two axes are deliberately separate (see _Why two axes_).
 
-End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent.
+End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes: that's the reranking the separation exists to prevent. Review output is not an exact-SHA independent-verification receipt. Standalone review remains read-only; inside an authorized implementation, return in-scope findings to the writer for repair and revalidation without repeating authorization.
 
 ## Why two axes
 
