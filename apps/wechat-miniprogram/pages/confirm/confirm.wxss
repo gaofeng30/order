@@ -61,3 +61,6 @@
 }
 .rsv-picked-t { flex: 1; font-size: 30rpx; color: #fff; font-weight: 600; letter-spacing: 1rpx; }
 .rsv-picked-edit { font-size: 24rpx; color: #9fd3ff; }
+
+.quote-error { padding: 24rpx; color: #965e22; line-height: 1.5; }
+.quote-error button { margin-top: 18rpx; }
