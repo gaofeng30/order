@@ -5,9 +5,29 @@
 
   const BIZ = ['营业中', '休息中', '已截单'];
   const BIZ_C = { 营业中: '#3d6b2f', 已截单: '#8a8f7c', 休息中: '#c98b3a' };
+  let readGeneration = 0;
+  const STATUS = { 营业中: 'open', 休息中: 'closed', 已截单: 'cutoff' };
+  const statusLabel = value => BIZ.find(label => STATUS[label] === value) || value;
+  function comparable(s) {
+    return JSON.stringify({
+      status: STATUS[s.status] || s.status, notice: s.notice, pickupPoint: s.pickupPoint,
+      pickupStepMin: Number(s.pickupStepMin),
+      mealPeriods: s.mealPeriods.map(p => ({ key: p.key, name: p.name,
+        cutoff: p.cutoff.slice(0, 5), from: p.from.slice(0, 5), to: p.to.slice(0, 5),
+      })).sort((a, b) => a.key.localeCompare(b.key)),
+      serviceDates: s.serviceDates.map(d => ({ date: d.date, status: d.status })).sort((a, b) => a.date.localeCompare(b.date)),
+    });
+  }
 
   function render(el) {
-    Api.getSettings().then(s => {
+    const generation = ++readGeneration;
+    el.innerHTML = '<div class="card card-pad" role="status">正在读取营业设置…</div>';
+    Promise.resolve(window.App.settingsWrite()).catch(() => {}).then(() => {
+      if (generation !== readGeneration || el.isConnected === false) return null;
+      return Api.getSettings();
+    }).then(s => {
+      if (generation !== readGeneration || el.isConnected === false) return;
+      s = Object.assign({}, s, { status: statusLabel(s.status) });
       el.innerHTML =
         `<div class="set-cols">
            <div>
@@ -17,7 +37,7 @@
                  ${BIZ.map(b => `<span class="biz-seg${s.status === b ? ' on' : ''}" data-b="${b}"
                     ${s.status === b ? `style="background:${BIZ_C[b]};color:#fff"` : ''}>${b}</span>`).join('')}
                </div>
-               <div class="fld-hint" style="margin-top:10px">切换后用户端首页与点单页会同步显示当前状态，「已截单」时不再接受新订单。</div>
+               <div class="fld-hint" style="margin-top:10px">修改后点击“保存设置”才生效。「已截单」时不再接受新订单。</div>
                <div class="fld-lb" style="margin-top:18px">可预约营业日期（今天 / 明天）</div>
                <div class="biz-switch" id="service-dates">
                  ${(s.serviceDates || []).map((d, index) => `<span class="biz-seg${d.status === 'open' ? ' on' : ''}" data-date="${d.date}" data-open="${d.status === 'open' ? 'true' : 'false'}">${index === 0 ? '今天' : '明天'} ${d.date.slice(5)}·${d.status === 'open' ? '营业' : '休息'}</span>`).join('')}
@@ -60,13 +80,38 @@
            </div>
          </div>
 
-         <div class="form-foot">
-           <button class="btn btn--primary" id="save">保存设置</button>
+         <div class="form-foot settings-foot">
+           <span id="save-state" role="status">当前设置已读取</span>
+           <button class="btn btn--line" id="check-saved" hidden>核对已保存设置</button>
+           <button class="btn btn--line" id="reload-saved" hidden>重新载入已保存设置</button>
+           <button class="btn btn--primary" id="save" disabled>保存设置</button>
          </div>`;
 
-      let status = s.status;
+      let status = s.status, saving = false, uncertain = false, submitted = null;
+      const active = () => generation === readGeneration && el.isConnected !== false;
+      const save = el.querySelector('#save'), check = el.querySelector('#check-saved');
+      const reload = el.querySelector('#reload-saved'), message = el.querySelector('#save-state');
+      const controls = () => {
+        el.querySelectorAll('input, textarea').forEach(n => { n.disabled = saving || uncertain; });
+        el.querySelectorAll('[data-b], [data-date]').forEach(n => n.setAttribute('aria-disabled', String(saving || uncertain)));
+        save.disabled = saving || uncertain;
+        save.textContent = saving ? '正在保存…' : '保存设置';
+        check.hidden = !uncertain; check.disabled = saving;
+        reload.disabled = saving;
+      };
+      const dirty = () => {
+        if (saving || uncertain) return;
+        window.App.setSettingsDirty(true); message.textContent = '有未保存修改'; save.disabled = false;
+        reload.hidden = false;
+      };
+      el.querySelectorAll('input, textarea').forEach(n => n.addEventListener('input', dirty));
+      reload.onclick = () => { if (!saving && !uncertain) render(el); };
+      window.App.setSettingsDirty(false);
+
       el.querySelectorAll('[data-b]').forEach(n => {
         n.onclick = () => {
+          if (saving || uncertain) return;
+          dirty();
           status = n.dataset.b;
           el.querySelectorAll('[data-b]').forEach(x => {
             const on = x.dataset.b === status;
@@ -77,6 +122,8 @@
       });
       el.querySelectorAll('[data-date]').forEach(n => {
         n.onclick = () => {
+          if (saving || uncertain) return;
+          dirty();
           const open = n.dataset.open !== 'true';
           n.dataset.open = open ? 'true' : 'false';
           n.classList.toggle('on', open);
@@ -85,24 +132,57 @@
         };
       });
 
-      el.querySelector('#save').onclick = () => {
+      save.onclick = () => {
+        if (saving || uncertain || window.App.settingsWrite()) return;
         const mealPeriods = s.mealPeriods.map(p => Object.assign({}, p));
         el.querySelectorAll('[data-mp]').forEach(n => {
           const mp = mealPeriods.find(x => x.key === n.dataset.mp);
           if (mp) mp[n.dataset.k] = n.value;
         });
-        Api.saveSettings({
+        submitted = {
           status,
           pickupStepMin: Number(el.querySelector('#f-step').value),
           mealPeriods,
           pickupPoint: el.querySelector('#f-pt').value,
           notice: el.querySelector('#f-notice').value,
           serviceDates: Array.from(el.querySelectorAll('[data-date]')).map(n => ({ date: n.dataset.date, status: n.dataset.open === 'true' ? 'open' : 'closed' })),
-        }).then(() => {
+        };
+        saving = true; message.textContent = '正在保存设置…'; controls();
+        const finish = saved => {
           window.App.refreshChrome();
-          window.Toast.show('设置已保存', { icon: 'check' });
-        }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+          if (!active()) return;
+          uncertain = comparable(saved) !== comparable(submitted);
+          window.App.setSettingsDirty(uncertain);
+          message.textContent = uncertain ? '当前已保存设置与本页不同，请核对后再操作' : '设置已保存';
+        };
+        window.App.runSettingsWrite(() => Api.saveSettings(submitted)).then(finish).catch(() => {
+          if (!active()) return;
+          uncertain = true; window.App.setSettingsDirty(true);
+          message.textContent = '保存结果未确认，请先核对已保存设置';
+        }).finally(() => {
+          if (!active()) return;
+          saving = false; controls(); save.disabled = true; reload.hidden = true;
+        });
       };
+      check.onclick = () => {
+        if (saving || !uncertain) return;
+        saving = true; message.textContent = '正在核对已保存设置…'; controls();
+        Promise.resolve(window.App.settingsWrite()).catch(() => {}).then(() => active() ? Api.getSettings() : null).then(saved => {
+          if (!active()) return;
+          const matches = comparable(saved) === comparable(submitted);
+          uncertain = false; window.App.setSettingsDirty(!matches);
+          message.textContent = matches ? '已核对：设置已保存' : '当前已保存设置与本页不同，输入已保留；可重新保存或重新载入';
+          saving = false; controls(); save.disabled = matches; reload.hidden = matches;
+          window.App.refreshChrome();
+        }).catch(() => {
+          if (!active()) return;
+          saving = false; message.textContent = '仍无法确认保存结果，请稍后再次核对'; controls();
+        });
+      };
+    }).catch(error => {
+      if (generation !== readGeneration || el.isConnected === false) return;
+      el.innerHTML = `<div class="card card-pad" role="alert"><b>营业设置暂不可用</b><div class="faint" style="margin-top:8px">${T.esc(error.message || '请稍后重试')}</div><button class="btn btn--line" data-retry style="margin-top:12px">重试</button></div>`;
+      el.querySelector('[data-retry]').onclick = () => render(el);
     });
   }
 

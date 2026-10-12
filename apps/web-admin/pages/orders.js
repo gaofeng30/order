@@ -12,6 +12,7 @@
      按取餐号 / 订单号 / 手机号搜索，跨泳道 —— 要核销时并不知道单子在哪个状态。 */
   let kw = '';
   let date = '';
+  let paintGeneration = 0;
 
   function render(el) {
     // 由工作台带过来的泳道 / 选中项
@@ -38,13 +39,10 @@
     paint(el);
   }
 
-  function paint(el) {
-    const counts = Api.laneCounts();
-    paintUncollected(el);
-    paintHint(el);
+  function renderLaneCounts(el, counts, failed) {
     el.querySelector('#lanes').innerHTML = Api.LANES.map(l =>
-      `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts[l]}</span></span>`
-    ).join('');
+      `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts ? counts[l] : '—'}</span></span>`
+    ).join('') + (failed ? '<span class="faint" role="status">计数不可用，请重新加载</span>' : '');
     el.querySelectorAll('[data-lane]').forEach(n => {
       /* 点泳道即退出搜索态：两者都决定列表内容，同时生效会让人不知道自己在看什么 */
       n.onclick = () => {
@@ -56,9 +54,24 @@
         paint(el);
       };
     });
+  }
+
+  function paint(el) {
+    const generation = ++paintGeneration;
+    paintUncollected(el);
+    paintHint(el);
+    renderLaneCounts(el, null, false);
+    Api.readOrderCounts().then(counts => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      renderLaneCounts(el, counts, false);
+    }).catch(() => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      renderLaneCounts(el, null, true);
+    });
 
     const q = kw.trim();
     (q ? Api.searchOrders(q, { date }) : Api.listOrders(lane, { uncollected, date })).then(list => {
+      if (generation !== paintGeneration) return;
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 
@@ -69,7 +82,7 @@
         cols: [
           { t: '取餐号', w: '72px', render: r => `<b class="tnum">${r.code}</b>` },
           { t: '菜品', render: r => {
-            const band = [...new Set(r.items.flatMap(it => [it[5], it[6]]).filter(Boolean)), r.orderNote]
+            const band = [...new Set(r.items.flatMap(it => Array.isArray(it) ? [it[5], it[6]] : [...(it.flavors || []), it.note]).filter(Boolean)), r.orderNote]
               .filter(Boolean).join(' · ');
             return `<div class="ellipsis">${T.esc(Api.itemsSummary(r.items))}</div>` +
                    (band ? `<div class="ord-band ellipsis">${T.esc(band)}</div>` : '');
@@ -82,6 +95,10 @@
         rowCls: r => (r.id === selId ? 'sel' : ''),
         onRow: true,
       });
+
+      // Keep the long summary in its own column instead of expanding the table.
+      const table = host.querySelector('table');
+      if (table) table.style.tableLayout = 'fixed';
 
       T.bind(host, {
         row(id) { selId = id; paint(el); },
@@ -132,6 +149,9 @@
        小计按折后单价算 —— 逐行折后价之和恒等于 o.total，展示与结算不会各说各话。 */
     // 名称取订单自身的快照，不回查商品表（§15.6.2）
     const rows = o.items.map(item => {
+      if (!Array.isArray(item)) {
+        return { name: item.product_name || item.name, q: item.quantity, sub: item.line_total_cents, band: [...(item.flavors || []), item.note].filter(Boolean).join(' · ') };
+      }
       const [, iname, q, , discountedUnitPrice, flavor, note] = item;
       // 当前 admin HTTP 投影的第 4 位是行应付小计；旧视觉蓝本的 7 位数组才含
       // 折后单价。两种公开形状在页面边界收敛，不回查商品或重算历史价格。
@@ -150,7 +170,7 @@
          <div class="card card-pad">
            ${rows.map(r => `
              <div class="dt-item">
-               <span class="grow">${T.esc(r.name)}${r.band ? `<span class="ord-band">${T.esc(r.band)}</span>` : ''}</span>
+               <span class="grow" style="min-width:0;overflow-wrap:anywhere">${T.esc(r.name)}${r.band ? `<span class="ord-band">${T.esc(r.band)}</span>` : ''}</span>
                <span class="faint tnum">×${r.q}</span>
                <span class="tnum" style="width:64px;text-align:right">${T.money(Api.yuan(r.sub))}</span>
              </div>`).join('')}
@@ -164,7 +184,7 @@
            <div class="kv"><span class="k">手机号</span><span class="v tnum">${o.phone}</span></div>
            <div class="kv"><span class="k">支付时间</span><span class="v tnum">${o.paidAt}</span></div>
            <div class="kv"><span class="k">取餐时间</span><span class="v tnum">${o.pickupDate} ${o.pickupTime}</span></div>
-           <div class="kv"><span class="k">整单备注</span><span class="v">${T.esc(o.orderNote || '—')}</span></div>
+           <div class="kv"><span class="k">整单备注</span><span class="v" style="overflow-wrap:anywhere">${T.esc(o.orderNote || '—')}</span></div>
            <div class="kv"><span class="k">取餐点</span><span class="v">${T.esc(o.pickupPoint)}</span></div>
            <div class="kv"><span class="k">微信交易号</span><span class="v tnum">${T.esc(o.txnId)}</span></div>
          </div>
