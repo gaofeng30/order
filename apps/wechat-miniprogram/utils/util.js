@@ -75,7 +75,7 @@ function validLineCents(product, qty) {
   return line;
 }
 function prefsOf(prefs, fallbackQty) {
-  const qty = prefs && Object.hasOwn(prefs, 'qty') ? validQty(prefs.qty) : validQty(fallbackQty);
+  const qty = prefs && Object.prototype.hasOwnProperty.call(prefs, 'qty') ? validQty(prefs.qty) : validQty(fallbackQty);
   return {
     qty,
     flavors: Array.isArray(prefs && prefs.flavors) ? prefs.flavors.slice() : [],

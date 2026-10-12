@@ -34,7 +34,7 @@ function parseImages(value) {
 function parseFrozenProduct(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalidCatalog();
   const original = cents(value.original_unit_price_cents, true);
-  const hasStaffPrice = Object.hasOwn(value, 'staff_unit_price_cents');
+  const hasStaffPrice = Object.prototype.hasOwnProperty.call(value, 'staff_unit_price_cents');
   const staff = hasStaffPrice ? cents(value.staff_unit_price_cents, false) : undefined;
   if (hasStaffPrice && staff > original) throw invalidCatalog();
   if (!MEAL_PERIODS.has(value.meal_period) || typeof value.listed !== 'boolean'
@@ -106,7 +106,7 @@ function parseCatalog(value) {
   }) };
 }
 function parseProduct(value) {
-  if (!value || typeof value !== 'object' || !Object.hasOwn(value, 'product')) throw invalidCatalog();
+  if (!value || typeof value !== 'object' || !Object.prototype.hasOwnProperty.call(value, 'product')) throw invalidCatalog();
   return withPrice(parseFrozenProduct(value.product));
 }
 function normalizeFailure(error) {

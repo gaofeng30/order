@@ -66,7 +66,7 @@ function parse(value) {
   const point = settings.pickup_point;
   const announcement = settings.announcement;
   const status = settings.business_status;
-  if (!Object.hasOwn(STATUS, status)) throw new api.APIError('STOREFRONT_UNAVAILABLE');
+  if (!Object.prototype.hasOwnProperty.call(STATUS, status)) throw new api.APIError('STOREFRONT_UNAVAILABLE');
   return {
     name: text(name, true), address: text(address, true), pickupPoint: text(point, true),
     announcement: text(announcement, false), businessStatus: status,

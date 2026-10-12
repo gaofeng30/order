@@ -9,7 +9,7 @@ const LABEL_STATES = { 已预约: 'RESERVED', 制作中: 'PREPARING', 待取餐:
 function unavailable() { return new api.APIError('ORDERS_UNAVAILABLE'); }
 function parseSummary(value) {
   if (!value || typeof value !== 'object' || typeof value.id !== 'string' || !/^[1-9]\d*$/.test(value.id)
-    || typeof value.order_no !== 'string' || !Object.hasOwn(STATE_LABELS, value.state)
+    || typeof value.order_no !== 'string' || !Object.prototype.hasOwnProperty.call(STATE_LABELS, value.state)
     || typeof value.pickup_date !== 'string' || typeof value.pickup_time !== 'string'
     || typeof value.pickup_point !== 'string' || typeof value.pickup_number !== 'string'
     || !Number.isSafeInteger(value.payable_cents) || !Array.isArray(value.available_actions)) throw unavailable();
