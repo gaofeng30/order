@@ -88,7 +88,8 @@ App({
       g.session = { state: 'error', accessToken: '', expiresAt: '' };
       return Promise.resolve(g.session);
     }
-    if (g.session.state === 'ready' && g.session.accessToken) return Promise.resolve(g.session);
+    if (g.session.state === 'ready' && g.session.accessToken
+      && Date.parse(g.session.expiresAt) > Date.now()) return Promise.resolve(g.session);
     if (g.session.state === 'loading' && this.sessionPromise) return this.sessionPromise;
 
     g.session = { state: 'loading', accessToken: '', expiresAt: '' };
