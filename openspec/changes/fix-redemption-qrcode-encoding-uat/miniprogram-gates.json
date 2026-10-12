@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "change": "fix-redemption-qrcode-encoding-uat",
+  "base_sha": "7e7f2f9a75e87a4f311e0ff7e2496022d8569f82",
+  "tdd": {
+    "red": {
+      "task_id": "1.1",
+      "command": "Read the real phone NO_RECOGNITION report and run macOS Vision VNDetectBarcodesRequest on customer-N2-order132-ready-QR-unobstructed.jpg: standard_qr_detected=0; inspect fixed-seed placeholder component."
+    },
+    "green": {
+      "task_id": "1.2",
+      "command": "Run actual repaired component draw with a public 118-byte ASCII payload in a local canvas command adapter, rasterize the exact integer rectangles, then macOS Vision decode: one QR and exact payload length/SHA256; node --check component/vendor; git diff --check owned paths. This is the requested minimal contract probe, not a test suite or real scan."
+    },
+    "refactor": {
+      "task_id": "1.3",
+      "command": "Review only component and unmodified official encoder vendor/license; no adjacent refactor, scanner/backend change, test suite or lifecycle Gate run."
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI3",
+    "native_capabilities": [
+      "wx.canvasToTempFilePath",
+      "wx.scanCode"
+    ],
+    "scenarios": [
+      {
+        "id": "real-ready-token-qr",
+        "kind": "primary",
+        "steps": [
+          "Root compiles/previews the unified exact candidate.",
+          "Customer opens actual READY order132 and displays its existing server token QR.",
+          "Real merchant phone camera reads that displayed QR and performs normal atomic redemption."
+        ],
+        "expected": [
+          "QR encodes the existing server token, with standard version/error correction and four-module quiet zone.",
+          "No token replacement, fake scan, auth bypass or invented order is involved.",
+          "Server returns the same order COMPLETED and the merchant shows 已核销."
+        ]
+      },
+      {
+        "id": "qr-value-updates-and-state-visibility",
+        "kind": "regression",
+        "steps": [
+          "Use normal order navigation and the existing READY/COMPLETED state behavior.",
+          "Keep the shared scanner writer's real camera cancellation/repeat acceptance separate."
+        ],
+        "expected": [
+          "Component reacts to value changes and clears old image for empty value; stale canvas export cannot replace a newer value.",
+          "The existing order page continues showing token QR only when READY and no QR after COMPLETED.",
+          "Actual camera retry/idempotence remains governed by the shared scanner and server contract."
+        ]
+      }
+    ]
+  }
+}
