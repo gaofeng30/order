@@ -4,7 +4,7 @@
   <view class="verify-body">
     <view class="verify-center">
       <view class="verify-tip">将取餐二维码对准框内，自动识别核销</view>
-      <view class="btn btn--primary" bindtap="scan">打开相机扫码</view>
+      <view class="btn btn--primary" bindtap="scan">{{scanning ? '正在扫码…' : '重新扫码'}}</view>
       <!-- 取景框 -->
       <view class="finder">
         <view class="finder-bg"><view class="scan-line"></view></view>
@@ -30,7 +30,7 @@
   <view wx:if="{{lastResult}}" class="sheet-mask"></view>
   <view wx:if="{{lastResult}}" class="sheet verify-sheet" style="padding-bottom:{{safeBottom + 28}}px">
     <view class="vr-err-ico"><icon name="check" size="32" color="#5b8f3f" /></view>
-    <view class="serif vr-err-title">核销成功</view>
+    <view class="serif vr-err-title">已核销</view>
     <view class="vr-err-sub">取餐号 {{lastResult.code}} · {{lastResult.contactName}}</view>
     <view class="card vr-items">
       <view wx:for="{{lastResult.rows}}" wx:key="name" class="vr-item">
