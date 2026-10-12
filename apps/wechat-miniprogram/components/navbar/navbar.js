@@ -1,4 +1,5 @@
 Component({
+  options: { multipleSlots: true },
   properties: {
     title: { type: String, value: '' },
     tone: { type: String, value: 'light' },       // light / dark
