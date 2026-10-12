@@ -74,3 +74,9 @@
   background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.86);
   font-size: 23rpx; line-height: 1.6;
 }
+
+.pc-login-entry {
+  width: 100%; margin: 0; padding: 18rpx 24rpx; border-radius: 20rpx;
+  background: rgba(255, 255, 255, .10); color: #fff; font-size: 26rpx; line-height: 1.5;
+}
+.pc-login-entry::after { border: none; }

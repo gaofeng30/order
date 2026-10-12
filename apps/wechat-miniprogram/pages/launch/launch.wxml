@@ -56,6 +56,8 @@
       </view>
     </view>
 
+    <button wx:if="{{entryState === 'merchant' && merchantRole === 'OWNER'}}" class="pc-login-entry" bindtap="goPCLogin">登录电脑后台</button>
+
     <view wx:if="{{hint}}" class="id-hint">{{hint}}</view>
 
     <view wx:if="{{storefrontState === 'error'}}" class="id-hint" bindtap="retryStorefront">门店信息加载失败，点此重试</view>

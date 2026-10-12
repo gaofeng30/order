@@ -10,6 +10,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     entryState: 'loading',
+    merchantRole: '',
     storefrontState: 'loading',
     storeName: '',
     launchLayer: null,
@@ -21,6 +22,7 @@ Page({
     if (routing.state === 'user') return;
     this.setData({
       entryState: routing.state,
+      merchantRole: routing.state === 'merchant' ? routing.role : '',
       hint: routing.state === 'error' ? '身份状态暂不可用，仍可进入用户端浏览或重试商户验证。' : '',
     });
     this.setData({ storefrontState: 'loading', storeName: '', launchLayer: null });
@@ -59,6 +61,11 @@ Page({
   goMerchant() {
     if (this.data.entryState !== 'merchant' || this.data.storefrontState !== 'ready') return false;
     nav.go('admin-orders');
+    return true;
+  },
+  goPCLogin() {
+    if (this.data.entryState !== 'merchant' || this.data.merchantRole !== 'OWNER') return false;
+    nav.go('admin-login');
     return true;
   },
 });
