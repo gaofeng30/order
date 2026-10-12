@@ -30,6 +30,8 @@
           <view class="order-item-info">
             <view class="order-item-name">{{item.name}}</view>
             <view class="order-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
+            <view wx:if="{{item.flavors.length}}" class="order-item-unit">口味：<text wx:for="{{item.flavors}}" wx:for-item="flavor" wx:for-index="flavorIndex" wx:key="*this">{{flavorIndex > 0 ? '、' : ''}}{{flavor}}</text></view>
+            <view wx:if="{{item.note}}" class="order-item-unit">菜品备注：{{item.note}}</view>
           </view>
           <money cents="{{item.sub}}" size="30" />
         </view>
@@ -40,7 +42,8 @@
         <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">用户与履约</text></view>
         <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}}</text></view>
         <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.maskedPhone}}</text></view>
-        <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">备注</text><text class="ir-val">{{o.orderNote}}</text></view>
+        <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">整单备注</text><text class="ir-val">{{o.orderNote}}</text></view>
+        <view class="info-row"><text class="ir-label">取餐时间</text><text class="ir-val">{{o.pickupDate}} {{o.pickupTime}}</text></view>
         <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
       </view>
       <view style="height:24rpx"></view>

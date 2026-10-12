@@ -1,6 +1,12 @@
 const api = require('../../utils/apiClient.js');
 const merchantStore = require('../../utils/merchantStore.js');
 
+function beijingTime(value) {
+  const instant = Date.parse(value);
+  if (!Number.isFinite(instant)) return '';
+  return new Date(instant + 8 * 60 * 60 * 1000).toISOString().slice(11, 16);
+}
+
 Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: { detailState: 'loading', actionState: 'idle', o: null, rows: [], meta: {}, flavorShow: false, flavorText: '' },
@@ -18,7 +24,7 @@ Page({
     this.setData({
       detailState: 'ready', o: order, rows: order.rows, flavorText, flavorShow: !!flavorText,
       meta: { isView: !canReady && !canRedeem, label: canReady ? '备好' : canRedeem ? '核销' : order.status },
-      paidTime: String(order.paid_at || order.materialized_at || '').slice(11, 16),
+      paidTime: beijingTime(order.paid_at || order.materialized_at || ''),
     });
   },
   async markReady() {
