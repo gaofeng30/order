@@ -1,18 +1,20 @@
 # Order production CVM rebuild and startup runbook
 
+> Applicability checked 2026-10-10: this retains the approved CVM deployment reference. It is not currently an executable production release plan: the approved baseline requires MySQL 8, the current non-UAT source opens PostgreSQL, and the env example still names CDB/port 3306. Resolve that discrepancy and complete the configuration before executing these steps. See [current production handoff](../../docs/quality/order-production-delivery-handoff.md). UAT runs CloudRun/Shared PG and does not use this runbook.
+
 ## Scope and evidence boundary
 
 This runbook rebuilds the stateless production CVM runtime from a reviewed release artifact. It does not create cloud resources, restore or modify TencentDB data, create SSM secrets, bind a CAM Role, configure Nginx/TLS, or prove the documented RPO/RTO targets. Those remain separately authorized external gates.
 
-The production runtime is systemd/CVM. Docker is N/A. The only runtime SecretNames are `order-production-db-password` and `order-production-wechat-miniprogram-app-secret`; both are read at startup as `SSM_Current` through the CVM CAM Role. No secret value belongs in a command, file, unit, log, or release artifact.
+The approved production reference is systemd/CVM; Docker is excluded by that baseline. The current non-UAT source reads four runtime SecretNames at startup as `SSM_Current` through the CVM CAM Role: `order-production-db-password`, `order-production-wechat-miniprogram-app-secret`, `order-production-wechatpay-api-v3`, and `order-production-redemption-token-key`. No secret value belongs in a command, file, unit, log, or release artifact.
 
 ## External prerequisites
 
 Before changing the CVM, confirm by non-sensitive resource reference that:
 
 1. the target is the production CVM/VPC and the TencentDB endpoint is private;
-2. the CVM has the production CAM Role, restricted to `ssm:GetSecretValue` for the two exact production SecretNames;
-3. both SSM secrets exist and are enabled in the configured Tencent region;
+2. the CVM has the production CAM Role, restricted to `ssm:GetSecretValue` for the four exact production SecretNames;
+3. all four SSM secrets exist and are enabled in the configured Tencent region;
 4. the reviewed release contains Linux executables `order-api` and `order-migrate` from one exact commit;
 5. Nginx, TLS, CLS/LogListener, CAT and Cloud Monitor are handled by their approved external runbooks;
 6. a manual database backup is confirmed only when the release contains a destructive migration.
@@ -25,7 +27,7 @@ Run these steps only inside a separately authorized deployment change:
 
 1. Create the fixed non-login `order` user and the root-owned directories `/opt/order/releases/<exact-sha>` and `/etc/order`.
 2. Install `order-api`, `order-migrate`, `order-preflight`, and `order-healthcheck` into the release directory. Set owner `root:root`, executable mode `0755`, then atomically point `/opt/order/current` at that release.
-3. Copy `order-production.env.example` to `/etc/order/order-production.env`, replace every `TODO_`/`REPLACE_` value with the approved non-sensitive production value, then set owner `root:order` and mode `0640`. Never add a database password, Mini Program AppSecret, Tencent Cloud key/token, or DSN.
+3. After reconciling the database/runtime decision, update `order-production.env.example` from the exact source configuration contract, including COS and all 11 subscription settings (`formal` for production). Only then copy it to `/etc/order/order-production.env`, replace every `TODO_`/`REPLACE_` value with the approved non-sensitive production value, and set owner `root:order` and mode `0640`. Never add a database password, Mini Program AppSecret, Tencent Cloud key/token, or DSN.
 4. Install `order-api.service` and `order-migrate.service` in `/etc/systemd/system/`, set owner `root:root` and mode `0644`, then run `systemctl daemon-reload`.
 5. Run `/opt/order/current/order-preflight`. A failure blocks migration and startup without printing configuration values.
 
