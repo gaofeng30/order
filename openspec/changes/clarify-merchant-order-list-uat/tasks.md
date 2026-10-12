@@ -1,0 +1,7 @@
+- [x] 1.1 原生Codex方案review，解决范围内问题。
+- [x] 2.1 Red：node --test tools/merchant-reading-uiux/page.test.cjs。
+- [x] 2.2 Green：同一Page seam行为测试通过。
+- [x] 2.3 Refactor：同一检查与模板/语法，保持最小改动。
+- [x] 3.1 Writer strict、owned paths、评分与候选提交；原生实现review。
+- [ ] 4.1 exact SHA detached独验与UI2收据。
+- [ ] 4.2 固定UAT组合SHA复验并由executor发布与实际读回。

@@ -1,0 +1,4 @@
+# 最小实现
+load在开始时自增this._loadGeneration、捕获lane/kw；Promise.all返回/失败均检查generation相同且未卸载再setData。保留现有identity/营业状态读取，onUnload使generation失效。编辑搜索/泳道各触发原load，旧响应不能替换新列表。无防抖/分页/新增缓存。
+模板根据listState判loading/error/empty；error给bindtap=load重试。空搜索提示没有匹配，空泳道提示该状态暂无订单。取餐日期时间直接用merchantStore.parseSummary已有字段，无虚构件数。
+复用准确的materialized_at北京时间下单展示与available_actions，meta label导航行为不变。
