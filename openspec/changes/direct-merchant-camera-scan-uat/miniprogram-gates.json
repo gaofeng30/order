@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "change": "direct-merchant-camera-scan-uat",
+  "base_sha": "7e7f2f9a75e87a4f311e0ff7e2496022d8569f82",
+  "tdd": {
+    "red": {
+      "task_id": "1.1",
+      "command": "Read the user's real phone report and the baseline admin-verify page lifecycle and scan binding; no repeated camera action."
+    },
+    "green": {
+      "task_id": "1.2",
+      "command": "node --check apps/wechat-miniprogram/pages/admin-verify/admin-verify.js; git diff --check"
+    },
+    "refactor": {
+      "task_id": "1.3",
+      "command": "Review the owned-path diff; no refactor, test suite or lifecycle Gate run."
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI3",
+    "native_capabilities": ["wx.scanCode"],
+    "scenarios": [
+      {
+        "id": "merchant-direct-camera",
+        "kind": "primary",
+        "steps": [
+          "Enter merchant orders with a legitimate merchant session on a real phone.",
+          "Tap the redemption entry once.",
+          "Scan a valid ready-for-pickup order QR through the real camera."
+        ],
+        "expected": [
+          "The entry opens the camera once without a second page button tap.",
+          "onlyFromCamera remains true and only one redemption request is active.",
+          "The existing server contract returns COMPLETED and the page shows 已核销."
+        ]
+      },
+      {
+        "id": "merchant-camera-cancel-and-rescan",
+        "kind": "regression",
+        "steps": [
+          "Cancel the first camera dialog.",
+          "Remain on the page and tap 重新扫码 once.",
+          "Scan the same already completed order and observe the result."
+        ],
+        "expected": [
+          "Cancellation returns to the page without an automatic onShow camera loop.",
+          "The retry button opens one new real camera dialog.",
+          "The original idempotent redemption result remains 已核销 and concurrent manual redemption is blocked."
+        ]
+      }
+    ]
+  }
+}
