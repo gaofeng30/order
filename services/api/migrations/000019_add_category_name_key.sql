@@ -1,3 +1,0 @@
-ALTER TABLE categories
-  ADD COLUMN name_key VARBINARY(400) NULL AFTER name,
-  ADD COLUMN record_version BIGINT UNSIGNED NOT NULL DEFAULT 1 AFTER is_active;
