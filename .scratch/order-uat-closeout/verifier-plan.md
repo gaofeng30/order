@@ -1,0 +1,13 @@
+# Detached exact-SHA verifier package
+
+Candidate SHA must be read from the external candidate receipt after the local commit; never use a moving branch or writer diff. Create a separate clean detached managed worktree at that exact SHA. Before/after: git rev-parse HEAD, git status --porcelain must show exact SHA and empty status.
+
+Read-only gate commands, sequential to retain local25connection budget:
+- python3 services/api/scripts/pg-local-gate.py test -json -count=1 ./services/api/...
+- python3 services/api/scripts/pg-local-gate.py test -race -json -count=1 ./services/api/...
+- python3 services/api/scripts/pg-local-gate.py vet ./services/api/...
+- python3 services/api/scripts/pg-local-gate.py build ./services/api/...
+- OpenSpec strict validate establish-postgresql-uat-foundation; gofmt -l services/api; git diff --check.
+- Isolated allowlisted offline env bash services/api/scripts/smoke.sh; only synthetic port1 failure configuration, no ambient/cloud credentials.
+
+No source/spec/task edits. On failure return result to original writer; do not fix verifier tree. Save evidence outside either checkout. Record each exit, PASS/SKIP/FAIL, source hashes, cleanup and boundaries. UI static is N/A for backend-only owned diff; four opt-in UI server helpers are explicit SKIP, not UI acceptance. CloudPG17, native Go TLS/role/budget, actual CloudRun/COS/SSM replacement, real finance/device/full95 remain dependent deployment gates. Current schema migrations are forward-only; do not run production or downgrade SQL. Cancellation/failed DDL restart, native restored44 readiness, worker takeover and no duplicated financial facts provide the local recovery evidence.
