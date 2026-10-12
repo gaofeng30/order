@@ -1,5 +1,7 @@
 <view class="page">
-  <navbar tone="light" title="绥安食品 · 菜单" />
+  <navbar tone="light" title="{{returnToConfirm ? '修改取餐选择' : '绥安食品 · 菜单'}}">
+    <view wx:if="{{returnToConfirm}}" slot="right" class="return-confirm" style="color:#2a5fa6;font-size:24rpx" bindtap="returnToConfirmation">返回确认</view>
+  </navbar>
 
   <view class="store-row">
     <icon name="pin" size="13" color="#467a32" />

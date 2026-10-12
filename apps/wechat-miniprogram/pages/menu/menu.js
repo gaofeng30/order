@@ -46,19 +46,32 @@ Page({
     total: 0, active: '', intoView: '', sheet: false, cartItems: [], _offsets: [],
     czVisible: false, czItem: null, czInit: null, czLabel: '加入购物车',
     pickup: null, pickerVisible: false, pickerDates: [], pickerGroups: [], pickerDate: '', search: '', flavors: [],
-    canCheckout: false,
+    canCheckout: false, returnToConfirm: false,
   },
-  onLoad() { this.refresh(); },
+  onLoad(opts) {
+    const pages = getCurrentPages();
+    const previous = pages[pages.length - 2];
+    this._returnToConfirm = !!(opts && opts.returnToConfirm === '1' && previous && previous.route === 'pages/confirm/confirm');
+    this.setData({ returnToConfirm: this._returnToConfirm });
+    this.refresh();
+  },
   async onShow() {
     this.refresh();
     this.setData({ flavors: (getApp().globalData.storefrontFlavors || []).slice() });
     await this.loadOptionsAndMenu();
   },
+  onUnload() {
+    this._optionsRequestID = (this._optionsRequestID || 0) + 1;
+    this._menuRequestID = (this._menuRequestID || 0) + 1;
+  },
   async loadOptionsAndMenu() {
+    const requestID = (this._optionsRequestID || 0) + 1;
+    this._optionsRequestID = requestID;
     this._menuOrderable = false;
     this.setData({ optionState: 'loading', listState: 'loading', groups: [], cats: [], canCheckout: false });
     try {
       const options = await menuStore.loadPickupOptions();
+      if (requestID !== this._optionsRequestID) return false;
       this._options = options;
       const current = pickup.get();
       const validCurrent = current && options.dates.some(day => day.date === current.date && day.available
@@ -76,6 +89,7 @@ Page({
       this.setData({ optionState: available ? 'ready' : 'browse', pickup: Object.assign({}, selected, { label: pickup.label() }) });
       return this.loadMenu();
     } catch (error) {
+      if (requestID !== this._optionsRequestID) return false;
       pickup.set(null);
       this._options = null;
       this._allGroups = [];
@@ -125,6 +139,7 @@ Page({
     this.setData({ listState: 'loading', groups: [], cats: [], active: '', canCheckout: false });
     try {
       const showStaffPrice = await canShowStaffPrice();
+      if (requestID !== this._menuRequestID) return false;
       const menu = await menuStore.loadMenu(selected);
       if (requestID !== this._menuRequestID) return false;
       if (menu.selection.date !== selected.date || menu.selection.time !== selected.time
@@ -193,7 +208,7 @@ Page({
   },
   onCzClose() { this.setData({ czVisible: false }); },
   onCzConfirm(e) {
-    if (Object.hasOwn(this.data.czItem, 'orderable') && !this.data.czItem.orderable) return;
+    if (Object.prototype.hasOwnProperty.call(this.data.czItem, 'orderable') && !this.data.czItem.orderable) return;
     cart.setPrefs(this.data.czItem, e.detail);
     this.setData({ czVisible: false });
     this.refresh();
@@ -210,6 +225,20 @@ Page({
   },
   openSheet() { if (this.data.count) this.setData({ sheet: true }); },
   closeSheet() { this.setData({ sheet: false }); },
-  goConfirm() { if (this.data.canCheckout && pickup.get()) { this.setData({ sheet: false }); nav.go('confirm'); } },
+  returnToConfirmation() {
+    if (!this._returnToConfirm) return false;
+    wx.navigateBack({ delta: 1, fail: () => this.toast('暂时无法返回确认页，请稍后重试', 'warn') });
+    return true;
+  },
+  goConfirm() {
+    if (!this.data.canCheckout || !pickup.get()) return;
+    this.setData({ sheet: false });
+    const pages = getCurrentPages();
+    const previous = pages[pages.length - 2];
+    if (this._returnToConfirm && previous && previous.route === 'pages/confirm/confirm') {
+      return this.returnToConfirmation();
+    }
+    nav.go('confirm');
+  },
   noop() {},
 });
