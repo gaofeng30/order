@@ -1,4 +1,4 @@
-/* 分类管理：主账号改名、上移/下移、启停与带商品删除保护。 */
+/* 分类管理：主账号改名、拖拽排序、上移/下移、启停与带商品删除保护。 */
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
@@ -15,11 +15,12 @@
   }
 
   function paint(el) {
-    Api.listCategories().then(list => {
+    return Api.listCategories().then(list => {
       const host = el.querySelector('#cat-host');
       host.innerHTML =
         `<div class="cat-head">
 
+           <span class="cat-drag-slot" aria-hidden="true"></span>
            <span class="grow">分类名称</span>
            <span style="width:88px">菜品数</span>
            <span style="width:96px">用户端可见</span>
@@ -29,6 +30,7 @@
           const count = c.count;
           return `<div class="cat-row" data-id="${c.id}">
 
+            <button class="ibtn cat-drag-slot cat-drag-handle" draggable="true" aria-label="拖动调整分类顺序" title="拖动调整顺序" ${list.length < 2 ? 'disabled' : ''}>⠿</button>
             <span class="grow cat-nm">${T.esc(c.name)}</span>
             <span style="width:88px" class="faint tnum">${count} 个</span>
             <span style="width:96px"><button class="sw${c.on ? ' on' : ''}" data-on="${c.id}"></button></span>
@@ -41,6 +43,8 @@
           </div>`;
         }).join('') +
         (list.length ? '' : '<div class="tbl-empty">还没有分类</div>');
+
+      bindDrag(el, host, list);
 
       host.querySelectorAll('[data-on]').forEach(n => {
         n.onclick = () => {
@@ -84,10 +88,76 @@
     if (index < 0 || target < 0 || target >= list.length) return;
     const ids = list.map(c => c.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
-    Api.reorderCategories(ids).then(() => {
-      paint(el);
+    saveOrder(el, ids);
+  }
+
+  async function saveOrder(el, ids) {
+    const host = el.querySelector('#cat-host');
+    if (host.dataset.saving) return;
+    host.dataset.saving = 'true';
+    host.setAttribute('aria-busy', 'true');
+    const controls = [...el.querySelectorAll('button')].map(n => [n, n.disabled]);
+    controls.forEach(([n]) => { n.disabled = true; });
+    try {
+      await Api.reorderCategories(ids);
+      await paint(el);
       window.Toast.show('顺序已保存', { icon: 'sort' });
-    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+    } catch (e) {
+      window.Toast.show(e.message, { icon: 'warn' });
+    } finally {
+      delete host.dataset.saving;
+      host.removeAttribute('aria-busy');
+      controls.forEach(([n, disabled]) => { n.disabled = disabled; });
+    }
+  }
+
+  function bindDrag(el, host, list) {
+    let source = null;
+    const rows = [...host.querySelectorAll('.cat-row')];
+    const clearMarks = () => rows.forEach(row => row.classList.remove('drop-before', 'drop-after'));
+    const reset = () => {
+      source = null;
+      clearMarks();
+      rows.forEach(row => row.classList.remove('dragging'));
+    };
+    rows.forEach(row => {
+      const handle = row.querySelector('.cat-drag-handle');
+      handle.ondragstart = e => {
+        if (host.dataset.saving || handle.disabled) { e.preventDefault(); return; }
+        source = row.dataset.id;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', source);
+        e.dataTransfer.setDragImage(row, 20, row.offsetHeight / 2);
+        row.classList.add('dragging');
+      };
+      handle.ondragend = reset;
+      row.ondragover = e => {
+        if (!source || host.dataset.saving) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        clearMarks();
+        if (source === row.dataset.id) return;
+        const rect = row.getBoundingClientRect();
+        row.classList.add(e.clientY < rect.top + rect.height / 2 ? 'drop-before' : 'drop-after');
+      };
+      row.ondrop = e => {
+        if (!source || host.dataset.saving) return;
+        e.preventDefault();
+        const id = source;
+        const target = row.dataset.id;
+        const rect = row.getBoundingClientRect();
+        const after = e.clientY >= rect.top + rect.height / 2;
+        reset();
+        if (id === target) return;
+        const ids = list.map(c => c.id).filter(x => x !== id);
+        ids.splice(ids.indexOf(target) + (after ? 1 : 0), 0, id);
+        if (ids.every((x, i) => x === list[i].id)) return;
+        saveOrder(el, ids);
+      };
+    });
+    host.ondragleave = e => {
+      if (!host.contains(e.relatedTarget)) clearMarks();
+    };
   }
 
   function openForm(el, category) {
@@ -121,5 +191,5 @@
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['categories'] = { sub: '使用上移、下移调整用户端的分类顺序', render };
+  window.Pages['categories'] = { sub: '拖动左侧手柄或使用上移、下移调整分类顺序', render };
 })();

@@ -33,3 +33,5 @@
 - [x] 生产 Go 编译、修改 JS 的 node --check 与 git diff --check；未运行测试、回归或 Gate。后端 API/SharedPG 尚未部署，完整真实业务 UAT 未执行。
 
 - [x] 用户追加列表密度调整：勾选列从 112px 收窄为 80px，菜品列固定为 360px，表格最小宽度从 1240px 调整为 1072px，末尾操作列承接剩余宽度；保留字号、图片、行高。JS 语法与 diff 格式检查完成；未运行测试/回归/Gate，未完成浏览器视觉验收。
+
+- [x] 用户追加分类拖拽排序：最左侧手柄、插入位置标识、既有完整排序接口、重复提交保护，保留上下移；同步覆盖 P17。继续在本交付 worktree 修改 categories.js/app.css，预览 worktree 仅同步文件。node --check 与 git diff --check 通过；遵从停测要求未执行测试/回归/Gate，浏览器实际 UAT 待完成。

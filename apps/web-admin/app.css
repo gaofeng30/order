@@ -909,3 +909,11 @@ input[type=checkbox] { accent-color:var(--green); min-width:18px; min-height:18p
 
 /* 菜品名称列保持紧凑，剩余宽度交给末尾操作列。 */
 #tbl-host .product-info .grow { min-width:0; }
+
+/* 分类排序：仅手柄启动拖动，上下边线标记插入位置。 */
+#cat-host .cat-drag-slot { flex:0 0 24px; width:24px; }
+#cat-host .cat-drag-handle { cursor:grab; font-size:20px; color:var(--ink-3); }
+#cat-host .cat-drag-handle:active { cursor:grabbing; }
+#cat-host .cat-drag-handle:disabled { cursor:default; }
+#cat-host .cat-row.drop-before { box-shadow:inset 0 2px var(--green); }
+#cat-host .cat-row.drop-after { box-shadow:inset 0 -2px var(--green); }
