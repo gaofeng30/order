@@ -268,22 +268,18 @@
     const generation = ++orderCountGeneration;
     state.orderCounts = null;
     const counts = Object.fromEntries(LANES.map(l => [l, 0]));
-    const seen = new Set();
-    let afterID = '';
-    for (;;) {
-      const body = await request('/admin/orders' + qs({ limit: 100, after_id: afterID }));
-      for (const order of listOf(body, 'orders')) {
-        const label = order.status_label || ORDER_STATE_LABEL[order.state] || order.status || order.state;
-        if (!LANES.slice(0, -1).includes(label)) throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
-        counts[label] += 1; counts['全部'] += 1;
-      }
-      const next = body && body.next_after_id;
-      if (next === null || next === undefined || next === '') break;
-      const cursor = String(next);
-      if (!/^[1-9]\d*$/.test(cursor) || seen.has(cursor) || (afterID && BigInt(cursor) <= BigInt(afterID))) {
+    const body = await request('/admin/orders/counts');
+    const values = body && body.counts;
+    if (!values || typeof values !== 'object' || Array.isArray(values)
+      || Object.keys(values).length !== Object.keys(ORDER_STATE_LABEL).length) {
+      throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+    }
+    for (const [status, label] of Object.entries(ORDER_STATE_LABEL)) {
+      const count = values[status];
+      if (!Number.isSafeInteger(count) || count < 0 || !Number.isSafeInteger(counts['全部'] + count)) {
         throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
       }
-      seen.add(cursor); afterID = cursor;
+      counts[label] = count; counts['全部'] += count;
     }
     if (generation === orderCountGeneration) state.orderCounts = counts;
     return Object.assign({}, counts);
