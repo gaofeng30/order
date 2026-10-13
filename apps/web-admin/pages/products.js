@@ -65,9 +65,9 @@
       const host = el.querySelector('#tbl-host');
       host.innerHTML = T.render({
         cols: [
-          { t: `<label class="select-all"><input type="checkbox" data-act="all" ${list.length && picked.size === list.length ? 'checked' : ''}><span>全选</span></label><span class="selection-count" data-selection-count>${picked.size ? '已选 '+picked.size+' 项' : ''}</span>`, w: '112px',
+          { t: `<label class="select-all"><input type="checkbox" data-act="all" ${list.length && picked.size === list.length ? 'checked' : ''}><span>全选</span></label><span class="selection-count" data-selection-count>${picked.size ? '已选 '+picked.size+' 项' : ''}</span>`, w: '80px',
             render: r => `<input type="checkbox" data-act="pick" data-id="${r.id}" ${picked.has(r.id) ? 'checked' : ''}>` },
-          { t: '菜品', render: r => `
+          { t: '菜品', w: '360px', cls: 'product-info', render: r => `
             <div class="row gap12">
               <span class="thumb-frame"><span class="image-placeholder">暂无图片</span>${r.img ? `<img class="thumb" src="${T.esc(Api.imgUrl(r.img))}" alt="" onerror="this.remove()">` : ''}</span>
               <div class="grow">
@@ -89,7 +89,7 @@
             const actionLabel = off ? '已下架，不可售' : sold ? '恢复今日售卖' : '标记今日售罄';
             return `<div class="row gap8"><button class="sw ${switchClass}" data-act="sold" data-id="${r.id}" aria-label="${actionLabel}" aria-pressed="${!off && !sold}" ${off || pending.has(r.id) ? 'disabled' : ''}></button><span class="${saleClass}">${saleLabel}</span></div>`;
           } },
-          { t: '操作', w: '190px', cls: 'act', render: r => `
+          { t: '操作', cls: 'act', render: r => `
             <button class="ibtn" data-act="up" data-id="${r.id}" title="分类内上移" aria-label="分类内上移" ${all.filter(x=>x.categoryId===r.categoryId)[0].id===r.id?'disabled':''}>↑</button>
             <button class="ibtn" data-act="down" data-id="${r.id}" title="分类内下移" aria-label="分类内下移" ${all.filter(x=>x.categoryId===r.categoryId).slice(-1)[0].id===r.id?'disabled':''}>↓</button>
             <button class="btn btn--sm btn--line" data-act="shelf" data-id="${r.id}">${r.status === 'off' ? '上架' : '下架'}</button>

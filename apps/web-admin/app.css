@@ -899,10 +899,13 @@ input[type=checkbox] { accent-color:var(--green); min-width:18px; min-height:18p
 .tbl-wrap > .tbl-wrap { border:0; }
 .cat-delete-note { display:block; white-space:normal; font-size:12px; color:var(--ink-3); }
 /* 固定短字段的实际列宽，避免窄窗口把价格或餐段逐字挤成竖排。 */
-#tbl-host .tbl:has(.thumb-frame) { min-width:1240px; table-layout:fixed; }
+#tbl-host .tbl:has(.thumb-frame) { min-width:1072px; table-layout:fixed; }
 .price { white-space:nowrap; }
 .batch-bar { background:var(--green-bg); color:var(--green); flex-wrap:wrap; }
 .tbl-scroll-hint { font-size:12px; color:var(--ink-3); margin:8px 0; }
 
 /* 导入预览保留字段列宽，窄窗口沿用表格横向滚动。 */
 [data-product-preview] .tbl { min-width:1120px; }
+
+/* 菜品名称列保持紧凑，剩余宽度交给末尾操作列。 */
+#tbl-host .product-info .grow { min-width:0; }
