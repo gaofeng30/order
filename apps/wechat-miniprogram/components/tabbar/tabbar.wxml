@@ -5,6 +5,10 @@
     class="tab"
     data-id="{{item.id}}"
     bindtap="onTap"
+    hover-class="tap-dim"
+    hover-stay-time="80"
+    aria-role="tab"
+    aria-label="{{item.label}}"
   >
     <view class="tab-ico">
       <icon name="{{item.icon}}" size="23" color="{{active === item.id ? activeColor : inactiveColor}}" stroke="{{active === item.id ? 2.2 : 1.9}}" />

@@ -51,8 +51,16 @@ type XLSX struct {
 	Name       string
 	Bytes      []byte
 	DigestHint string
+	Images     map[uint32][]ProductImage
+}
+type ProductImage struct {
+	ObjectKey string `json:"object_key"`
+}
+type ImageConfirmationReader interface {
+	Confirmed(context.Context, []string) (map[string]bool, error)
 }
 type RowOutcome struct {
+	Product         *planRow `json:",omitempty"`
 	Row             uint32
 	Outcome, Reason string
 }
@@ -63,7 +71,23 @@ type Preview struct {
 	Rows                              []RowOutcome
 	ExpiresAt                         time.Time
 }
+type ResultRow struct {
+	Images      []ProductImage `json:"images,omitempty"`
+	Row         uint32         `json:"row"`
+	ID          string         `json:"id"`
+	Outcome     string         `json:"outcome"`
+	Name        string         `json:"name"`
+	PhoneMasked string         `json:"phone_masked,omitempty"`
+	Category    string         `json:"category,omitempty"`
+	Meal        string         `json:"meal,omitempty"`
+	PriceCents  uint32         `json:"price_cents,omitempty"`
+	Description string         `json:"description,omitempty"`
+}
+
 type CommitResult struct {
+	Kind Kind
+	Rows []ResultRow
+
 	BatchID                             uint64
 	NewCount, UpdateCount, SkippedCount uint32
 	Duplicate                           bool
@@ -73,6 +97,7 @@ type CommitResult struct {
 type Application interface {
 	Preview(context.Context, WriteMeta, Kind, XLSX) (Preview, error)
 	Commit(context.Context, WriteMeta, string, bool) (CommitResult, error)
+	Result(context.Context, uint64, uint64) (CommitResult, error)
 }
 type Handler struct{ app Application }
 
@@ -83,7 +108,27 @@ func (h *Handler) RegisterRoutes(group *gin.RouterGroup) {
 }
 
 // RegisterCommitRoute mounts the frozen sibling /api/v1/import/commit path on the authenticated API group.
-func (h *Handler) RegisterCommitRoute(api *gin.RouterGroup) { api.POST("/import/commit", h.commit) }
+func (h *Handler) RegisterCommitRoute(api *gin.RouterGroup) {
+	api.POST("/import/commit", h.commit)
+	api.GET("/import/batches/:id/result", h.result)
+}
+func resultDTO(out CommitResult) gin.H {
+	return gin.H{"batch_id": strconv.FormatUint(out.BatchID, 10), "kind": out.Kind, "rows": out.Rows, "new_count": out.NewCount, "update_count": out.UpdateCount, "skipped_count": out.SkippedCount, "duplicate": out.Duplicate}
+}
+func (h *Handler) result(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	actor := c.GetUint64("actor_user_id")
+	if err != nil || id == 0 || actor == 0 {
+		writeErr(c, ErrInvalidInput)
+		return
+	}
+	out, err := h.app.Result(c.Request.Context(), actor, id)
+	if err != nil {
+		writeErr(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, resultDTO(out))
+}
 func (h *Handler) preview(kind Kind) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		meta, ok := writeMeta(c)
@@ -91,7 +136,7 @@ func (h *Handler) preview(kind Kind) gin.HandlerFunc {
 			writeErr(c, ErrInvalidInput)
 			return
 		}
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxFileSize+4096)
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxFileSize+2*1024*1024)
 		file, header, err := c.Request.FormFile("file")
 		if err != nil {
 			writeErr(c, ErrInvalidFile)
@@ -111,7 +156,14 @@ func (h *Handler) preview(kind Kind) gin.HandlerFunc {
 			writeErr(c, ErrFileTooLarge)
 			return
 		}
-		out, err := h.app.Preview(c.Request.Context(), meta, kind, XLSX{Name: filepath.Base(header.Filename), Bytes: data})
+		var images map[uint32][]ProductImage
+		if value := c.PostForm("product_images"); value != "" {
+			if kind != Product || len(value) > 2*1024*1024 || json.Unmarshal([]byte(value), &images) != nil {
+				writeErr(c, ErrInvalidInput)
+				return
+			}
+		}
+		out, err := h.app.Preview(c.Request.Context(), meta, kind, XLSX{Name: filepath.Base(header.Filename), Bytes: data, Images: images})
 		if err != nil {
 			writeErr(c, err)
 			return
@@ -137,12 +189,15 @@ func (h *Handler) commit(c *gin.Context) {
 		writeErr(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"batch_id": strconv.FormatUint(out.BatchID, 10), "new_count": out.NewCount, "update_count": out.UpdateCount, "skipped_count": out.SkippedCount, "duplicate": out.Duplicate})
+	c.JSON(http.StatusOK, resultDTO(out))
 }
 func previewDTO(p Preview) gin.H {
 	rows := make([]gin.H, 0, len(p.Rows))
 	for _, r := range p.Rows {
 		row := gin.H{"row": r.Row, "outcome": r.Outcome}
+		if r.Product != nil {
+			row["product"] = r.Product
+		}
 		if r.Reason != "" {
 			row["reason"] = r.Reason
 		}

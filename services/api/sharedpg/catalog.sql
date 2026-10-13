@@ -184,6 +184,7 @@ BEGIN
    PERFORM id FROM public.products WHERE id=p_product FOR UPDATE;
    IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P2002',MESSAGE='ORDER_NOT_FOUND'; END IF;
    IF p_receipt_at IS NULL THEN RETURN jsonb_build_object('outcome','NEED_MATERIAL'); END IF;
+   DELETE FROM public.product_sold_out_dates WHERE product_id=p_product;
    DELETE FROM public.products WHERE id=p_product;
    GET DIAGNOSTICS v_count=ROW_COUNT;
    IF v_count<>1 THEN RAISE EXCEPTION USING ERRCODE='P2002',MESSAGE='ORDER_NOT_FOUND'; END IF;

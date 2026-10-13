@@ -19,24 +19,24 @@
       const host = el.querySelector('#cat-host');
       host.innerHTML =
         `<div class="cat-head">
-           <span style="width:34px"></span>
+
            <span class="grow">分类名称</span>
            <span style="width:88px">菜品数</span>
            <span style="width:96px">用户端可见</span>
            <span style="width:178px;text-align:right">操作</span>
          </div>` +
-        list.map(c => {
+        list.map((c,index) => {
           const count = c.count;
           return `<div class="cat-row" data-id="${c.id}">
-            <span class="cat-grip">${I.svg('sort', 16, '#b6b9a6')}</span>
+
             <span class="grow cat-nm">${T.esc(c.name)}</span>
             <span style="width:88px" class="faint tnum">${count} 个</span>
             <span style="width:96px"><button class="sw${c.on ? ' on' : ''}" data-on="${c.id}"></button></span>
             <span style="width:178px;text-align:right">
-              <button class="ibtn" data-act="cat-up" data-id="${c.id}" title="上移">↑</button>
-              <button class="ibtn" data-act="cat-down" data-id="${c.id}" title="下移">↓</button>
+              <button class="ibtn" data-act="cat-up" data-id="${c.id}" title="上移" ${index === 0 ? 'disabled' : ''}>↑</button>
+              <button class="ibtn" data-act="cat-down" data-id="${c.id}" title="下移" ${index === list.length-1 ? 'disabled' : ''}>↓</button>
               <button class="btn btn--sm btn--ghost-blue" data-act="cat-edit" data-id="${c.id}">编辑</button>
-              <button class="ibtn danger" data-del="${c.id}">${I.svg('trash', 16)}</button>
+              <button class="ibtn danger" data-del="${c.id}" ${count > 0 ? 'disabled title="请先移走或删除分类内菜品"' : 'title="删除分类"'}>${I.svg('trash', 16)}</button>${count > 0 ? '<span class="cat-delete-note">请先移出或删除该分类下的菜品</span>' : ''}
             </span>
           </div>`;
         }).join('') +
@@ -106,13 +106,13 @@
       onMount(root, close) {
         const inp = root.querySelector('#c-name');
         inp.focus();
-        const submit = () => {
+        const submit = window.FormUI.submit(root.querySelector('[data-a="ok"]'), async () => {
           const command = editing ? Api.renameCategory(category.id, inp.value) : Api.addCategory(inp.value);
-          command.then(c => {
+          await command.then(c => {
             close(); paint(el);
             window.Toast.show(editing ? `已保存「${c.name}」` : `已新增「${c.name}」`, { icon: 'check' });
           }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+        });
         inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
         root.querySelector('[data-a="c"]').onclick = close;
         root.querySelector('[data-a="ok"]').onclick = submit;

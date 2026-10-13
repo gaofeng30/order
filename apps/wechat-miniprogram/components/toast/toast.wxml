@@ -1,4 +1,6 @@
-<view wx:if="{{visible}}" class="toast">
-  <icon name="{{icon}}" size="18" color="#8fd06a" />
-  <text class="toast-msg">{{msg}}</text>
+<view wx:if="{{visible}}" class="toast-wrap" aria-role="alert" aria-live="polite">
+  <view class="toast">
+    <icon name="{{icon}}" size="18" color="{{icon === 'check' ? '#8fd06a' : '#ff8a75'}}" />
+    <text class="toast-msg">{{msg}}</text>
+  </view>
 </view>

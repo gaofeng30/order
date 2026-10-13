@@ -1,6 +1,7 @@
 <image
   class="icon-img"
   src="{{uri}}"
-  style="width:{{size}}px;height:{{size}}px"
+  style="width:{{size * 2}}rpx;height:{{size * 2}}rpx"
   mode="aspectFit"
+  aria-hidden="true"
 />

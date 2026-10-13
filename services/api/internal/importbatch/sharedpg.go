@@ -15,13 +15,14 @@ type sharedPGExecutor interface {
 }
 
 type SharedPGApplication struct {
+	confirmed       ImageConfirmationReader
 	client          sharedPGExecutor
 	now, receiptNow func() time.Time
 	token           func() (string, error)
 }
 
-func NewSharedPGApplication(client sharedPGExecutor) *SharedPGApplication {
-	return &SharedPGApplication{client: client, now: time.Now, receiptNow: time.Now, token: randomToken}
+func NewSharedPGApplication(client sharedPGExecutor, confirmed ImageConfirmationReader) *SharedPGApplication {
+	return &SharedPGApplication{client: client, confirmed: confirmed, now: time.Now, receiptNow: time.Now, token: randomToken}
 }
 
 type importRPCResult struct {
@@ -140,6 +141,9 @@ func (a *SharedPGApplication) Preview(ctx context.Context, meta WriteMeta, kind 
 	if err != nil {
 		return Preview{}, err
 	}
+	if err := attachImages(ctx, &plan, file.Images, a.confirmed); err != nil {
+		return Preview{}, err
+	}
 	if a.token == nil {
 		return Preview{}, ErrUnavailable
 	}
@@ -157,7 +161,8 @@ func (a *SharedPGApplication) Preview(ctx context.Context, meta WriteMeta, kind 
 	request := struct {
 		Kind   Kind
 		Digest [32]byte
-	}{kind, fileDigest}
+		Images map[uint32][]ProductImage `json:",omitempty"`
+	}{kind, fileDigest, file.Images}
 	p := importReceiptParameters(meta, request)
 	planRaw, _ := json.Marshal(plan)
 	responseRaw, _ := json.Marshal(out)
@@ -298,3 +303,15 @@ func importRawDigest(raw string) string {
 }
 
 var _ Application = (*SharedPGApplication)(nil)
+
+func (a *SharedPGApplication) Result(ctx context.Context, actor, id uint64) (CommitResult, error) {
+	var f importRPCResult
+	if a == nil || a.client == nil || a.client.CallRPC(ctx, "order_import_result_v1", map[string]any{"p_user": strconv.FormatUint(actor, 10), "p_batch": strconv.FormatUint(id, 10)}, &f) != nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	var out CommitResult
+	if f.Outcome != "SUCCEEDED" || f.Response == nil || json.Unmarshal([]byte(*f.Response), &out) != nil || out.Rows == nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	return out, nil
+}

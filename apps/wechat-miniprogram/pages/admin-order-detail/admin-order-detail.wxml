@@ -1,60 +1,77 @@
 <view class="page">
-  <navbar tone="dark" overlay back title="订单详情" />
+  <navbar tone="dark" overlay back title="订单详情" solid="{{detailState !== 'ready' || navSolid}}" />
 
-  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
-    <view class="hero-dark detail-hero" style="padding-top:{{navTotal}}px">
-      <view class="ring r1"></view>
-      <view class="dh-row">
-        <view>
-          <view class="dh-lbl">取餐号</view>
-          <view class="serif dh-code">{{o.code}}</view>
-        </view>
-        <view class="dh-pill"><pill s="{{o.status}}" ondark /></view>
-      </view>
-      <view class="dh-no">订单号 {{o.no}} · {{paidTime}} 下单</view>
-    </view>
-
-    <view class="pad">
-      <!-- 口味高亮 -->
-      <view wx:if="{{flavorShow}}" class="flavor-card">
-        <icon name="flame" size="20" color="#a4873f" />
-        <view>
-          <view class="flavor-lbl">口味要求 · 制作请注意</view>
-          <view class="serif flavor-val">{{flavorText}}</view>
-        </view>
-      </view>
-
-      <view class="card sec-card">
-        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">菜品明细</text></view>
-        <view wx:for="{{rows}}" wx:key="name" class="order-item">
-          <view class="order-item-info">
-            <view class="order-item-name">{{item.name}}</view>
-            <view class="order-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
-            <view wx:if="{{item.flavors.length}}" class="order-item-unit">口味：<text wx:for="{{item.flavors}}" wx:for-item="flavor" wx:for-index="flavorIndex" wx:key="*this">{{flavorIndex > 0 ? '、' : ''}}{{flavor}}</text></view>
-            <view wx:if="{{item.note}}" class="order-item-unit">菜品备注：{{item.note}}</view>
-          </view>
-          <money cents="{{item.sub}}" size="30" />
-        </view>
-        <view class="pay-row"><text class="pay-lbl">实付</text><money cents="{{o.total}}" blue size="42" /></view>
-      </view>
-
-      <view class="card sec-card">
-        <view class="sec-h" style="padding-bottom:4rpx"><text class="t" style="font-size:30rpx">用户与履约</text></view>
-        <view class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}}</text></view>
-        <view class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.maskedPhone}}</text></view>
-        <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">整单备注</text><text class="ir-val">{{o.orderNote}}</text></view>
-        <view class="info-row"><text class="ir-label">取餐时间</text><text class="ir-val">{{o.pickupDate}} {{o.pickupTime}}</text></view>
-        <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
-      </view>
-      <view style="height:24rpx"></view>
-    </view>
-  </scroll-view>
-
-  <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
-    <view wx:if="{{actionState === 'error'}}" class="action-error">操作失败，请确认订单状态后重试</view>
-    <view wx:if="{{meta.isView}}" class="btn btn--mute foot-main">{{o.status}}</view>
-    <view wx:else class="btn btn--primary foot-main" bindtap="advance">{{meta.label}}</view>
+  <view wx:if="{{detailState === 'loading'}}" class="scroll" style="padding-top:{{navTotal}}px">
+    <state kind="loading" text="正在读取订单" />
   </view>
+  <view wx:elif="{{detailState === 'error'}}" class="scroll" style="padding-top:{{navTotal}}px">
+    <state kind="error" text="网络不太好，订单没加载出来" bind:action="retry" />
+  </view>
+
+  <block wx:else>
+    <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onNavScroll">
+      <view class="hero-dark detail-hero" style="padding-top:{{navTotal}}px">
+        <view class="ring r1"></view>
+        <view class="dh-row">
+          <view>
+            <view class="dh-lbl">取餐号</view>
+            <view class="serif dh-code">{{o.code}}</view>
+          </view>
+          <view class="dh-pill"><pill s="{{o.status}}" ondark /></view>
+        </view>
+        <view class="dh-no">订单号 {{o.no}}<text wx:if="{{placedLabel}}"> · {{placedLabel}} 下单</text></view>
+      </view>
+
+      <view class="pad">
+        <!-- 口味高亮：按菜品分行，前面写菜名（A12） -->
+        <view wx:if="{{flavorLines.length}}" class="flavor-card">
+          <view class="flavor-head">
+            <icon name="flame" size="18" color="#b79a55" />
+            <text class="flavor-lbl">口味要求 · 制作请注意</text>
+          </view>
+          <view wx:for="{{flavorLines}}" wx:key="key" class="flavor-line">
+            <text class="flavor-name">{{item.name}}</text>
+            <text class="flavor-val">{{item.text}}</text>
+          </view>
+        </view>
+
+        <view class="card sec-card">
+          <view class="sec-h"><text class="t">菜品明细</text></view>
+          <view wx:for="{{rows}}" wx:key="key" class="order-item {{item.last ? 'last' : ''}}">
+            <view class="order-item-info">
+              <view class="order-item-name">{{item.name}}</view>
+              <view class="order-item-unit"><money cents="{{item.p}}" size="28" color="#8f9384" /><text> × {{item.q}}</text></view>
+            </view>
+            <money cents="{{item.sub}}" size="28" />
+          </view>
+          <view class="pay-row"><text class="pay-lbl">实付</text><money cents="{{o.total}}" size="44" /></view>
+        </view>
+
+        <view class="card sec-card">
+          <view class="sec-h"><text class="t">顾客与取餐</text></view>
+          <view wx:if="{{o.contactName}}" class="info-row"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}}</text></view>
+          <view wx:if="{{o.maskedPhone}}" class="info-row"><text class="ir-label">手机号</text><text class="ir-val">{{o.maskedPhone}}</text></view>
+          <view wx:if="{{o.orderNote}}" class="info-row"><text class="ir-label">整单备注</text><text class="ir-val">{{o.orderNote}}</text></view>
+          <view class="info-row"><text class="ir-label">取餐时间</text><text class="ir-val">{{pickupLabel}}</text></view>
+          <view class="info-row last"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
+        </view>
+        <view class="end-space"></view>
+      </view>
+    </scroll-view>
+
+    <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
+      <view wx:if="{{!action}}" class="btn btn--mute btn--block">{{o.status}}</view>
+      <view
+        wx:else
+        class="btn btn--primary btn--block {{busy ? 'is-disabled' : ''}}"
+        bindtap="advance"
+        hover-class="{{busy ? 'none' : 'b-active'}}"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-disabled="{{busy}}"
+      >{{busy ? '处理中…' : action === 'ready' ? '备好' : '核销'}}</view>
+    </view>
+  </block>
 
   <toast id="toast" />
 </view>

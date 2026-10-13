@@ -16,6 +16,10 @@ Component({
     qty: 1,
     totalCents: 0,
     totalText: '0.00',
+    priceText: '',
+    originalPriceText: '',
+    isStaffPrice: false,
+    noteLength: 0,
     safeBottom: 0,
   },
   observers: {
@@ -25,10 +29,16 @@ Component({
       const note = (init && init.note) || '';
       const qty = (init && init.qty) || 1;
       const totalCents = qty * ((item && item.price_cents) || 0);
+      // 购物车快照没有 price_text，抬头价格按整数分自行格式化（D2）
+      const isStaffPrice = !!(item && item.isStaffPrice);
       this.setData({
         flavors, note, qty,
         totalCents,
         totalText: catalogStore.formatCents(totalCents),
+        priceText: item ? catalogStore.formatCents(item.price_cents) : '',
+        originalPriceText: isStaffPrice ? catalogStore.formatCents(item.original_unit_price_cents) : '',
+        isStaffPrice,
+        noteLength: Array.from(note).length,
         chips: this._chips(flavors),
         safeBottom: getApp().globalData.safeBottom,
       });
@@ -43,7 +53,7 @@ Component({
       if (i > -1) flavors.splice(i, 1); else flavors.push(f);
       this.setData({ flavors, chips: this._chips(flavors) });
     },
-    onNote(e) { this.setData({ note: e.detail.value }); },
+    onNote(e) { this.setData({ note: e.detail.value, noteLength: Array.from(e.detail.value).length }); },
     sub() {
       const qty = Math.max(1, this.data.qty - 1);
       const totalCents = qty * this.data.item.price_cents;
@@ -58,6 +68,5 @@ Component({
     confirm() {
       this.triggerEvent('confirm', { qty: this.data.qty, flavors: this.data.flavors, note: this.data.note });
     },
-    noop() {},
   },
 });

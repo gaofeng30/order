@@ -1,24 +1,33 @@
-.detail-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }
+.detail-state { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
 .detail-body { padding: 24rpx 32rpx 0; position: relative; }
-.detail-gallery { position: relative; }
-.detail-images, .detail-single-image { width: 100%; height: 480rpx; border-radius: 22rpx; overflow: hidden; }
-.detail-images image { width: 100%; height: 100%; }
-.image-count { position: absolute; right: 20rpx; bottom: 18rpx; padding: 6rpx 16rpx; border-radius: 999rpx; background: rgba(0, 0, 0, .55); color: #fff; font-size: 22rpx; font-variant-numeric: tabular-nums; }
-.info-card { padding: 36rpx; }
-.info-name { font-size: 46rpx; font-weight: 700; color: var(--ink); }
+/* 主图 1:1（E7）；translateY(0) + overflow 让 iOS 滑动时保持圆角（D35） */
+.detail-gallery {
+  position: relative; width: 100%; height: 686rpx; border-radius: 22rpx; overflow: hidden;
+  transform: translateY(0); background: var(--bg2);
+}
+.detail-images, .detail-img { width: 100%; height: 686rpx; display: block; }
+.image-count {
+  position: absolute; right: 20rpx; bottom: 18rpx; padding: 6rpx 16rpx; border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, .55); color: #fff; font-size: var(--fs-xs);
+}
+/* 大图与信息卡之间留白（D27） */
+.info-card { padding: 36rpx; margin-top: 24rpx; }
+.info-name { font-size: var(--fs-xl); font-weight: 700; color: var(--ink); }
 .info-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12rpx; margin-top: 24rpx; }
-.staff-price-label { font-size: 20rpx; color: var(--green-1); background: var(--green-bg); border-radius: 8rpx; padding: 4rpx 10rpx; }
-.original-price { font-size: 24rpx; color: var(--ink-3); text-decoration: line-through; }
-.info-desc { font-size: 27rpx; color: var(--ink-2); margin-top: 28rpx; line-height: 1.75; }
+.info-desc { font-size: var(--fs-md); color: var(--ink-2); margin-top: 28rpx; line-height: 1.75; }
 
 .spec-card { padding: 8rpx 36rpx 32rpx; margin-top: 24rpx; }
-.spec-text { font-size: 27rpx; color: var(--ink); line-height: 1.7; }
-.local-card { padding: 28rpx 36rpx; margin-top: 24rpx; display: flex; align-items: center; gap: 14rpx; font-size: 24rpx; color: var(--ink-2); }
+.spec-h { padding-bottom: 12rpx; }
+.spec-text { font-size: var(--fs-md); color: var(--ink); line-height: 1.7; }
+.period-card { padding: 28rpx 36rpx; margin-top: 24rpx; display: flex; align-items: center; gap: 14rpx; }
+.period-lbl { font-size: var(--fs-md); color: var(--ink-3); }
+.period-val { margin-left: 16rpx; font-size: var(--fs-md); color: var(--ink); font-weight: 600; }
+.detail-tail { height: 40rpx; }
 
 .bottom-bar {
-  flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);
-  border-top: 1rpx solid var(--line); display: flex; align-items: center; gap: 28rpx;
+  flex: 0 0 auto; padding: 20rpx 48rpx 20rpx 32rpx; background: rgba(255, 255, 255, .98);
+  border-top: 2rpx solid var(--line); display: flex; align-items: center; gap: 28rpx;
 }
-.have-qty { font-size: 23rpx; color: var(--ink-3); display: flex; flex-direction: column; line-height: 1.3; }
-.have-num { font-size: 32rpx; color: var(--ink); font-weight: 700; }
-.addcart-btn { flex: 1; }
+.bar-price { flex: 1; min-width: 0; }
+.bar-price-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10rpx; }
+.bar-reason { margin-top: 6rpx; font-size: var(--fs-xs); color: var(--red); }

@@ -1,3 +1,5 @@
+> 已停用：按用户本轮停测与删除要求，关联的测试、合成数据及 runner 已从本分支删除。以下仅保留历史记录，不是当前执行步骤或本轮通过证据。
+
 # Admin settings UI verification
 
 `node tools/uiux-clarity/server.cjs` serves the actual Admin sources from this checkout on a random **127.0.0.1-only** port. No requests are forwarded, no credentials are needed, and all settings/accounts are synthetic. Restarting resets the fixture. Open the printed settings URL and `/fixture` in two fresh browser tabs; leave unrelated UAT tabs untouched.

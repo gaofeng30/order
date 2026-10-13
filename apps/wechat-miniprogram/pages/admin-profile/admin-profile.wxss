@@ -1,0 +1,22 @@
+.id-card { border-radius: 0 0 52rpx 52rpx; padding-left: 40rpx; padding-right: 40rpx; padding-bottom: 52rpx; color: #fff; }
+.id-inner { display: flex; align-items: center; gap: 28rpx; position: relative; z-index: 2; }
+.avatar {
+  width: 120rpx; height: 120rpx; flex: 0 0 120rpx; border-radius: 36rpx;
+  background: linear-gradient(135deg, var(--green-500), var(--green));
+  display: flex; align-items: center; justify-content: center;
+}
+.id-body { flex: 1; min-width: 0; }
+.id-name { font-size: var(--fs-xl); font-weight: 700; }
+.id-sub { font-size: var(--fs-sm); color: var(--ink-on-dark-2); margin-top: 10rpx; }
+
+.body { margin-top: 28rpx; }
+.group { padding: 0 36rpx; }
+.prow { display: flex; align-items: center; gap: 24rpx; min-height: 88rpx; padding: 28rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.prow.last { border-bottom: none; }
+.prow-ico {
+  width: 76rpx; height: 76rpx; flex: 0 0 76rpx; border-radius: 22rpx; background: var(--bg2);
+  display: flex; align-items: center; justify-content: center;
+}
+.prow-main { flex: 1; min-width: 0; }
+.prow-label { font-size: var(--fs-md); color: var(--ink); font-weight: 500; }
+.prow-sub { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 6rpx; }

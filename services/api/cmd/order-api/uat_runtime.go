@@ -164,7 +164,7 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 	bills := billing.NewSharedPG(client, billProvider, billingConfig)
 	adminReader := adminreport.NewSharedPGApplication(client, nil)
 	commands := newAdminCommandAdapter(paymentApplication, refunds, adminReader)
-	imports := importbatch.NewHandler(importbatch.NewSharedPGApplication(client))
+	imports := importbatch.NewHandler(importbatch.NewSharedPGApplication(client, objects))
 	adminRoutes := []adminGroupRegistrar{
 		catalog.NewAdminHandler(catalog.NewSharedPGAdminApplication(client, objects, objects)),
 		storefront.NewAdminHandler(storefront.NewSharedPGAdminApplication(client, objects)),

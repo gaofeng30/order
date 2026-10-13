@@ -2,18 +2,19 @@
 .navbar { width: 100%; z-index: 50; }
 .navbar.block { background: var(--bg); flex: 0 0 auto; }
 .navbar.block.dark { background: transparent; }
-.navbar.overlay { position: absolute; top: 0; left: 0; right: 0; background: transparent; }
+.navbar.overlay { position: absolute; top: 0; left: 0; right: 0; background: transparent; transition: background-color .2s ease; }
+/* 透明导航滚动离开深色头部后转为深蓝底，标题与返回键始终可读（D17） */
+.navbar.overlay.solid { background: var(--hero); }
 
-.nb-row { position: relative; display: flex; align-items: center; padding: 0 16rpx; }
-.nb-back {
-  width: 60rpx; height: 60rpx; display: flex; align-items: center; justify-content: center; margin-left: 4rpx;
-}
-.nb-left { font-size: 32rpx; font-weight: 600; margin-left: 8rpx; }
+.nb-row { position: relative; display: flex; align-items: center; padding: 0 8rpx; }
+/* 图标 44rpx，点击区域 88rpx（G6） */
+.nb-back { width: 88rpx; height: 88rpx; display: flex; align-items: center; justify-content: center; }
+.nb-left { font-size: var(--fs-lg); font-weight: 600; margin-left: 16rpx; }
 .nb-left.light { color: var(--ink); }
 .nb-left.dark { color: #fff; }
 .nb-title {
   position: absolute; left: 50%; transform: translateX(-50%);
-  font-size: 32rpx; font-weight: 600; font-family: var(--font-head); letter-spacing: 1rpx;
+  font-size: var(--fs-lg); font-weight: 600; font-family: var(--font-head); letter-spacing: 1rpx;
   max-width: 50%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .nb-title.light { color: var(--ink); }

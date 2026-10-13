@@ -86,7 +86,7 @@
       `<div class="acct-card">
          <span class="ring r1"></span><span class="ring r2"></span>
          <div class="ac-in">
-           <span class="ac-logo"><img src="../wechat-miniprogram/assets/emblem.png" alt=""></span>
+           <span class="ac-logo"><img src="assets/logo.jpeg" alt=""></span>
            <div>
              <div class="ac-nm">${view.name}</div>
              <div class="ac-sub">${view.name} · ${mg.role} ${mg.name}</div>
@@ -146,13 +146,14 @@
   /* ---------------- 路由 ---------------- */
   let current = '';
   let loginVisible = false;
+  let loginGeneration = 0, loginTimer = null, routeGeneration = 0;
 
   function showLogin() {
     if (loginVisible) return;
     loginVisible = true;
     renderAccountIdentity(null);
     current = '';
-    window.Drawer.close(); window.Modal.close();
+    window.Drawer.close(true); window.Modal.close();
     const pop = document.getElementById('acct-pop');
     pop.classList.remove('open'); pop.innerHTML = '';
     document.getElementById('tb-title').textContent = '登录';
@@ -168,12 +169,23 @@
     return window.Pages[h] ? h : 'dashboard';
   }
 
-  function go(route, force) {
+  async function go(route, force) {
     if (loginVisible) return;
     if (!force && route === current) return;
+    const generation = ++routeGeneration;
+    const pageBefore = window.Pages[current];
+    const dirty = settingsDirty || (pageBefore && pageBefore.isDirty && pageBefore.isDirty());
+    if (dirty && !await window.Modal.confirm({title:'退出编辑',body:'有未保存的修改，确定退出？',cancelText:'继续编辑',okText:'放弃修改'})) {
+      if (generation === routeGeneration) history.replaceState(null, '', '#/' + current);
+      return;
+    }
+    if (generation !== routeGeneration) return;
+    if (!await window.Drawer.canClose()) {history.replaceState(null, '', '#/' + current); return;}
+    if (generation !== routeGeneration) return;
+    if (pageBefore && pageBefore.dispose) pageBefore.dispose();
     current = route;
     settingsDirty = false;
-    window.Drawer.close();
+    window.Drawer.close(true);
     window.Modal.close();
 
     document.querySelectorAll('.side-item').forEach(a =>
@@ -204,6 +216,18 @@
   /* ---------------- 启动 ---------------- */
   renderNav();
   bindAccount();
+  const navToggle = document.getElementById('nav-toggle');
+  const narrow = matchMedia('(max-width: 1100px)');
+  function collapseNav(collapsed) {
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    navToggle.setAttribute('aria-expanded', String(!collapsed));
+    navToggle.setAttribute('aria-label', collapsed ? '展开导航' : '收起导航');
+    navToggle.textContent = collapsed ? '☰' : '‹';
+  }
+  collapseNav(narrow.matches);
+  narrow.addEventListener('change', e => collapseNav(e.matches));
+  navToggle.onclick = () => collapseNav(!document.body.classList.contains('nav-collapsed'));
+
   document.getElementById('tb-status').textContent = '连接中';
   window.addEventListener('unhandledrejection', e => {
     e.preventDefault();
@@ -229,37 +253,37 @@
   });
 
   function renderPCLogin() {
+    const generation = ++loginGeneration;
+    clearTimeout(loginTimer);
     const host = document.getElementById('content');
-    host.innerHTML = `<div class="card card-pad" style="max-width:560px;margin:56px auto;text-align:center"><b>主账号扫码登录</b><div class="faint" style="margin-top:8px">请用商户小程序扫码并授权手机号。登录挑战有效 2 分钟；会话固定 12 小时，不续期、不记住设备。</div><div id="pc-qr" class="card card-pad" style="margin:18px auto 0;min-height:244px;display:flex;align-items:center;justify-content:center"><span class="faint">正在创建登录挑战…</span></div><button class="btn btn--line" style="margin-top:16px" data-retry>重新生成</button></div>`;
-    host.querySelector('[data-retry]').onclick = renderPCLogin;
-    Api.beginPCLogin().then(login => {
-      const code = host.querySelector('#pc-qr');
-      if (!code) return;
+    host.innerHTML = `<div class="card card-pad login-card"><b>主账号扫码登录</b><div class="faint" style="margin-top:8px">请用商户小程序扫码并授权手机号。二维码有效 2 分钟，登录后 12 小时内有效。</div><div id="pc-qr" class="login-qr"><span class="faint">正在生成二维码…</span></div><button class="btn btn--line" style="margin-top:16px" data-retry disabled>正在生成…</button></div>`;
+    const retry = host.querySelector('[data-retry]'), code = host.querySelector('#pc-qr');
+    const active = () => generation === loginGeneration && loginVisible && code.isConnected;
+    retry.onclick = renderPCLogin;
+    const expired = () => {
+      if (!active()) return;
+      const cover = document.createElement('div'); cover.className = 'qr-expired';
+      cover.textContent = '二维码已过期，请刷新'; code.append(cover);
+      retry.disabled = false; retry.textContent = '刷新二维码';
+    };
+    async function poll(login) {
+      if (!active()) return;
+      if (Date.now() >= Date.parse(login.expires_at)) {expired(); return;}
       try {
-        const canvas = document.createElement('canvas');
-        canvas.setAttribute('aria-label', 'PC 登录二维码');
-        window.PCQRCode.render(canvas, login.qr_payload, 228);
-        code.replaceChildren(canvas);
-      } catch (error) {
-        code.innerHTML = `<span class="faint">二维码生成失败：${window.Toast.esc(error.message)}</span>`;
-        return;
-      }
-      poll(login.login_id, login.poll_secret, login.expires_at);
-    }).catch(e => {
-      const code = host.querySelector('#pc-qr');
-      if (code) code.textContent = e.message;
-    });
-  }
-
-  function poll(loginID, pollSecret, expiresAt) {
-    if (Date.now() >= Date.parse(expiresAt)) {
-      window.Toast.show('登录挑战已过期，请重新生成', { icon: 'warn' });
-      return;
+        const result = await Api.pollPCLogin(login.login_id, login.poll_secret, () => active() && Date.now() < Date.parse(login.expires_at));
+        if (!active()) return;
+        if (Date.now() >= Date.parse(login.expires_at) || result.state === 'EXPIRED') {expired(); return;}
+        if (result.state === 'APPROVED') {location.reload(); return;}
+        loginTimer = setTimeout(() => poll(login), 1500);
+      } catch(e) {if (active()) {code.textContent = e.message; retry.disabled=false; retry.textContent='重新生成';}}
     }
-    Api.pollPCLogin(loginID, pollSecret).then(result => {
-      if (result.state === 'APPROVED') { location.reload(); return; }
-      setTimeout(() => poll(loginID, pollSecret, expiresAt), 1500);
-    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+    Api.beginPCLogin().then(login => {
+      if (!active()) return;
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('aria-label','PC 登录二维码');
+      window.PCQRCode.render(canvas, login.qr_payload, 228); code.replaceChildren(canvas);
+      retry.disabled=false; retry.textContent='重新生成'; poll(login);
+    }).catch(e => {if(active()){code.textContent=e.message;retry.disabled=false;retry.textContent='重新生成';}});
   }
 
   // 页面间跳转与外壳刷新

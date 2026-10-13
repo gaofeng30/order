@@ -1,109 +1,130 @@
+/* 「返回确认」：视觉保持小字链接，点击区域 88rpx（U17） */
+.return-confirm {
+  height: 88rpx; padding: 0 16rpx; display: flex; align-items: center;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--green);
+}
+
 .store-row {
   padding: 4rpx 32rpx 20rpx; display: flex; align-items: center; gap: 12rpx;
-  font-size: 24rpx; color: var(--ink-2);
+  font-size: var(--fs-sm); color: var(--ink-2);
 }
-.store-cut { margin-left: auto; }
+.store-txt { flex: 1; min-width: 0; }
 
-.cat-nav { padding: 12rpx 24rpx 16rpx; border-bottom: 1rpx solid var(--line); }
+/* ---------- 取餐时间条 ---------- */
+.menu-toolbar { display: flex; align-items: center; gap: 16rpx; padding: 0 32rpx 20rpx; flex: 0 0 auto; }
+.pickup-bar {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12rpx; min-height: 88rpx;
+  padding: 0 24rpx;
+  background: var(--card); border-radius: var(--r-card);
+  box-shadow: inset 0 0 0 2rpx var(--line-2);
+}
+.pickup-txt { flex: 1; min-width: 0; font-size: var(--fs-md); color: var(--ink); font-weight: 600; }
+.search-toggle { flex: 0 0 88rpx; width: 88rpx; height: 88rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--card); box-shadow: inset 0 0 0 2rpx var(--line-2); }
+.search-toggle.on { background: var(--green-bg); box-shadow: inset 0 0 0 2rpx var(--green); }
 
-.menu-scroll { padding-top: 8rpx; }
-.sec-anchor { height: 1rpx; }
+.search-wrap { padding: 0 32rpx 16rpx; }
 
-.catalog-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18rpx; color: var(--ink-3); font-size: 25rpx; }
-.dish-row { display: flex; gap: 24rpx; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.dish-cover { width: 176rpx; height: 176rpx; flex: 0 0 176rpx; border-radius: 18rpx; background: var(--card-2); }
-.dish-cover--empty { display: flex; align-items: center; justify-content: center; color: var(--ink-3); font-size: 21rpx; }
+.menu-state { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+
+.menu-layout { flex: 1; min-height: 0; display: flex; overflow: hidden; border-top: 2rpx solid var(--line-2); }
+.cat-nav { flex: 0 0 144rpx; width: 144rpx; height: 100%; background: var(--bg); }
+.cat-item { position: relative; min-height: 104rpx; display: flex; align-items: center; justify-content: center; padding: 20rpx 16rpx; font-size: var(--fs-sm); line-height: 1.5; color: var(--ink-3); text-align: center; overflow-wrap: break-word; }
+.cat-item.on { color: var(--green-600); background: var(--card); font-weight: 700; }
+.cat-item.on::before { content: ''; position: absolute; left: 0; top: 28rpx; bottom: 28rpx; width: 6rpx; border-radius: 0 6rpx 6rpx 0; background: var(--green); }
+.menu-scroll { flex: 1; width: 0; min-width: 0; height: 100%; padding: 0 24rpx; background: var(--card); }
+.sec-anchor { height: 2rpx; }
+
+.menu-notice {
+  display: flex; align-items: center; gap: 12rpx; margin-top: 20rpx; padding: 20rpx 24rpx;
+  border-radius: var(--r-sm); background: var(--red-bg);
+}
+.menu-notice-txt { flex: 1; font-size: var(--fs-sm); color: var(--red); }
+
+.dish-row { display: flex; gap: 20rpx; padding: 24rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.dish-cover { position: relative; flex: 0 0 156rpx; width: 156rpx; height: 156rpx; border-radius: 18rpx; overflow: hidden; transform: translateY(0); }
+/* 售罄封面蒙层（U12） */
+.cover-mask {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(20, 24, 16, .45); display: flex; align-items: center; justify-content: center;
+}
+.cover-mask-txt {
+  padding: 6rpx 18rpx; border-radius: var(--r-pill); background: var(--red);
+  color: #fff; font-size: var(--fs-sm); font-weight: 600; letter-spacing: 4rpx;
+}
 .dish-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.dish-name { font-size: 30rpx; font-weight: 600; color: var(--ink); }
-.dish-desc { font-size: 23rpx; color: var(--ink-3); margin-top: 6rpx; line-height: 1.5; }
-.dish-spec { font-size: 22rpx; color: var(--ink-2); margin-top: 12rpx; }
-.dish-foot { display: flex; align-items: flex-end; justify-content: space-between; margin-top: auto; padding-top: 16rpx; }
+.dish-name { font-size: var(--fs-md); font-weight: 600; color: var(--ink); }
+.dish-desc { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 6rpx; line-height: 1.5; }
+.dish-spec { font-size: var(--fs-xs); color: var(--ink-2); margin-top: 12rpx; }
+.dish-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12rpx; margin-top: auto; padding-top: 16rpx; }
+.dish-foot .dish-prices { flex: 1 1 200rpx; }
 .dish-prices, .sheet-item-prices { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8rpx; }
-.staff-price-label { font-size: 19rpx; color: var(--green-1); background: var(--green-bg); border-radius: 8rpx; padding: 3rpx 8rpx; }
-.original-price { font-size: 21rpx; color: var(--ink-3); text-decoration: line-through; }
-.act-btn { height: 60rpx; }
-.group-empty { padding: 24rpx 0 36rpx; color: var(--ink-3); font-size: 24rpx; }
 
-.menu-end { text-align: center; font-size: 22rpx; color: var(--ink-3); padding: 28rpx 0; }
-.availability-pill {
-  min-width: 92rpx; padding: 10rpx 18rpx; border-radius: 999rpx;
-  text-align: center; font-size: 23rpx; font-weight: 600;
-  color: var(--ink-3); background: var(--card-2); box-shadow: inset 0 0 0 2rpx var(--line-2);
-}
-.availability-pill.soldout { color: #a15245; background: #f8ece9; }
-.availability-pill.cutoff { color: var(--ink-2); }
-
-/* 购物车浮栏 */
+/* ---------- 购物车栏（正常排版，U13） ---------- */
+.cartbar-wrap { flex: 0 0 auto; padding: 16rpx 24rpx; background: var(--bg); }
 .cartbar {
-  height: 112rpx; display: flex; align-items: center; padding: 0 16rpx 0 32rpx;
-  background: #fff; box-shadow: 0 20rpx 60rpx rgba(30, 50, 20, .18); border-radius: 999rpx;
+  height: 112rpx; display: flex; align-items: center; padding: 0 12rpx 0 16rpx;
+  background: var(--card); box-shadow: var(--sh-card); border-radius: var(--r-pill);
 }
 .cart-ico-wrap { position: relative; }
 .cart-ico {
-  width: 88rpx; height: 88rpx; border-radius: 50%; background: #e7e6db;
+  width: 88rpx; height: 88rpx; border-radius: 50%; background: var(--mute-bg);
   display: flex; align-items: center; justify-content: center;
 }
 .cart-ico.on { background: var(--green); }
 .cart-badge {
   position: absolute; top: -8rpx; right: -8rpx; min-width: 38rpx; height: 38rpx; padding: 0 10rpx; border-radius: 20rpx;
-  background: #d2483a; color: #fff; font-size: 22rpx; font-weight: 700;
+  background: var(--red); color: #fff; font-size: var(--fs-xs); font-weight: 700;
   display: flex; align-items: center; justify-content: center;
 }
-.cart-mid { flex: 1; margin-left: 28rpx; }
-.cart-empty { font-size: 27rpx; color: var(--ink-3); }
-.cart-hint { font-size: 21rpx; color: var(--ink-3); margin-top: 2rpx; }
+.cart-mid { flex: 1; min-width: 0; margin-left: 24rpx; }
+.cart-empty { font-size: var(--fs-md); color: var(--ink-3); }
+.cart-hint { font-size: var(--fs-xs); color: var(--ink-3); margin-top: 2rpx; }
 .cart-go { height: 88rpx; }
 
-/* 弹层 */
-.sheet-head { display: flex; align-items: center; padding: 32rpx 36rpx 20rpx; border-bottom: 1rpx solid var(--line); }
-.sheet-title { font-size: 32rpx; font-weight: 700; }
-.sheet-clear { margin-left: auto; font-size: 25rpx; color: var(--ink-3); display: flex; align-items: center; gap: 8rpx; }
-.sheet-body { padding: 8rpx 36rpx; max-height: 600rpx; }
-.sheet-item-info { flex: 1; }
-.sheet-row { align-items: flex-start; }
-.sheet-item-name { font-size: 28rpx; font-weight: 600; color: var(--ink); margin-bottom: 6rpx; }
-.sheet-item-prefs { margin-top: 10rpx; display: flex; flex-wrap: wrap; align-items: center; gap: 10rpx; }
-.pref-chip { font-size: 20rpx; color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 14rpx; border-radius: 12rpx; }
-.pref-note { font-size: 21rpx; color: var(--ink-2); }
-.sheet-item-add { margin-top: 10rpx; font-size: 22rpx; color: var(--blue-500); display: flex; align-items: center; gap: 6rpx; }
-.sheet-foot { padding: 24rpx 36rpx; border-top: 1rpx solid var(--line); display: flex; align-items: center; gap: 24rpx; }
-.sheet-total { flex: 1; }
-.sheet-total-lbl { font-size: 24rpx; color: var(--ink-3); }
-
-/* ---------- 取餐时间条与选择弹层 ---------- */
-.pickup-bar {
-  display: flex; align-items: center; gap: 12rpx;
-  margin: 0 28rpx 16rpx; padding: 20rpx 24rpx;
-  background: var(--card); border-radius: var(--r-card);
-  box-shadow: inset 0 0 0 2rpx var(--line-2);
+/* ---------- 购物车弹层 ---------- */
+.sheet-head { display: flex; align-items: center; padding: 24rpx 36rpx 12rpx; border-bottom: 2rpx solid var(--line); }
+.sheet-title { font-size: var(--fs-lg); font-weight: 700; }
+.sheet-clear {
+  margin: 0 -16rpx 0 auto; height: 88rpx; padding: 0 16rpx; display: flex; align-items: center;
+  font-size: var(--fs-sm); color: var(--ink-3);
 }
-.pickup-txt { flex: 1; font-size: 27rpx; color: var(--ink); font-weight: 600; }
+.sheet-body { padding: 8rpx 36rpx; max-height: 600rpx; }
+.sheet-thumb { flex: 0 0 96rpx; }
+.sheet-item-info { flex: 1; min-width: 0; }
+/* 不可售的菜标灰（E2）；步进器保持可用，便于移除 */
+.is-off { opacity: .5; }
+.sheet-item-name { font-size: var(--fs-md); font-weight: 600; color: var(--ink); margin-bottom: 6rpx; }
+.sheet-item-off { font-size: var(--fs-xs); color: var(--ink-3); }
+.sheet-item-prefs, .sheet-item-add { position: relative; margin-top: 10rpx; display: flex; align-items: center; }
+/* 视觉保持小字，点击区域扩到不小于 88rpx（G6） */
+.sheet-item-prefs, .sheet-item-add { min-height: 40rpx; }
+.sheet-item-prefs::before, .sheet-item-add::before { content: ''; position: absolute; left: 0; right: 0; top: -24rpx; bottom: -24rpx; }
+.sheet-item-prefs { flex-wrap: wrap; gap: 10rpx; }
+.pref-chip { font-size: var(--fs-xs); color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 14rpx; border-radius: 12rpx; }
+.pref-note { font-size: var(--fs-xs); color: var(--ink-2); }
+.sheet-item-add { gap: 6rpx; font-size: var(--fs-xs); color: var(--green); font-weight: 600; }
+.sheet-foot { padding: 24rpx 36rpx; border-top: 2rpx solid var(--line); display: flex; align-items: center; gap: 24rpx; }
+.sheet-total { flex: 1; }
+.sheet-total-lbl { font-size: var(--fs-sm); color: var(--ink-3); }
 
+/* ---------- 取餐时间选择弹层 ---------- */
 .pk-head {
   display: flex; align-items: center; gap: 16rpx;
-  padding: 36rpx 36rpx 20rpx; border-bottom: 1rpx solid var(--line-2);
+  padding: 24rpx 36rpx 12rpx; border-bottom: 2rpx solid var(--line);
 }
-.pk-title { flex: 0 0 auto; font-size: 34rpx; font-weight: 700; color: var(--ink); letter-spacing: 1rpx; }
-.pk-rule { flex: 1; font-size: 21rpx; color: var(--ink-3); line-height: 1.4; }
-.pk-close { width: 56rpx; height: 56rpx; display: flex; align-items: center; justify-content: center; }
+.pk-title { flex: 0 0 auto; font-size: var(--fs-lg); font-weight: 700; color: var(--ink); letter-spacing: 1rpx; }
+.pk-rule { flex: 1; font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.4; }
+.pk-head .sheet-close { margin: 0 -24rpx 0 0; }
 
 .pk-dates { display: flex; gap: 16rpx; padding: 22rpx 36rpx 6rpx; }
 .pk-date {
-  flex: 1; text-align: center; padding: 18rpx 0; border-radius: 14rpx;
-  font-size: 27rpx; color: var(--ink-2); background: var(--card-2);
+  flex: 1; min-height: 88rpx; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 14rpx; font-size: var(--fs-md); color: var(--ink-2); background: var(--card-2);
   box-shadow: inset 0 0 0 2rpx var(--line-2);
 }
-.pk-date.on { background: var(--green-bg); color: var(--green-1); box-shadow: inset 0 0 0 3rpx var(--green-2); font-weight: 600; }
-.pk-date.off { color: var(--ink-3); background: var(--card-2); box-shadow: inset 0 0 0 2rpx var(--line-2); }
-.pk-date-sub { display: block; font-size: 19rpx; color: var(--ink-3); margin-top: 4rpx; }
-
-.pk-body { max-height: 52vh; padding: 8rpx 36rpx 28rpx; }
-.pk-grp { display: flex; align-items: baseline; gap: 14rpx; padding: 24rpx 0 12rpx; }
-.pk-grp-name { font-size: 27rpx; color: var(--ink); font-weight: 600; }
-.pk-grp-cut { font-size: 21rpx; color: var(--ink-3); }
-.pk-times { display: flex; flex-wrap: wrap; gap: 16rpx; }
-.pk-time {
-  padding: 16rpx 26rpx; border-radius: 999rpx; font-size: 26rpx;
-  color: var(--ink-2); background: var(--card-2); box-shadow: inset 0 0 0 2rpx var(--line-2);
-}
-.pk-time.on { background: var(--green-bg); color: var(--green-1); box-shadow: inset 0 0 0 3rpx var(--green-2); font-weight: 600; }
+/* 选中为绿（U9、G3） */
+.pk-date.on { background: var(--green-bg); color: var(--green-600); box-shadow: inset 0 0 0 4rpx var(--green); font-weight: 600; }
+.pk-date.off { color: var(--ink-3); background: var(--card-2); box-shadow: inset 0 0 0 2rpx var(--line-2); opacity: .5; pointer-events: none; }
+.pk-meals { padding-bottom: 36rpx; }
+.pk-date-sub { font-size: var(--fs-xs); color: var(--ink-3); margin-top: 4rpx; }
+.sheet-item-period { font-size: var(--fs-xs); color: var(--green-600); margin-bottom: 8rpx; }

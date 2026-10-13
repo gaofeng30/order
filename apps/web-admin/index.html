@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=1280">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>绥安食品 · 商户管理后台</title>
-  <link rel="icon" href="../wechat-miniprogram/assets/emblem.png">
+  <link rel="icon" href="assets/logo.jpeg">
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -12,20 +12,18 @@
     <aside class="sidebar">
       <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
       <div class="side-brand">
-        <span class="side-logo"><img src="../wechat-miniprogram/assets/emblem.png" alt="绥安食品"></span>
+        <span class="side-logo"><img src="assets/logo.jpeg" alt="绥安食品"></span>
         <div>
           <div class="bt">绥安食品</div>
           <div class="bs">商户管理后台</div>
         </div>
       </div>
       <nav class="side-scroll" id="side-nav"></nav>
-      <div class="side-foot">
-        本地提测候选 · 服务端单一事实源<br>接口不可用时失败关闭
-      </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
+        <button class="ibtn nav-toggle" id="nav-toggle" aria-label="展开导航" aria-expanded="false">☰</button>
         <div class="grow">
           <span class="tb-title" id="tb-title">工作台</span>
           <span class="tb-sub" id="tb-sub"></span>
@@ -57,6 +55,8 @@
   <script src="ui/modal.js"></script>
   <script src="ui/drawer.js"></script>
   <script src="ui/table.js"></script>
+  <script src="ui/form.js"></script>
+  <script src="ui/image-editor.js"></script>
   <script src="ui/import-flow.js"></script>
   <script src="ui/qrcode.js"></script>
 

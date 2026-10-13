@@ -1,3 +1,1 @@
-<text class="price {{blue ? 'price-blue' : ''}}" style="font-size:{{size}}rpx;{{color ? 'color:' + color : ''}}">
-  <text wx:if="{{cur}}" class="cur">¥</text>{{text}}
-</text>
+<text wx:if="{{text}}" class="price {{staff ? 'price-staff' : ''}}" style="font-size:{{size}}rpx;{{color ? 'color:' + color : ''}}"><text wx:if="{{cur}}" class="cur">¥</text>{{text}}</text>

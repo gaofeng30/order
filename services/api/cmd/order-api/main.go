@@ -256,7 +256,7 @@ func run() int {
 	billingService := billing.New(db, billProvider, billingConfig)
 	merchantAdminApplication := merchantidentity.NewPostgreSQLAdminApplication(db, merchantIdentityService)
 	merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
-	importHandler := importbatch.NewHandler(importbatch.NewPostgreSQLApplication(db))
+	importHandler := importbatch.NewHandler(importbatch.NewPostgreSQLApplication(db, objectService))
 	adminOrderReader := adminreport.NewPostgreSQLApplication(db, nil)
 	adminCommands := newAdminCommandAdapter(paymentApplication, refundService, adminOrderReader)
 	adminFeatureRoutes := []adminGroupRegistrar{

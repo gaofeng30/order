@@ -73,7 +73,8 @@
       };
     });
 
-    el.querySelector('[data-export]').onclick = () => doExport();
+    const exportButton = el.querySelector('[data-export]');
+    exportButton.onclick = window.FormUI.submit(exportButton, doExport, '正在导出…');
     paint(el);
   }
 
@@ -142,7 +143,7 @@
         cols: [
           { t: '订单号', w: '150px', render: o => `<span class="tnum">${T.esc(o.no)}</span><br><span class="faint tnum" style="font-size:11.5px">取餐号 ${T.esc(o.code)}</span>` },
           { t: '支付时间', w: '160px', render: o => `<span class="tnum">${T.esc(o.paidAt)}</span>` },
-          { t: '微信交易号', w: '200px', render: o => `<span class="tnum" style="font-size:12px">${T.esc(o.txnId)}</span>` },
+          { t: '微信交易号', w: '200px', render: o => `<span class="tnum" style="font-size: 12px">${T.esc(o.txnId)}</span>` },
           { t: '原价', w: '92px', cls: 'num', render: o => `<span class="faint tnum">¥${Api.yuan(o.subtotal)}</span>` },
           { t: '折扣', w: '104px', cls: 'num', render: o => o.discountCut
               ? `<span class="tnum">−¥${Api.yuan(o.discountCut)}</span><br><span class="faint tnum" style="font-size:11.5px">员工价 ${o.discountRate}%</span>`
@@ -159,19 +160,23 @@
   function paintRefunds(el, list) {
       el.querySelector('#fin-host').innerHTML = T.render({
         cols: [
-          { t: '退款单号', w: '210px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.no)}</span>` },
+          { t: '退款单号', w: '210px', render: r => `<span class="tnum" style="font-size: 12px">${T.esc(r.no)}</span>` },
           { t: '原订单', w: '150px', render: r => `<span class="tnum">${T.esc(r.orderNo)}</span><br><span class="faint tnum" style="font-size:11.5px">付于 ${T.esc(r.paidAt.slice(0, 10))}</span>` },
-          { t: '微信交易号', w: '190px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.txnId)}</span>` },
+          { t: '微信交易号', w: '190px', render: r => `<span class="tnum" style="font-size: 12px">${T.esc(r.txnId)}</span>` },
           { t: '退款金额', w: '110px', cls: 'num', render: r => T.money(Api.yuan(r.amount)) },
           { t: '退款状态', w: '96px', render: r => T.pill(r.status) },
           { t: '操作人', w: '90px', render: r => T.esc(r.operator) },
           { t: '退款时间', w: '160px', render: r => `<span class="tnum">${T.esc(r.at)}</span>` },
-          { t: '原因', render: r => `<span class="faint ellipsis">${T.esc(r.reason || '—')}</span>` },
+          { t: '原因', render: r => r.reason ? `<button class="btn btn--sm btn--line refund-reason" data-act="reason" data-id="${T.esc(r.no)}">${T.esc(r.reason)}</button>` : '<span class="faint">—</span>' },
         ],
         rows: list,
         key: r => r.no,
         empty: '所选日期没有退款记录',
       });
+      T.bind(el.querySelector('#fin-host'), {reason(id){
+        const row=list.find(r=>r.no===id);if(!row)return;
+        window.Modal.open({title:'退款原因',bodyHtml:`<div class="full-text">${T.esc(row.reason || '—')}</div>`,footerHtml:'<button class="btn btn--line" data-close>关闭</button>',onMount(root,done){root.querySelector('[data-close]').onclick=done;}});
+      }});
   }
 
   /* 导出走 Blob + a[download]。契约层只产出文本，落盘方式属页面职责；
@@ -179,13 +184,13 @@
   function doExport() {
     const selectedRange = Object.assign({}, range);
     const name = `收款明细_${selectedRange.from}_至_${selectedRange.to}.csv`;
-    Api.buildPaymentExport(selectedRange).then(csv => {
+    return Api.buildPaymentExport(selectedRange).then(csv => {
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      window.Toast.show(`已导出「${name}」`, { icon: 'check' });
+      window.Toast.show(`已开始下载「${name}」`, { icon: 'check' });
     }).catch(error => window.Toast.show(error.message || '导出失败，请重试', { icon: 'warn' }));
   }
 

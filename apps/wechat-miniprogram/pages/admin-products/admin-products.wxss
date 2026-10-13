@@ -1,33 +1,35 @@
-.top-area { padding-top: 4rpx; padding-bottom: 16rpx; }
-.search-box {
-  height: 76rpx; border-radius: 999rpx; background: #fff; box-shadow: inset 0 0 0 2rpx var(--line);
-  display: flex; align-items: center; gap: 16rpx; padding: 0 28rpx;
-}
-.search-ph { font-size: 26rpx; color: var(--ink-3); }
+.top-area { padding-top: 4rpx; padding-bottom: 16rpx; border-bottom: 2rpx solid var(--line); }
+/* 只操作今天，次日自动恢复（A19） */
+.day-line { font-size: var(--fs-sm); color: var(--ink-2); margin-bottom: 16rpx; }
 
+/* ---------- 分类分组（A23） ---------- */
+.group-h { padding: 32rpx 4rpx 16rpx; font-size: var(--fs-sm); font-weight: 600; color: var(--ink-2); }
+.group-card { padding: 0 28rpx; }
 
-.cat-nav { padding: 0 24rpx 16rpx; border-bottom: 1rpx solid var(--line); }
-
-.prod { padding: 24rpx; margin-top: 24rpx; display: flex; gap: 24rpx; }
-.prod.off { opacity: .66; }
-.prod-pic { position: relative; }
+.prod { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.prod.last { border-bottom: none; }
+.prod-pic { position: relative; flex: 0 0 112rpx; }
+/* 售罄封面蒙层（A22） */
 .prod-mask {
-  position: absolute; inset: 0; background: rgba(40, 44, 30, .5); border-radius: 24rpx;
-  display: flex; align-items: center; justify-content: center; color: #fff; font-size: 24rpx; font-weight: 600;
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 20rpx;
+  background: rgba(40, 44, 30, .55); color: #fff; font-size: var(--fs-xs); font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
 }
 .prod-info { flex: 1; min-width: 0; }
-.prod-head { display: flex; align-items: center; gap: 14rpx; }
-.prod-name { font-size: 29rpx; font-weight: 600; color: var(--ink); }
-.prod-meta { display: flex; align-items: center; gap: 24rpx; margin-top: 14rpx; font-size: 24rpx; color: var(--ink-3); }
-.prod-imgs { font-size: 21rpx; color: var(--blue-500); background: var(--blue-bg); padding: 2rpx 12rpx; border-radius: 10rpx; }
-.prod-actions { display: flex; align-items: center; gap: 28rpx; margin-top: 20rpx; }
-.pa-soldout { font-size: 25rpx; color: var(--gold-2); font-weight: 600; }
-.pa-soldout.green { color: var(--green-600); }
-.pa-edit { font-size: 25rpx; color: var(--ink-2); }
-.sale-error { padding-top: 0; padding-bottom: 8rpx; color: #9a493e; font-size: 23rpx; }
+.prod-name { font-size: var(--fs-md); font-weight: 600; color: var(--ink); line-height: 1.4; }
+.prod-price { margin-top: 8rpx; }
 
-/* 软开关 (蓝) */
-.toggle { width: 88rpx; height: 52rpx; border-radius: 999rpx; background: #d8d8cd; position: relative; transition: .18s; }
-.toggle.on { background: var(--blue-500); }
-.toggle-knob { position: absolute; top: 6rpx; left: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%; background: #fff; transition: .18s; box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, .25); }
+/* ---------- 售罄开关：点击区域不小于 88rpx（G6） ---------- */
+.sw { flex: 0 0 auto; display: flex; align-items: center; gap: 14rpx; min-height: 88rpx; padding-left: 16rpx; }
+.sw.is-saving { opacity: .5; }
+.sw-text { font-size: var(--fs-sm); font-weight: 600; }
+.sw-text.on { color: var(--green); }
+.sw-text.off { color: var(--red); }
+.toggle { position: relative; width: 88rpx; height: 52rpx; border-radius: var(--r-pill); transition: background-color .18s; }
+.toggle.on { background: var(--green); }
+.toggle.off { background: var(--red); }
+.toggle-knob {
+  position: absolute; top: 6rpx; left: 6rpx; width: 40rpx; height: 40rpx; border-radius: 50%;
+  background: #fff; box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, .25); transition: left .18s;
+}
 .toggle.on .toggle-knob { left: 42rpx; }

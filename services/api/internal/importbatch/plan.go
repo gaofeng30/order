@@ -1,6 +1,7 @@
 package importbatch
 
 import (
+	"context"
 	"fmt"
 	"golang.org/x/text/unicode/norm"
 	"strconv"
@@ -19,15 +20,18 @@ type previewPlan struct {
 	ErrorCount     uint32    `json:"error_count"`
 }
 type planRow struct {
-	Row         uint32 `json:"row"`
-	Outcome     string `json:"outcome"`
-	Reason      string `json:"reason,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Phone       string `json:"phone,omitempty"`
-	Category    string `json:"category,omitempty"`
-	Meal        string `json:"meal,omitempty"`
-	Description string `json:"description,omitempty"`
-	PriceCents  uint32 `json:"price_cents,omitempty"`
+	Images      []ProductImage `json:"images,omitempty"`
+	PriceInput  string         `json:"price_input,omitempty"`
+	MealInput   string         `json:"meal_input,omitempty"`
+	Row         uint32         `json:"row"`
+	Outcome     string         `json:"outcome"`
+	Reason      string         `json:"reason,omitempty"`
+	Name        string         `json:"name,omitempty"`
+	Phone       string         `json:"phone,omitempty"`
+	Category    string         `json:"category,omitempty"`
+	Meal        string         `json:"meal,omitempty"`
+	Description string         `json:"description,omitempty"`
+	PriceCents  uint32         `json:"price_cents,omitempty"`
 }
 
 func planHeader(kind Kind, rows [][]string) (map[string]int, previewPlan, error) {
@@ -88,6 +92,8 @@ func planRows(kind Kind, rows [][]string, header map[string]int, plan previewPla
 			item.Category = strings.TrimSpace(norm.NFKC.String(get("分类")))
 			item.Meal = map[string]string{"全天": "all", "午餐": "lunch", "晚餐": "dinner"}[get("餐段可售")]
 			item.Description = get("描述")
+			item.PriceInput = get("售价")
+			item.MealInput = get("餐段可售")
 			var priceErr error
 			item.PriceCents, priceErr = parseCents(get("售价"))
 			key := item.Name
@@ -135,7 +141,12 @@ func planRows(kind Kind, rows [][]string, header map[string]int, plan previewPla
 func planPreview(token string, p previewPlan, expires time.Time) Preview {
 	rows := make([]RowOutcome, 0, len(p.Rows))
 	for _, r := range p.Rows {
-		rows = append(rows, RowOutcome{r.Row, r.Outcome, r.Reason})
+		out := RowOutcome{Row: r.Row, Outcome: r.Outcome, Reason: r.Reason}
+		if p.Kind == Product {
+			product := r
+			out.Product = &product
+		}
+		rows = append(rows, out)
 	}
 	return Preview{Token: token, NewCount: p.NewCount, UpdateCount: p.UpdateCount, ErrorCount: p.ErrorCount, NewCategories: p.NewCategories, IgnoredColumns: p.IgnoredColumns, Rows: rows, ExpiresAt: expires}
 }
@@ -192,4 +203,39 @@ func staffName(v string) (string, []byte) {
 		return r
 	}, name)
 	return name, []byte(key)
+}
+
+// Images are confirmed uploads; drafts only persist references, never create products.
+func attachImages(ctx context.Context, plan *previewPlan, images map[uint32][]ProductImage, reader ImageConfirmationReader) error {
+	keys := []string{}
+	for row, items := range images {
+		if plan.Kind != Product || row < 2 || int(row) > len(plan.Rows)+1 || len(items) > 3 {
+			return ErrInvalidInput
+		}
+		seen := map[string]bool{}
+		for _, item := range items {
+			if item.ObjectKey == "" || len(item.ObjectKey) > 1024 || seen[item.ObjectKey] {
+				return ErrInvalidInput
+			}
+			seen[item.ObjectKey] = true
+			keys = append(keys, item.ObjectKey)
+		}
+		plan.Rows[row-2].Images = items
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	if reader == nil {
+		return ErrUnavailable
+	}
+	confirmed, err := reader.Confirmed(ctx, keys)
+	if err != nil {
+		return ErrUnavailable
+	}
+	for _, key := range keys {
+		if !confirmed[key] {
+			return ErrInvalidInput
+		}
+	}
+	return nil
 }

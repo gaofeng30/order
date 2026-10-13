@@ -10,42 +10,51 @@
           class="seg {{tab === item ? 'on' : ''}}"
           data-t="{{item}}"
           bindtap="switchTab"
+          hover-class="tap-dim"
+          hover-stay-time="80"
         >{{item}}</view>
       </view>
     </scroll-view>
   </view>
 
-  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
-    <view wx:if="{{list.length === 0}}" class="empty">
-      <icon name="receipt" size="50" color="#d8d8cd" stroke="1.5" />
-      <view class="empty-txt">暂无{{tab === '全部' ? '' : tab}}订单</view>
-      <view class="btn btn--primary btn--sm" bindtap="goMenu">去点单</view>
-    </view>
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}"
+               refresher-enabled="{{true}}" refresher-triggered="{{refreshing}}" bindrefresherrefresh="onRefresh">
+    <state wx:if="{{listState === 'loading'}}" kind="loading" text="正在加载订单" />
+    <state wx:elif="{{listState === 'error'}}" kind="error" text="网络不太好，订单没加载出来" bind:action="retry" />
+    <state wx:elif="{{listState === 'empty'}}" kind="empty" icon="receipt" text="暂无{{tab === '全部' ? '' : tab}}订单" action="去点单" bind:action="goMenu" />
 
-    <view wx:for="{{list}}" wx:key="id" class="card order-card" data-id="{{item.id}}" bindtap="goDetail">
-      <view class="oc-top">
-        <text class="oc-no">订单号 {{item.no}}</text>
-        <pill s="{{item.status}}" dot />
-      </view>
-      <view class="oc-mid">
-        <view class="oc-code">
-          <text class="oc-code-val serif">{{item.code}}</text>
+    <block wx:else>
+      <view wx:for="{{list}}" wx:key="id" class="card order-card" data-id="{{item.id}}" bindtap="goDetail" hover-class="tap-dim" hover-stay-time="80">
+        <view class="oc-top">
+          <text class="oc-no ellipsis-1">订单号 {{item.no}}</text>
+          <view class="oc-pill"><pill s="{{item.status}}" dot /></view>
         </view>
-        <view class="oc-body">
-          <view class="oc-summary ellipsis-1">{{item.summary}}</view>
-          <view class="oc-time"><icon name="calendarClock" size="12" color="#8f9384" /><text>{{item.timeText}}</text></view>
-          <view class="oc-place"><icon name="pin" size="12" color="#8f9384" /><text>{{item.placeText}}</text></view>
+        <view class="oc-mid">
+          <view class="oc-code">
+            <text class="oc-code-val serif">{{item.code}}</text>
+          </view>
+          <view class="oc-body">
+            <view class="oc-line"><icon name="calendarClock" size="12" color="#8f9384" /><text>{{item.timeText}}</text></view>
+            <view class="oc-line"><icon name="pin" size="12" color="#8f9384" /><text>{{item.placeText}}</text></view>
+          </view>
+        </view>
+        <view class="oc-foot">
+          <view class="oc-total">
+            <text class="oc-total-lbl">合计</text>
+            <money cents="{{item.total}}" size="36" />
+          </view>
+          <view wx:if="{{item.canCancel}}" class="btn btn--sm oc-cancel" data-id="{{item.id}}" catchtap="goCancel" hover-stop-propagation="{{true}}" hover-class="b-active" hover-stay-time="80">取消预约</view>
         </view>
       </view>
-      <view class="oc-foot">
-        <text class="oc-total-lbl">合计</text>
-        <money cents="{{item.total}}" size="34" />
-        <view wx:if="{{item.canCancel}}" class="btn btn--sm oc-cancel" data-id="{{item.id}}" catchtap="goDetail">取消预约</view>
+
+      <view wx:if="{{nextAfterID}}" class="more">
+        <view class="btn btn--ghost btn--sm {{loadingMore ? 'is-disabled' : ''}}" bindtap="loadMore"
+              hover-class="{{loadingMore ? 'none' : 'b-active'}}" hover-stay-time="80">{{loadingMore ? '加载中' : '加载更多'}}</view>
       </view>
-    </view>
-    <view style="height:{{safeBottom + 30}}px"></view>
-    <view wx:if="{{nextAfterID}}" class="btn btn--ghost-blue btn--sm" bindtap="loadMore">加载更多</view>
+    </block>
+    <view class="tail-space"></view>
   </scroll-view>
 
   <tabbar variant="user" active="orders" />
+  <toast id="toast" />
 </view>

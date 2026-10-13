@@ -1,0 +1,26 @@
+.group-intro { padding: 20rpx 0; color: var(--ink-3); font-size: var(--fs-sm); }
+.group-card { padding: 24rpx 28rpx; margin-bottom: 24rpx; }
+.group-head, .group-time, .group-foot { display: flex; align-items: center; gap: 16rpx; justify-content: space-between; }
+.group-title { font-size: var(--fs-lg); font-weight: 700; }
+.group-count, .group-note { color: var(--ink-3); font-size: var(--fs-xs); }
+.group-time { min-height: 88rpx; padding: 12rpx 20rpx; margin: 20rpx 0 4rpx; border-radius: 16rpx; background: var(--green-bg); color: var(--green-600); font-size: var(--fs-md); }
+.group-time text:first-child { flex: 1; }
+.group-time.off { background: var(--card-2); color: var(--ink-3); }
+.group-item { display: flex; align-items: flex-start; gap: 20rpx; padding: 20rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.item-info { flex: 1; min-width: 0; }
+.item-name { font-size: var(--fs-md); line-height: 1.5; overflow-wrap: break-word; }
+.item-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8rpx; margin-top: 6rpx; }
+.item-note { color: var(--ink-3); font-size: var(--fs-xs); margin-top: 8rpx; overflow-wrap: break-word; }
+.item-actions { flex: 0 0 auto; color: var(--green); font-size: var(--fs-sm); }
+.item-actions view { min-width: 88rpx; min-height: 88rpx; display: flex; align-items: center; justify-content: center; }
+.group-warning { color: var(--red); font-size: var(--fs-sm); padding: 16rpx 0; }
+.group-foot { margin-top: 24rpx; flex-wrap: wrap; }
+.group-foot .btn { min-height: 88rpx; }
+.group-end { height: 24rpx; }
+.group-bottom { padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom)); background: #fff; border-top: 2rpx solid var(--line); }
+.picker-head { padding: 20rpx 36rpx; display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-lg); font-weight: 700; border-bottom: 2rpx solid var(--line); }
+.picker-label { padding: 24rpx 36rpx 0; font-size: var(--fs-md); font-weight: 600; color: var(--green-600); }
+.picker-body { max-height: 50vh; }
+.picker-times { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 28rpx 36rpx; }
+.picker-time { min-height: 88rpx; display: flex; align-items: center; padding: 0 28rpx; border-radius: var(--r-pill); background: var(--card-2); color: var(--ink-2); font-size: var(--fs-md); box-shadow: inset 0 0 0 2rpx var(--line-2); }
+.picker-time.on { color: #fff; background: var(--green); box-shadow: none; }

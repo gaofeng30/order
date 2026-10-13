@@ -1,5 +1,6 @@
 /* 绥安食品 — 通用工具: 路由 / 状态语义 / 客户端购物车 */
 const catalogStore = require('./catalogStore.js');
+const dateLabel = require('./dateLabel.js');
 
 // ---- 状态 → 胶囊语义 (颜色统一来源) ----
 const STATUS_MAP = {
@@ -45,20 +46,24 @@ const nav = {
   back: () => wx.navigateBack({ fail: () => wx.reLaunch({ url: '/pages/home/home' }) }),
 };
 
-// ---- 取餐时间 (跨页共享；菜单顶部条选择，结算页只读) ----
 const pickup = {
   get() { return getApp().globalData.pickup || null; },
   set(pk) { getApp().globalData.pickup = pk; },
+  // 取餐时间条：「今天 12:00」（G8、PRD §5.5）
   label() {
     const selected = this.get();
     if (!selected) return '';
-    const period = selected.mealPeriod === 'lunch' ? '午餐' : '晚餐';
-    return `${selected.date.slice(5)} ${period} ${selected.time}`;
+    return `${dateLabel.dayLabel(selected.date)} ${selected.time}`;
+  },
+  // 详情页取餐时段：「今天 午餐」
+  periodLabel() {
+    const selected = this.get();
+    if (!selected) return '';
+    return `${dateLabel.dayLabel(selected.date)} ${selected.mealPeriod === 'lunch' ? '午餐' : '晚餐'}`;
   },
 };
 
 // ---- 购物车 (操作 globalData.cart) ----
-// cart: { [id]: { product, qty, flavors:[], note:'' } }，product 是首次选择时的目录快照
 function cartRaw() { return getApp().globalData.cart; }
 function invalidCart() {
   const error = new Error('cart unavailable');
@@ -82,76 +87,148 @@ function prefsOf(prefs, fallbackQty) {
     note: typeof (prefs && prefs.note) === 'string' ? prefs.note : '',
   };
 }
+function groupKey(selection) {
+  return selection ? `${selection.date}:${selection.mealPeriod}` : '';
+}
+function lineKey(id, selection) {
+  return `${groupKey(selection)}:${id}`;
+}
+function entries(selection) {
+  return Object.values(cartRaw()).filter(entry => selection === null || groupKey(entry.selection) === groupKey(selection));
+}
+function paymentMap() {
+  const data = getApp().globalData;
+  if (!data.cartPayments) data.cartPayments = {};
+  return data.cartPayments;
+}
 const cart = {
+  groupKey,
   get: () => cartRaw(),
-  qty(id) { const e = cartRaw()[id]; return e ? validQty(e.qty) : 0; },
-  entry(id) { const e = cartRaw()[id]; if (e) validQty(e.qty); return e || null; },
-  add(product) {
-    const snapshot = catalogStore.snapshotProduct(product);
-    const c = cartRaw();
-    const e = c[snapshot.id];
-    if (e) {
-      const nextQty = validQty(e.qty) + 1;
-      validLineCents(e.product, nextQty);
-      c[snapshot.id] = Object.assign({}, e, { qty: nextQty });
-      return;
-    }
-    validLineCents(snapshot, 1);
-    c[snapshot.id] = { product: snapshot, qty: 1, flavors: [], note: '' };
+  payment(selection) { return paymentMap()[groupKey(selection)] || null; },
+  savePayment(selection, value) {
+    if (value) paymentMap()[groupKey(selection)] = value;
+    else delete paymentMap()[groupKey(selection)];
   },
-  sub(id) {
-    const c = cartRaw();
-    const e = c[id];
-    if (!e) return;
-    const qty = validQty(e.qty);
-    if (qty === 1) delete c[id];
-    else c[id] = Object.assign({}, e, { qty: qty - 1 });
+  isLocked(selection) { return !!this.payment(selection); },
+  qty(id, selection = pickup.get()) { const entry = this.entry(id, selection); return entry ? validQty(entry.qty) : 0; },
+  entry(id, selection = pickup.get()) {
+    const entry = cartRaw()[lineKey(id, selection)];
+    if (entry) validQty(entry.qty);
+    return entry || null;
   },
-  // 加购并写入口味/备注 (来自口味弹层)
-  setPrefs(product, prefs) {
+  add(product, selection = pickup.get()) {
+    if (!selection || this.isLocked(selection)) return false;
+    const entry = this.entry(product.id, selection);
+    return this.setPrefs(product, entry
+      ? { qty: validQty(entry.qty) + 1, flavors: entry.flavors, note: entry.note }
+      : { qty: 1 }, selection);
+  },
+  sub(id, selection = pickup.get()) {
+    if (this.isLocked(selection)) return false;
+    const entry = this.entry(id, selection);
+    if (!entry) return false;
+    if (validQty(entry.qty) === 1) this.remove(id, selection);
+    else entry.qty -= 1;
+    return true;
+  },
+  setPrefs(product, prefs, selection = pickup.get()) {
+    if (!selection || this.isLocked(selection)) return false;
     const snapshot = catalogStore.snapshotProduct(product);
-    const c = cartRaw();
-    const existing = c[snapshot.id];
-    const next = Object.assign(
-      { product: existing ? existing.product : snapshot },
-      prefsOf(prefs, existing ? existing.qty : 1),
-    );
+    const existing = this.entry(snapshot.id, selection);
+    const group = entries(selection)[0];
+    const next = Object.assign({
+      product: snapshot,
+      selection: Object.assign({}, group ? group.selection : selection),
+    }, prefsOf(prefs, existing ? existing.qty : 1));
     validLineCents(next.product, next.qty);
-    c[snapshot.id] = next;
+    cartRaw()[lineKey(snapshot.id, selection)] = next;
+    return true;
   },
-  remove(id) { delete cartRaw()[id]; },
-  clear() { getApp().globalData.cart = {}; },
-  count() {
-    return Object.values(cartRaw()).reduce((sum, entry) => {
-      const next = sum + validQty(entry.qty);
+  remove(id, selection = pickup.get()) {
+    if (this.isLocked(selection)) return false;
+    delete cartRaw()[lineKey(id, selection)];
+    return true;
+  },
+  clear() {
+    Object.keys(cartRaw()).forEach(key => {
+      if (!this.isLocked(cartRaw()[key].selection)) delete cartRaw()[key];
+    });
+  },
+  complete(selection) {
+    Object.keys(cartRaw()).forEach(key => {
+      if (groupKey(cartRaw()[key].selection) === groupKey(selection)) delete cartRaw()[key];
+    });
+    this.savePayment(selection, null);
+  },
+  setSelection(selection) {
+    if (this.isLocked(selection)) return false;
+    entries(selection).forEach(entry => { entry.selection = Object.assign({}, selection); });
+    return true;
+  },
+  reprice(productsById, selection = pickup.get()) {
+    if (this.isLocked(selection)) return;
+    entries(selection).forEach(entry => {
+      const latest = productsById && productsById[entry.product.id];
+      if (!latest) return;
+      const snapshot = catalogStore.snapshotProduct(latest);
+      validLineCents(snapshot, entry.qty);
+      entry.product = snapshot;
+    });
+  },
+  count(availability, selection = pickup.get()) {
+    return this.list(availability, selection).reduce((sum, line) => {
+      const next = sum + (line.unavailableLabel ? 0 : line.q);
       if (!Number.isSafeInteger(next)) throw invalidCart();
       return next;
     }, 0);
   },
-  totalCents() {
-    return Object.values(cartRaw()).reduce((sum, entry) => {
-      const line = validLineCents(entry.product, entry.qty);
-      if (!Number.isSafeInteger(sum + line)) throw invalidCart();
-      return sum + line;
+  totalCents(availability, selection = pickup.get()) {
+    return this.list(availability, selection).reduce((sum, line) => {
+      const next = sum + (line.unavailableLabel ? 0 : line.line_total_cents);
+      if (!Number.isSafeInteger(next)) throw invalidCart();
+      return next;
     }, 0);
   },
-  total() { return Number(catalogStore.formatCents(this.totalCents())); },
-  list() {
-    return Object.values(cartRaw()).map(entry => {
+  total(availability, selection = pickup.get()) { return catalogStore.formatCents(this.totalCents(availability, selection)); },
+  unavailableCount(availability, selection = pickup.get()) {
+    return this.list(availability, selection).filter(line => line.unavailableLabel).length;
+  },
+  list(availability, selection = pickup.get()) {
+    return entries(selection).map(entry => {
       const item = catalogStore.withPrice(entry.product);
-      item.price = Number(item.price_text);
       const qty = validQty(entry.qty);
       const lineTotalCents = validLineCents(item, qty);
       return {
-        item,
-        q: qty,
-        flavors: entry.flavors.slice(),
-        note: entry.note,
-        line_total_cents: lineTotalCents,
-        line_total_text: catalogStore.formatCents(lineTotalCents),
+        id: item.id, key: lineKey(item.id, entry.selection),
+        selection: Object.assign({}, entry.selection),
+        periodLabel: `${dateLabel.dayLabel(entry.selection.date)} ${entry.selection.mealPeriod === 'lunch' ? '午餐' : '晚餐'}`,
+        item, q: qty, flavors: entry.flavors.slice(), note: entry.note,
+        line_total_cents: lineTotalCents, line_total_text: catalogStore.formatCents(lineTotalCents),
+        unavailableLabel: unavailableLabel(entry, availability),
       };
     });
   },
+  groups() {
+    const groups = {};
+    this.list(undefined, null).forEach(line => {
+      const key = groupKey(line.selection);
+      if (!groups[key]) groups[key] = { key, selection: line.selection, label: line.periodLabel, items: [], count: 0 };
+      groups[key].items.push(line);
+      groups[key].count += line.q;
+    });
+    return Object.values(groups).sort((left, right) =>
+      left.selection.date.localeCompare(right.selection.date)
+      || ['lunch', 'dinner'].indexOf(left.selection.mealPeriod) - ['lunch', 'dinner'].indexOf(right.selection.mealPeriod));
+  },
 };
+
+function unavailableLabel(entry, availability) {
+  if (!availability) return '';
+  const state = availability[entry.product.id];
+  if (!state) return '该时段不供应';
+  if (state.soldOut) return '已售罄';
+  if (!state.orderable) return '当前不可下单';
+  return '';
+}
 
 module.exports = { STATUS_MAP, statusTone, nav, buildUrl, pickup, cart };

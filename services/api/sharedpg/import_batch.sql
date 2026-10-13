@@ -85,6 +85,7 @@ DECLARE v_account numeric;v_role text;v_auth numeric;v_scope bytea;
  v_new bigint;v_update bigint;v_error bigint;v_committed_key bytea;
  v_before text;v_response text;v_constraint text;v_stage text:='READ';v_observed timestamptz;
  v_result jsonb;v_row jsonb;v_material jsonb;v_name text;v_key bytea;v_category numeric;v_categories jsonb:='{}'::jsonb;
+ v_record numeric;v_rows jsonb:='[]'::jsonb;v_phone text;
  v_category_row record;v_index integer:=0;v_count bigint;v_singleton smallint;v_n integer;
 BEGIN
  IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
@@ -133,11 +134,14 @@ BEGIN
     v_name:=convert_from(decode(v_material->>'name_hex','hex'),'UTF8');v_key:=decode(v_material->>'name_key_hex','hex');v_stage:='BUSINESS';
     IF v_row->>'outcome'='ADD' THEN
      INSERT INTO public.staff_whitelist(phone,name,name_key,enabled,record_version,created_at,updated_at)
-      VALUES(decode(v_material->>'phone_hex','hex'),v_name,v_key,true,1,clock_timestamp(),clock_timestamp());
+      VALUES(decode(v_material->>'phone_hex','hex'),v_name,v_key,true,1,clock_timestamp(),clock_timestamp()) RETURNING id INTO v_record;
     ELSE
      UPDATE public.staff_whitelist SET name=v_name,name_key=v_key,record_version=record_version+1,updated_at=clock_timestamp()
-      WHERE phone=decode(v_material->>'phone_hex','hex');
+      WHERE phone=decode(v_material->>'phone_hex','hex') RETURNING id INTO v_record;
     END IF;
+    IF v_record IS NULL THEN RAISE EXCEPTION USING ERRCODE='P5009',MESSAGE='ORDER_STORAGE_UNAVAILABLE'; END IF;
+    v_phone:=regexp_replace(v_row->>'phone','^[+]86','');
+    v_rows:=v_rows||jsonb_build_array(jsonb_build_object('row',v_row->'row','id',v_record::text,'outcome',v_row->>'outcome','name',v_name,'phone_masked',CASE WHEN length(v_phone)>=7 THEN left(v_phone,3)||'****'||right(v_phone,4) ELSE '***' END));
     v_stage:='READ';
    END LOOP;
    UPDATE public.discount_settings SET whitelist_version=whitelist_version+1,updated_at=clock_timestamp() WHERE id=1;
@@ -172,12 +176,13 @@ BEGIN
     v_stage:='BUSINESS';
     INSERT INTO public.products(category_id,name,name_key,description,specification,images_json,price_cents,sort_order,is_listed,meal_period,record_version)
      SELECT v_category,convert_from(decode(v_material->>'name_hex','hex'),'UTF8'),convert_from(decode(v_material->>'name_key_hex','hex'),'UTF8')::bytea,
-      COALESCE(v_row->>'description',''),'','[]'::jsonb,COALESCE((v_row->>'price_cents')::bigint,0),COALESCE(MAX(sort_order),0)+1,true,COALESCE(v_row->>'meal',''),1
-      FROM public.products WHERE category_id=v_category;
+      COALESCE(v_row->>'description',''),'',COALESCE(v_row->'images','[]'::jsonb),COALESCE((v_row->>'price_cents')::bigint,0),COALESCE(MAX(sort_order),0)+1,true,COALESCE(v_row->>'meal',''),1
+      FROM public.products WHERE category_id=v_category RETURNING id INTO v_record;
+    v_rows:=v_rows||jsonb_build_array(jsonb_build_object('row',v_row->'row','id',v_record::text,'outcome',v_row->>'outcome','name',v_row->>'name','category',v_row->>'category','meal',v_row->>'meal','price_cents',v_row->'price_cents','description',COALESCE(v_row->>'description',''),'images',COALESCE(v_row->'images','[]'::jsonb)));
     v_stage:='READ';
    END LOOP;
   END IF;
-  v_result:=jsonb_build_object('BatchID',v_id,'NewCount',v_new,'UpdateCount',v_update,'SkippedCount',v_error,'Duplicate',false);
+  v_result:=jsonb_build_object('Kind',v_kind,'Rows',v_rows,'BatchID',v_id,'NewCount',v_new,'UpdateCount',v_update,'SkippedCount',v_error,'Duplicate',false);
   v_stage:='BUSINESS';
   UPDATE public.import_batches SET preview_json=CASE WHEN v_kind='STAFF' THEN NULL ELSE v_plan END,state='COMMITTED',
    commit_idempotency_key_hash=decode(p_operation_hash,'hex'),skip_invalid=p_skip,result_json=v_result,
@@ -204,5 +209,20 @@ BEGIN
   WHEN foreign_key_violation OR check_violation THEN RETURN jsonb_build_object('outcome',CASE WHEN v_stage='BUSINESS' THEN 'INVALID_INPUT' ELSE 'UNAVAILABLE' END);
   WHEN OTHERS THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');
  END;
+END
+$order_rpc$;
+
+CREATE OR REPLACE FUNCTION public.order_import_result_v1(p_user numeric,p_batch numeric)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
+SET search_path=pg_catalog,public AS $order_rpc$
+DECLARE v_result jsonb;
+BEGIN
+ IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
+  RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';
+ END IF;
+ SELECT b.result_json INTO v_result FROM public.import_batches b JOIN public.merchant_accounts a ON a.id=b.actor_account_id
+ WHERE b.id=p_batch AND b.state='COMMITTED' AND a.bound_user_id=p_user AND a.enabled AND a.deleted_at IS NULL AND a.role='OWNER';
+ IF NOT FOUND OR jsonb_typeof(v_result->'Rows') IS DISTINCT FROM 'array' THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+ RETURN jsonb_build_object('outcome','SUCCEEDED','response_text',v_result::text);
 END
 $order_rpc$;

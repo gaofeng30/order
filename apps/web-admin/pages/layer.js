@@ -14,13 +14,17 @@
 
   let cfg = null;      // 当前编辑态
   let mock = 'home';   // 预览背景
-  let dirtyRemove = false;
+  let dirtyRemove = false, baseline = '', busy = false, generation = 0;
+  const isDirty = () => !!cfg && (dirtyRemove || JSON.stringify(cfg) !== baseline);
+  const dispose = () => {++generation;cfg=null;busy=false;};
 
   function render(el) {
+    const current = ++generation;
     Api.getLayer().then(c => {
+      if(current !== generation || !el.isConnected)return;
       cfg = Object.assign({}, c);
       dirtyRemove = false;
-      paint(el);
+      paint(el); baseline=JSON.stringify(cfg);
     });
   }
 
@@ -34,9 +38,10 @@
            </div>
            <div class="phone" id="phone" style="width:${PW}px;height:${PH}px">
              ${mockBg()}
-             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" onerror="this.hidden=true" draggable="false" style="z-index:3">` : ''}
+             ${cfg.src ? `<img class="lay-img" id="lay-img" src="${Api.imgUrl(cfg.src)}" onerror="this.hidden=true;this.parentElement.querySelector('.layer-error').hidden=false" draggable="false" style="z-index:3">` : ''}
+             <div class="layer-error" hidden>图片加载失败，请重新上传或稍后重试</div>
            </div>
-           <div class="faint" style="font-size:12px;margin-top:10px">按 iPhone 逻辑分辨率 ${SCREEN_W}×${SCREEN_H} 1:1 预览 · 拖动图片调整位置</div>
+           <div class="faint" style="font-size:12px;margin-top:10px">布局参考 · 拖动图片调整位置<br>预览用于调整位置与大小，实际效果以小程序为准。</div>
          </div>
 
          <div class="lay-panel">
@@ -77,7 +82,7 @@
            </div>
 
            <div class="form-foot" style="padding-left:0;padding-right:0">
-             <button class="btn btn--line" id="reset">还原</button>
+             <button class="btn btn--line" id="reset">恢复已保存设置</button>
              <button class="btn btn--primary" id="save">保存图层</button>
            </div>
          </div>
@@ -85,13 +90,14 @@
 
     layoutImg(el);
     bind(el);
+    lock(el);
   }
 
   /* 仿真稿逐字移植自 apps/wechat-miniprogram/pages/admin-layer 的 mock（样式取自 brand.wxss / launch.wxss），
-     rpx 一律按 1rpx = 0.5px 换算。预览是 1:1，所以这里的 px 与真机 px 一一对应。
+     rpx 一律按 1rpx = 0.5px 换算。此预览仅用于布局参考，不保证与真机逐像素一致。
      必须用真实页面内容而不是占位块：这一页的用途就是判断装饰图会不会压住 Logo 与按钮。
-     徽标 emblem.png 是抠好的透明 PNG，与手机端一致垫白色圆角卡，不裸贴在深蓝底上。 */
-  const EMBLEM = '../wechat-miniprogram/assets/emblem.png';
+     品牌 Logo 使用用户指定的 JPEG 原图，完整展示并沿用圆角容器。 */
+  const EMBLEM = 'assets/logo.jpeg';
 
   function mockBg() {
     if (mock === 'launch') {
@@ -173,12 +179,12 @@
 
   function bind(el) {
     el.querySelectorAll('[data-m]').forEach(n => {
-      n.onclick = () => { mock = n.dataset.m; paint(el); };
+      n.onclick = () => { if(busy)return; mock = n.dataset.m; paint(el); };
     });
 
     const file = el.querySelector('#file');
     const drop = el.querySelector('#drop');
-    drop.onclick = () => file.click();
+    drop.onclick = () => {if(!busy)file.click();};
     file.onchange = () => { if (file.files[0]) accept(el, file.files[0]); file.value = ''; };
 
     ['dragenter', 'dragover'].forEach(ev =>
@@ -217,37 +223,40 @@
       });
     };
 
-    el.querySelector('#reset').onclick = () => render(el);
+    el.querySelector('#reset').onclick = async () => {if(busy)return;if(!isDirty() || await window.Modal.confirm({title:'恢复已保存设置',body:'重新载入将丢弃未保存的修改，确定继续？',cancelText:'继续编辑',okText:'恢复'}))render(el);};
 
-    el.querySelector('#save').onclick = () => {
-      const done = () => window.Toast.show('图层已保存', { icon: 'check' });
-      if (dirtyRemove && !cfg.src) {
-        Api.clearLayer().then(() => { dirtyRemove = false; done(); })
-          .catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        return;
-      }
-      Api.saveLayer(cfg).then(() => { dirtyRemove = false; done(); })
-        .catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+    el.querySelector('#save').onclick = async () => {
+      if(busy)return;
+      busy=true; lock(el);
+      const current=generation, snapshot={...cfg};
+      try {
+        if(dirtyRemove && !snapshot.src)await Api.clearLayer();else await Api.saveLayer(snapshot);
+        if(current !== generation || !el.isConnected)return;
+        dirtyRemove=false;baseline=JSON.stringify(snapshot);
+        window.Toast.show('图层已保存',{icon:'check'});
+      }catch(e){window.Toast.show(e.message,{icon:'warn'});}
+      finally{if(current===generation){busy=false;lock(el);}}
     };
 
     bindDrag(el);
   }
 
-  function accept(el, f) {
-    if (f.type !== 'image/png') return window.Toast.show('请选择透明背景的 PNG 图片', { icon: 'warn' });
-    Api.uploadImage(f).then(objectKey => {
-      const probe = new Image();
-      probe.onload = () => {
-        cfg.src = objectKey;
-        cfg.ar = probe.height / probe.width;
-        cfg.enabled = true;
-        dirtyRemove = false;
-        if (cfg.cx === undefined) { cfg.cx = DEFAULT_LAYER.cx; cfg.cy = DEFAULT_LAYER.cy; }
-        paint(el);
-      };
-      probe.onerror = () => window.Toast.show('图片读取失败', { icon: 'warn' });
-      probe.src = Api.imgUrl(objectKey);
-    }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
+  function lock(el) {
+    el.querySelectorAll('button,input').forEach(n=>n.disabled=busy);
+    el.querySelector('#save').textContent=busy?'处理中…':'保存图层';
+    el.querySelector('#drop').setAttribute('aria-disabled',String(busy));
+  }
+  async function accept(el, f) {
+    if(busy)return;
+    if(f.type !== 'image/png')return window.Toast.show('请选择透明背景的 PNG 图片',{icon:'warn'});
+    busy=true;lock(el);const current=generation;
+    try {
+      const objectKey=await Api.uploadImage(f);
+      const ar=await new Promise((resolve,reject)=>{const probe=new Image();probe.onload=()=>resolve(probe.naturalHeight/probe.naturalWidth);probe.onerror=()=>reject(new Error('图片读取失败'));probe.src=Api.imgUrl(objectKey);});
+      if(current !== generation || !el.isConnected)return;
+      cfg.src=objectKey;cfg.ar=ar;cfg.enabled=true;dirtyRemove=false;paint(el);
+    }catch(e){window.Toast.show(e.message,{icon:'warn'});}
+    finally{if(current===generation){busy=false;lock(el);}}
   }
 
   // 预览上拖动图片：按下记录偏移，移动时改 left/top，松开折算回中心比例
@@ -255,16 +264,19 @@
     const img = el.querySelector('#lay-img');
     if (!img) return;
     img.addEventListener('pointerdown', e => {
+      if(busy)return;
       e.preventDefault();
       img.setPointerCapture(e.pointerId);
       img.classList.add('moving');
       const w = img.offsetWidth, h = img.offsetHeight;
-      const dx = e.clientX - img.offsetLeft;
-      const dy = e.clientY - img.offsetTop;
+      const rect=el.querySelector('#phone').getBoundingClientRect();
+      const scaleX=PW/rect.width, scaleY=PH/rect.height;
+      const dx = (e.clientX-rect.left)*scaleX - img.offsetLeft;
+      const dy = (e.clientY-rect.top)*scaleY - img.offsetTop;
 
       const move = ev => {
-        const x = Math.max(0, Math.min(ev.clientX - dx, PW - w));
-        const y = Math.max(0, Math.min(ev.clientY - dy, PH - h));
+        const x = Math.max(0, Math.min((ev.clientX-rect.left)*scaleX - dx, PW - w));
+        const y = Math.max(0, Math.min((ev.clientY-rect.top)*scaleY - dy, PH - h));
         img.style.left = x + 'px';
         img.style.top = y + 'px';
         cfg.cx = (x + w / 2) / PW;
@@ -276,12 +288,17 @@
         img.classList.remove('moving');
         img.removeEventListener('pointermove', move);
         img.removeEventListener('pointerup', up);
+        img.removeEventListener('pointercancel', up);
+        img.removeEventListener('lostpointercapture', up);
+        if(img.hasPointerCapture(e.pointerId))img.releasePointerCapture(e.pointerId);
       };
       img.addEventListener('pointermove', move);
       img.addEventListener('pointerup', up);
+      img.addEventListener('pointercancel', up);
+      img.addEventListener('lostpointercapture', up);
     });
   }
 
   window.Pages = window.Pages || {};
-  window.Pages['layer'] = { sub: '用户端首页与身份选择页的装饰图片，两页共用一套配置', render };
+  window.Pages['layer'] = { sub: '用户端首页与身份选择页的装饰图片，两页共用一套配置', render, isDirty, dispose };
 })();

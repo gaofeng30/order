@@ -1,3 +1,5 @@
+> 已停用：按用户本轮停测与删除要求，关联的测试、合成数据及 runner 已从本分支删除。以下仅保留历史记录，不是当前执行步骤或本轮通过证据。
+
 # 隔离页面验证
 
 `node --test tools/mini-uiux-clarity/page.test.cjs` 运行真实 Page 定义和合成服务 seam；它是逻辑证据，不能替代 UI1/UI2。

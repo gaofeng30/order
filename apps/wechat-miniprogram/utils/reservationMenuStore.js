@@ -94,7 +94,37 @@ function parseMenu(body) {
   };
 }
 
+// 当前所选时段不能下单的原因；可下单时返回空串（U11、U20、D7）
+function unavailableReason(storeStatus, mealPeriod) {
+  const meal = mealPeriod === 'lunch' ? '午餐' : '晚餐';
+  if (!storeStatus) return '暂时无法下单，请稍后重试';
+  if (storeStatus.businessStatus === 'closed') return '门店休息中，暂不接单';
+  if (storeStatus.businessStatus === 'cutoff') return '今日已截单，请改选时间';
+  if (!storeStatus.serviceDateAvailable) return '当天不营业，请改选时间';
+  if (!storeStatus.mealAvailable) return `${meal}暂不供应，请改选时间`;
+  if (storeStatus.cutoffPassed) return `${meal}已截单，请改选时间`;
+  return '';
+}
+
 async function loadPickupOptions() { return parsePickupOptions(await api.getOptional('/api/v1/menu/pickup-options')); }
+async function loadOrderableOptions() {
+  const options = await loadPickupOptions();
+  options.dates.sort((left, right) => left.date.localeCompare(right.date));
+  await Promise.all(options.dates.map(async day => {
+    day.mealPeriods.sort((left, right) => ['lunch', 'dinner'].indexOf(left.mealPeriod) - ['lunch', 'dinner'].indexOf(right.mealPeriod));
+    await Promise.all(day.mealPeriods.map(async meal => {
+      meal.pickupTimes.sort();
+      if (!day.available || !meal.available || !meal.pickupTimes.length) {
+        meal.available = false;
+        return;
+      }
+      const menu = await loadMenu({ date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] });
+      meal.available = menu.orderable && menu.categories.some(group => group.products.some(product => product.orderable));
+    }));
+    day.available = day.available && day.mealPeriods.some(meal => meal.available);
+  }));
+  return options;
+}
 async function loadMenu(selection) {
   if (!selection || !/^\d{4}-\d{2}-\d{2}$/.test(selection.date) || !/^\d{2}:\d{2}$/.test(selection.time)) {
     throw invalid('INVALID_MENU_SELECTION');
@@ -102,4 +132,4 @@ async function loadMenu(selection) {
   return parseMenu(await api.getOptional(`/api/v1/menu?date=${selection.date}&time=${encodeURIComponent(selection.time)}`));
 }
 
-module.exports = { firstAvailable, loadMenu, loadPickupOptions, parseMenu, parsePickupOptions };
+module.exports = { firstAvailable, loadMenu, loadPickupOptions, loadOrderableOptions, parseMenu, parsePickupOptions, unavailableReason };

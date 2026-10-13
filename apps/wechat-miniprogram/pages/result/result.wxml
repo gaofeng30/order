@@ -1,40 +1,50 @@
 <view class="page">
-  <navbar tone="light" title="{{navTitle}}" />
+  <navbar tone="light" title="支付结果" />
 
   <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
-    <view class="success fade-up">
-      <view class="success-ring"><icon name="{{ringIcon}}" size="{{ringSize}}" color="#ffffff" stroke="2.6" /></view>
-      <view class="success-title serif">{{mainTitle}}</view>
-      <view class="success-sub">{{sub}}</view>
-    </view>
+    <state wx:if="{{state === 'loading'}}" kind="loading" text="正在加载订单" />
+    <block wx:elif="{{state === 'error'}}">
+      <state kind="error" text="网络不太好，订单没加载出来" bind:action="load" />
+      <view wx:if="{{orderId}}" class="err-link-wrap">
+        <view class="link err-link" bindtap="viewCode" hover-class="tap-dim" hover-stay-time="80">查看订单</view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="success fade-up">
+        <view class="success-ring"><icon name="check" size="38" color="#ffffff" stroke="2.6" /></view>
+        <view class="success-title serif">支付成功</view>
+        <view class="success-sub">请按时到店取餐</view>
+      </view>
 
-    <view class="hero-dark code-card">
-      <view class="ring r1"></view>
-      <view class="ring r2"></view>
-      <view class="code-inner">
-        <view class="code-lbl">{{codeLbl}}</view>
-        <view class="code-big serif">{{o.code}}</view>
-        <view class="code-no">订单号 {{o.no}}</view>
-        <view class="code-foot">
-          <icon name="{{footIcon}}" size="14" color="#9fd3ff" />
-          <text>{{footText}}</text>
+      <view class="hero-dark code-card">
+        <view class="ring r1"></view>
+        <view class="ring r2"></view>
+        <view class="code-inner">
+          <view class="code-lbl">取餐号</view>
+          <view class="code-big serif">{{o.code}}</view>
+          <view class="code-no">订单号 {{o.no}}</view>
+          <view class="code-foot">
+            <icon name="calendarClock" size="14" color="#b79a55" />
+            <text>{{footText}}</text>
+          </view>
         </view>
       </view>
-    </view>
 
-    <view wx:if="{{canSubscribeReady}}" class="card reminder-card">
-      <view class="reminder-title">餐品备好时提醒你</view>
-      <button class="btn btn--primary ready-reminder-btn" bindtap="requestReadySubscription"
-        disabled="{{readySubscriptionState === 'requesting' || readySubscriptionState === 'accepted'}}">
-        {{readySubscriptionState === 'accepted' ? '已开启取餐提醒' : readySubscriptionState === 'requesting' ? '正在开启' : '开启取餐提醒'}}
-      </button>
-      <view wx:if="{{readySubscriptionState === 'rejected'}}" class="reminder-hint">未开启提醒，可在订单中查看进度</view>
-      <view wx:if="{{readySubscriptionState === 'error'}}" class="reminder-hint">提醒暂未开启，请重试</view>
-    </view>
+      <view wx:if="{{canSubscribeReady}}" class="card reminder-card">
+        <view class="reminder-title">餐品备好时提醒你</view>
+        <button class="btn btn--primary btn--block" bindtap="requestReadySubscription" hover-class="b-active" hover-stay-time="80"
+          disabled="{{readySubscriptionState === 'requesting' || readySubscriptionState === 'accepted'}}">
+          {{readySubscriptionState === 'accepted' ? '已开启取餐提醒' : readySubscriptionState === 'requesting' ? '正在开启…' : '开启取餐提醒'}}
+        </button>
+      </view>
+    </block>
   </scroll-view>
 
   <view class="bottom-bar" style="padding-bottom:{{safeBottom + 20}}px">
-    <view class="btn btn--ghost result-btn" bindtap="goHome">返回首页</view>
-    <view class="btn btn--primary result-btn primary" bindtap="viewCode">{{viewBtn}}</view>
+    <view wx:if="{{remainingGroups}}" class="btn btn--ghost result-btn" bindtap="continueCheckout" hover-class="b-active" hover-stay-time="80">继续结算（{{remainingGroups}}单）</view>
+    <view wx:else class="btn btn--ghost result-btn" bindtap="goHome" hover-class="b-active" hover-stay-time="80">返回首页</view>
+    <view wx:if="{{state === 'ready'}}" class="btn btn--primary result-btn primary" bindtap="viewCode" hover-class="b-active" hover-stay-time="80">{{viewBtn}}</view>
   </view>
+
+  <toast id="toast" />
 </view>

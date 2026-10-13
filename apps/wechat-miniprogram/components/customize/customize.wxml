@@ -5,18 +5,24 @@
     <view class="cz-head">
       <view class="cz-head-info">
         <view class="cz-name serif">{{item.name}}</view>
-        <money v="{{item.price_text}}" size="38" />
+        <view class="cz-price">
+          <view wx:if="{{isStaffPrice}}" class="staff-price-label">员工价</view>
+          <money v="{{priceText}}" size="36" staff="{{isStaffPrice}}" />
+          <text wx:if="{{isStaffPrice}}" class="original-price">¥{{originalPriceText}}</text>
+        </view>
       </view>
-      <view class="cz-close" catchtap="close"><icon name="close" size="20" color="#8f9384" /></view>
+      <view class="sheet-close" catchtap="close" hover-stop-propagation="{{true}}" hover-class="tap-dim" hover-stay-time="80" aria-role="button" aria-label="关闭">
+        <icon name="close" size="20" color="#8f9384" />
+      </view>
     </view>
 
     <scroll-view class="cz-body" scroll-y enhanced show-scrollbar="{{false}}">
       <!-- 口味偏好 -->
-      <view class="cz-label-row">
+      <view wx:if="{{chips.length}}" class="cz-label-row">
         <text class="cz-label serif">口味偏好</text>
-        <view class="pill pill--info">可多选 · 商户可见</view>
+        <text class="cz-label-sub">可多选 · 商户可见</text>
       </view>
-      <view class="cz-chips">
+      <view wx:if="{{chips.length}}" class="cz-chips">
         <view
           wx:for="{{chips}}"
           wx:for-item="ch"
@@ -24,17 +30,25 @@
           class="chip {{ch.on ? 'on' : ''}}"
           data-f="{{ch.name}}"
           catchtap="toggleFlavor"
+          hover-stop-propagation="{{true}}" hover-class="tap-dim"
+          hover-stay-time="80"
         >
-          <icon wx:if="{{ch.on}}" name="check" size="13" color="#467a32" />{{ch.name}}
+          {{ch.name}}
         </view>
       </view>
       <!-- 备注 -->
-      <view class="cz-label serif cz-note-label">备注</view>
+      <view class="cz-note-row">
+        <text class="cz-label serif">备注</text>
+        <text class="cz-count tnum">{{noteLength}}/50</text>
+      </view>
       <textarea
-        class="cz-note"
+        class="cz-note input-box"
         value="{{note}}"
         bindinput="onNote"
         maxlength="50"
+        cursor-spacing="140"
+        adjust-position="{{true}}"
+        confirm-type="done"
         placeholder="如：双拼饭加饭、酱汁分装、少冰…"
         placeholder-class="cz-note-ph"
       />
@@ -43,7 +57,7 @@
     <!-- 数量 + 确认 -->
     <view class="cz-foot" style="padding-bottom:{{safeBottom + 24}}px">
       <stepper value="{{qty}}" bind:sub="sub" bind:add="add" />
-      <view class="btn btn--primary cz-confirm" catchtap="confirm">{{confirmLabel}} · ¥{{totalText}}</view>
+      <view class="btn btn--primary cz-confirm" catchtap="confirm" hover-stop-propagation="{{true}}" hover-class="b-active" hover-stay-time="80">{{confirmLabel}} · ¥{{totalText}}</view>
     </view>
   </view>
 </view>

@@ -1,115 +1,156 @@
 <view class="page">
   <navbar tone="light" title="{{returnToConfirm ? '修改取餐选择' : '绥安食品 · 菜单'}}">
-    <view wx:if="{{returnToConfirm}}" slot="right" class="return-confirm" style="color:#2a5fa6;font-size:24rpx" bindtap="returnToConfirmation">返回确认</view>
+    <view
+      wx:if="{{returnToConfirm}}"
+      slot="right"
+      class="return-confirm"
+      bindtap="returnToConfirmation"
+      hover-class="tap-dim"
+      hover-stay-time="80"
+      aria-role="button"
+    >返回确认</view>
   </navbar>
 
-  <view class="store-row">
+  <!-- 门店行：营业设置里的取餐地点，加载到之前不显示（U6） -->
+  <view wx:if="{{pickupPoint}}" class="store-row">
     <icon name="pin" size="13" color="#467a32" />
-    <text>{{store.name}} · 到店自提</text>
+    <text class="store-txt ellipsis-1">{{pickupPoint}} · 到店自提</text>
   </view>
 
-  <!-- 取餐时间条：进入菜单即有默认值，点击展开选择弹层 -->
-  <view class="pickup-bar" bindtap="openPicker">
-    <icon name="calendarClock" size="15" color="#467a32" />
-    <text class="pickup-txt">{{pickup.label}} 取餐</text>
-    <icon name="chevron" size="14" color="#8f9384" />
-  </view>
-
-  <view class="pad search-wrap">
-    <view class="search-box">
-      <icon name="search" size="16" color="#8f9384" />
-      <input class="search-in" placeholder="搜索商品" value="{{search}}" bindinput="onSearch" />
+  <view class="menu-toolbar">
+    <view class="pickup-bar" bindtap="openPicker" hover-class="tap-dim" hover-stay-time="80" aria-role="button">
+      <icon name="calendarClock" size="15" color="#467a32" />
+      <text class="pickup-txt">{{pickup ? pickup.label : optionState === 'loading' ? '餐段加载中' : '暂无可选餐段'}}</text>
+      <icon name="chevron" size="16" color="#8f9384" />
+    </view>
+    <view class="search-toggle {{searchOpen ? 'on' : ''}}" bindtap="toggleSearch" hover-class="tap-dim" hover-stay-time="80" aria-role="button" aria-label="{{searchOpen ? '收起搜索' : '搜索菜品'}}" aria-expanded="{{searchOpen}}">
+      <icon name="{{searchOpen ? 'close' : 'search'}}" size="22" color="#3d6b2f" />
     </view>
   </view>
 
-  <view wx:if="{{listState === 'loading'}}" class="catalog-state">菜单加载中…</view>
-  <view wx:elif="{{listState === 'empty'}}" class="catalog-state">
-    <text>当前菜单为空</text>
-    <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">再次加载</view>
-  </view>
-  <view wx:elif="{{listState === 'error'}}" class="catalog-state">
-    <text>菜单加载失败</text>
-    <view class="btn btn--ghost-blue btn--sm" bindtap="retryCatalog">重试</view>
+  <view wx:if="{{searchOpen}}" class="search-wrap">
+    <view class="search-box">
+      <icon name="search" size="16" color="#8f9384" />
+      <input class="search-in" placeholder="搜索菜品" placeholder-class="search-ph" value="{{search}}" focus="{{searchFocus}}" confirm-type="search" bindinput="onSearch" bindconfirm="finishSearch" bindblur="finishSearch" bindkeyboardheightchange="measure" />
+      <view
+        wx:if="{{search}}"
+        class="search-clear"
+        catchtap="clearSearch"
+        hover-stop-propagation="{{true}}" hover-class="tap-dim"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-label="清空搜索"
+      ><icon name="close" size="20" color="#8f9384" /></view>
+    </view>
   </view>
 
-  <block wx:elif="{{listState === 'ready'}}">
-    <view class="cat-nav">
-      <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
-        <view class="segs">
+  <view wx:if="{{listState === 'loading'}}" class="menu-state">
+    <state kind="loading" text="菜单加载中" />
+  </view>
+  <view wx:elif="{{listState === 'error'}}" class="menu-state">
+    <state kind="error" text="网络不太好，菜单没加载出来" bind:action="retryCatalog" />
+  </view>
+  <view wx:elif="{{listState === 'empty'}}" class="menu-state">
+    <state kind="empty" icon="bowl" text="{{optionState === 'empty' ? '近期没有可预约的取餐时间' : '这个时段暂时没有可选的菜'}}" action="再次加载" bind:action="retryCatalog" />
+  </view>
+  <view wx:elif="{{listState === 'noresult'}}" class="menu-state">
+    <state kind="empty" icon="search" text="没有找到“{{keyword}}”" action="清空搜索" bind:action="clearSearch" />
+  </view>
+
+  <view wx:else class="menu-layout">
+      <scroll-view class="cat-nav" scroll-y enhanced show-scrollbar="{{false}}" scroll-into-view="{{catIntoView}}" scroll-with-animation>
           <view
             wx:for="{{cats}}"
             wx:key="id"
-            class="seg {{active === item.id ? 'on' : ''}}"
+            id="cat-{{index}}"
+            class="cat-item {{active === item.id ? 'on' : ''}}"
             data-id="{{item.id}}"
             data-idx="{{index}}"
             bindtap="jump"
+            hover-class="tap-dim"
+            hover-stay-time="80"
+            aria-role="tab"
+            aria-selected="{{active === item.id}}"
           >{{item.name}}</view>
-        </view>
       </scroll-view>
-    </view>
 
     <scroll-view
       id="menuScroll"
-      class="scroll pad menu-scroll"
+      class="menu-scroll"
       scroll-y
       enhanced
       show-scrollbar="{{false}}"
       scroll-into-view="{{intoView}}"
+      scroll-top="{{restoreTop}}"
       scroll-with-animation
       bindscroll="onScroll"
     >
+      <view id="menu-top"></view>
+      <!-- 当前时段整体不可下单时说明原因（G5） -->
+      <view wx:if="{{menuReason}}" class="menu-notice">
+        <icon name="warn" size="15" color="#c4432f" />
+        <text class="menu-notice-txt">{{menuReason}}</text>
+      </view>
       <view wx:for="{{groups}}" wx:for-item="g" wx:key="id">
-        <view id="sec-{{index}}" class="sec-anchor" data-id="{{g.id}}"></view>
-        <view class="sec-h"><text class="t" style="font-size:30rpx">{{g.name}}</text></view>
-        <view wx:if="{{g.products.length === 0}}" class="group-empty">该分类暂无商品</view>
+        <view id="sec-{{index}}" class="sec-anchor"></view>
+        <view class="sec-h"><text class="t">{{g.name}}</text></view>
         <view wx:for="{{g.products}}" wx:for-item="m" wx:key="id" class="dish-row">
-          <image wx:if="{{m.cover}}" class="dish-cover" src="{{m.cover.url}}" mode="aspectFill" data-id="{{m.id}}" bindtap="goDetail" />
-          <view wx:else class="dish-cover dish-cover--empty" data-id="{{m.id}}" bindtap="goDetail">
-            <imageph item="{{m}}" h="{{176}}" radius="{{18}}" tag="{{false}}" />
+          <view class="dish-cover" data-id="{{m.id}}" bindtap="goDetail" hover-class="tap-dim" hover-stay-time="80">
+            <imageph item="{{m}}" h="{{156}}" w="{{156}}" radius="{{18}}" tag="{{false}}" lazy="{{true}}" />
+            <view wx:if="{{m.soldOut}}" class="cover-mask"><text class="cover-mask-txt">售罄</text></view>
           </view>
           <view class="dish-info">
-            <view data-id="{{m.id}}" bindtap="goDetail">
-              <view class="dish-name">{{m.name}}<text wx:if="{{!m.orderable}}"> · {{m.availabilityLabel}}</text></view>
-              <view class="dish-desc ellipsis-2">{{m.description}}</view>
-              <view class="dish-spec">{{m.specification}}</view>
+            <view data-id="{{m.id}}" bindtap="goDetail" hover-class="tap-dim" hover-stay-time="80">
+              <view class="dish-name">{{m.name}}</view>
+              <view wx:if="{{m.description}}" class="dish-desc ellipsis-2">{{m.description}}</view>
+              <view wx:if="{{m.specification}}" class="dish-spec">{{m.specification}}</view>
             </view>
             <view class="dish-foot">
               <view class="dish-prices">
                 <view wx:if="{{m.isStaffPrice}}" class="staff-price-label">员工价</view>
-                <money v="{{m.price_text}}" size="36" />
+                <money v="{{m.price_text}}" size="36" staff="{{m.isStaffPrice}}" />
                 <text wx:if="{{m.isStaffPrice}}" class="original-price">¥{{m.original_price_text}}</text>
               </view>
-              <view class="dish-action">
-                <stepper
-                  wx:if="{{qtyMap[m.id] > 0}}"
-                  value="{{qtyMap[m.id]}}"
-                  data-id="{{m.id}}"
-                  bind:sub="sub"
-                  bind:add="add"
-                />
-                <view wx:else class="btn {{m.orderable ? 'btn--primary' : 'btn--mute'}} btn--sm act-btn" data-id="{{m.id}}" catchtap="openCustomize">{{m.orderable ? '选择' : m.availabilityLabel}}</view>
+              <stepper
+                wx:if="{{qtyMap[m.id] > 0}}"
+                value="{{qtyMap[m.id]}}"
+                data-id="{{m.id}}"
+                bind:sub="sub"
+                bind:add="add"
+              />
+              <view
+                wx:else
+                class="add-btn {{m.orderable ? '' : 'is-disabled'}}"
+                data-id="{{m.id}}"
+                catchtap="openCustomize"
+                hover-stop-propagation="{{true}}" hover-class="tap-dim"
+                hover-stay-time="80"
+                aria-role="button"
+                aria-label="加入购物车"
+              >
+                <view class="add-dot"><icon name="plus" size="14" color="{{m.orderable ? '#ffffff' : '#9a9e8c'}}" stroke="2.4" /></view>
               </view>
             </view>
           </view>
         </view>
       </view>
-      <view class="menu-end">—— 预约菜单 · 以结算校验为准 ——</view>
-      <view style="height:{{safeBottom + 200}}px"></view>
+      <view class="tail-space"></view>
     </scroll-view>
-  </block>
+  </view>
 
-  <view class="floatbar" style="bottom:{{safeBottom + 116}}px">
+  <!-- 购物车栏：正常排版，位于 tabbar 之上（U13） -->
+  <view class="cartbar-wrap">
     <view class="cartbar">
-      <view class="cart-ico-wrap" bindtap="openSheet">
-        <view class="cart-ico {{count ? 'on' : ''}}"><icon name="cart" size="23" color="{{count ? '#ffffff' : '#aaaaaa'}}" /></view>
+      <view class="cart-ico-wrap" bindtap="openSheet" hover-class="tap-dim" hover-stay-time="80" aria-role="button" aria-label="查看购物车">
+        <view class="cart-ico {{cartItems.length ? 'on' : ''}}"><icon name="cart" size="23" color="{{cartItems.length ? '#ffffff' : '#9a9e8c'}}" /></view>
         <view wx:if="{{count > 0}}" class="cart-badge">{{count}}</view>
       </view>
-      <view class="cart-mid">
-        <money wx:if="{{count > 0}}" v="{{total}}" size="42" />
-        <text wx:else class="cart-empty">购物车是空的</text>
-        <view class="cart-hint">{{count > 0 ? '商品快照已保存 · 到店自提' : '从菜单选择商品'}}</view>
+      <view class="cart-mid" bindtap="openSheet" hover-class="tap-dim" hover-stay-time="80">
+        <money wx:if="{{count > 0}}" v="{{total}}" size="44" />
+        <text wx:else class="cart-empty">{{unavailableCount ? '已选的菜当前不可售' : '购物车是空的'}}</text>
+        <view class="cart-hint">{{count > 0 ? '已选 ' + count + ' 件 · 到店自提' : (unavailableCount ? '请先移除不可售的菜' : '从菜单选择菜品')}}</view>
       </view>
-      <view class="btn {{canCheckout ? 'btn--primary' : 'btn--mute'}} cart-go" bindtap="goConfirm">去结算</view>
+      <view class="btn btn--primary cart-go {{canCheckout ? '' : 'is-disabled'}}" bindtap="goConfirm" hover-class="b-active" hover-stay-time="80">去结算</view>
     </view>
   </view>
 
@@ -117,41 +158,74 @@
   <view wx:if="{{sheet}}" class="sheet">
     <view class="sheet-head">
       <text class="serif sheet-title">已选 {{count}} 件</text>
-      <view class="sheet-clear" bindtap="clear"><icon name="close" size="13" color="#8f9384" /><text>清空</text></view>
+      <view class="sheet-clear" bindtap="clear" hover-class="tap-dim" hover-stay-time="80" aria-role="button">清空</view>
     </view>
     <scroll-view class="sheet-body" scroll-y enhanced show-scrollbar="{{false}}">
-      <view wx:for="{{cartItems}}" wx:for-item="ci" wx:key="item.id" class="list-row sheet-row">
-        <view class="sheet-item-info">
-          <view class="sheet-item-name">{{ci.item.name}}</view>
-          <view class="sheet-item-prices">
-            <text wx:if="{{ci.item.isStaffPrice}}" class="staff-price-label">员工价</text>
-            <money v="{{ci.item.price_text}}" size="28" />
-            <text wx:if="{{ci.item.isStaffPrice}}" class="original-price">¥{{ci.item.original_price_text}}</text>
-          </view>
-          <view wx:if="{{ci.flavors.length || ci.note}}" class="sheet-item-prefs" data-id="{{ci.item.id}}" catchtap="editItem">
-            <text wx:for="{{ci.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
-            <text wx:if="{{ci.note}}" class="pref-note">“{{ci.note}}”</text>
-            <icon name="edit" size="11" color="#8f9384" />
-          </view>
-          <view wx:else class="sheet-item-add" data-id="{{ci.item.id}}" catchtap="editItem"><icon name="edit" size="11" color="#2a5fa6" />加口味/备注</view>
+      <view
+        wx:for="{{cartItems}}"
+        wx:for-item="ci"
+        wx:key="key"
+        class="list-row {{index === cartItems.length - 1 ? 'last' : ''}}"
+      >
+        <view class="sheet-thumb {{ci.unavailableLabel ? 'is-off' : ''}}">
+          <imageph item="{{ci.item}}" h="{{96}}" w="{{96}}" radius="{{16}}" tag="{{false}}" />
         </view>
-        <stepper value="{{ci.q}}" data-id="{{ci.item.id}}" bind:sub="sub" bind:add="add" />
+        <view class="sheet-item-info {{ci.unavailableLabel ? 'is-off' : ''}}">
+          <view class="sheet-item-name ellipsis-1">{{ci.item.name}}</view>
+          <view class="sheet-item-period">{{ci.periodLabel}}</view>
+          <!-- 当前时段不可售：标灰写明原因，不计入合计（E2） -->
+          <view wx:if="{{ci.unavailableLabel}}" class="sheet-item-off">{{ci.unavailableLabel}}</view>
+          <block wx:else>
+            <view class="sheet-item-prices">
+              <view wx:if="{{ci.item.isStaffPrice}}" class="staff-price-label">员工价</view>
+              <money v="{{ci.item.price_text}}" size="28" staff="{{ci.item.isStaffPrice}}" />
+              <text wx:if="{{ci.item.isStaffPrice}}" class="original-price">¥{{ci.item.original_price_text}}</text>
+            </view>
+            <view
+              wx:if="{{ci.flavors.length || ci.note}}"
+              class="sheet-item-prefs"
+              data-id="{{ci.id}}"
+              data-selection="{{ci.selection}}"
+              catchtap="editItem"
+              hover-stop-propagation="{{true}}" hover-class="tap-dim"
+              hover-stay-time="80"
+              aria-role="button"
+              aria-label="修改口味和备注"
+            >
+              <text wx:for="{{ci.flavors}}" wx:for-item="f" wx:key="*this" class="pref-chip">{{f}}</text>
+              <text wx:if="{{ci.note}}" class="pref-note">“{{ci.note}}”</text>
+              <icon name="edit" size="14" color="#8f9384" />
+            </view>
+            <view
+              wx:else
+              class="sheet-item-add"
+              data-id="{{ci.id}}"
+              data-selection="{{ci.selection}}"
+              catchtap="editItem"
+              hover-stop-propagation="{{true}}" hover-class="tap-dim"
+              hover-stay-time="80"
+              aria-role="button"
+            ><icon name="edit" size="14" color="#3d6b2f" />加口味/备注</view>
+          </block>
+        </view>
+        <stepper value="{{ci.q}}" data-id="{{ci.id}}" data-selection="{{ci.selection}}" bind:sub="sub" bind:add="add" />
       </view>
     </scroll-view>
     <view class="sheet-foot" style="padding-bottom:{{safeBottom + 20}}px">
       <view class="sheet-total"><text class="sheet-total-lbl">合计 </text><money v="{{total}}" size="44" /></view>
-      <view class="btn {{canCheckout ? 'btn--primary' : 'btn--mute'}}" bindtap="goConfirm">去结算</view>
+      <view class="btn btn--primary {{canCheckout ? '' : 'is-disabled'}}" bindtap="goConfirm" hover-class="b-active" hover-stay-time="80">去结算</view>
     </view>
   </view>
 
-  <!-- 取餐时间选择：日期两段 + 按餐段分组的时间点，已截餐段整组折叠 -->
   <view wx:if="{{pickerVisible}}">
     <view class="sheet-mask" catchtap="closePicker"></view>
-    <view class="sheet pk-sheet">
+    <view class="sheet">
       <view class="pk-head">
-        <text class="serif pk-title">选择取餐时间</text>
-        <text class="pk-rule">备好后会推送提醒，凭提醒随时来取</text>
-        <view class="pk-close" catchtap="closePicker"><icon name="close" size="19" color="#8f9384" /></view>
+        <text class="serif pk-title">选择用餐时段</text>
+        <text class="pk-rule">具体取餐时间在确认订单时选择</text>
+        <view class="sheet-close" catchtap="closePicker" hover-stop-propagation="{{true}}" hover-class="tap-dim" hover-stay-time="80" aria-role="button" aria-label="关闭">
+          <icon name="close" size="20" color="#8f9384" />
+        </view>
       </view>
       <view class="pk-dates">
         <view
@@ -160,28 +234,22 @@
           class="pk-date {{pickerDate === item.date ? 'on' : ''}} {{!item.available ? 'off' : ''}}"
           data-date="{{item.date}}"
           catchtap="pickPickerDate"
-        >{{item.label}}<text wx:if="{{!item.available}}" class="pk-date-sub">已截单</text></view>
+          hover-stop-propagation="{{true}}" hover-class="{{item.available ? 'tap-dim' : 'none'}}"
+          hover-stay-time="80"
+          aria-role="button"
+          aria-disabled="{{!item.available}}"
+        >{{item.label}}<text wx:if="{{!item.available}}" class="pk-date-sub">不可选</text></view>
       </view>
-      <scroll-view scroll-y class="pk-body">
-        <block wx:for="{{pickerGroups}}" wx:key="key">
-          <view class="pk-grp">
-            <text class="pk-grp-name">{{item.name}}</text>
-            <text wx:if="{{item.cutOff}}" class="pk-grp-cut">{{item.cutoffLabel}}</text>
-          </view>
-          <view wx:if="{{!item.cutOff}}" class="pk-times">
-            <view
-              wx:for="{{item.times}}"
-              wx:for-item="t"
-              wx:key="*this"
-              class="pk-time tnum {{pickup.time === t && pickup.date === pickerDate ? 'on' : ''}}"
-              data-date="{{item.date}}"
-              data-period="{{item.key}}"
-              data-t="{{t}}"
-              catchtap="pickPickerTime"
-            >{{t}}</view>
-          </view>
-        </block>
-      </scroll-view>
+      <view class="pk-dates pk-meals">
+        <view wx:for="{{pickerGroups}}" wx:key="key"
+          class="pk-date {{pickup.mealPeriod === item.key && pickup.date === pickerDate ? 'on' : ''}} {{!item.available ? 'off' : ''}}"
+          data-date="{{item.date}}" data-period="{{item.key}}" catchtap="pickPickerMeal"
+          hover-class="{{item.available ? 'tap-dim' : 'none'}}" hover-stay-time="80"
+          aria-role="button" aria-disabled="{{!item.available}}"
+        >{{item.name}}<text wx:if="{{!item.available}}" class="pk-date-sub">不可选</text></view>
+      </view>
+      <!-- 避让底部安全区（D28） -->
+      <view style="height:{{safeBottom}}px"></view>
     </view>
   </view>
 

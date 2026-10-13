@@ -9,6 +9,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/audit"
@@ -16,13 +18,14 @@ import (
 )
 
 type PostgreSQLApplication struct {
-	db       *sql.DB
-	receipts *audit.ReceiptStore
-	now      func() time.Time
+	confirmed ImageConfirmationReader
+	db        *sql.DB
+	receipts  *audit.ReceiptStore
+	now       func() time.Time
 }
 
-func NewPostgreSQLApplication(db *sql.DB) *PostgreSQLApplication {
-	return &PostgreSQLApplication{db: db, receipts: audit.NewReceiptStore(db), now: time.Now}
+func NewPostgreSQLApplication(db *sql.DB, confirmed ImageConfirmationReader) *PostgreSQLApplication {
+	return &PostgreSQLApplication{db: db, confirmed: confirmed, receipts: audit.NewReceiptStore(db), now: time.Now}
 }
 
 func (a *PostgreSQLApplication) Preview(ctx context.Context, meta WriteMeta, kind Kind, file XLSX) (Preview, error) {
@@ -37,6 +40,9 @@ func (a *PostgreSQLApplication) Preview(ctx context.Context, meta WriteMeta, kin
 	if err != nil {
 		return Preview{}, err
 	}
+	if err := attachImages(ctx, &plan, file.Images, a.confirmed); err != nil {
+		return Preview{}, err
+	}
 	token, err := randomToken()
 	if err != nil {
 		return Preview{}, ErrUnavailable
@@ -46,7 +52,8 @@ func (a *PostgreSQLApplication) Preview(ctx context.Context, meta WriteMeta, kin
 	request := struct {
 		Kind   Kind
 		Digest [32]byte
-	}{kind, digest}
+		Images map[uint32][]ProductImage `json:",omitempty"`
+	}{kind, digest, file.Images}
 	raw, _ := json.Marshal(plan)
 	now := a.now().UTC().Truncate(time.Microsecond)
 	expires := now.Add(15 * time.Minute)
@@ -224,16 +231,17 @@ func (a *PostgreSQLApplication) Commit(ctx context.Context, meta WriteMeta, toke
 		tx.Rollback()
 		return CommitResult{}, ErrUnavailable
 	}
+	resultRows := make([]ResultRow, 0)
 	if kind == Staff {
-		err = a.commitStaff(ctx, tx, plan)
+		err = a.commitStaff(ctx, tx, plan, &resultRows)
 	} else {
-		err = a.commitProducts(ctx, tx, plan)
+		err = a.commitProducts(ctx, tx, plan, &resultRows)
 	}
 	if err != nil {
 		tx.Rollback()
 		return CommitResult{}, err
 	}
-	out := CommitResult{BatchID: id, NewCount: newCount, UpdateCount: updateCount, SkippedCount: errorCount}
+	out := CommitResult{Kind: kind, Rows: resultRows, BatchID: id, NewCount: newCount, UpdateCount: updateCount, SkippedCount: errorCount}
 	resultRaw, _ := json.Marshal(out)
 	var preview any = raw
 	if kind == Staff {
@@ -269,7 +277,7 @@ func (a *PostgreSQLApplication) Commit(ctx context.Context, meta WriteMeta, toke
 	}
 	return out, nil
 }
-func (a *PostgreSQLApplication) commitStaff(ctx context.Context, tx *sql.Tx, plan previewPlan) error {
+func (a *PostgreSQLApplication) commitStaff(ctx context.Context, tx *sql.Tx, plan previewPlan, resultRows *[]ResultRow) error {
 	var singleton uint8
 	if tx.QueryRowContext(ctx, `SELECT id FROM discount_settings WHERE id=1 FOR UPDATE`).Scan(&singleton) != nil {
 		return ErrUnavailable
@@ -290,14 +298,21 @@ func (a *PostgreSQLApplication) commitStaff(ctx context.Context, tx *sql.Tx, pla
 			continue
 		}
 		name, key := staffName(r.Name)
+		var recordID uint64
 		if r.Outcome == "ADD" {
-			_, err = tx.ExecContext(ctx, `INSERT INTO staff_whitelist(phone,name,name_key,enabled,record_version,created_at,updated_at) VALUES($1,$2,$3,TRUE,1,clock_timestamp(),clock_timestamp())`, []byte(r.Phone), name, key)
+			err = tx.QueryRowContext(ctx, `INSERT INTO staff_whitelist(phone,name,name_key,enabled,record_version,created_at,updated_at) VALUES($1,$2,$3,TRUE,1,clock_timestamp(),clock_timestamp()) RETURNING id`, []byte(r.Phone), name, key).Scan(&recordID)
 		} else {
-			_, err = tx.ExecContext(ctx, `UPDATE staff_whitelist SET name=$1,name_key=$2,record_version=record_version+1,updated_at=clock_timestamp() WHERE phone=$3`, name, key, []byte(r.Phone))
+			err = tx.QueryRowContext(ctx, `UPDATE staff_whitelist SET name=$1,name_key=$2,record_version=record_version+1,updated_at=clock_timestamp() WHERE phone=$3 RETURNING id`, name, key, []byte(r.Phone)).Scan(&recordID)
 		}
 		if err != nil {
 			return importSQLError(err)
 		}
+		digits := strings.TrimPrefix(r.Phone, "+86")
+		masked := "***"
+		if len(digits) >= 7 {
+			masked = digits[:3] + "****" + digits[len(digits)-4:]
+		}
+		*resultRows = append(*resultRows, ResultRow{Row: r.Row, ID: strconv.FormatUint(recordID, 10), Outcome: r.Outcome, Name: name, PhoneMasked: masked})
 	}
 	_, err = tx.ExecContext(ctx, `UPDATE discount_settings SET whitelist_version=whitelist_version+1,updated_at=clock_timestamp() WHERE id=1`)
 	if err != nil {
@@ -305,7 +320,7 @@ func (a *PostgreSQLApplication) commitStaff(ctx context.Context, tx *sql.Tx, pla
 	}
 	return nil
 }
-func (a *PostgreSQLApplication) commitProducts(ctx context.Context, tx *sql.Tx, plan previewPlan) error {
+func (a *PostgreSQLApplication) commitProducts(ctx context.Context, tx *sql.Tx, plan previewPlan, resultRows *[]ResultRow) error {
 	rows, err := tx.QueryContext(ctx, `SELECT id,name,name_key FROM categories ORDER BY id FOR UPDATE`)
 	if err != nil {
 		return ErrUnavailable
@@ -358,10 +373,17 @@ func (a *PostgreSQLApplication) commitProducts(ctx context.Context, tx *sql.Tx, 
 		if categoryID == 0 {
 			return ErrUnavailable
 		}
-		_, err = tx.ExecContext(ctx, `INSERT INTO products(category_id,name,name_key,description,specification,images_json,price_cents,sort_order,is_listed,meal_period,record_version) SELECT $1,$2,$3,$4,'','[]'::jsonb,$5,COALESCE(MAX(sort_order),0)+1,TRUE,$6,1 FROM products WHERE category_id=$7`, categoryID, r.Name, string(catalogKey(r.Name)), r.Description, r.PriceCents, r.Meal, categoryID)
+		var recordID uint64
+		images := r.Images
+		if images == nil {
+			images = []ProductImage{}
+		}
+		imageJSON, _ := json.Marshal(images)
+		err = tx.QueryRowContext(ctx, `INSERT INTO products(category_id,name,name_key,description,specification,images_json,price_cents,sort_order,is_listed,meal_period,record_version) SELECT $1,$2,$3,$4,'',$8::jsonb,$5,COALESCE(MAX(sort_order),0)+1,TRUE,$6,1 FROM products WHERE category_id=$7 RETURNING id`, categoryID, r.Name, string(catalogKey(r.Name)), r.Description, r.PriceCents, r.Meal, categoryID, imageJSON).Scan(&recordID)
 		if err != nil {
 			return importSQLError(err)
 		}
+		*resultRows = append(*resultRows, ResultRow{Row: r.Row, ID: strconv.FormatUint(recordID, 10), Outcome: r.Outcome, Name: r.Name, Category: r.Category, Meal: r.Meal, PriceCents: r.PriceCents, Description: r.Description, Images: r.Images})
 	}
 	return nil
 }
@@ -378,4 +400,25 @@ func importSQLError(err error) error {
 		return ErrInvalidInput
 	}
 	return ErrUnavailable
+}
+
+func (a *PostgreSQLApplication) Result(ctx context.Context, actor, id uint64) (CommitResult, error) {
+	tx, err := a.db.BeginTx(ctx, nil)
+	if err != nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	defer tx.Rollback()
+	account, _, _, err := audit.LockOwner(ctx, tx, actor)
+	if err != nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	var raw []byte
+	if tx.QueryRowContext(ctx, `SELECT result_json FROM import_batches WHERE id=$1 AND actor_account_id=$2 AND state='COMMITTED'`, id, account).Scan(&raw) != nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	var out CommitResult
+	if json.Unmarshal(raw, &out) != nil || out.Rows == nil {
+		return CommitResult{}, ErrUnavailable
+	}
+	return out, nil
 }

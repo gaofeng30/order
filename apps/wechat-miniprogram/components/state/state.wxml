@@ -1,0 +1,14 @@
+<view class="st st--{{kind}} {{compact ? 'st--compact' : ''}}" aria-live="polite">
+  <view wx:if="{{kind === 'loading'}}" class="st-spin"></view>
+  <view wx:else class="st-ico">
+    <icon name="{{icon || (kind === 'error' ? 'warn' : 'receipt')}}" size="26" color="{{kind === 'error' ? '#c4432f' : '#b3b6a8'}}" stroke="1.8" />
+  </view>
+  <text class="st-text">{{text || (kind === 'loading' ? '加载中' : kind === 'error' ? '网络不太好，内容没加载出来' : '暂无内容')}}</text>
+  <view
+    wx:if="{{kind !== 'loading' && (action || kind === 'error')}}"
+    class="btn btn--ghost btn--sm st-btn"
+    catchtap="onAction"
+    hover-stop-propagation="{{true}}" hover-class="b-active"
+    hover-stay-time="80"
+  >{{action || '重试'}}</view>
+</view>

@@ -292,6 +292,16 @@ func (a *PostgreSQLAdminApplication) executeTx(ctx context.Context, tx *sql.Tx, 
 	case CommandCreateProduct, CommandUpdateProduct:
 		return a.writeProduct(ctx, tx, cmd)
 	case CommandDeleteProduct:
+		var productID uint64
+		if err := tx.QueryRowContext(ctx, `SELECT id FROM products WHERE id=$1 FOR UPDATE`, cmd.ProductID).Scan(&productID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return CatalogResult{}, ErrAdminNotFound
+			}
+			return CatalogResult{}, ErrAdminUnavailable
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM product_sold_out_dates WHERE product_id=$1`, cmd.ProductID); err != nil {
+			return CatalogResult{}, adminSQLError(err)
+		}
 		res, err := tx.ExecContext(ctx, `DELETE FROM products WHERE id=$1`, cmd.ProductID)
 		if err != nil {
 			return CatalogResult{}, adminSQLError(err)

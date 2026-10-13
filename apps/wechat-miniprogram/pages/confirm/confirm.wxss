@@ -1,66 +1,94 @@
-/* 取餐方式 */
+/* 取餐时间 */
 .mode-card { padding: 28rpx 32rpx 32rpx; color: #fff; margin-top: 8rpx; }
-
-
 .mode-reserve { position: relative; z-index: 2; margin-top: 26rpx; }
-.rsv-label { font-size: 24rpx; color: var(--ink-on-dark-2); margin-bottom: 16rpx; }
-.rsv-warn { display: flex; align-items: center; gap: 12rpx; font-size: 23rpx; color: #9fd3ff; margin-top: 22rpx; }
+.rsv-label { font-size: var(--fs-sm); color: var(--ink-on-dark-2); margin-bottom: 16rpx; }
+.rsv-picked {
+  display: flex; align-items: center; gap: 14rpx; margin-top: 14rpx; min-height: 88rpx;
+  padding: 18rpx 24rpx; border-radius: 16rpx; background: rgba(255, 255, 255, .1);
+}
+.rsv-picked-t { flex: 1; font-size: var(--fs-lg); color: #fff; font-weight: 600; letter-spacing: 1rpx; }
+.rsv-picked-edit { font-size: var(--fs-sm); color: var(--gold); }
+.rsv-warn { display: flex; align-items: center; gap: 12rpx; font-size: var(--fs-xs); color: var(--gold); margin-top: 22rpx; }
+
+/* 卡片 */
+.sec-card { padding: 4rpx 36rpx; margin-top: 24rpx; }
+.list-h { padding-bottom: 4rpx; }
+.list-h-sub { font-size: var(--fs-sm); color: var(--ink-3); }
 
 /* 取餐窗口 */
-.sec-card { padding: 4rpx 36rpx; margin-top: 24rpx; }
 .win-h { padding-bottom: 4rpx; }
-.win-pill { margin-left: auto; }
 .win-row { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; }
 .win-ico {
   width: 76rpx; height: 76rpx; border-radius: 22rpx; flex: 0 0 76rpx; background: var(--green-bg);
   display: flex; align-items: center; justify-content: center;
 }
 .win-info { flex: 1; min-width: 0; }
-.win-name { font-size: 29rpx; color: var(--ink); font-weight: 600; }
-.win-sub { font-size: 24rpx; color: var(--ink-3); margin-top: 6rpx; }
+.win-name { font-size: var(--fs-md); color: var(--ink); font-weight: 600; }
+.win-sub { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 6rpx; }
 
 /* 商品明细 */
-.ci-item { display: flex; align-items: flex-start; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.ci-item { display: flex; align-items: flex-start; gap: 24rpx; padding: 24rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.ci-item.last { border-bottom: none; }
+.ci-thumb { flex: 0 0 96rpx; }
+.ci-item.is-off .ci-info, .ci-item.is-off .ci-thumb { opacity: .45; }
 .ci-info { flex: 1; min-width: 0; }
 .ci-top { display: flex; align-items: center; gap: 16rpx; }
-.ci-name { font-size: 28rpx; color: var(--ink); font-weight: 500; }
-.ci-edit { margin-left: auto; flex: 0 0 auto; font-size: 24rpx; color: var(--blue-500); display: flex; align-items: center; gap: 6rpx; }
-.ci-unit { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8rpx; font-size: 23rpx; color: var(--ink-3); margin-top: 4rpx; }
-.staff-price-label { font-size: 19rpx; color: var(--green-1); background: var(--green-bg); border-radius: 8rpx; padding: 3rpx 8rpx; }
-.original-price { font-size: 21rpx; color: var(--ink-3); text-decoration: line-through; }
+.ci-name { flex: 1; min-width: 0; font-size: var(--fs-md); color: var(--ink); font-weight: 500; }
+/* 视觉保持文字大小，点击区域扩到 88rpx（G6） */
+.ci-edit {
+  position: relative; flex: 0 0 auto; font-size: var(--fs-sm); color: var(--green); font-weight: 600;
+  display: flex; align-items: center; gap: 6rpx;
+}
+.ci-edit::before { content: ''; position: absolute; left: -16rpx; right: -16rpx; top: -28rpx; bottom: -28rpx; }
+.ci-unit { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8rpx; margin-top: 8rpx; }
+.ci-unit .staff-price-label { align-self: center; }
+.ci-qty { font-size: var(--fs-sm); color: var(--ink-3); }
 .ci-prefs { margin-top: 12rpx; display: flex; flex-wrap: wrap; align-items: center; gap: 12rpx; }
-.pref-chip { font-size: 21rpx; color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 16rpx; border-radius: 12rpx; }
-.pref-note { font-size: 22rpx; color: var(--ink-2); }
-.ci-empty { margin-top: 12rpx; font-size: 23rpx; color: var(--ink-3); }
+.pref-chip { font-size: var(--fs-xs); color: var(--gold-2); background: var(--gold-bg); padding: 4rpx 16rpx; border-radius: 12rpx; }
+.pref-note { font-size: var(--fs-xs); color: var(--ink-2); }
+.ci-empty { margin-top: 12rpx; font-size: var(--fs-xs); color: var(--ink-3); }
+.ci-off-label { flex: 0 0 auto; font-size: var(--fs-xs); color: var(--red); font-weight: 600; }
+
+/* 金额明细 */
+.amount-card { padding-bottom: 10rpx; }
+.pm-row { display: flex; align-items: center; gap: 14rpx; padding: 22rpx 0; border-bottom: 2rpx solid var(--line-2); }
+.pm-row:last-child { border-bottom: none; }
+.pm-k { font-size: var(--fs-md); color: var(--ink-2); }
+.pm-v { margin-left: auto; font-size: var(--fs-md); color: var(--ink); font-weight: 600; }
+
+.quote-error { margin-top: 24rpx; padding: 28rpx 36rpx; font-size: var(--fs-sm); color: var(--ink-2); line-height: 1.6; }
+.quote-error-btn { margin-top: 20rpx; }
 
 /* 联系信息 */
-.field { display: flex; align-items: center; padding: 26rpx 0; border-bottom: 1rpx solid var(--line-2); }
+.field { display: flex; align-items: center; gap: 16rpx; min-height: 112rpx; padding: 16rpx 0; border-bottom: 2rpx solid var(--line-2); }
 .field.last { border-bottom: none; }
-.field-lbl { font-size: 27rpx; color: var(--ink-2); width: 120rpx; }
-.field-in { flex: 1; font-size: 28rpx; color: var(--ink); }
+.field-lbl { flex: 0 0 150rpx; font-size: var(--fs-md); color: var(--ink-2); }
+.field-in { flex: 1; min-width: 0; height: 80rpx; }
+.field-val { flex: 1; min-width: 0; font-size: var(--fs-md); color: var(--ink); }
 .ph { color: var(--ink-3); }
+/* 原生 button 默认宽 184px、自带内边距与边框，按 .capsule 视觉重置 */
+button.capsule:not([size=mini]) {
+  flex: 0 0 auto; width: auto; margin: 0; padding: 0 24rpx; overflow: visible;
+  line-height: 56rpx; font-size: var(--fs-sm); font-weight: 600; background: transparent; color: var(--green);
+}
+button.capsule::after { border: none; }
+
+.scroll-end { height: 24rpx; }
 
 /* 应付 + 支付 */
 .bottom-bar {
-  flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);
-  border-top: 1rpx solid var(--line); display: flex; align-items: center; gap: 28rpx;
+  flex: 0 0 auto; padding: 20rpx 32rpx; background: #fff; border-top: 2rpx solid var(--line);
 }
-.pay-amount { flex: 1; }
-.pay-lbl { font-size: 24rpx; color: var(--ink-3); display: block; margin-bottom: 2rpx; }
+.pay-note { font-size: var(--fs-xs); color: var(--red); margin-bottom: 14rpx; }
+.bar-row { display: flex; align-items: center; gap: 28rpx; }
+.pay-amount { flex: 1; min-width: 0; }
+.pay-lbl-row { display: flex; align-items: baseline; gap: 12rpx; margin-bottom: 2rpx; }
+.pay-lbl { font-size: var(--fs-sm); color: var(--ink-2); }
+.pay-hint { font-size: var(--fs-xs); color: var(--ink-3); }
 .pay-btn { min-width: 300rpx; }
-
-/* ---------- 金额明细 ---------- */
-.amount-card { padding-bottom: 10rpx; }
-.pm-row { display: flex; align-items: center; gap: 14rpx; padding: 22rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.pm-row:last-child { border-bottom: none; }
-.pm-k { font-size: 26rpx; color: var(--ink-2); }
-.pm-v { margin-left: auto; font-size: 27rpx; color: var(--ink); font-weight: 600; }
-.rsv-picked {
-  display: flex; align-items: center; gap: 14rpx; margin-top: 14rpx;
-  padding: 22rpx 24rpx; border-radius: 16rpx; background: rgba(255, 255, 255, .1);
-}
-.rsv-picked-t { flex: 1; font-size: 30rpx; color: #fff; font-weight: 600; letter-spacing: 1rpx; }
-.rsv-picked-edit { font-size: 24rpx; color: #9fd3ff; }
-
-.quote-error { padding: 24rpx; color: #965e22; line-height: 1.5; }
-.quote-error button { margin-top: 18rpx; }
+.time-head { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 36rpx; font-size: var(--fs-lg); font-weight: 700; border-bottom: 2rpx solid var(--line); }
+.time-body { max-height: 50vh; }
+.time-context { padding: 24rpx 36rpx 0; color: var(--green-600); font-size: var(--fs-md); font-weight: 600; }
+.time-options { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 28rpx 36rpx; }
+.time-option { min-height: 88rpx; padding: 0 28rpx; display: flex; align-items: center; border-radius: var(--r-pill); background: var(--card-2); color: var(--ink-2); font-size: var(--fs-md); box-shadow: inset 0 0 0 2rpx var(--line-2); }
+.time-option.on { background: var(--green); color: #fff; box-shadow: none; }

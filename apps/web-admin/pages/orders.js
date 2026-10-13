@@ -12,7 +12,7 @@
      按取餐号 / 订单号 / 手机号搜索，跨泳道 —— 要核销时并不知道单子在哪个状态。 */
   let kw = '';
   let date = '';
-  let paintGeneration = 0;
+  let paintGeneration = 0, searchTimer;
 
   function render(el) {
     // 由工作台带过来的泳道 / 选中项
@@ -33,7 +33,8 @@
        <aside class="split-r" id="detail"></aside>`;
 
     const search = el.querySelector('#f-kw');
-    search.oninput = () => { kw = search.value; paint(el); };
+    search.oninput = () => { kw = search.value; ++paintGeneration; clearTimeout(searchTimer); searchTimer = setTimeout(() => {if(el.isConnected)paint(el);},300); };
+    search.onkeydown = e => {if(e.key==='Enter'){clearTimeout(searchTimer);kw=search.value;paint(el);}};
     const dateInput = el.querySelector('#f-date');
     if (dateInput) dateInput.onchange = () => { date = dateInput.value; paint(el); };
     paint(el);
@@ -57,6 +58,7 @@
   }
 
   function paint(el) {
+    clearTimeout(searchTimer);
     const generation = ++paintGeneration;
     paintUncollected(el);
     paintHint(el);
@@ -162,7 +164,7 @@
       `<div class="dt-hero">
          <span class="ring r1"></span>
          <div class="dt-code tnum">${o.code}</div>
-         <div class="dt-no tnum">${o.no}</div>
+         <div class="dt-no tnum">${T.esc(o.no)} ${o.no ? `<button class="btn btn--sm btn--line" data-copy="${T.esc(o.no)}">复制</button>` : ''}</div>
          <span class="pill pill--ondark"><i class="pd"></i>${o.status}</span>
        </div>
        <div class="dt-body">
@@ -186,7 +188,7 @@
            <div class="kv"><span class="k">取餐时间</span><span class="v tnum">${o.pickupDate} ${o.pickupTime}</span></div>
            <div class="kv"><span class="k">整单备注</span><span class="v" style="overflow-wrap:anywhere">${T.esc(o.orderNote || '—')}</span></div>
            <div class="kv"><span class="k">取餐点</span><span class="v">${T.esc(o.pickupPoint)}</span></div>
-           <div class="kv"><span class="k">微信交易号</span><span class="v tnum">${T.esc(o.txnId)}</span></div>
+           <div class="kv"><span class="k">微信交易号</span><span class="v tnum">${T.esc(o.txnId)} ${o.txnId ? `<button class="btn btn--sm btn--line" data-copy="${T.esc(o.txnId)}">复制</button>` : ''}</span></div>
          </div>
        </div>
        <div class="dt-foot">
@@ -195,6 +197,7 @@
          <span class="faint" style="font-size:12.5px">履约操作请使用商户小程序</span>
        </div>`;
 
+    window.FormUI.copyButtons(host);
     const refundBtn = host.querySelector('[data-refund]');
     if (refundBtn) refundBtn.onclick = () => openRefund(el, o);
   }
@@ -211,7 +214,7 @@
       width: '460px',
       bodyHtml:
         `<div class="kv"><span class="k">订单</span><span class="v tnum">${T.esc(o.no)} · 取餐号 ${T.esc(o.code)}</span></div>
-         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(o.total))} <span class="faint" style="font-size:12px">全额，不可修改</span></span></div>
+         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(o.total))} <span class="faint" style="font-size: 12px">全额，不可修改</span></span></div>
          <div class="kv"><span class="k">操作人</span><span class="v">${T.esc(me ? me.name : '—')}</span></div>
          <div style="margin-top:12px">
            <div class="fld-lb">退款原因<span class="req">*</span></div>
@@ -228,16 +231,17 @@
         const why = root.querySelector('#rf-why');
         why.focus();
         root.querySelector('[data-a="cancel"]').onclick = done;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.refundOrder(o.id, why.value).then(r => {
+        const submit = root.querySelector('[data-a="ok"]');
+        submit.onclick = window.FormUI.submit(submit, async () => {
+          await Api.refundOrder(o.id, why.value).then(r => {
             done();
             /* 跳到退款中并选中该单。uncollected 必须一并清掉 ——
                它是挂在 待取餐 上的筛选，带到别的泳道会把列表筛成空的。 */
             lane = '退款中'; uncollected = false; selId = r.id;
             paint(el);
             window.Toast.show(`已对「${r.code}」发起全额退款，等待微信到账`, { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }

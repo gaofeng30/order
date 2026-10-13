@@ -145,9 +145,9 @@
     clearSession();
   }
   function beginPCLogin() { return request('/admin/auth/qrcode', { method: 'POST', body: {}, intrinsic: true }); }
-  async function pollPCLogin(loginID, pollSecret) {
+  async function pollPCLogin(loginID, pollSecret, isCurrent = () => true) {
     const result = await request('/admin/auth/poll', { method: 'POST', body: { login_id: loginID, poll_secret: pollSecret }, intrinsic: true });
-    if (result.state === 'APPROVED' && result.session && result.session.token && window.sessionStorage) {
+    if (isCurrent() && result.state === 'APPROVED' && result.session && result.session.token && window.sessionStorage) {
       window.sessionStorage.setItem('pc_session_token', result.session.token);
     }
     return result;
@@ -379,16 +379,23 @@
   async function setMerchantAccountEnabled(id, enabled) { return accountOf(await request('/admin/merchant-accounts/' + encodeURIComponent(id), { method: 'PUT', body: { enabled: !!enabled } })); }
   function deleteMerchantAccount(id) { return request('/admin/merchant-accounts/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
-  async function previewImport(kind, file) {
+  async function previewImport(kind, file, images) {
     if (!file || !/\.xlsx$/i.test(file.name || '')) throw new ApiError('只接受 .xlsx 文件', 400, 'INVALID_FILE');
     if (file.size > 10 * 1024 * 1024) throw new ApiError('文件不能超过 10 MiB', 413, 'FILE_TOO_LARGE');
     const form = new FormData(); form.append('file', file);
+    if(images)form.append('product_images',JSON.stringify(images));
     const path = kind === 'product' ? '/admin/products/import/preview' : '/admin/staff-whitelist/import/preview';
     const p = await request(path, { method: 'POST', body: form });
-    return { token: p.preview_token, added: Number(p.new_count || 0), updated: Number(p.update_count || 0), errors: (p.rows || []).filter(r => r.outcome === 'ERROR').map(r => ({ row: r.row, reason: r.reason })), ignoredColumns: p.ignored_columns || [], newCategories: p.new_categories || [] };
+    return { rows:p.rows || [], token: p.preview_token, added: Number(p.new_count || 0), updated: Number(p.update_count || 0), errors: (p.rows || []).filter(r => r.outcome === 'ERROR').map(r => ({ row: r.row, reason: r.reason })), ignoredColumns: p.ignored_columns || [], newCategories: p.new_categories || [] };
   }
-  async function commitImport(tokenValue) { const r = await request('/import/commit', { method: 'POST', body: { preview_token: tokenValue, skip_invalid: true } }); return { added: Number(r.new_count || 0), updated: Number(r.update_count || 0), skipped: Number(r.skipped_count || 0), duplicate: !!r.duplicate }; }
-  const previewProductImport = file => previewImport('product', file);
+  const importKeys = new Map();
+  async function commitImport(tokenValue) {
+    if(!importKeys.has(tokenValue))importKeys.set(tokenValue,idempotencyKey());
+    const r=await request('/import/commit',{method:'POST',body:{preview_token:tokenValue,skip_invalid:true},idempotencyKey:importKeys.get(tokenValue)});
+    return {batchId:r.batch_id,added:Number(r.new_count||0),updated:Number(r.update_count||0),skipped:Number(r.skipped_count||0),duplicate:!!r.duplicate};
+  }
+  async function importResult(id) {return request('/import/batches/'+encodeURIComponent(id)+'/result');}
+  const previewProductImport = (file, images) => previewImport('product', file, images);
   const previewStaffImport = file => previewImport('staff', file);
   const commitProductImport = commitImport;
   const commitStaffImport = commitImport;
@@ -429,7 +436,7 @@
     listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,
     getSettings, saveSettings, setStoreStatus, getLayer, saveLayer, clearLayer, imgUrl, MEALS, MEAL_LABEL,
     listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
-    previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, MAX_IMPORT_ROWS, MAX_STAFF_IMPORT_ROWS,
+    previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, importResult, MAX_IMPORT_ROWS, MAX_STAFF_IMPORT_ROWS,
     listMerchantAccounts, saveMerchantAccount, setMerchantAccountEnabled, deleteMerchantAccount, ROLES, ROLE_LABEL,
   };
 })();

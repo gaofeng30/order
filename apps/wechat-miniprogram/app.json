@@ -5,6 +5,7 @@
     "pages/menu/menu",
     "pages/detail/detail",
     "pages/confirm/confirm",
+    "pages/cart-confirm/cart-confirm",
     "pages/result/result",
     "pages/order-detail/order-detail",
     "pages/orders/orders",
@@ -13,7 +14,8 @@
     "pages/admin-orders/admin-orders",
     "pages/admin-order-detail/admin-order-detail",
     "pages/admin-verify/admin-verify",
-    "pages/admin-products/admin-products"
+    "pages/admin-products/admin-products",
+    "pages/admin-profile/admin-profile"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -32,7 +34,8 @@
     "stepper": "/components/stepper/stepper",
     "imageph": "/components/imageph/imageph",
     "toast": "/components/toast/toast",
-    "qrcode": "/components/qrcode/qrcode"
+    "qrcode": "/components/qrcode/qrcode",
+    "state": "/components/state/state"
   },
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
