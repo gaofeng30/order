@@ -27,7 +27,7 @@ func InitialState(paymentSucceededAt, pickupAt time.Time) (State, error) {
 	if paymentSucceededAt.IsZero() || pickupAt.IsZero() || !pickupAt.After(paymentSucceededAt) {
 		return "", &Error{kind: ErrorInvalidTime}
 	}
-	if pickupAt.Sub(paymentSucceededAt) < productionLeadTime {
+	if pickupAt.Sub(paymentSucceededAt) <= productionLeadTime {
 		return StatePreparing, nil
 	}
 	return StateReserved, nil
