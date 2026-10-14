@@ -212,6 +212,7 @@ func allowedRPC(name string) bool {
 		"order_subscription_permanent_failure_v1",
 		"order_production_due_v1",
 		"order_production_advance_v1",
+		"order_billing_completed_v1",
 		"order_billing_summary_v1",
 		"order_billing_payments_v1",
 		"order_billing_refunds_v1",
