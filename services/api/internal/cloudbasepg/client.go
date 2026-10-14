@@ -176,7 +176,7 @@ func allowedRPC(name string) bool {
 		"order_merchant_soldout_replay_v1", "order_merchant_soldout_command_v1",
 		"order_quote_create_v1", "order_quote_read_v1",
 		"order_staff_admin_list_v1", "order_staff_admin_rate_v1", "order_staff_admin_command_v1",
-		"order_import_preview_facts_v1", "order_import_preview_v1", "order_import_commit_v1",
+		"order_import_preview_facts_v1", "order_import_preview_v1", "order_import_commit_v1", "order_import_result_v1",
 		"order_payment_receipt_read_v1",
 		"order_payment_prepare_replay_v1",
 		"order_payment_openid_v1",
