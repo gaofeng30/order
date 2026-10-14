@@ -34,7 +34,7 @@ type PricingResolver interface {
 	ResolvePrices(context.Context, uint64, []uint32) ([]*uint32, error)
 }
 type PublicURLer interface {
-	PublicURL(context.Context, string) (string, error)
+	PublicURLs(context.Context, []string) (map[string]string, error)
 }
 
 type Handler struct {
@@ -247,6 +247,17 @@ func (handler *Handler) projectProducts(ctx context.Context, products []Product,
 		}
 		staffPrices = resolved
 	}
+	keys := make([]string, 0)
+	for _, product := range products {
+		keys = append(keys, product.ImageObjectKeys...)
+	}
+	urls := map[string]string{}
+	if handler.urls != nil && len(keys) > 0 {
+		// Images are optional presentation; facts and prices remain fail closed.
+		if resolved, err := handler.urls.PublicURLs(ctx, keys); err == nil {
+			urls = resolved
+		}
+	}
 	result := make([]productProjection, 0, len(products))
 	for index, product := range products {
 		if staffPrices[index] != nil && *staffPrices[index] > product.OriginalUnitPriceCents {
@@ -254,12 +265,9 @@ func (handler *Handler) projectProducts(ctx context.Context, products []Product,
 		}
 		images := make([]imageResponse, 0, len(product.ImageObjectKeys))
 		for _, key := range product.ImageObjectKeys {
-			if handler.urls == nil {
-				return nil, false
-			}
-			url, err := handler.urls.PublicURL(ctx, key)
-			if err != nil || url == "" {
-				return nil, false
+			url := urls[key]
+			if url == "" {
+				continue
 			}
 			images = append(images, imageResponse{ObjectKey: key, URL: url})
 		}
