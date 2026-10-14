@@ -78,6 +78,8 @@ type lockedOrder struct {
 	pickupPoint    string
 	pickupNumber   uint16
 	preparingAt    sql.NullTime
+	pickupAt       time.Time
+	materializedAt time.Time
 	readyAt        sql.NullTime
 	completedAt    sql.NullTime
 	redemptionHash []byte
@@ -277,6 +279,18 @@ func applyTransition(
 	keyVersion uint16,
 	ciphertext []byte,
 ) (receiptResponse, error) {
+	if command.Kind == CommandMarkReady && order.state == orderquery.StateReserved {
+		decision, err := orderproduction.Advance(order.state, now, order.pickupAt)
+		if err != nil || !decision.Changed || order.preparingAt.Valid || order.materializedAt.After(now) {
+			return receiptResponse{}, ErrTransitionNotAllowed
+		}
+		order.state = decision.State
+		start := order.pickupAt.Add(-30 * time.Minute)
+		if start.Before(order.materializedAt) {
+			start = order.materializedAt
+		}
+		order.preparingAt = sql.NullTime{Time: start, Valid: true}
+	}
 	trigger := orderproduction.TriggerMerchantMarkReady
 	if command.Kind != CommandMarkReady {
 		trigger = orderproduction.TriggerRedeemSucceeded
@@ -294,7 +308,7 @@ func applyTransition(
 		if !validPreparingOrder(order, now) || keyVersion == 0 || len(ciphertext) == 0 || len(ciphertext) > 192 {
 			return receiptResponse{}, ErrUnavailable
 		}
-		result, err := transaction.ExecContext(ctx, `UPDATE orders SET state='READY_FOR_PICKUP',ready_at=$1,redemption_token_ciphertext=$2,redemption_token_hash=$3,redemption_key_version=$4,redemption_issued_at=$5,record_version=record_version+1,updated_at=$6 WHERE id=$7 AND state='PREPARING' AND record_version=$8`, now, ciphertext, tokenHash[:], keyVersion, now, now, order.id, order.recordVersion)
+		result, err := transaction.ExecContext(ctx, `UPDATE orders SET state='READY_FOR_PICKUP',preparing_at=$9,ready_at=$1,redemption_token_ciphertext=$2,redemption_token_hash=$3,redemption_key_version=$4,redemption_issued_at=$5,record_version=record_version+1,updated_at=$6 WHERE id=$7 AND (state='PREPARING' OR (state='RESERVED' AND pickup_at<=$1+interval '30 minutes')) AND record_version=$8`, now, ciphertext, tokenHash[:], keyVersion, now, now, order.id, order.recordVersion, order.preparingAt.Time)
 		if err != nil {
 			return receiptResponse{}, err
 		}
@@ -442,7 +456,7 @@ func (application *PostgreSQLApplication) locateReceiptTarget(ctx context.Contex
 	return orderID, nil
 }
 
-const lockedOrderColumns = `id,user_id,order_no,state,to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,preparing_at,ready_at,completed_at,redemption_token_hash,redemption_token_ciphertext,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at,record_version`
+const lockedOrderColumns = `id,user_id,order_no,state,to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,preparing_at,ready_at,completed_at,redemption_token_hash,redemption_token_ciphertext,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at,record_version,pickup_at,materialized_at`
 
 func lockOrder(ctx context.Context, transaction *sql.Tx, orderID uint64) (lockedOrder, error) {
 	return scanLockedOrder(transaction.QueryRowContext(ctx, `SELECT `+lockedOrderColumns+` FROM orders WHERE id=$1 FOR UPDATE`, orderID))
@@ -451,7 +465,7 @@ func lockOrder(ctx context.Context, transaction *sql.Tx, orderID uint64) (locked
 func scanLockedOrder(row *sql.Row) (lockedOrder, error) {
 	var order lockedOrder
 	var state string
-	err := row.Scan(&order.id, &order.userID, &order.orderNumber, &state, &order.pickupDate, &order.pickupTime, &order.pickupPoint, &order.pickupNumber, &order.preparingAt, &order.readyAt, &order.completedAt, &order.redemptionHash, &order.ciphertext, &order.keyVersion, &order.issuedAt, &order.redeemedBy, &order.redeemedAt, &order.recordVersion)
+	err := row.Scan(&order.id, &order.userID, &order.orderNumber, &state, &order.pickupDate, &order.pickupTime, &order.pickupPoint, &order.pickupNumber, &order.preparingAt, &order.readyAt, &order.completedAt, &order.redemptionHash, &order.ciphertext, &order.keyVersion, &order.issuedAt, &order.redeemedBy, &order.redeemedAt, &order.recordVersion, &order.pickupAt, &order.materializedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return lockedOrder{}, ErrNotFound
 	}
