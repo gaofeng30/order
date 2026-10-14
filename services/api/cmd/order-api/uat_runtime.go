@@ -25,7 +25,6 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/merchantsoldout"
 	"github.com/gaofeng30/order/services/api/internal/objectstore"
-	"github.com/gaofeng30/order/services/api/internal/orderadvance"
 	"github.com/gaofeng30/order/services/api/internal/orderquery"
 	"github.com/gaofeng30/order/services/api/internal/paymentorder"
 	"github.com/gaofeng30/order/services/api/internal/quote"
@@ -194,10 +193,8 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 		}
 		return httpapi.ReadinessResult{Ready: true}
 	}
-	production := orderadvance.NewSharedPG(client)
 	return uatRuntime{handler: httpapi.NewRouter(logger, ready, registrars...), workers: []func(context.Context){
 		func(ctx context.Context) { runRefundWorker(ctx, refunds, logger) },
-		func(ctx context.Context) { runOrderProductionWorker(ctx, production, logger) },
 		func(ctx context.Context) { runSubscriptionWorker(ctx, notifications, logger) },
 		func(ctx context.Context) { runPaymentWorker(ctx, paymentApplication, logger) },
 		func(ctx context.Context) { runBillingWorker(ctx, bills, logger) },
