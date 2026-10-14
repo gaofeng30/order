@@ -9,7 +9,7 @@ func (a *PostgreSQLApplication) OrderCounts(ctx context.Context, user uint64) (m
 	if err := authorizeOwner(ctx, a.db, user); err != nil {
 		return nil, err
 	}
-	rows, err := a.db.QueryContext(ctx, `SELECT state,COUNT(*) FROM orders GROUP BY state`)
+	rows, err := a.db.QueryContext(ctx, `SELECT (CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),COUNT(*) FROM orders GROUP BY (CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)`)
 	if err != nil {
 		return nil, ErrUnavailable
 	}
