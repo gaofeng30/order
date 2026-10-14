@@ -106,7 +106,7 @@ BEGIN
  micros:=mod(mod(micros+9223372036854775808,18446744073709551616)+18446744073709551616,18446744073709551616)-9223372036854775808;
  IF micros=9223372036854775807 THEN v_at:='infinity'::timestamptz;ELSIF micros=-9223372036854775808 THEN v_at:='-infinity'::timestamptz;
  ELSE v_at:='2000-01-01T00:00:00Z'::timestamptz+make_interval(days=>div(micros,86400000000)::integer)+(mod(micros,86400000000)::text||' microseconds')::interval;END IF;
- FOR scan_row IN SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=(v_at::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0) AS c0,COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=(v_at::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED') AS c1,COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0) AS c2,COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED') AS c3,COUNT(*) FILTER (WHERE state='PREPARING') AS c4 FROM public.orders LOOP
+ FOR scan_row IN SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=(v_at::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0) AS c0,COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=(v_at::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED') AS c1,COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0) AS c2,COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED') AS c3,COUNT(*) FILTER (WHERE state='PREPARING') AS c4 FROM public.orders WHERE state='PREPARING' OR (state='COMPLETED' AND paid_at >= (date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai') AND paid_at < ((date_trunc('month',v_at::timestamptz AT TIME ZONE 'Asia/Shanghai') + interval '1 month') AT TIME ZONE 'Asia/Shanghai')) LOOP
   IF scan_row.c0 IS NULL OR scan_row.c0 NOT BETWEEN 0 AND 18446744073709551615 OR trunc(scan_row.c0)<>scan_row.c0 OR scan_row.c1 IS NULL OR scan_row.c1 NOT BETWEEN 0 AND 4294967295 OR trunc(scan_row.c1)<>scan_row.c1 OR scan_row.c2 IS NULL OR scan_row.c2 NOT BETWEEN 0 AND 18446744073709551615 OR trunc(scan_row.c2)<>scan_row.c2 OR scan_row.c3 IS NULL OR scan_row.c3 NOT BETWEEN 0 AND 4294967295 OR trunc(scan_row.c3)<>scan_row.c3 OR scan_row.c4 IS NULL OR scan_row.c4 NOT BETWEEN 0 AND 4294967295 OR trunc(scan_row.c4)<>scan_row.c4 THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
   rows:=rows||jsonb_build_array(jsonb_build_array(scan_row.c0::text,scan_row.c1::text,scan_row.c2::text,scan_row.c3::text,scan_row.c4::text));
  END LOOP;
@@ -199,6 +199,47 @@ BEGIN
  END LOOP;
  END IF;
  RETURN jsonb_build_object('outcome','FOUND','rows',rows,'items',items);
+ EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END;
+END
+$order_rpc$;
+
+CREATE OR REPLACE FUNCTION public.order_admin_report_export_v1(p_owner numeric,p_from_hex text,p_to_hex text,p_after numeric,p_limit integer)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER
+SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
+DECLARE owner numeric;scan_row record;rows jsonb:='[]';v_from date;v_to date;
+BEGIN
+ IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';END IF;
+ BEGIN
+ IF p_owner IS NULL OR p_owner NOT BETWEEN 0 AND 18446744073709551615 OR trunc(p_owner)<>p_owner THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+  SELECT id INTO owner FROM public.merchant_accounts WHERE bound_user_id=p_owner AND enabled=TRUE AND deleted_at IS NULL AND role='OWNER';
+  IF NOT FOUND THEN RETURN jsonb_build_object('outcome','FORBIDDEN');END IF;
+  IF owner IS NULL OR owner NOT BETWEEN 0 AND 18446744073709551615 OR trunc(owner)<>owner THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+ IF p_from_hex IS NULL OR p_from_hex !~ '^([0-9a-f]{2})*$' OR p_to_hex IS NULL OR p_to_hex !~ '^([0-9a-f]{2})*$' OR p_after IS NULL OR p_after NOT BETWEEN 0 AND 18446744073709551615 OR trunc(p_after)<>p_after OR p_limit IS NULL OR p_limit NOT BETWEEN 0 AND 65535 THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+ v_from:=convert_from(decode(p_from_hex,'hex'),'UTF8')::date;v_to:=convert_from(decode(p_to_hex,'hex'),'UTF8')::date;
+ FOR scan_row IN SELECT id AS c0,convert_from(order_no,'UTF8') AS c1,LPAD(pickup_number::text,4,'0') AS c2,paid_at AS c3,convert_from(transaction_id,'UTF8') AS c4,payable_cents AS c5 FROM public.orders WHERE id>p_after AND (paid_at AT TIME ZONE 'Asia/Shanghai')::date BETWEEN v_from AND v_to ORDER BY id LIMIT p_limit LOOP
+  IF scan_row.c0 IS NULL OR scan_row.c0 NOT BETWEEN 0 AND 18446744073709551615 OR trunc(scan_row.c0)<>scan_row.c0 OR scan_row.c1 IS NULL OR scan_row.c2 IS NULL OR scan_row.c3 IS NULL OR NOT isfinite(scan_row.c3) OR scan_row.c4 IS NULL OR scan_row.c5 IS NULL OR scan_row.c5 NOT BETWEEN 0 AND 18446744073709551615 OR trunc(scan_row.c5)<>scan_row.c5 THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+  rows:=rows||jsonb_build_array(jsonb_build_array(scan_row.c0::text,scan_row.c1,scan_row.c2,jsonb_build_object('seconds',floor(extract(epoch FROM scan_row.c3))::text,'nanosecond',((extract(epoch FROM scan_row.c3)-floor(extract(epoch FROM scan_row.c3)))*1000000000)::integer),scan_row.c4,scan_row.c5::text));
+ END LOOP;
+ RETURN jsonb_build_object('outcome','FOUND','rows',rows);
+ EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END;
+END
+$order_rpc$;
+CREATE OR REPLACE FUNCTION public.order_admin_report_counts_v1(p_owner numeric)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER
+SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
+DECLARE owner numeric;scan_row record;rows jsonb:='[]';
+BEGIN
+ IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';END IF;
+ BEGIN
+ IF p_owner IS NULL OR p_owner NOT BETWEEN 0 AND 18446744073709551615 OR trunc(p_owner)<>p_owner THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+  SELECT id INTO owner FROM public.merchant_accounts WHERE bound_user_id=p_owner AND enabled=TRUE AND deleted_at IS NULL AND role='OWNER';
+  IF NOT FOUND THEN RETURN jsonb_build_object('outcome','FORBIDDEN');END IF;
+  IF owner IS NULL OR owner NOT BETWEEN 0 AND 18446744073709551615 OR trunc(owner)<>owner THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+ FOR scan_row IN SELECT state,COUNT(*) AS n FROM public.orders GROUP BY state LOOP
+  IF scan_row.state NOT IN ('RESERVED','PREPARING','READY_FOR_PICKUP','COMPLETED','REFUNDING','REFUNDED') THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+  rows:=rows||jsonb_build_array(jsonb_build_array(scan_row.state,scan_row.n::text));
+ END LOOP;
+ RETURN jsonb_build_object('outcome','FOUND','rows',rows);
  EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END;
 END
 $order_rpc$;
