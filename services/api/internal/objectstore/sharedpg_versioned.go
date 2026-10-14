@@ -141,22 +141,48 @@ func (s *SharedPGVersionedService) storedPinURL(ctx context.Context, pin imageVe
 	return StoredImage{ObjectKey: pin.ObjectKey, URL: rawURL}, nil
 }
 
+// PublicURLs resolves confirmed immutable versions once per bounded batch.
+// Browsing never downloads object bytes; upload and write confirmation still do.
+func (s *SharedPGVersionedService) PublicURLs(ctx context.Context, keys []string) (map[string]string, error) {
+	urls := make(map[string]string, len(keys))
+	unique := make([]string, 0, len(keys))
+	seen := make(map[string]bool, len(keys))
+	for _, key := range keys {
+		if !seen[key] {
+			seen[key] = true
+			unique = append(unique, key)
+		}
+	}
+	for start := 0; start < len(unique); start += 128 {
+		end := start + 128
+		if end > len(unique) {
+			end = len(unique)
+		}
+		pins, err := s.imagePins(ctx, unique[start:end])
+		if err != nil {
+			return nil, err
+		}
+		for key, pin := range pins {
+			stored, err := s.storedPinURL(ctx, pin)
+			if err != nil {
+				return nil, err
+			}
+			urls[key] = stored.URL
+		}
+	}
+	return urls, nil
+}
 func (s *SharedPGVersionedService) PublicURL(ctx context.Context, key string) (string, error) {
-	pins, err := s.imagePins(ctx, []string{key})
-	if err != nil {
-		return "", err
-	}
-	pin, ok := pins[key]
-	if !ok {
+	urls, err := s.PublicURLs(ctx, []string{key})
+	if err != nil || urls[key] == "" {
 		return "", ErrUnavailable
 	}
-	if _, err := s.readPin(ctx, pin, nil); err != nil {
-		return "", ErrUnavailable
-	}
-	stored, err := s.storedPinURL(ctx, pin)
-	return stored.URL, err
+	return urls[key], nil
 }
 func (s *SharedPGVersionedService) Confirmed(ctx context.Context, keys []string) (map[string]bool, error) {
+	if len(keys) == 0 || len(keys) > 3 {
+		return nil, ErrUnavailable
+	}
 	pins, err := s.imagePins(ctx, keys)
 	if err != nil {
 		return nil, err
