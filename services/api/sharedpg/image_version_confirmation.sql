@@ -4,21 +4,26 @@ CREATE OR REPLACE FUNCTION public.order_image_versions_v1(p_object_keys text[])
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
 SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
 DECLARE v_key text;v_target bytea;v_pin jsonb;v_candidate jsonb;v_published text;v_version text;
- v_versions jsonb:='[]'::jsonb;r public.action_audits%ROWTYPE;
+ v_versions jsonb:='[]'::jsonb;v_pins jsonb:='{}'::jsonb;v_targets bytea[];r public.action_audits%ROWTYPE;
 BEGIN
  IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
   RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';
  END IF;
- IF p_object_keys IS NULL OR cardinality(p_object_keys) NOT BETWEEN 1 AND 3
+ IF p_object_keys IS NULL OR cardinality(p_object_keys) NOT BETWEEN 1 AND 128
   OR array_ndims(p_object_keys) IS DISTINCT FROM 1
   OR EXISTS(SELECT 1 FROM unnest(p_object_keys) k WHERE k IS NULL OR k !~ '^images/([0-9a-f]{64}/)?[0-9a-f]{64}[.](png|jpg)$') THEN
   RETURN jsonb_build_object('outcome','UNAVAILABLE');
  END IF;
- FOR v_key IN SELECT DISTINCT k FROM unnest(p_object_keys) k ORDER BY k LOOP
-  v_target:=sha256(convert_to('target:'||v_key,'UTF8'));v_pin:=NULL;
-  FOR r IN SELECT * FROM public.action_audits
-   WHERE entry_kind='COMMAND_RECEIPT' AND action='object.image.confirm'
-   AND (target_key_hash=v_target OR response_json->>'object_key'=v_key) ORDER BY id LOOP
+ -- Fetch all matching receipts in one statement; validate every match as before.
+ SELECT array_agg(sha256(convert_to('target:'||key,'UTF8'))) INTO v_targets FROM unnest(p_object_keys) key;
+ FOR r IN SELECT * FROM public.action_audits
+  WHERE entry_kind='COMMAND_RECEIPT' AND action='object.image.confirm'
+   AND (target_key_hash=ANY(v_targets) OR response_json->>'object_key'=ANY(p_object_keys))
+  ORDER BY id LOOP
+  v_key:=r.response_json->>'object_key';
+  IF v_key IS NULL OR NOT (v_key=ANY(p_object_keys)) THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+  v_target:=sha256(convert_to('target:'||v_key,'UTF8'));
+  v_pin:=v_pins->v_key;
    IF r.actor_kind IS DISTINCT FROM 'MERCHANT' OR r.actor_user_id IS NULL OR r.actor_user_id<=0
     OR r.actor_account_id IS NULL OR r.actor_account_id<=0 OR r.actor_account_id_snapshot IS DISTINCT FROM r.actor_account_id
     OR r.actor_role_snapshot IS DISTINCT FROM 'OWNER' OR r.actor_auth_version_snapshot IS NULL OR r.actor_auth_version_snapshot<=0
@@ -46,10 +51,9 @@ BEGIN
    IF v_pin IS NOT NULL AND v_pin IS DISTINCT FROM v_candidate THEN
     RETURN jsonb_build_object('outcome','UNAVAILABLE');
    END IF;
-   v_pin:=v_candidate;
-  END LOOP;
-  IF v_pin IS NOT NULL THEN v_versions:=v_versions||jsonb_build_array(v_pin);END IF;
+  v_pins:=jsonb_set(v_pins,ARRAY[v_key],v_candidate,true);
  END LOOP;
+ SELECT COALESCE(jsonb_agg(value ORDER BY key),'[]'::jsonb) INTO v_versions FROM jsonb_each(v_pins);
  RETURN jsonb_build_object('outcome','SUCCEEDED','versions',v_versions);
 END
 $order_rpc$;
