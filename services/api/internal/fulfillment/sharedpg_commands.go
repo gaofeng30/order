@@ -140,7 +140,7 @@ func (a *SharedPGApplication) fulfillOnce(ctx context.Context, meta WriteMeta, c
 			}
 			params["p_token_material"] = map[string]any{"hash": hex.EncodeToString(digest[:]), "ciphertext": hex.EncodeToString(ciphertext), "key_version": version}
 			params["p_proof"] = command.proof.Proof
-			if order.state == orderquery.StatePreparing && !validSharedPGReadyMessage(proof) {
+			if (order.state == orderquery.StatePreparing || order.state == orderquery.StateReserved) && !validSharedPGReadyMessage(proof) {
 				return Result{}, ErrUnavailable
 			}
 		}
