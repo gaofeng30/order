@@ -323,3 +323,18 @@ func nilIfEqual(a, b []byte) error {
 	}
 	return fmt.Errorf("object key content mismatch")
 }
+
+func (s *Service) PublicURLs(ctx context.Context, keys []string) (map[string]string, error) {
+	result := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if _, exists := result[key]; exists {
+			continue
+		}
+		url, err := s.PublicURL(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		result[key] = url
+	}
+	return result, nil
+}
