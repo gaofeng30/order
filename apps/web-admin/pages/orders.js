@@ -13,8 +13,14 @@
   let kw = '';
   let date = '';
   let paintGeneration = 0, searchTimer;
+  let loadedOrders = [], nextPage = '', pageBusy = false;
 
   function render(el) {
+    if (window.__orderTarget) {
+      const target = window.__orderTarget;
+      lane = target.status || '全部'; date = target.date || ''; kw = target.no || '';
+      uncollected = false; selId = target.id; window.__orderTarget = null;
+    }
     // 由工作台带过来的泳道 / 选中项
     if (window.__ordersLane) { lane = window.__ordersLane; window.__ordersLane = ''; }
     if (window.__orderSel) { selId = window.__orderSel; window.__orderSel = ''; }
@@ -28,12 +34,12 @@
            <input class="inp" id="f-date" type="date" value="${T.esc(date)}" aria-label="营业日期">
            <input class="inp" id="f-kw" placeholder="取餐号 / 订单号 / 手机号" value="${T.esc(kw)}" style="width:210px">
          </div>
-         <div id="tbl-host"></div>
+         <div id="tbl-host"></div><div id="order-pages" class="order-pages" aria-live="polite"></div>
        </div>
        <aside class="split-r" id="detail"></aside>`;
 
     const search = el.querySelector('#f-kw');
-    search.oninput = () => { kw = search.value; ++paintGeneration; clearTimeout(searchTimer); searchTimer = setTimeout(() => {if(el.isConnected)paint(el);},300); };
+    search.oninput = () => { kw = search.value; ++paintGeneration; clearList(el); clearTimeout(searchTimer); searchTimer = setTimeout(() => {if(el.isConnected)paint(el);},300); };
     search.onkeydown = e => {if(e.key==='Enter'){clearTimeout(searchTimer);kw=search.value;paint(el);}};
     const dateInput = el.querySelector('#f-date');
     if (dateInput) dateInput.onchange = () => { date = dateInput.value; paint(el); };
@@ -71,9 +77,40 @@
       renderLaneCounts(el, null, true);
     });
 
-    const q = kw.trim();
-    (q ? Api.searchOrders(q, { date }) : Api.listOrders(lane, { uncollected, date })).then(list => {
-      if (generation !== paintGeneration) return;
+    clearList(el);
+    fetchPage(el, generation, false);
+  }
+
+  function clearList(el) {
+    loadedOrders = []; nextPage = ''; pageBusy = false;
+    el.querySelector('#tbl-host').innerHTML = '<div class="card card-pad" role="status">正在读取订单…</div>';
+    el.querySelector('#order-pages').innerHTML = '';
+    detail(el, '');
+  }
+
+  async function fetchPage(el, generation, append) {
+    if (pageBusy) return;
+    pageBusy = true;
+    const pager = el.querySelector('#order-pages');
+    pager.innerHTML = `<span role="status">已显示 ${loadedOrders.length} 笔 · 正在加载…</span>`;
+    try {
+      const page = await Api.orderPage({ lane, date, q: kw.trim(), uncollected, after: append ? nextPage : '' });
+      if (generation !== paintGeneration || !el.isConnected) return;
+      loadedOrders = append ? loadedOrders.concat(page.orders) : page.orders;
+      nextPage = page.next;
+      drawOrders(el, loadedOrders);
+      pager.innerHTML = `<span>已显示 ${loadedOrders.length} 笔${nextPage ? '' : ' · 已全部加载'}</span>${nextPage ? '<button class="btn btn--line" data-more>加载更多</button>' : ''}`;
+      const more = pager.querySelector('[data-more]');
+      if (more) more.onclick = () => fetchPage(el, generation, true);
+    } catch (error) {
+      if (generation !== paintGeneration || !el.isConnected) return;
+      if (!append) { loadedOrders = []; el.querySelector('#tbl-host').innerHTML = ''; detail(el, ''); }
+      pager.innerHTML = `<span role="alert">${append ? '已显示 ' + loadedOrders.length + ' 笔，后续订单加载失败：' : '订单加载失败：'}${T.esc(error.message)}</span><button class="btn btn--line" data-retry>重试</button>`;
+      pager.querySelector('[data-retry]').onclick = () => fetchPage(el, generation, append);
+    } finally { if (generation === paintGeneration) pageBusy = false; }
+  }
+
+  function drawOrders(el, list) {
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 
@@ -113,7 +150,6 @@
       });
 
       detail(el, selId);
-    });
   }
 
   /* 跨营业日取餐号的提示。搜不到就以为没有，是 §6.6 那条规则最容易造成的误判 ——
@@ -133,13 +169,12 @@
   /* 「未取餐」筛选。只在 待取餐 泳道下有意义 —— 其余状态谈不上"未取"。 */
   function paintUncollected(el) {
     const host = el.querySelector('#unc-host');
-    const n = Api.uncollectedCount();
     if (lane !== '待取餐') {
       host.innerHTML = `<span class="faint" style="font-size:12.5px">选中左侧订单，右侧显示完整单据</span>`;
       return;
     }
     host.innerHTML =
-      `<span class="seg${uncollected ? ' on' : ''}" data-unc>未取餐<span class="cnt">${n}</span></span>
+      `<span class="seg${uncollected ? ' on' : ''}" data-unc>未取餐</span>
        <span class="faint" style="font-size:12.5px;margin-left:10px">营业日已结束仍未核销的单，可事后核销或发起退款</span>`;
     const btn = host.querySelector('[data-unc]');
     if (btn) btn.onclick = () => { uncollected = !uncollected; paint(el); };
@@ -147,7 +182,7 @@
 
   function detail(el, id) {
     const host = el.querySelector('#detail');
-    const o = id ? Api.findOrder(id) : null;
+    const o = id ? loadedOrders.find(order => order.id === id) : null;
     if (!o) {
       host.innerHTML = `<div class="dt-empty">${I.svg('receipt', 30, '#c7cab8')}<div>选择左侧订单查看详情</div></div>`;
       return;
@@ -252,6 +287,12 @@
     });
   }
 
+  window.addEventListener('pc-session-expired', () => {
+    ++paintGeneration; clearTimeout(searchTimer);
+    lane = '已预约'; selId = ''; date = ''; kw = ''; uncollected = false;
+    loadedOrders = []; nextPage = ''; pageBusy = false;
+    window.__orderTarget = null; window.__orderSel = ''; window.__ordersLane = '';
+  });
   window.Pages = window.Pages || {};
   window.Pages['orders'] = { sub: '订单查询、未取餐筛选与全额退款', flush: true, render };
 })();

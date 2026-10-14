@@ -264,6 +264,25 @@
     if (generation === orderReadGeneration) state.orders = orders;
     return orders;
   }
+  async function orderPage({ lane, date, q, uncollected, after = '' }) {
+    const body = await request('/admin/orders' + qs({
+      state: !q && lane !== '全部' ? lane : '', date, q,
+      unclaimed: !q && uncollected ? 'true' : '', limit: 50, after_id: after,
+    }));
+    if (!body || !Array.isArray(body.orders) || !Object.prototype.hasOwnProperty.call(body, 'next_after_id')) {
+      throw new ApiError('订单数据不完整，请重试');
+    }
+    const orders = body.orders.map(orderOf), seen = new Set();
+    let previous = after;
+    for (const order of orders) {
+      if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || (previous && BigInt(order.id) <= BigInt(previous))) throw new ApiError('订单分页异常，请重试');
+      seen.add(order.id); previous = order.id;
+    }
+    const next = body.next_after_id == null ? '' : String(body.next_after_id);
+    if (next && (!/^[1-9]\d*$/.test(next) || !orders.length || next !== previous)) throw new ApiError('订单分页异常，请重试');
+    return { orders, next };
+  }
+
   async function preparationOrders(date) {
     const generation = sessionGeneration, bearer = token();
     const result = [], seen = new Set();
@@ -467,7 +486,7 @@
     ApiError, bootstrap, logout, beginPCLogin, pollPCLogin, storeView, dashboardStats,
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage, setShelf, setSoldOut, reorderProducts, isSoldOut, isSellable,
     listCategories, addCategory, renameCategory, setCategoryEnabled, deleteCategory, reorderCategories,
-    preparationOrders, markOrderReady, idempotencyKey,
+    orderPage, preparationOrders, markOrderReady, idempotencyKey,
     listOrders, laneCounts, readOrderCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
     uncollectedCount, searchOrders, codeHint, listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,

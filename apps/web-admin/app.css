@@ -933,3 +933,11 @@ input[type=checkbox] { accent-color:var(--green); min-width:18px; min-height:18p
 .prep-table th:nth-child(2) { width:90px; }
 .prep-table th:nth-child(4), .prep-table th:nth-child(5) { width:110px; }
 .prep-result { margin-bottom:16px; }
+
+.order-pages { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:16px 0; }
+.prep-remark { color:#996015; }
+.prep-time-group th { background:var(--green-bg); color:var(--green); }
+.prep-result p { margin-top:8px; }
+.prep-result ul { padding-left:20px; margin-top:12px; }
+.prep-result li { margin-top:8px; overflow-wrap:anywhere; }
+.prep-table .prep-located { background:var(--gold-bg); outline:2px solid var(--gold-2); outline-offset:-2px; }

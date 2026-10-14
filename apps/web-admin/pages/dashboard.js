@@ -37,7 +37,7 @@
       el.querySelector('[data-refresh]').onclick = () => render(el);
       renderLive(el, live);
       el.querySelector('[data-more]').onclick = () => window.App.go('orders');
-      el.querySelectorAll('[data-lane]').forEach(n => { n.onclick = () => { window.__ordersLane = n.dataset.lane; window.App.go('orders'); }; });
+      el.querySelectorAll('[data-lane]').forEach(n => { n.onclick = () => { window.__preparationDate = Api.today(); window.App.go('preparation'); }; });
     }).catch(e => {
       el.innerHTML = `<div class="card card-pad"><b>经营数据暂不可用</b><div class="faint" style="margin-top:8px">${T.esc(e.message)}</div><button class="btn btn--primary" style="margin-top:16px" data-retry>重试</button></div>`;
       el.querySelector('[data-retry]').onclick = () => render(el);
@@ -55,7 +55,7 @@
       ], rows: live, empty: '当前没有进行中的订单',
     });
     T.bind(host, {
-      row(id) { window.__orderSel = id; window.App.go('orders'); },
+      row(id) { const order = live.find(o => o.id === id); if (!order) return; window.__orderTarget = { id, status: order.status, date: order.pickupDate, no: order.no }; window.App.go('orders'); },
     });
   }
 
