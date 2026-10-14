@@ -456,8 +456,9 @@ BEGIN
     RETURN jsonb_build_object('order_id',p_order::text,'state','READY_FOR_PICKUP','changed',true,'replay',true);
   END IF;
   IF p_now IS NULL THEN RAISE EXCEPTION USING ERRCODE='P1005',MESSAGE='ORDER_STALE_PROOF'; END IF;
-  IF o.state<>'PREPARING' THEN RAISE EXCEPTION USING ERRCODE='P1004',MESSAGE='ORDER_TRANSITION'; END IF;
-  IF o.preparing_at IS NULL OR o.preparing_at>p_now OR o.ready_at IS NOT NULL OR o.completed_at IS NOT NULL
+  IF NOT (o.state='PREPARING' OR (o.state='RESERVED' AND o.pickup_at<=p_now+interval '30 minutes')) THEN RAISE EXCEPTION USING ERRCODE='P1004',MESSAGE='ORDER_TRANSITION'; END IF;
+  IF (o.state='PREPARING' AND (o.preparing_at IS NULL OR o.preparing_at>p_now))
+    OR (o.state='RESERVED' AND (o.preparing_at IS NOT NULL OR o.materialized_at>p_now)) OR o.ready_at IS NOT NULL OR o.completed_at IS NOT NULL
     OR coalesce(octet_length(o.redemption_token_hash),0)<>0 OR coalesce(octet_length(o.redemption_token_ciphertext),0)<>0
     OR o.redemption_key_version IS NOT NULL OR o.redemption_issued_at IS NOT NULL OR o.redeemed_by_account_id IS NOT NULL OR o.redeemed_at IS NOT NULL THEN
     RAISE EXCEPTION USING ERRCODE='P1007',MESSAGE='ORDER_UNAVAILABLE';
@@ -480,10 +481,12 @@ BEGIN
     OR p_token_material->>'key_version' !~ '^[1-9][0-9]{0,4}$' OR (p_token_material->>'key_version')::integer>65535 THEN
     RAISE EXCEPTION USING ERRCODE='P1007',MESSAGE='ORDER_TOKEN_MATERIAL';
   END IF;
-  UPDATE public.orders SET state='READY_FOR_PICKUP',ready_at=p_now,redemption_issued_at=p_now,
+  UPDATE public.orders SET state='READY_FOR_PICKUP',
+    preparing_at=COALESCE(o.preparing_at,GREATEST(o.materialized_at,o.pickup_at-interval '30 minutes')),
+    ready_at=p_now,redemption_issued_at=p_now,
     redemption_token_hash=decode(p_token_material->>'hash','hex'),redemption_token_ciphertext=decode(p_token_material->>'ciphertext','hex'),
     redemption_key_version=(p_token_material->>'key_version')::integer,record_version=record_version+1,updated_at=p_now
-    WHERE id=p_order AND state='PREPARING' AND record_version=o.record_version;
+    WHERE id=p_order AND state=o.state AND record_version=o.record_version;
   GET DIAGNOSTICS affected=ROW_COUNT;
   IF affected<>1 THEN RAISE EXCEPTION USING ERRCODE='P1007',MESSAGE='ORDER_WRITE_COUNT'; END IF;
   whitespace:=E' \t\n\r\v\f'||chr(133)||chr(160)||chr(5760)||chr(8192)||chr(8193)||chr(8194)||chr(8195)||chr(8196)||chr(8197)||chr(8198)||chr(8199)||chr(8200)||chr(8201)||chr(8202)||chr(8232)||chr(8233)||chr(8239)||chr(8287)||chr(12288);
