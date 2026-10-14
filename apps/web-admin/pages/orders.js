@@ -103,7 +103,13 @@
       if (table) table.style.tableLayout = 'fixed';
 
       T.bind(host, {
-        row(id) { selId = id; paint(el); },
+        row(id) {
+          selId = id;
+          host.querySelectorAll('tr[data-id]').forEach(row => {
+            row.classList.toggle('sel', row.dataset.id === selId);
+          });
+          detail(el, selId);
+        },
       });
 
       detail(el, selId);
