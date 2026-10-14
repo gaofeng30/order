@@ -15,6 +15,7 @@ import (
 
 type ImageURLer interface {
 	PublicURL(context.Context, string) (string, error)
+	PublicURLs(context.Context, []string) (map[string]string, error)
 }
 
 type ImageConfirmationReader interface {
