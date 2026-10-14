@@ -34,8 +34,10 @@ WHERE c.is_active = TRUE
 ORDER BY c.sort_order ASC, c.id ASC, p.sort_order ASC, p.id ASC`
 
 const pickupStoreQuery = `SELECT business_status FROM storefront_settings WHERE id = 1 LIMIT 1`
-const pickupDatesQuery = `SELECT to_char(service_date,'YYYY-MM-DD'), is_open
-FROM service_dates
+const pickupDatesQuery = `SELECT to_char(service_date,'YYYY-MM-DD'), is_open,
+EXISTS (SELECT 1 FROM products p JOIN categories c ON c.id=p.category_id AND c.is_active WHERE p.is_listed AND p.meal_period IN ('all', 'lunch') AND NOT EXISTS (SELECT 1 FROM product_sold_out_dates sold WHERE sold.product_id=p.id AND sold.service_date=d.service_date)),
+EXISTS (SELECT 1 FROM products p JOIN categories c ON c.id=p.category_id AND c.is_active WHERE p.is_listed AND p.meal_period IN ('all', 'dinner') AND NOT EXISTS (SELECT 1 FROM product_sold_out_dates sold WHERE sold.product_id=p.id AND sold.service_date=d.service_date))
+FROM service_dates d
 WHERE service_date IN ($1, $2)
 ORDER BY service_date`
 
@@ -115,11 +117,12 @@ func (repository *Repository) ReadPickupFacts(ctx context.Context, serviceDates 
 		return PickupFacts{}, fmt.Errorf("query pickup dates: %w", err)
 	}
 	result.ServiceDates = make(map[string]bool, 2)
+	result.AvailableMeals = make(map[string]map[MealCode]bool, 2)
 	expected := map[string]struct{}{serviceDates[0]: {}, serviceDates[1]: {}}
 	for rows.Next() {
 		var date string
-		var open bool
-		if err := rows.Scan(&date, &open); err != nil {
+		var open, lunch, dinner bool
+		if err := rows.Scan(&date, &open, &lunch, &dinner); err != nil {
 			rows.Close()
 			return PickupFacts{}, fmt.Errorf("scan pickup date: %w", err)
 		}
@@ -132,6 +135,7 @@ func (repository *Repository) ReadPickupFacts(ctx context.Context, serviceDates 
 			return PickupFacts{}, errors.New("pickup service date duplicate")
 		}
 		result.ServiceDates[date] = open
+		result.AvailableMeals[date] = map[MealCode]bool{MealLunch: lunch, MealDinner: dinner}
 	}
 	if err := rows.Err(); err != nil {
 		rows.Close()
