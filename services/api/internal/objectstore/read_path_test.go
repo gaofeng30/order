@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -118,5 +119,29 @@ func TestCatalogHTTPReadBudget(t *testing.T) {
 		if fail && strings.Contains(rec.Body.String(), "versionId=") {
 			t.Fatal("failed pin lookup exposed a URL")
 		}
+	}
+}
+
+func TestDisplayURLUsesSignedBoundedImageProcessing(t *testing.T) {
+	s, rpc, transport := readService(t)
+	raw, err := s.PublicURL(context.Background(), rpc.pins[0].ObjectKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := parsed.Query()
+	rule := "imageMogr2/thumbnail/640x640>/format/webp/quality/80"
+	if !q.Has(rule) || q.Get("versionId") != "fixed-version" {
+		t.Fatal("display URL must resize the exact confirmed version")
+	}
+	signedParams, _ := url.QueryUnescape(q.Get("q-url-param-list"))
+	if !strings.Contains(signedParams, strings.ToLower(rule)) {
+		t.Fatalf("image processing must be signed: %s", q.Get("q-url-param-list"))
+	}
+	if transport.calls != 0 {
+		t.Fatal("display must not download images on the API server")
 	}
 }
