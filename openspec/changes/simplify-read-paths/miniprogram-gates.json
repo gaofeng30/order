@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "change": "simplify-read-paths",
+  "base_sha": "0aba16b086bd3d2770e7dce41ccb86311e697587",
+  "tdd": {
+    "red": {
+      "task_id": "1",
+      "command": "node openspec/changes/simplify-read-paths/checks/menu-read-budget.cjs and payment-recovery.cjs: baseline reproductions recorded in evidence.md"
+    },
+    "green": {
+      "task_id": "2",
+      "command": "node openspec/changes/simplify-read-paths/checks/menu-read-budget.cjs && node openspec/changes/simplify-read-paths/checks/payment-recovery.cjs"
+    },
+    "refactor": {
+      "task_id": "3",
+      "command": "Review batch projection diff; rerun the same regression commands plus go test -race in services/api"
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI3",
+    "native_capabilities": [
+      "wx.requestPayment"
+    ],
+    "scenarios": [
+      {
+        "id": "selected-menu",
+        "kind": "primary",
+        "steps": [
+          "Open menu in WeChat with this candidate and matching backend/SQL.",
+          "Select today/tomorrow lunch/dinner, including sold-out and closed slots."
+        ],
+        "expected": [
+          "Availability loads once and only the selected full menu loads.",
+          "Empty, sold-out, closed and cutoff slots remain unavailable; prices reflect the current identity."
+        ]
+      },
+      {
+        "id": "image-failure",
+        "kind": "regression",
+        "steps": [
+          "Open a menu containing one unavailable confirmed image."
+        ],
+        "expected": [
+          "Menu facts and prices remain usable; missing image shows the existing placeholder."
+        ]
+      },
+      {
+        "id": "existing-payment-recovery",
+        "kind": "primary",
+        "steps": [
+          "Using an authorized test payment account, prepare a payment then make the original selection sold out or past cutoff.",
+          "Resume payment confirmation and retry once."
+        ],
+        "expected": [
+          "Existing payment is queried despite current menu availability.",
+          "No duplicate quote, prepayment or payment is created; original confirmed order is shown."
+        ]
+      },
+      {
+        "id": "new-purchase-unavailable",
+        "kind": "regression",
+        "steps": [
+          "With no existing prepayment, attempt to pay an unavailable cart."
+        ],
+        "expected": [
+          "No new quote or prepayment is created."
+        ]
+      }
+    ]
+  }
+}
