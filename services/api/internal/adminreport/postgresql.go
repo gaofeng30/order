@@ -47,7 +47,7 @@ func authorizeOwner(ctx context.Context, db *sql.DB, userID uint64) error {
 	return nil
 }
 
-const orderProjectionColumns = `id,convert_from(order_no,'UTF8'),state,to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),meal_period,pickup_point_snapshot,LPAD(pickup_number::text,4,'0'),payable_cents,original_subtotal_cents,discount_cents,discount_rate_percent,contact_name_snapshot,convert_from(contact_phone_snapshot,'UTF8'),convert_from(transaction_id,'UTF8'),paid_at,materialized_at,order_note`
+const orderProjectionColumns = `id,convert_from(order_no,'UTF8'),(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),meal_period,pickup_point_snapshot,LPAD(pickup_number::text,4,'0'),payable_cents,original_subtotal_cents,discount_cents,discount_rate_percent,contact_name_snapshot,convert_from(contact_phone_snapshot,'UTF8'),convert_from(transaction_id,'UTF8'),paid_at,materialized_at,order_note`
 
 type orderScanner interface{ Scan(...any) error }
 
@@ -92,7 +92,7 @@ func (a *PostgreSQLApplication) SearchOrders(ctx context.Context, userID uint64,
 	args := []any{f.Page.AfterID}
 	if f.State != "" {
 		args = append(args, normalizeOrderState(f.State))
-		query += fmt.Sprintf(" AND state=$%d", len(args))
+		query += fmt.Sprintf(" AND (CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)=$%d", len(args))
 	}
 	if f.Date != "" {
 		args = append(args, f.Date)
@@ -178,7 +178,7 @@ func (a *PostgreSQLApplication) Stats(ctx context.Context, userID uint64, at tim
 		return Stats{}, err
 	}
 	var s Stats
-	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),COUNT(*) FILTER (WHERE state='PREPARING') FROM orders WHERE state='PREPARING' OR (state='COMPLETED' AND paid_at >= (date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai') AND paid_at < ((date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') + interval '1 month') AT TIME ZONE 'Asia/Shanghai'))`, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
+	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),COUNT(*) FILTER (WHERE (CASE WHEN state='RESERVED' AND pickup_at<=$1::timestamptz+interval '30 minutes' THEN 'PREPARING' ELSE state END)='PREPARING') FROM orders WHERE (CASE WHEN state='RESERVED' AND pickup_at<=$1::timestamptz+interval '30 minutes' THEN 'PREPARING' ELSE state END)='PREPARING' OR (state='COMPLETED' AND paid_at >= (date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai') AND paid_at < ((date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') + interval '1 month') AT TIME ZONE 'Asia/Shanghai'))`, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
 	if err != nil {
 		return Stats{}, ErrUnavailable
 	}
