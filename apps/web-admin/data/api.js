@@ -10,6 +10,16 @@
   const LANES = ['已预约', '制作中', '待取餐', '已完成', '退款中', '已退款', '全部'];
   const MAX_IMPORT_ROWS = 500;
   const MAX_STAFF_IMPORT_ROWS = 5000;
+  const ERROR_MESSAGES = {
+    INVALID_REQUEST: '请检查必填项和填写格式',
+    CATALOG_CONFLICT: '名称重复或数据已变更，请检查后重试',
+    IMPORT_UNAVAILABLE: '导入服务暂时不可用，请稍后重试',
+    INVALID_FILE: '无法读取文件，请使用有效的 .xlsx 文件',
+    INVALID_TEMPLATE: '表格格式不正确，请按下载的模板填写',
+    FILE_TOO_LARGE: '文件不能超过 10 MiB',
+    TOO_MANY_ROWS: '表格行数超过限制，请拆分后导入',
+    PREVIEW_EXPIRED: '导入预览已过期，请重新选择文件并核对',
+  };
   const STATUS_MAP = {
     已预约: 'info', 制作中: 'info', 待取餐: 'info', 已完成: 'ok', 成功: 'ok',
     已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
@@ -87,7 +97,7 @@
     if (!response.ok) {
       if (response.status === 401) clearSession();
       const err = body && (body.error || body);
-      throw new ApiError((err && (err.message || err.detail)) || `请求失败（${response.status}）`, response.status, err && err.code);
+      throw new ApiError((err && (ERROR_MESSAGES[err.code] || err.message || err.detail)) || `请求失败（${response.status}）`, response.status, err && err.code);
     }
     return unwrap(body);
   }
@@ -171,7 +181,7 @@
     const day = settings.service_date || settings.serviceDate;
     const body = await request('/admin/products/' + encodeURIComponent(id) + qs({ service_date: day }));
     assertSession(generation, bearer);
-    return productOf(body);
+    return productOf(body.product);
   }
   function productBody(p) {
     const category = state.categories.find(c => c.name === p.cat);
