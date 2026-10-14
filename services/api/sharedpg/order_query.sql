@@ -14,11 +14,11 @@ IF p_state IS NULL OR (p_state<>'' AND p_state NOT IN ('RESERVED','PREPARING','R
  RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='invalid_query'; END IF;
 IF p_active IS NULL OR (p_active AND p_state<>'') THEN RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='invalid_query'; END IF;
 SELECT COALESCE(jsonb_agg(facts ORDER BY id DESC),'[]'::jsonb) INTO result FROM (
- SELECT o.id,jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',o.state,
+ SELECT o.id,jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END),
  'pickup_date',to_char(o.pickup_date,'YYYY-MM-DD'),'pickup_time',to_char(o.pickup_date+o.pickup_time,'HH24:MI'),
  'pickup_point',o.pickup_point_snapshot,'pickup_number',o.pickup_number::text,'payable_cents',o.payable_cents::text,
  'materialized_at',o.materialized_at,'pickup_at',o.pickup_at) AS facts FROM public.orders o
- WHERE o.user_id=p_user AND (p_state='' OR o.state=p_state)
+ WHERE o.user_id=p_user AND (p_state='' OR (CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END)=p_state)
  AND (NOT p_active OR o.state IN ('RESERVED','PREPARING','READY_FOR_PICKUP'))
  AND (p_after=0 OR o.id<p_after) ORDER BY o.id DESC LIMIT p_limit+1
 ) rows; RETURN result;
@@ -38,14 +38,14 @@ IF p_user IS NULL OR p_user<>trunc(p_user) OR p_user<1 OR p_user>184467440737095
 IF p_order IS NULL OR p_order<>trunc(p_order) OR p_order<1 OR p_order>18446744073709551615 THEN
  RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='invalid_query'; END IF;
 
-SELECT true, (SELECT jsonb_build_object('order',jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',o.state,
+SELECT true, (SELECT jsonb_build_object('order',jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END),
  'pickup_date',to_char(o.pickup_date,'YYYY-MM-DD'),'pickup_time',to_char(o.pickup_date+o.pickup_time,'HH24:MI'),
  'pickup_point',o.pickup_point_snapshot,'pickup_number',o.pickup_number::text,'payable_cents',o.payable_cents::text,
  'materialized_at',o.materialized_at,'pickup_at',o.pickup_at,
  'contact_name',o.contact_name_snapshot,'contact_phone_hex',encode(o.contact_phone_snapshot,'hex'),
  'identity_kind',o.identity_kind,'discount_rate',o.discount_rate_percent::text,'transaction_id_hex',encode(o.transaction_id,'hex'),
  'paid_at',o.paid_at,'order_note',o.order_note,'item_count',o.item_count::text,
- 'preparing_at',o.preparing_at,'ready_at',o.ready_at,'completed_at',o.completed_at,'refunding_at',o.refunding_at,'refunded_at',o.refunded_at,
+ 'preparing_at',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN GREATEST(o.materialized_at,o.pickup_at-interval '30 minutes') ELSE o.preparing_at END),'ready_at',o.ready_at,'completed_at',o.completed_at,'refunding_at',o.refunding_at,'refunded_at',o.refunded_at,
  'redemption_cipher_hex',encode(o.redemption_token_ciphertext,'hex'),'redemption_hash_hex',encode(o.redemption_token_hash,'hex'),
  'redemption_version',o.redemption_key_version::text,'redemption_issued_at',o.redemption_issued_at,
  'redeemed_by',o.redeemed_by_account_id::text,'redeemed_at',o.redeemed_at),'items',(SELECT COALESCE(jsonb_agg(jsonb_build_object(
@@ -77,11 +77,11 @@ IF NOT EXISTS(SELECT 1 FROM public.merchant_accounts WHERE bound_user_id=p_user 
  RAISE EXCEPTION USING ERRCODE='P1002',MESSAGE='merchant_forbidden'; END IF;
 escaped:=replace(replace(replace(p_search,'=','=='),'%','=%'),'_','=_');
 SELECT COALESCE(jsonb_agg(facts ORDER BY id DESC),'[]'::jsonb) INTO result FROM (
- SELECT o.id,jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',o.state,
+ SELECT o.id,jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END),
  'pickup_date',to_char(o.pickup_date,'YYYY-MM-DD'),'pickup_time',to_char(o.pickup_date+o.pickup_time,'HH24:MI'),
  'pickup_point',o.pickup_point_snapshot,'pickup_number',o.pickup_number::text,'payable_cents',o.payable_cents::text,
  'materialized_at',o.materialized_at,'pickup_at',o.pickup_at) AS facts FROM public.orders o
- WHERE (p_state='' OR o.state=p_state) AND (p_date='' OR o.pickup_date=p_date::date)
+ WHERE (p_state='' OR (CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END)=p_state) AND (p_date='' OR o.pickup_date=p_date::date)
  AND (p_search='' OR o.order_no=convert_to(p_search,'UTF8') OR lpad(o.pickup_number::text,4,'0')=p_search OR convert_from(o.contact_phone_snapshot,'UTF8') LIKE '%'||escaped ESCAPE '=')
  AND (p_after=0 OR o.id<p_after) ORDER BY o.id DESC LIMIT p_limit+1
 ) rows; RETURN result;
@@ -101,14 +101,14 @@ IF p_user IS NULL OR p_user<>trunc(p_user) OR p_user<1 OR p_user>184467440737095
 IF p_order IS NULL OR p_order<>trunc(p_order) OR p_order<1 OR p_order>18446744073709551615 THEN
  RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='invalid_query'; END IF;
 IF p_state IS NULL OR (p_state<>'' AND p_state NOT IN ('RESERVED','PREPARING','READY_FOR_PICKUP','COMPLETED','REFUNDING','REFUNDED')) THEN RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='invalid_query'; END IF;
-SELECT EXISTS(SELECT 1 FROM public.merchant_accounts WHERE bound_user_id=p_user AND enabled=true AND deleted_at IS NULL AND role IN ('OWNER','SUBACCOUNT') AND auth_version>0), (SELECT jsonb_build_object('order',jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',o.state,
+SELECT EXISTS(SELECT 1 FROM public.merchant_accounts WHERE bound_user_id=p_user AND enabled=true AND deleted_at IS NULL AND role IN ('OWNER','SUBACCOUNT') AND auth_version>0), (SELECT jsonb_build_object('order',jsonb_build_object('id',o.id::text,'order_no_hex',encode(o.order_no,'hex'),'state',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE o.state END),
  'pickup_date',to_char(o.pickup_date,'YYYY-MM-DD'),'pickup_time',to_char(o.pickup_date+o.pickup_time,'HH24:MI'),
  'pickup_point',o.pickup_point_snapshot,'pickup_number',o.pickup_number::text,'payable_cents',o.payable_cents::text,
  'materialized_at',o.materialized_at,'pickup_at',o.pickup_at,
  'contact_name',o.contact_name_snapshot,'contact_phone_hex',encode(o.contact_phone_snapshot,'hex'),
  'identity_kind',o.identity_kind,'discount_rate',o.discount_rate_percent::text,'transaction_id_hex',encode(o.transaction_id,'hex'),
  'paid_at',o.paid_at,'order_note',o.order_note,'item_count',o.item_count::text,
- 'preparing_at',o.preparing_at,'ready_at',o.ready_at,'completed_at',o.completed_at,'refunding_at',o.refunding_at,'refunded_at',o.refunded_at,
+ 'preparing_at',(CASE WHEN o.state='RESERVED' AND o.pickup_at<=statement_timestamp()+interval '30 minutes' THEN GREATEST(o.materialized_at,o.pickup_at-interval '30 minutes') ELSE o.preparing_at END),'ready_at',o.ready_at,'completed_at',o.completed_at,'refunding_at',o.refunding_at,'refunded_at',o.refunded_at,
  'redemption_cipher_hex',encode(o.redemption_token_ciphertext,'hex'),'redemption_hash_hex',encode(o.redemption_token_hash,'hex'),
  'redemption_version',o.redemption_key_version::text,'redemption_issued_at',o.redemption_issued_at,
  'redeemed_by',o.redeemed_by_account_id::text,'redeemed_at',o.redeemed_at),'items',(SELECT COALESCE(jsonb_agg(jsonb_build_object(
