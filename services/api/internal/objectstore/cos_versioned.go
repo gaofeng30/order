@@ -97,7 +97,10 @@ func (adapter *COSAdapter) versionURL(ctx context.Context, key, versionID string
 		!validNativeVersionID(versionID) || !validVersionedSigningTime(ttl, at) {
 		return "", ErrUnavailable
 	}
-	query := url.Values{"versionId": []string{versionID}}
+	// Display derivatives keep the immutable source version, including existing
+	// uploads. COS performs the resize; the API never reads image bytes here.
+	query := url.Values{"versionId": []string{versionID},
+		"imageMogr2/thumbnail/640x640>/format/webp/quality/80": []string{""}}
 	signedURL, err := adapter.client.Object.GetPresignedURL2(ctx, http.MethodGet, key, ttl, &cos.PresignedURLOptions{
 		Query: &query, AuthTime: versionedAuthTime(ttl, at),
 	})
