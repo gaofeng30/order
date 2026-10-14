@@ -110,19 +110,14 @@ async function loadPickupOptions() { return parsePickupOptions(await api.getOpti
 async function loadOrderableOptions() {
   const options = await loadPickupOptions();
   options.dates.sort((left, right) => left.date.localeCompare(right.date));
-  await Promise.all(options.dates.map(async day => {
+  for (const day of options.dates) {
     day.mealPeriods.sort((left, right) => ['lunch', 'dinner'].indexOf(left.mealPeriod) - ['lunch', 'dinner'].indexOf(right.mealPeriod));
-    await Promise.all(day.mealPeriods.map(async meal => {
+    for (const meal of day.mealPeriods) {
       meal.pickupTimes.sort();
-      if (!day.available || !meal.available || !meal.pickupTimes.length) {
-        meal.available = false;
-        return;
-      }
-      const menu = await loadMenu({ date: day.date, mealPeriod: meal.mealPeriod, time: meal.pickupTimes[0] });
-      meal.available = menu.orderable && menu.categories.some(group => group.products.some(product => product.orderable));
-    }));
+      meal.available = day.available && meal.available && meal.pickupTimes.length > 0;
+    }
     day.available = day.available && day.mealPeriods.some(meal => meal.available);
-  }));
+  }
   return options;
 }
 async function loadMenu(selection) {
