@@ -218,3 +218,18 @@ BEGIN
  EXCEPTION WHEN OTHERS THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END;
 END
 $order_rpc$;
+
+-- Successful reconciliation is durable across process restarts; do not download the same completed bill again.
+CREATE OR REPLACE FUNCTION public.order_billing_completed_v1(p_date text,p_environment text,p_appid text,p_merchant text)
+RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY INVOKER
+SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
+DECLARE receipt public.action_audits%ROWTYPE;
+BEGIN
+ IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';END IF;
+ IF p_date IS NULL OR p_date !~ '^\d{4}-\d{2}-\d{2}$' OR p_environment IS DISTINCT FROM '__ORDER_ENVIRONMENT__' OR coalesce(p_appid,'')='' OR coalesce(p_merchant,'')='' THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
+ SELECT * INTO receipt FROM public.action_audits WHERE entry_kind='SYSTEM_EVIDENCE' AND actor_kind='PROVIDER' AND action='billing.reconcile' AND after_state_json->>'date'=p_date AND after_state_json->>'environment'=p_environment AND after_state_json->>'appid'=p_appid AND after_state_json->>'merchant_id'=p_merchant ORDER BY id DESC LIMIT 1;
+ IF NOT FOUND OR receipt.result<>'SUCCEEDED' OR receipt.reason_code<>'BILL_MATCHED' THEN RETURN jsonb_build_object('outcome','SUCCEEDED','completed',false);END IF;
+ RETURN jsonb_build_object('outcome','SUCCEEDED','completed',true,'matched',receipt.after_state_json->>'matched','digest',receipt.after_state_json->>'bill_digest');
+END;$order_rpc$;
+REVOKE ALL ON FUNCTION public.order_billing_completed_v1(text,text,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.order_billing_completed_v1(text,text,text,text) TO authenticated;
