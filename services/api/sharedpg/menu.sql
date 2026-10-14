@@ -24,7 +24,7 @@ BEGIN
  END IF;
  IF p_date_a IS NULL OR p_date_b IS NULL OR p_date_a=p_date_b THEN RAISE EXCEPTION USING ERRCODE='P1009',MESSAGE='ORDER_STORAGE_UNAVAILABLE'; END IF;
  SELECT jsonb_build_object('outcome','SUCCEEDED','business_status',s.business_status,'meal_periods',(SELECT COALESCE(jsonb_agg(jsonb_build_object('Code',code,'CutoffTime',cutoff_time::text,'PickupStartTime',pickup_start_time::text,'PickupEndTime',pickup_end_time::text,'IntervalMinutes',interval_minutes) ORDER BY code),'[]'::jsonb) FROM public.meal_periods),'service_dates',
-  (SELECT COALESCE(jsonb_agg(jsonb_build_object('date',to_char(service_date,'YYYY-MM-DD'),'is_open',is_open) ORDER BY service_date),'[]'::jsonb) FROM public.service_dates WHERE service_date IN(p_date_a,p_date_b))) INTO v_result FROM public.storefront_settings s WHERE s.id=1;
+  (SELECT COALESCE(jsonb_agg(jsonb_build_object('date',to_char(service_date,'YYYY-MM-DD'),'is_open',is_open,'available_meals',(SELECT COALESCE(jsonb_agg(m.code ORDER BY m.code),'[]'::jsonb) FROM public.meal_periods m WHERE EXISTS (SELECT 1 FROM public.products p JOIN public.categories c ON c.id=p.category_id AND c.is_active WHERE p.is_listed AND p.meal_period IN ('all',m.code) AND NOT EXISTS (SELECT 1 FROM public.product_sold_out_dates sold WHERE sold.product_id=p.id AND sold.service_date=d.service_date)))) ORDER BY service_date),'[]'::jsonb) FROM public.service_dates d WHERE service_date IN(p_date_a,p_date_b))) INTO v_result FROM public.storefront_settings s WHERE s.id=1;
  IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P1009',MESSAGE='ORDER_STORAGE_UNAVAILABLE'; END IF;
  RETURN v_result;
 END
