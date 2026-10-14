@@ -3,7 +3,6 @@ package adminreport
 import (
 	"context"
 	"database/sql"
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -179,7 +178,7 @@ func (a *PostgreSQLApplication) Stats(ctx context.Context, userID uint64, at tim
 		return Stats{}, err
 	}
 	var s Stats
-	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),COUNT(*) FILTER (WHERE state='PREPARING') FROM orders`, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
+	err := a.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(payable_cents) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE (paid_at AT TIME ZONE 'Asia/Shanghai')::date=($1::timestamptz AT TIME ZONE 'Asia/Shanghai')::date AND state='COMPLETED'),COALESCE(SUM(payable_cents) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),0),COUNT(*) FILTER (WHERE date_trunc('month',paid_at AT TIME ZONE 'Asia/Shanghai')=date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AND state='COMPLETED'),COUNT(*) FILTER (WHERE state='PREPARING') FROM orders WHERE state='PREPARING' OR (state='COMPLETED' AND paid_at >= (date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') AT TIME ZONE 'Asia/Shanghai') AND paid_at < ((date_trunc('month',$1::timestamptz AT TIME ZONE 'Asia/Shanghai') + interval '1 month') AT TIME ZONE 'Asia/Shanghai'))`, at).Scan(&s.TodayRevenueCents, &s.TodayOrders, &s.MonthRevenueCents, &s.MonthOrders, &s.PendingProduction)
 	if err != nil {
 		return Stats{}, ErrUnavailable
 	}
@@ -288,31 +287,28 @@ func (a *PostgreSQLApplication) Summary(ctx context.Context, userID uint64, r Bi
 	return s, nil
 }
 func (a *PostgreSQLApplication) ExportCSV(ctx context.Context, userID uint64, r BillingRange) (io.ReadCloser, error) {
-	items := []Payment{}
-	cursor := uint64(0)
-	for {
-		page, next, err := a.Payments(ctx, userID, r, PageQuery{AfterID: cursor, Limit: 100})
-		if err != nil {
+	return exportCSV(ctx, func(ctx context.Context, after uint64) ([]exportPayment, error) {
+		if err := authorizeOwner(ctx, a.db, userID); err != nil {
 			return nil, err
 		}
-		items = append(items, page...)
-		if next == 0 {
-			break
+		rows, err := a.db.QueryContext(ctx, `SELECT id,convert_from(order_no,'UTF8'),LPAD(pickup_number::text,4,'0'),paid_at,convert_from(transaction_id,'UTF8'),payable_cents FROM orders WHERE id>$1 AND (paid_at AT TIME ZONE 'Asia/Shanghai')::date BETWEEN $2 AND $3 ORDER BY id LIMIT 100`, after, r.From, r.To)
+		if err != nil {
+			return nil, ErrUnavailable
 		}
-		cursor = next
-	}
-	var b strings.Builder
-	b.WriteString("\ufeff")
-	w := csv.NewWriter(&b)
-	_ = w.Write([]string{"订单号", "取餐号", "支付时间", "微信交易号", "实付金额"})
-	for _, p := range items {
-		_ = w.Write([]string{p.Order.OrderNo, p.Order.PickupNumber, p.Order.PaidAt.Format(time.RFC3339), p.Order.TransactionID, fmt.Sprintf("%d.%02d", p.Order.PayableCents/100, p.Order.PayableCents%100)})
-	}
-	w.Flush()
-	if w.Error() != nil {
-		return nil, ErrUnavailable
-	}
-	return io.NopCloser(strings.NewReader(b.String())), nil
+		defer rows.Close()
+		out := []exportPayment{}
+		for rows.Next() {
+			var p exportPayment
+			if rows.Scan(&p.ID, &p.OrderNo, &p.PickupNumber, &p.PaidAt, &p.TransactionID, &p.PayableCents) != nil {
+				return nil, ErrUnavailable
+			}
+			out = append(out, p)
+		}
+		if rows.Err() != nil {
+			return nil, ErrUnavailable
+		}
+		return out, nil
+	})
 }
 func (a *PostgreSQLApplication) ListPending(ctx context.Context, userID uint64, p PageQuery) ([]Pending, uint64, error) {
 	if err := authorizeOwner(ctx, a.db, userID); err != nil {
