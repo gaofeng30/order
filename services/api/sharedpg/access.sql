@@ -252,3 +252,6 @@ GRANT EXECUTE ON FUNCTION public.order_image_confirmation_commit_v1(numeric,text
 
 REVOKE ALL ON FUNCTION public.order_import_result_v1(numeric,numeric) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.order_import_result_v1(numeric,numeric) TO authenticated;
+
+REVOKE ALL ON FUNCTION public.order_admin_report_counts_v1(numeric),public.order_admin_report_export_v1(numeric,text,text,numeric,integer) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.order_admin_report_counts_v1(numeric),public.order_admin_report_export_v1(numeric,text,text,numeric,integer) TO authenticated;
