@@ -22,7 +22,7 @@ var source embed.FS
 var ErrDefinitionMismatch = errors.New("shared PG command definition mismatch")
 
 const identityMarker = "__ORDER_SERVICE_UID__"
-const identityMarkerCount = 166
+const identityMarkerCount = 168
 const schemaMarker = "__ORDER_SCHEMA_CATALOG_SQL__"
 
 type Executor interface {
@@ -55,7 +55,7 @@ func InstallSQL(serviceUID, environment, paymentNotifyURL, refundNotifyURL strin
 		name    string
 		markers int
 	}{
-		{"redeem_order.sql", 3}, {"fulfillment.sql", 4}, {"identity_read.sql", 1}, {"order_query.sql", 4}, {"identity_commands.sql", 9}, {"merchant_admin.sql", 3}, {"pc_session.sql", 6}, {"catalog.sql", 6}, {"menu.sql", 2}, {"storefront.sql", 5}, {"image_confirmation.sql", 1}, {"image_version_confirmation.sql", 3}, {"display_pricing.sql", 1}, {"merchant_soldout.sql", 2}, {"quote.sql", 2}, {"staff_admin.sql", 3}, {"import_batch.sql", 4}, {"payment_prepare.sql", 5}, {"payment_observation.sql", 4}, {"payment_materialize.sql", 4}, {"payment_receipts.sql", 2}, {"refund_commands.sql", 11}, {"refund_observation.sql", 1}, {"subscription.sql", 6}, {"order_production.sql", 2}, {"billing.sql", 6}, {"admin_report.sql", 7}, {"audit_search.sql", 1}, {"store_status.sql", 1}, {"access.sql", 52}, {"payment_environment.sql", 5},
+		{"redeem_order.sql", 3}, {"fulfillment.sql", 4}, {"identity_read.sql", 1}, {"order_query.sql", 4}, {"identity_commands.sql", 9}, {"merchant_admin.sql", 3}, {"pc_session.sql", 6}, {"catalog.sql", 6}, {"menu.sql", 2}, {"storefront.sql", 5}, {"image_confirmation.sql", 1}, {"image_version_confirmation.sql", 3}, {"display_pricing.sql", 1}, {"merchant_soldout.sql", 2}, {"quote.sql", 2}, {"staff_admin.sql", 3}, {"import_batch.sql", 4}, {"payment_prepare.sql", 5}, {"payment_observation.sql", 4}, {"payment_materialize.sql", 4}, {"payment_receipts.sql", 2}, {"refund_commands.sql", 11}, {"refund_observation.sql", 1}, {"subscription.sql", 6}, {"order_production.sql", 2}, {"billing.sql", 6}, {"admin_report.sql", 9}, {"audit_search.sql", 1}, {"store_status.sql", 1}, {"access.sql", 52}, {"payment_environment.sql", 5},
 	} {
 		body, err := source.ReadFile(file.name)
 		if err != nil || strings.Count(string(body), identityMarker) != file.markers {
@@ -149,7 +149,7 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 		return ErrDefinitionMismatch
 	}
 	matches := regexp.MustCompile(`(?s)CREATE OR REPLACE FUNCTION public\.(order_[a-z_0-9]+)\(.*?\).*?AS \$order_rpc\$(.*?)\$order_rpc\$;`).FindAllStringSubmatch(definition, -1)
-	if len(matches) != 113 {
+	if len(matches) != 116 {
 		return ErrDefinitionMismatch
 	}
 	bodies := make(map[string]string, len(matches))
@@ -161,7 +161,7 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 	}
 	var actual readiness
 	callErr := client.CallRPC(ctx, "order_shared_pg_readiness_v1", map[string]any{}, &actual)
-	if callErr != nil || actual.Role != "authenticated" || actual.UID != serviceUID || len(actual.Roles) != 2 || len(actual.Functions) != 113 || len(actual.Tables) != 26 || len(actual.Sequences) != 16 {
+	if callErr != nil || actual.Role != "authenticated" || actual.UID != serviceUID || len(actual.Roles) != 2 || len(actual.Functions) != 116 || len(actual.Tables) != 26 || len(actual.Sequences) != 16 {
 		return ErrDefinitionMismatch
 	}
 	var unreviewed []json.RawMessage
@@ -181,6 +181,8 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 		name, types string
 		arguments   []string
 	}{
+		{"order_admin_report_counts_v1", "1700", []string{"p_owner"}},
+		{"order_admin_report_export_v1", "1700 25 25 1700 23", []string{"p_owner", "p_from_hex", "p_to_hex", "p_after", "p_limit"}},
 		{"order_admin_report_get_v1", "1700 1700", []string{"p_owner", "p_order"}},
 		{"order_admin_report_payments_v1", "1700 25 25 1700 23", []string{"p_owner", "p_from_hex", "p_to_hex", "p_after", "p_limit"}},
 		{"order_admin_report_pending_v1", "1700 1700 23", []string{"p_owner", "p_after", "p_limit"}},
@@ -216,10 +218,10 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 		{"order_image_confirmation_replay_v1", "1700 25", []string{"p_actor", "p_key_hash"}},
 		{"order_image_confirmed_v1", "1009", []string{"p_target_key_hashes"}},
 		{"order_image_versions_v1", "1009", []string{"p_object_keys"}},
-		{"order_import_result_v1", "1700 1700", []string{"p_user", "p_batch"}},
 		{"order_import_commit_v1", "1700 25 16 25 25 25 25 3802 1184 1184", []string{"p_user", "p_token_hash", "p_skip", "p_operation_hash", "p_request_id_hash", "p_request_digest", "p_plan_digest", "p_material", "p_observed_at", "p_receipt_at"}},
 		{"order_import_preview_facts_v1", "25", []string{"p_kind"}},
 		{"order_import_preview_v1", "1700 25 25 1700 1700 25 25 25 1184 25 25 25 1184", []string{"p_user", "p_kind", "p_file_digest", "p_file_size", "p_row_count", "p_token_hash", "p_plan_json", "p_response_json", "p_captured_at", "p_operation_hash", "p_request_id_hash", "p_request_digest", "p_receipt_at"}},
+		{"order_import_result_v1", "1700 1700", []string{"p_user", "p_batch"}},
 		{"order_mark_ready_v1", "1700 1700 25 25 1184 1184 25 3802 3802 1184", []string{"p_actor", "p_order", "p_key", "p_request_id", "p_now", "p_enqueue_at", "p_request", "p_proof", "p_token_material", "p_receipt_at"}},
 		{"order_menu_pickup_facts_v1", "1082 1082", []string{"p_date_a", "p_date_b"}},
 		{"order_menu_snapshot_v1", "1082", []string{"p_service_date"}},
@@ -315,7 +317,7 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 			return ErrDefinitionMismatch
 		}
 	}
-	if runtimeCallable != 109 {
+	if runtimeCallable != 112 {
 		return ErrDefinitionMismatch
 	}
 	tableNames := []string{"action_audits", "categories", "discount_settings", "import_batches", "meal_periods", "merchant_accounts", "merchant_pc_sessions", "miniprogram_sessions", "miniprogram_users", "notification_consents", "notification_outbox", "order_items", "orders", "payment_observations", "pickup_sequences", "prepayments", "product_sold_out_dates", "products", "quote_items", "quotes", "refund_observations", "refunds", "schema_migrations", "service_dates", "staff_whitelist", "storefront_settings"}
