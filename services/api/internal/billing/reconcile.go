@@ -17,6 +17,9 @@ func (service *Service) RunReconcile(ctx context.Context, billDate time.Time, li
 		return ReconcileResult{}, ErrInvalidInput
 	}
 	date := normalizedBillDate(billDate)
+	if result, done, err := service.completed(ctx, date); err != nil || done {
+		return result, err
+	}
 	bill, err := service.provider.DownloadTransactionBill(ctx, date)
 	if err != nil {
 		return ReconcileResult{}, ErrBillUnavailable
