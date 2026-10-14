@@ -36,7 +36,8 @@ type PickupFacts struct {
 	BusinessStatus string
 	MealPeriods    []MealPeriodRecord
 	// ServiceDates contains only rows that exist; missing rows are closed.
-	ServiceDates map[string]bool
+	ServiceDates   map[string]bool
+	AvailableMeals map[string]map[MealCode]bool
 }
 
 func (product Product) valid() bool {
