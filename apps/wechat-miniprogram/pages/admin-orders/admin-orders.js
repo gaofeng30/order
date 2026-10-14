@@ -41,10 +41,15 @@ Page({
     }
     this.startAutoRefresh();
   },
-  onHide() { this.stopTimers(); },
+  onHide() {
+    this.stopTimers();
+    this._generation = (this._generation || 0) + 1;
+    this._statusGeneration = (this._statusGeneration || 0) + 1;
+  },
   onUnload() {
     this.stopTimers();
     this._generation = (this._generation || 0) + 1;
+    this._statusGeneration = (this._statusGeneration || 0) + 1;
   },
   stopTimers() {
     clearInterval(this._refreshTimer);
@@ -61,7 +66,17 @@ Page({
       this.load('silent');
     }, AUTO_REFRESH);
   },
-  async loadStatus() {
+  loadStatus() {
+    if (this._statusTask && this._statusTask.generation === this._statusGeneration) return this._statusTask.promise;
+    const task = {};
+    task.promise = this.fetchStatus().finally(() => {
+      if (this._statusTask === task) this._statusTask = null;
+    });
+    task.generation = this._statusGeneration;
+    this._statusTask = task;
+    return task.promise;
+  },
+  async fetchStatus() {
     const generation = (this._statusGeneration || 0) + 1;
     this._statusGeneration = generation;
     try {
@@ -80,7 +95,21 @@ Page({
   },
   /* mode: reset = 显示加载中；search = 保留旧列表直到结果返回，过期响应丢弃；
      silent = 定时/返回时后台刷新，失败不打扰；refresh = 下拉刷新，失败 toast 并保留列表 */
-  async load(mode) {
+  load(mode) {
+    const key = JSON.stringify([this.data.lane, this.data.kw]);
+    if (this._loadTask && this._loadTask.key === key && this._loadTask.generation === this._generation) {
+      if (mode === 'refresh') this._loadTask.refresh = true;
+      return this._loadTask.promise;
+    }
+    const task = { key, refresh: mode === 'refresh' };
+    task.promise = this.fetchOrders(mode).finally(() => {
+      if (this._loadTask === task) this._loadTask = null;
+    });
+    task.generation = this._generation;
+    this._loadTask = task;
+    return task.promise;
+  },
+  async fetchOrders(mode) {
     const generation = (this._generation || 0) + 1;
     this._generation = generation;
     if (mode === 'reset') this.setData({ listState: 'loading', list: [] });
@@ -95,8 +124,9 @@ Page({
       return true;
     } catch (error) {
       if (generation !== this._generation) return false;
+      if (this._loadTask && this._loadTask.generation === generation && this._loadTask.refresh) mode = 'refresh';
       if (mode === 'silent' && this.data.listState !== 'loading') return false;
-      if (mode === 'refresh' && this.data.listState === 'ready') {
+      if (mode === 'refresh' && (this.data.listState === 'ready' || this.data.listState === 'empty')) {
         this.selectComponent('#toast').show('刷新失败，请稍后重试', { icon: 'warn' });
         return false;
       }
@@ -114,6 +144,7 @@ Page({
   onKw(e) {
     const kw = (e.detail.value || '').trim();
     if (kw === this.data.kw) return;
+    this._generation = (this._generation || 0) + 1;
     this.setData({ kw });
     clearTimeout(this._searchTimer);
     if (/^\d{4}$/.test(kw)) {
