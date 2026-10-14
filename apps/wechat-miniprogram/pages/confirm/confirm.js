@@ -324,13 +324,13 @@ Page({
     });
   },
   async payOnce() {
-    if (!cart.count(this.availability(), this.selection()) || !this.selection()) return false;
     if (this._prepayment) {
       const continuePayment = this._needsPayment && this.data.paymentState === 'pending';
       const created = await this.confirmExisting();
       if (created || this.data.paymentState !== 'pending' || !continuePayment) return created;
       return this.requestExistingPayment();
     }
+    if (!cart.count(this.availability(), this.selection()) || !this.selection()) return false;
     if (this.data.phoneState !== 'bound') {
       const unreadable = this.data.phoneState === 'unavailable' || this.data.phoneState === 'unauthenticated';
       this.selectComponent('#toast').show(unreadable ? '手机号暂时没读到，请点重试' : '请先绑定手机号', { icon: 'warn' });
