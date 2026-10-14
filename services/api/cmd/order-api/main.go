@@ -25,7 +25,6 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantsoldout"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/objectstore"
-	"github.com/gaofeng30/order/services/api/internal/orderadvance"
 	"github.com/gaofeng30/order/services/api/internal/orderquery"
 	"github.com/gaofeng30/order/services/api/internal/paymentorder"
 	"github.com/gaofeng30/order/services/api/internal/quote"
@@ -272,13 +271,11 @@ func run() int {
 		newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
 		localObjects,
 	)
-	orderProductionService := orderadvance.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	workers := []func(context.Context){
 		func(ctx context.Context) { runRefundWorker(ctx, refundService, logger) },
-		func(ctx context.Context) { runOrderProductionWorker(ctx, orderProductionService, logger) },
 	}
 	if notificationService != nil {
 		workers = append(workers, func(ctx context.Context) { runSubscriptionWorker(ctx, notificationService, logger) })
