@@ -94,20 +94,28 @@ func (r *SharedPGRepository) ReadPickupFacts(ctx context.Context, dates []string
 		BusinessStatus string             `json:"business_status"`
 		MealPeriods    []MealPeriodRecord `json:"meal_periods"`
 		Dates          []struct {
-			Date string `json:"date"`
-			Open bool   `json:"is_open"`
+			Date           string     `json:"date"`
+			Open           bool       `json:"is_open"`
+			AvailableMeals []MealCode `json:"available_meals"`
 		} `json:"service_dates"`
 	}
 	if r.client.CallRPC(ctx, "order_menu_pickup_facts_v1", map[string]any{"p_date_a": dates[0], "p_date_b": dates[1]}, &f) != nil || f.Outcome != "SUCCEEDED" || f.MealPeriods == nil || f.Dates == nil {
 		return PickupFacts{}, errSharedMenu
 	}
-	result := PickupFacts{BusinessStatus: f.BusinessStatus, MealPeriods: f.MealPeriods, ServiceDates: make(map[string]bool, 2)}
+	result := PickupFacts{BusinessStatus: f.BusinessStatus, MealPeriods: f.MealPeriods, ServiceDates: make(map[string]bool, 2), AvailableMeals: make(map[string]map[MealCode]bool, 2)}
 	for _, d := range f.Dates {
 		_, duplicate := result.ServiceDates[d.Date]
-		if duplicate || (d.Date != dates[0] && d.Date != dates[1]) {
+		if d.AvailableMeals == nil || duplicate || (d.Date != dates[0] && d.Date != dates[1]) {
 			return PickupFacts{}, errSharedMenu
 		}
 		result.ServiceDates[d.Date] = d.Open
+		result.AvailableMeals[d.Date] = map[MealCode]bool{}
+		for _, meal := range d.AvailableMeals {
+			if (meal != MealLunch && meal != MealDinner) || result.AvailableMeals[d.Date][meal] {
+				return PickupFacts{}, errSharedMenu
+			}
+			result.AvailableMeals[d.Date][meal] = true
+		}
 	}
 	return result, nil
 }
