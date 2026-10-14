@@ -102,6 +102,7 @@ type PendingResult struct {
 // Application is an Adapter over Order/PaymentOrder/Refund/Fulfillment plus derived Billing reads.
 // It never owns duplicate transaction facts or summary tables.
 type Application interface {
+	OrderCounts(context.Context, uint64) (map[string]uint64, error)
 	SearchOrders(context.Context, uint64, OrderFilter) ([]Order, uint64, error)
 	Stats(context.Context, uint64, time.Time) (Stats, error)
 	Payments(context.Context, uint64, BillingRange, PageQuery) ([]Payment, uint64, error)
@@ -137,6 +138,7 @@ func NewHandler(app Application, options ...HandlerOption) *Handler {
 }
 func (h *Handler) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/orders", h.orders)
+	group.GET("/orders/counts", h.orderCounts)
 	group.GET("/stats", h.stats)
 	group.GET("/finance/payments", h.payments)
 	group.GET("/finance/refunds", h.refunds)
@@ -429,4 +431,19 @@ func writeError(c *gin.Context, err error) {
 		status, code, message = http.StatusConflict, "COMMAND_CONFLICT", "command conflict"
 	}
 	c.JSON(status, gin.H{"error": gin.H{"code": code, "message": message}})
+}
+
+func (h *Handler) orderCounts(c *gin.Context) {
+	id, ok := actor(c)
+	if !ok {
+		writeError(c, ErrForbidden)
+		return
+	}
+	counts, err := h.app.OrderCounts(c.Request.Context(), id)
+	if err != nil {
+		writeError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{"counts": counts})
 }
