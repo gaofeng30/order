@@ -87,7 +87,7 @@ func (s *SharedPGVersionedService) commitPin(ctx context.Context, meta WriteMeta
 }
 
 func (s *SharedPGVersionedService) imagePins(ctx context.Context, keys []string) (map[string]imageVersionPin, error) {
-	if !s.available(ctx) || len(keys) == 0 || len(keys) > 3 {
+	if !s.available(ctx) || len(keys) == 0 || len(keys) > 128 {
 		return nil, ErrUnavailable
 	}
 	requested := make(map[string]bool, len(keys))
