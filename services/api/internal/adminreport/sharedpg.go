@@ -2,13 +2,10 @@ package adminreport
 
 import (
 	"context"
-	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -301,31 +298,24 @@ func (a *SharedPGApplication) ListPending(ctx context.Context, user uint64, page
 	return out, next, nil
 }
 func (a *SharedPGApplication) ExportCSV(ctx context.Context, userID uint64, r BillingRange) (io.ReadCloser, error) {
-	items := []Payment{}
-	cursor := uint64(0)
-	for {
-		page, next, err := a.Payments(ctx, userID, r, PageQuery{AfterID: cursor, Limit: 100})
+	return exportCSV(ctx, func(ctx context.Context, after uint64) ([]exportPayment, error) {
+		r, err := a.call(ctx, userID, "order_admin_report_export_v1", reportRange(r, PageQuery{AfterID: after, Limit: 100}))
 		if err != nil {
 			return nil, err
 		}
-		items = append(items, page...)
-		if next == 0 {
-			break
+		if r.Rows == nil || len(r.Rows) > 100 {
+			return nil, ErrUnavailable
 		}
-		cursor = next
-	}
-	var b strings.Builder
-	b.WriteString("\ufeff")
-	w := csv.NewWriter(&b)
-	_ = w.Write([]string{"订单号", "取餐号", "支付时间", "微信交易号", "实付金额"})
-	for _, p := range items {
-		_ = w.Write([]string{p.Order.OrderNo, p.Order.PickupNumber, p.Order.PaidAt.Format(time.RFC3339), p.Order.TransactionID, fmt.Sprintf("%d.%02d", p.Order.PayableCents/100, p.Order.PayableCents%100)})
-	}
-	w.Flush()
-	if w.Error() != nil {
-		return nil, ErrUnavailable
-	}
-	return io.NopCloser(strings.NewReader(b.String())), nil
+		out := make([]exportPayment, 0, len(r.Rows))
+		for _, row := range r.Rows {
+			var p exportPayment
+			if sharedReportRow(row).Scan(&p.ID, &p.OrderNo, &p.PickupNumber, &p.PaidAt, &p.TransactionID, &p.PayableCents) != nil {
+				return nil, ErrUnavailable
+			}
+			out = append(out, p)
+		}
+		return out, nil
+	})
 }
 func (a *SharedPGApplication) ProcessPending(ctx context.Context, m WriteMeta, id uint64, act PendingAction, reason string) (PendingResult, error) {
 	if a.commands == nil {
