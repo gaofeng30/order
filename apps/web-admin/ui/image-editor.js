@@ -28,12 +28,18 @@
             if(!preview){setPreview(true);return;}
             const button=root.querySelector('[data-next]');button.disabled=true;
             try {
-              const output=document.createElement('canvas'),size=side();output.width=output.height=Math.max(1,Math.round(size));
-              output.getContext('2d').drawImage(source,cx-size/2,cy-size/2,size,size,0,0,output.width,output.height);
-              const blob=await new Promise(resolve=>output.toBlob(resolve,'image/png'));
+              const output=document.createElement('canvas'),size=side();output.width=output.height=Math.min(640,Math.max(1,Math.round(size)));
+              const ctx=output.getContext('2d');
+              ctx.drawImage(source,cx-size/2,cy-size/2,size,size,0,0,output.width,output.height);
+              // Preserve alpha for transparent artwork; compress opaque food photos.
+              const pixels=ctx.getImageData(0,0,output.width,output.height).data;
+              let transparent=false;
+              for(let i=3;i<pixels.length;i+=4){if(pixels[i]!==255){transparent=true;break;}}
+              const type=transparent?'image/png':'image/jpeg',extension=transparent?'.png':'.jpg';
+              const blob=await new Promise(resolve=>output.toBlob(resolve,type,0.82));
               if(closed)return;
               if(!blob)throw new Error('图片生成失败，请重试');
-              resolve(new File([blob],file.name.replace(/\.[^.]+$/,'')+'.png',{type:'image/png'}));done();
+              resolve(new File([blob],file.name.replace(/\.[^.]+$/,'')+extension,{type}));done();
             } catch(e){window.Toast.show(e.message,{icon:'warn'});button.disabled=false;}
           };
           draw();
