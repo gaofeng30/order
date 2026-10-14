@@ -158,3 +158,9 @@ root随后用正常PC恢复10/12售卖，PG只剩原10/10记录，PC显示可购
 生产 SSM 名称仍为 `order-production-db-password`、`order-production-wechat-miniprogram-app-secret`、`order-production-wechatpay-api-v3`、`order-production-redemption-token-key`。生产使用 Role 加四份 SSM，禁止 inline AppSecret；非敏感 env 为 root-owned、权限不宽于 0640，角色只访问本环境材料与 COS。
 
 旧原生 PG 私网/TLS、迁移执行机与连接预算属于已替代 UAT 路线参考，不阻塞当前 RPC；也不授权将 Prod 改为 PG/CloudRun。生产经营资料已有归档确认，沿确认记录装载，不重新索取、不复制 UAT 示例。生产资源/安全、业务链路、正式模板、监控恢复和平台发布的剩余工作只维护在 [生产 Handoff](../../docs/quality/order-production-delivery-handoff.md)，避免重复清单漂移。
+
+## PC 后台静态发布与入口验收
+
+- 唯一用户入口为 `https://uat.suianwuye.com/pc/`。HTML 的资源基址为 `/pc/`，不依赖用户输入末尾斜杠。不维护旧路径兼容或跳转逻辑。
+- 网关 `/pc` 映射静态托管根目录。将同一候选的整个 `apps/web-admin/` 目录内容上传至托管根，先上传资源、最后上传 `index.html`。不可只上传一个业务 JS 后宣称后台整体最新。
+- 发布后从用户入口打开，检查 CSS、JS、图片、扫码登录页和浏览器错误；逐文件下载比对候选内容。HTTP 200 或单文件一致不能代替页面验收。登录后业务验收另行记录。
