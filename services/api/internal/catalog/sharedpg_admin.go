@@ -65,7 +65,7 @@ type sharedAdminProductFacts struct {
 	SoldOut      bool            `json:"sold_out"`
 }
 
-func (a *SharedPGAdminApplication) adminProduct(ctx context.Context, f sharedAdminProductFacts) (AdminProduct, error) {
+func (a *SharedPGAdminApplication) adminProduct(f sharedAdminProductFacts, urls map[string]string) (AdminProduct, error) {
 	id, ok := sharedAdminID(f.ID)
 	category, cok := sharedAdminID(f.Category)
 	if !ok || !cok {
@@ -84,8 +84,8 @@ func (a *SharedPGAdminApplication) adminProduct(ctx context.Context, f sharedAdm
 			return AdminProduct{}, ErrAdminUnavailable
 		}
 		seen[item.ObjectKey] = true
-		url, err := a.images.PublicURL(ctx, item.ObjectKey)
-		if err != nil {
+		url := urls[item.ObjectKey]
+		if url == "" {
 			return AdminProduct{}, ErrAdminUnavailable
 		}
 		p.Images = append(p.Images, AdminImage{ObjectKey: item.ObjectKey, URL: url, SortOrder: uint8(i)})
@@ -106,9 +106,13 @@ func (a *SharedPGAdminApplication) ListProducts(ctx context.Context, q AdminQuer
 	if a.client.CallRPC(ctx, "order_catalog_products_v1", map[string]any{"p_service_date": q.ServiceDate}, &f) != nil || f.Outcome != "SUCCEEDED" || f.Products == nil {
 		return nil, ErrAdminUnavailable
 	}
+	urls, err := a.adminImageURLs(ctx, f.Products)
+	if err != nil {
+		return nil, err
+	}
 	result := make([]AdminProduct, 0, len(f.Products))
 	for _, pf := range f.Products {
-		p, err := a.adminProduct(ctx, pf)
+		p, err := a.adminProduct(pf, urls)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +137,11 @@ func (a *SharedPGAdminApplication) GetProduct(ctx context.Context, id uint64, q 
 	if f.Product == nil {
 		return AdminProduct{}, ErrAdminNotFound
 	}
-	return a.adminProduct(ctx, *f.Product)
+	urls, err := a.adminImageURLs(ctx, []sharedAdminProductFacts{*f.Product})
+	if err != nil {
+		return AdminProduct{}, err
+	}
+	return a.adminProduct(*f.Product, urls)
 }
 
 type sharedCatalogCommandResponse struct {
@@ -274,3 +282,25 @@ func (a *SharedPGAdminApplication) Execute(ctx context.Context, meta WriteMeta, 
 }
 
 var _ AdminApplication = (*SharedPGAdminApplication)(nil)
+
+func (a *SharedPGAdminApplication) adminImageURLs(ctx context.Context, products []sharedAdminProductFacts) (map[string]string, error) {
+	keys := []string{}
+	for _, product := range products {
+		var stored []struct {
+			ObjectKey string `json:"object_key"`
+		}
+		if json.Unmarshal(product.Images, &stored) != nil || len(stored) > 3 {
+			return nil, ErrAdminUnavailable
+		}
+		for _, img := range stored {
+			keys = append(keys, img.ObjectKey)
+		}
+	}
+	if len(keys) == 0 {
+		return map[string]string{}, nil
+	}
+	if a.images == nil {
+		return nil, ErrAdminUnavailable
+	}
+	return a.images.PublicURLs(ctx, keys)
+}
