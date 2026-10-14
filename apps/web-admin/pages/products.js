@@ -8,7 +8,7 @@
   let kw = '';
   let categoryCache = [];
   const picked = new Set();
-  let generation = 0, bulkBusy = false;
+  let generation = 0, bulkBusy = false, productRead = null;
   const pending = new Set();
   async function change(el,id,action) {
     if(pending.has(id))return;pending.add(id);
@@ -19,6 +19,7 @@
   /* 下架优先决定最终可售展示；重新上架沿用当天的售罄记录。 */
   function render(el) {
     picked.clear();
+    productRead = null;
     el.innerHTML =
       `<div class="toolbar">
          <div class="segs" id="cats"></div>
@@ -34,7 +35,7 @@
 
     el.querySelector('[data-new]').onclick = () => openEdit(el, null);
     const kwEl = el.querySelector('#kw');
-    kwEl.oninput = () => { kw = kwEl.value; paint(el, true); };
+    kwEl.oninput = () => { kw = kwEl.value; paint(el, true, true); };
 
     Api.listCategories().then(list => {
       categoryCache = list;
@@ -42,16 +43,17 @@
     }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
   }
 
-  function paint(el, keepFocus) {
+  function paint(el, keepFocus, reuseProducts = false) {
     const cats = ['全部'].concat(categoryCache.filter(c => c.on).map(c => c.name));
     el.querySelector('#cats').innerHTML = cats.map(c =>
       `<span class="seg${c === cat ? ' on' : ''}" data-cat="${T.esc(c)}">${T.esc(c)}</span>`).join('');
     el.querySelectorAll('[data-cat]').forEach(n => {
-      n.onclick = () => { cat = n.dataset.cat; picked.clear(); paint(el); };
+      n.onclick = () => { cat = n.dataset.cat; picked.clear(); paint(el, false, true); };
     });
 
     const version=++generation;
-    Api.listProducts().then(all => {
+    if (!reuseProducts || !productRead) productRead = Api.listProducts();
+    productRead.then(all => {
       if(version!==generation || !el.isConnected)return;
       const list = all.filter(m =>
         (cat === '全部' || m.cat === cat) &&
@@ -143,6 +145,10 @@
         k.focus();
         k.setSelectionRange(k.value.length, k.value.length);
       }
+    }).catch(e => {
+      if (version !== generation || !el.isConnected) return;
+      productRead = null;
+      window.Toast.show(e.message || '菜品加载失败，请重试', { icon: 'warn' });
     });
   }
 
