@@ -80,6 +80,10 @@ func (handler *Handler) execute(ctx *gin.Context, kind CommandKind) {
 	if !ok {
 		return
 	}
+	handler.executeAs(ctx, kind, userID)
+}
+
+func (handler *Handler) executeAs(ctx *gin.Context, kind CommandKind, userID uint64) {
 	orderID, ok := strictID(ctx.Param("id"))
 	if !ok {
 		writeError(ctx, http.StatusNotFound, "ORDER_NOT_FOUND", "order not found")

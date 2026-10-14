@@ -264,6 +264,7 @@ func run() int {
 		staffdiscount.NewHandler(staffdiscount.NewPostgreSQLApplication(db)),
 		importHandler,
 		adminreport.NewHandler(adminreport.NewPostgreSQLApplication(db, adminCommands)),
+		fulfillment.NewAdminHandler(fulfillmentApplication, orderRepository),
 		audit.NewHandler(audit.NewPostgreSQLSearcher(db)),
 	}
 	ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}

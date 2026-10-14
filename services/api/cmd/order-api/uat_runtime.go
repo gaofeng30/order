@@ -169,6 +169,7 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 		storefront.NewAdminHandler(storefront.NewSharedPGAdminApplication(client, objects)),
 		staffdiscount.NewHandler(staffdiscount.NewSharedPGApplication(client)), imports,
 		adminreport.NewHandler(adminreport.NewSharedPGApplication(client, commands)),
+		fulfillment.NewAdminHandler(fulfillmentApplication, orders),
 		audit.NewHandler(audit.NewSharedPGSearcher(client)),
 	}
 	registrars := []httpapi.RouteRegistrar{

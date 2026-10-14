@@ -83,3 +83,11 @@
 
 - 小程序需求与当前实现：`../mini-user-polish/.scratch/mini-user-polish/checklist.md`；`apps/wechat-miniprogram/pages/home/{home.js,home.wxml}`、`utils/storefrontStore.js`、`pages/profile/profile.js`（均在小程序工作区）。
 - PC 与共享后端：`apps/web-admin/{ui/import-flow.js,data/api.js,pages/settings.js}`；`services/api/internal/{catalog,importbatch,storefront,identity,merchantidentity,orderquery}`；`services/api/sharedpg/{catalog.sql,import_batch.sql,schema.go,access.sql}`（均在 PC 工作区）。
+
+## 追加确认：PC 备餐管理接口（2026-10-14）
+
+- [x] 用户已授权实现 PC 按日期、餐段汇总及批量备好；不记录逐菜制作进度。
+- [x] 新增 `POST /api/v1/admin/orders/:id/ready`，在现有 OWNER PC 会话鉴权组下注册，复用 fulfillment 命令与幂等收据；原手机接口保持。
+- [x] 原生 PostgreSQL 与 SharedPG 两条运行入口均接入；无新表、字段、SQL 函数和 readiness 变更。
+- [x] 查询复用日期筛选和游标分页；前端按餐段汇总未备好订单，并串行执行固定 ID 的备好请求，分别报告结果。
+- [ ] 发布 API 与 PC 前端后实际验收：日期餐段隔离、超过 100 单分页、未到制作时间、退款/权限竞争、部分失败重试、取餐凭证与用户端状态。未部署、未运行测试/回归/Gate。

@@ -9,6 +9,7 @@
   const NAV = [
     { g: '经营', items: [
       { r: 'dashboard', t: '工作台', ic: 'dash' },
+      { r: 'preparation', t: '备餐管理', ic: 'bowl' },
       { r: 'orders', t: '订单管理', ic: 'receipt' },
       { r: 'finance', t: '财务与对账', ic: 'receipt' },
       { r: 'pending', t: '支付待处理', ic: 'bell' },

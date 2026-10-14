@@ -264,6 +264,36 @@
     if (generation === orderReadGeneration) state.orders = orders;
     return orders;
   }
+  async function preparationOrders(date) {
+    const generation = sessionGeneration, bearer = token();
+    const result = [], seen = new Set();
+    let after = '';
+    do {
+      const body = await request('/admin/orders' + qs({ date, limit: 100, after_id: after }));
+      assertSession(generation, bearer);
+      if (!body || !Array.isArray(body.orders)) throw new ApiError('订单数据不完整，请重新加载');
+      for (const raw of body.orders) {
+        const order = orderOf(raw);
+        if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || order.pickupDate !== date) throw new ApiError('订单数据不完整，请重新加载');
+        if (!['lunch', 'dinner'].includes(String(order.mealPeriod).toLowerCase()) || !Array.isArray(order.items)
+          || !order.items.length || order.items.some(i => !i || !i.product_id || !(i.name || i.product_name)
+            || !Number.isSafeInteger(i.quantity) || i.quantity < 1 || !Array.isArray(i.flavors))) {
+          throw new ApiError('订单菜品数据不完整，请重新加载');
+        }
+        seen.add(order.id);
+        if (['已预约', '制作中'].includes(order.status)) result.push(order);
+      }
+      const next = body.next_after_id;
+      if (next === null || next === undefined || next === '') break;
+      if (!/^[1-9]\d*$/.test(String(next)) || (after && BigInt(next) <= BigInt(after))) throw new ApiError('订单分页异常，请重新加载');
+      after = String(next);
+    } while (true);
+    return result;
+  }
+  function markOrderReady(id, key) {
+    return request('/admin/orders/' + encodeURIComponent(id) + '/ready', { method: 'POST', body: {}, idempotencyKey: key });
+  }
+
   async function searchOrders(q, opts) {
     const generation = ++orderReadGeneration;
     const body = await request('/admin/orders' + qs({ q, date: opts && opts.date }));
@@ -437,6 +467,7 @@
     ApiError, bootstrap, logout, beginPCLogin, pollPCLogin, storeView, dashboardStats,
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage, setShelf, setSoldOut, reorderProducts, isSoldOut, isSellable,
     listCategories, addCategory, renameCategory, setCategoryEnabled, deleteCategory, reorderCategories,
+    preparationOrders, markOrderReady, idempotencyKey,
     listOrders, laneCounts, readOrderCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
     uncollectedCount, searchOrders, codeHint, listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,
