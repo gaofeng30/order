@@ -42,7 +42,7 @@ func (repository *Repository) ListUser(ctx context.Context, userID uint64, query
 	where := []string{"user_id=$1"}
 	args := []any{userID}
 	if query.State != "" {
-		where, args = append(where, fmt.Sprintf("state=$%d", len(args)+1)), append(args, query.State)
+		where, args = append(where, fmt.Sprintf("(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)=$%d", len(args)+1)), append(args, query.State)
 	}
 	if query.Active {
 		where = append(where, "state IN ('RESERVED','PREPARING','READY_FOR_PICKUP')")
@@ -63,7 +63,7 @@ func (repository *Repository) SearchMerchant(ctx context.Context, userID uint64,
 	where := make([]string, 0, 4)
 	args := make([]any, 0, 8)
 	if query.State != "" {
-		where, args = append(where, fmt.Sprintf("state=$%d", len(args)+1)), append(args, query.State)
+		where, args = append(where, fmt.Sprintf("(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)=$%d", len(args)+1)), append(args, query.State)
 	}
 	if query.Date != "" {
 		where, args = append(where, fmt.Sprintf("pickup_date=$%d", len(args)+1)), append(args, query.Date)
@@ -79,7 +79,7 @@ func (repository *Repository) SearchMerchant(ctx context.Context, userID uint64,
 }
 
 func (repository *Repository) list(ctx context.Context, where []string, args []any, limit uint16, merchant bool) (Page, error) {
-	query := `SELECT id,order_no,state,to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at FROM orders`
+	query := `SELECT id,order_no,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at FROM orders`
 	if len(where) > 0 {
 		query += " WHERE " + strings.Join(where, " AND ")
 	}
@@ -160,7 +160,7 @@ func authorizeMerchant(ctx context.Context, merchant MerchantIdentity, userID ui
 	return nil
 }
 
-const detailSelect = `SELECT id,order_no,state,to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at,contact_name_snapshot,contact_phone_snapshot,identity_kind,discount_rate_percent,transaction_id,paid_at,order_note,item_count,preparing_at,ready_at,completed_at,refunding_at,refunded_at,redemption_token_ciphertext,redemption_token_hash,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at FROM orders WHERE `
+const detailSelect = `SELECT id,order_no,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at,contact_name_snapshot,contact_phone_snapshot,identity_kind,discount_rate_percent,transaction_id,paid_at,order_note,item_count,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN GREATEST(materialized_at,pickup_at-interval '30 minutes') ELSE preparing_at END),ready_at,completed_at,refunding_at,refunded_at,redemption_token_ciphertext,redemption_token_hash,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at FROM orders WHERE `
 
 type orderRecord struct {
 	summary                 Summary
