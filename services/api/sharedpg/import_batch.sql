@@ -214,7 +214,7 @@ $order_rpc$;
 
 CREATE OR REPLACE FUNCTION public.order_import_result_v1(p_user numeric,p_batch numeric)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
-SET search_path=pg_catalog,public AS $order_rpc$
+SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
 DECLARE v_result jsonb;
 BEGIN
  IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
