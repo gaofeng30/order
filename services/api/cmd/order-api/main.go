@@ -42,8 +42,8 @@ func main() {
 
 func run() int {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
-	if os.Getenv("ORDER_ENV") == "uat" {
-		return runUAT(logger)
+	if os.Getenv("ORDER_ENV") == "uat" || os.Getenv("ORDER_ENV") == "production" {
+		return runCloudRun(logger)
 	}
 	cfg, err := config.Load()
 	if err != nil {
