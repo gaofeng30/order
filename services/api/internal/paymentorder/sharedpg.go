@@ -167,6 +167,22 @@ func (service *SharedPGApplication) RunDue(ctx context.Context, now time.Time, l
 	if err != nil {
 		return RunResult{}, err
 	}
+	return service.runDueIDs(ctx, now, ids)
+}
+
+// RunOne processes only the record named by a consumed durable wake.
+func (service *SharedPGApplication) RunOne(ctx context.Context, now time.Time, id uint64) (RunResult, error) {
+	if !service.ready() || now.IsZero() || id == 0 {
+		return RunResult{}, ErrInvalidInput
+	}
+	result, err := service.runDueIDs(ctx, now, []uint64{id})
+	if err == nil && result.Pending > 0 {
+		err = ErrUnavailable
+	}
+	return result, err
+}
+
+func (service *SharedPGApplication) runDueIDs(ctx context.Context, now time.Time, ids []uint64) (RunResult, error) {
 	var result RunResult
 	for _, id := range ids {
 		record, err := service.readPrepaymentByID(ctx, id)
@@ -319,9 +335,11 @@ func (service *SharedPGApplication) queryOne(ctx context.Context, prepaymentID u
 	}
 	if err != nil {
 		if !finishedAt.Before(claim.record.effectiveDeadline) {
-			_ = service.closeExpiredClaim(ctx, claim, finishedAt)
+			if service.closeExpiredClaim(ctx, claim, finishedAt) == nil {
+				return false, ErrUnavailable
+			}
 		}
-		_ = service.releaseQuery(ctx, claim, finishedAt.Add(service.config.ReconcileInterval), finishedAt)
+		_ = service.releaseQuery(ctx, claim, finishedAt.Add(failedReconcileInterval), finishedAt)
 		return false, ErrUnavailable
 	}
 	if providerTransaction.TradeState == "NOTPAY" && !finishedAt.Before(claim.record.effectiveDeadline) {
@@ -336,7 +354,7 @@ func (service *SharedPGApplication) queryOne(ctx context.Context, prepaymentID u
 	err = service.ingestPayment(ctx, VerifiedPayment{Source: paymentobservation.SourceActiveQuery, Transaction: providerTransaction}, claim.record.id, &claim)
 	if err != nil {
 		finishedAt = service.now().UTC().Truncate(time.Microsecond)
-		_ = service.releaseQuery(ctx, claim, finishedAt.Add(service.config.ReconcileInterval), finishedAt)
+		_ = service.releaseQuery(ctx, claim, finishedAt.Add(failedReconcileInterval), finishedAt)
 		return false, err
 	}
 	return true, nil
