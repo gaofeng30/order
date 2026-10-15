@@ -1,3 +1,4 @@
+const PRODUCTION_ORIGIN = 'https://order.suianwuye.com';
 const ENV_VERSIONS = ['develop', 'trial', 'release'];
 const TRIAL_ORIGIN = 'https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com';
 
@@ -60,6 +61,7 @@ function isRuntimeOrigin(envVersion, origin) {
   if (!ENV_VERSIONS.includes(envVersion)) return false;
   const normalized = normalizeOrigin(origin);
   if (!normalized || normalized.origin !== origin) return false;
+  if (envVersion === 'release') return origin === PRODUCTION_ORIGIN && isDeployableHTTPSOrigin(normalized);
   if (envVersion === 'develop') return origin === TRIAL_ORIGIN && isDeployableHTTPSOrigin(normalized);
   return isDeployableHTTPSOrigin(normalized)
     && (envVersion !== 'trial' || origin === TRIAL_ORIGIN);
