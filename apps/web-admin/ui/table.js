@@ -17,7 +17,7 @@
       `<th class="${c.cls || ''}"${c.w ? ` style="width:${c.w}"` : ''}>${c.t}</th>`).join('');
 
     if (!rows.length) {
-      return `<div class="tbl-wrap"><table class="tbl"><thead><tr>${head}</tr></thead></table>
+      return `<div class="tbl-scroll-hint">表格可左右滚动查看完整信息</div><div class="tbl-wrap"><table class="tbl"><thead><tr>${head}</tr></thead></table>
               <div class="tbl-empty">${esc(cfg.empty || '暂无数据')}</div></div>`;
     }
 
@@ -31,14 +31,15 @@
       return `<tr data-id="${esc(id)}"${cls ? ` class="${cls}"` : ''}>${tds}</tr>`;
     }).join('');
 
-    return `<div class="tbl-wrap"><table class="tbl">
+    return `<div class="tbl-scroll-hint">表格可左右滚动查看完整信息</div><div class="tbl-wrap"><table class="tbl">
               <thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
   }
 
   /* 行内点击代理：把 tr[data-id] 与 [data-act] 的点击分派给回调。
      data-act 的点击不会冒泡触发行点击（编辑/删除按钮不应同时选中行）。 */
   function bind(root, handlers) {
-    root.addEventListener('click', e => {
+    root.onclick = e => {
+      if (e.target.closest('button:disabled,input:disabled')) return;
       const actEl = e.target.closest('[data-act]');
       const tr = e.target.closest('tr[data-id]');
       const id = tr ? tr.dataset.id : (actEl ? actEl.dataset.id : '');
@@ -49,7 +50,7 @@
         return;
       }
       if (tr && handlers.row) handlers.row(id, tr);
-    });
+    };
   }
 
   // 状态胶囊

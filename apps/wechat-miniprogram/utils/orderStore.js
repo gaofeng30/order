@@ -9,7 +9,7 @@ const LABEL_STATES = { 已预约: 'RESERVED', 制作中: 'PREPARING', 待取餐:
 function unavailable() { return new api.APIError('ORDERS_UNAVAILABLE'); }
 function parseSummary(value) {
   if (!value || typeof value !== 'object' || typeof value.id !== 'string' || !/^[1-9]\d*$/.test(value.id)
-    || typeof value.order_no !== 'string' || !Object.hasOwn(STATE_LABELS, value.state)
+    || typeof value.order_no !== 'string' || !Object.prototype.hasOwnProperty.call(STATE_LABELS, value.state)
     || typeof value.pickup_date !== 'string' || typeof value.pickup_time !== 'string'
     || typeof value.pickup_point !== 'string' || typeof value.pickup_number !== 'string'
     || !Number.isSafeInteger(value.payable_cents) || !Array.isArray(value.available_actions)) throw unavailable();
@@ -22,13 +22,14 @@ function parseSummary(value) {
 function parseDetail(value) {
   const order = parseSummary(value);
   if (!Array.isArray(value.items)) throw unavailable();
-  const rows = value.items.map(item => {
+  const rows = value.items.map((item, index) => {
     if (!item || typeof item.name !== 'string' || typeof item.product_id !== 'string'
       || !Number.isSafeInteger(item.quantity) || item.quantity <= 0
       || !Number.isSafeInteger(item.unit_price_cents) || !Number.isSafeInteger(item.line_total_cents)
       || !Array.isArray(item.flavors) || typeof item.note !== 'string') throw unavailable();
     return {
-      id: item.product_id, name: item.name, q: item.quantity, p: item.unit_price_cents,
+      // 同一道菜可按不同口味分行，列表 key 用行序（D21）
+      key: String(index), id: item.product_id, name: item.name, q: item.quantity, p: item.unit_price_cents,
       sub: item.line_total_cents, flavors: item.flavors.slice(), note: item.note,
     };
   });

@@ -13,7 +13,7 @@ import (
 
 var migrationNamePattern = regexp.MustCompile(`^([0-9]{6})_([a-z0-9_]+)\.sql$`)
 
-// Migration is one validated, immutable, single-statement migration.
+// Migration is one immutable migration version, including its content checksum.
 type Migration struct {
 	Version  uint64
 	Name     string
@@ -21,8 +21,11 @@ type Migration struct {
 	Checksum [sha256.Size]byte
 }
 
-// Load validates and loads a root-level forward-only migration set.
-func Load(source fs.FS) ([]Migration, error) {
+// Load validates and loads the immutable PostgreSQL migration chain.
+// Run commits each version's SQL and history in one transaction.
+func Load(source fs.FS) ([]Migration, error) { return load(source, validPostgreSQLMigrationBytes) }
+
+func load(source fs.FS, validBytes func([]byte) bool) ([]Migration, error) {
 	entries, err := fs.ReadDir(source, ".")
 	if err != nil {
 		return nil, fmt.Errorf("migration_set_invalid")
@@ -38,7 +41,7 @@ func Load(source fs.FS) ([]Migration, error) {
 		}
 		version, _ := strconv.ParseUint(matches[1], 10, 64)
 		data, err := fs.ReadFile(source, entry.Name())
-		if err != nil || !validMigrationBytes(data) {
+		if err != nil || !validBytes(data) {
 			return nil, fmt.Errorf("migration_set_invalid")
 		}
 		migrations = append(migrations, Migration{Version: version, Name: entry.Name(), SQL: append([]byte(nil), data...), Checksum: sha256.Sum256(data)})
@@ -55,19 +58,9 @@ func Load(source fs.FS) ([]Migration, error) {
 	return migrations, nil
 }
 
-func validMigrationBytes(data []byte) bool {
-	if len(data) == 0 || !utf8.Valid(data) || strings.HasPrefix(string(data), "\ufeff") || !strings.HasSuffix(string(data), "\n") || strings.Contains(string(data), "\r") {
+func validPostgreSQLMigrationBytes(data []byte) bool {
+	if len(data) == 0 || !utf8.Valid(data) || strings.HasPrefix(string(data), "\ufeff") || !strings.HasSuffix(string(data), "\n") || strings.ContainsAny(string(data), "\r\x00") {
 		return false
 	}
-	trimmed := strings.TrimSpace(string(data))
-	if !strings.HasSuffix(trimmed, ";") || strings.Count(trimmed, ";") != 1 {
-		return false
-	}
-	upper := strings.ToUpper(trimmed)
-	for _, forbidden := range []string{"DELIMITER", "SOURCE ", "LOAD DATA"} {
-		if strings.HasPrefix(upper, forbidden) {
-			return false
-		}
-	}
-	return true
+	return validPostgreSQLStatements(string(data))
 }

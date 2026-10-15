@@ -18,11 +18,15 @@ type cosCredentialProvider interface {
 	GetCredential() (common.CredentialIface, error)
 }
 
-func composeProductionObjectStore(ctx context.Context, material config.COSMaterial) (*objectstore.Service, error) {
-	return composeProductionObjectStoreWithProvider(ctx, material, common.DefaultCvmRoleProvider())
+func composeCloudObjectStore(ctx context.Context, environment config.Environment, material config.COSMaterial, stores ...objectstore.ConfirmationStore) (*objectstore.Service, error) {
+	provider, err := config.NewCloudCredentialProvider(environment, material.Region())
+	if err != nil {
+		return nil, errProductionCOSUnavailable
+	}
+	return composeProductionObjectStoreWithProvider(ctx, material, provider, stores...)
 }
 
-func composeProductionObjectStoreWithProvider(ctx context.Context, material config.COSMaterial, provider cosCredentialProvider) (*objectstore.Service, error) {
+func composeProductionObjectStoreWithProvider(ctx context.Context, material config.COSMaterial, provider cosCredentialProvider, stores ...objectstore.ConfirmationStore) (*objectstore.Service, error) {
 	if ctx == nil || provider == nil {
 		return nil, errProductionCOSUnavailable
 	}
@@ -37,12 +41,12 @@ func composeProductionObjectStoreWithProvider(ctx context.Context, material conf
 		return nil, errProductionCOSUnavailable
 	}
 	adapter, err := objectstore.NewCOSAdapter(objectstore.COSConfig{
-		Bucket: material.Bucket(), Region: material.Region(), PublicOrigin: material.PublicOrigin(),
+		Bucket: material.Bucket(), Region: material.Region(),
 	}, credential)
 	if err != nil {
 		return nil, errProductionCOSUnavailable
 	}
-	return objectstore.NewService(adapter), nil
+	return objectstore.NewService(adapter, stores...), nil
 }
 
 func loadCOSCredential(ctx context.Context, provider cosCredentialProvider) (common.CredentialIface, error) {

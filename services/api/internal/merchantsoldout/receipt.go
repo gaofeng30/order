@@ -16,7 +16,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/audit"
 	"github.com/gaofeng30/order/services/api/internal/fulfillment"
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type receiptRequest struct {
@@ -66,7 +66,7 @@ func readReceiptInTx(ctx context.Context, transaction *sql.Tx, meta fulfillment.
 	var targetType string
 	var targetID uint64
 	var beforeRaw, afterRaw, responseRaw []byte
-	err := transaction.QueryRowContext(ctx, `SELECT target_type,target_id,before_state_json,after_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='MERCHANT' AND actor_scope_hash=? AND action=? AND operation_key_hash=? LIMIT 1 FOR SHARE`, scope[:], soldOutAction, operation[:]).Scan(&targetType, &targetID, &beforeRaw, &afterRaw, &responseRaw)
+	err := transaction.QueryRowContext(ctx, `SELECT target_type,target_id,before_state_json,after_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='MERCHANT' AND actor_scope_hash=$1 AND action=$2 AND operation_key_hash=$3 LIMIT 1 FOR SHARE`, scope[:], soldOutAction, operation[:]).Scan(&targetType, &targetID, &beforeRaw, &afterRaw, &responseRaw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -130,10 +130,10 @@ func (commander *Commander) appendReceiptInTx(
 	if occurredAt.IsZero() {
 		return fulfillment.ErrUnavailable
 	}
-	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,action,target_type,target_id,target_key_hash,operation_key_hash,request_id_hash,result,reason_code,before_state_json,after_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','MERCHANT',?,?,?,?,?,?,?,'PRODUCT',?,NULL,?,?,'SUCCEEDED',?,?,?,?,?)`, scope[:], meta.ActorUserID, authorization.MerchantAccountID, authorization.MerchantAccountID, string(role), authorization.AuthVersion, soldOutAction, request.ProductID, operation[:], requestID[:], reason, beforeRaw, afterRaw, responseRaw, occurredAt)
+	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,action,target_type,target_id,target_key_hash,operation_key_hash,request_id_hash,result,reason_code,before_state_json,after_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','MERCHANT',$1,$2,$3,$4,$5,$6,$7,'PRODUCT',$8,NULL,$9,$10,'SUCCEEDED',$11,$12,$13,$14,$15)`, scope[:], meta.ActorUserID, authorization.MerchantAccountID, authorization.MerchantAccountID, string(role), authorization.AuthVersion, soldOutAction, request.ProductID, operation[:], requestID[:], reason, beforeRaw, afterRaw, responseRaw, occurredAt)
 	if err != nil {
-		var mysqlError *mysqlDriver.MySQLError
-		if errors.As(err, &mysqlError) && mysqlError.Number == 1062 {
+		var pgError *pgconn.PgError
+		if errors.As(err, &pgError) && pgError.Code == "23505" && pgError.ConstraintName == "uq_action_audits_command_receipt" {
 			return audit.ErrDuplicateReceipt
 		}
 		return err

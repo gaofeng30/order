@@ -22,7 +22,7 @@ func (provider *Provider) LoadSnapshotInTx(ctx context.Context, transaction *sql
 	if quoteID == 0 {
 		return Quote{}, ErrNotFound
 	}
-	header, found, err := readQuoteHeader(ctx, transaction, "WHERE id=?", quoteID)
+	header, found, err := readQuoteHeader(ctx, transaction, "WHERE id=$1", quoteID)
 	if err != nil {
 		return Quote{}, normalizeSnapshotReadError(err)
 	}
@@ -44,7 +44,7 @@ func (provider *Provider) FinalizeForPrepayInTx(ctx context.Context, transaction
 	if userID == 0 || quoteID == 0 {
 		return Quote{}, ErrNotFound
 	}
-	locatorHeader, found, err := readQuoteHeader(ctx, transaction, "WHERE id=? AND user_id=?", quoteID, userID)
+	locatorHeader, found, err := readQuoteHeader(ctx, transaction, "WHERE id=$1 AND user_id=$2", quoteID, userID)
 	if err != nil {
 		return Quote{}, normalizeSnapshotReadError(err)
 	}
@@ -105,7 +105,7 @@ func (provider *Provider) FinalizeForPrepayInTx(ctx context.Context, transaction
 		currentProducts[item.ProductID] = record
 	}
 
-	lockedHeader, found, err := readQuoteHeader(ctx, transaction, "WHERE id=? AND user_id=? FOR UPDATE", quoteID, userID)
+	lockedHeader, found, err := readQuoteHeader(ctx, transaction, "WHERE id=$1 AND user_id=$2 FOR UPDATE", quoteID, userID)
 	if err != nil {
 		return Quote{}, normalizeSnapshotReadError(err)
 	}

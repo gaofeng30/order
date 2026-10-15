@@ -1,6 +1,6 @@
 # OpenSpec change 质量门禁协议
 
-本文是单个 OpenSpec change 的质量分类、证据和 verdict 事实源。根 `AGENTS.md` 继续定义仓库硬规则，`openspec/specs/loop-engineering-control-plane/spec.md` 与 `order-run-loop` 继续定义跨 change 的 lane、调度、session、checkpoint、错误指纹计数和升级；本文不复制这些控制面规则。
+本文是单个 OpenSpec change 的质量分类、证据和 verdict 事实源。根 `AGENTS.md` 继续定义仓库硬规则，`openspec/specs/loop-engineering-control-plane/spec.md` 的控制面契约仍生效；旧 `order-run-loop` Skill 入口已退出，不得假定它仍可调用。现有 `tools/harness` 只提供本地索引与一致性检查，不替代 lane、独立验证、错误指纹升级或其他控制面契约；本文不复制或降低这些规则。
 
 ## 1. Change 必填声明
 
@@ -102,6 +102,8 @@ external_asset:
 ```
 
 历史命令、计划命令、推断和另一 SHA 的结果不得填作当前 PASS。UI 或外部操作没有仓库命令时，记录实际步骤、版本和受控环境，不虚构 shell 命令。
+
+将失败归因为既有问题前，须在未改动的 `base_sha` 上以同一命令和等价环境复现，并保留两份结果；仅凭历史日志或“与本次无关”不能认定基线失败。经确认的既有失败仍是失败，必要 Gate 不得标 PASS 或降级；不适用项按下文记录 N/A，skip、未运行与外部资产缺失分别如实记录。范围外基线修复需另立授权范围，不由本 change 顺带完成。
 
 ## 6. Writer 永久 Gate
 

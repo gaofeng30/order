@@ -14,7 +14,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
-	"github.com/gaofeng30/order/services/api/migrations"
+	"github.com/gaofeng30/order/services/api/migrations/postgresql"
 )
 
 const (
@@ -143,7 +143,7 @@ func runBootstrapCommand(ctx context.Context) (bootstrapOutcome, error) {
 		return "", commandError{reason: database.Reason(err), cause: err}
 	}
 	defer closeBootstrapDatabase(db)
-	set, err := migrate.Load(migrations.FS)
+	set, err := migrate.Load(postgresql.FS)
 	if err != nil {
 		return "", commandError{reason: reasonBootstrapFailed, cause: err}
 	}

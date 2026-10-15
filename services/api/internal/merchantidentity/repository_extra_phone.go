@@ -15,7 +15,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/text/unicode/norm"
 )
 
@@ -69,7 +69,7 @@ func (repository *Repository) setExtraPhoneOnce(ctx context.Context, meta WriteM
 	var primaryPhone sql.NullString
 	var primaryBoundAt sql.NullTime
 	var recordVersion uint64
-	if err := transaction.QueryRowContext(ctx, `SELECT CONVERT(primary_phone USING ascii),primary_phone_bound_at,record_version FROM miniprogram_users WHERE id=? FOR UPDATE`, meta.ActorUserID).Scan(&primaryPhone, &primaryBoundAt, &recordVersion); err != nil {
+	if err := transaction.QueryRowContext(ctx, `SELECT primary_phone,primary_phone_bound_at,record_version FROM miniprogram_users WHERE id=$1 FOR UPDATE`, meta.ActorUserID).Scan(&primaryPhone, &primaryBoundAt, &recordVersion); err != nil {
 		return ExtraPhoneResult{}, err
 	}
 	if !validPhoneState(primaryPhone, primaryBoundAt) || recordVersion == 0 {
@@ -90,7 +90,7 @@ func (repository *Repository) setExtraPhoneOnce(ctx context.Context, meta WriteM
 		enabled bool
 	}
 	facts := make(map[string]whitelistFact, 2)
-	rows, err := transaction.QueryContext(ctx, `SELECT CONVERT(phone USING ascii),name_key,enabled FROM staff_whitelist WHERE phone=? OR phone=? ORDER BY id FOR UPDATE`, primaryPhone.String, command.Phone)
+	rows, err := transaction.QueryContext(ctx, `SELECT phone,name_key,enabled FROM staff_whitelist WHERE phone=$1 OR phone=$2 ORDER BY id FOR UPDATE`, []byte(primaryPhone.String), []byte(command.Phone))
 	if err != nil {
 		return ExtraPhoneResult{}, err
 	}
@@ -121,7 +121,7 @@ func (repository *Repository) setExtraPhoneOnce(ctx context.Context, meta WriteM
 	} else if fact, found := facts[command.Phone]; found && fact.enabled && bytes.Equal(fact.nameKey, nameKey) {
 		pricing = PricingProjection{Kind: PricingStaff, RatePercent: ratePercent}
 	}
-	updated, err := transaction.ExecContext(ctx, `UPDATE miniprogram_users SET extra_phone=?,extra_name=?,extra_name_key=?,extra_phone_set_at=UTC_TIMESTAMP(6),record_version=record_version+1 WHERE id=? AND record_version=?`, command.Phone, command.Name, nameKey, meta.ActorUserID, recordVersion)
+	updated, err := transaction.ExecContext(ctx, `UPDATE miniprogram_users SET extra_phone=$1,extra_name=$2,extra_name_key=$3,extra_phone_set_at=clock_timestamp(),record_version=record_version+1 WHERE id=$4 AND record_version=$5`, []byte(command.Phone), command.Name, nameKey, meta.ActorUserID, recordVersion)
 	if err != nil {
 		return ExtraPhoneResult{}, err
 	}
@@ -150,7 +150,7 @@ func (repository *Repository) replayExtraPhone(ctx context.Context, meta WriteMe
 	scopeHash := identityUserScopeHash(meta.ActorUserID)
 	operationHash := sha256.Sum256([]byte(meta.IdempotencyKey))
 	var evidenceRaw, responseRaw []byte
-	if err := repository.db.QueryRowContext(ctx, `SELECT before_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER' AND actor_scope_hash=? AND action=? AND operation_key_hash=? LIMIT 1`, scopeHash[:], extraPhoneAction, operationHash[:]).Scan(&evidenceRaw, &responseRaw); err != nil {
+	if err := repository.db.QueryRowContext(ctx, `SELECT before_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER' AND actor_scope_hash=$1 AND action=$2 AND operation_key_hash=$3 LIMIT 1`, scopeHash[:], extraPhoneAction, operationHash[:]).Scan(&evidenceRaw, &responseRaw); err != nil {
 		return ExtraPhoneResult{}, ErrUnavailable
 	}
 	wantDigest := digestExtraPhoneCommand(command)
@@ -163,7 +163,7 @@ func (repository *Repository) replayExtraPhone(ctx context.Context, meta WriteMe
 		return ExtraPhoneResult{}, ErrUnavailable
 	}
 	var currentPhone, currentName sql.NullString
-	if err := repository.db.QueryRowContext(ctx, `SELECT CONVERT(extra_phone USING ascii),extra_name FROM miniprogram_users WHERE id=?`, meta.ActorUserID).Scan(&currentPhone, &currentName); err != nil {
+	if err := repository.db.QueryRowContext(ctx, `SELECT extra_phone,extra_name FROM miniprogram_users WHERE id=$1`, meta.ActorUserID).Scan(&currentPhone, &currentName); err != nil {
 		return ExtraPhoneResult{}, ErrUnavailable
 	}
 	if !currentPhone.Valid || !currentName.Valid || currentPhone.String != command.Phone || currentName.String != command.Name {
@@ -188,9 +188,9 @@ func appendExtraPhoneReceipt(ctx context.Context, transaction *sql.Tx, meta Writ
 	scopeHash := identityUserScopeHash(meta.ActorUserID)
 	operationHash := sha256.Sum256([]byte(meta.IdempotencyKey))
 	requestIDHash := sha256.Sum256([]byte(meta.RequestID))
-	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','USER',?,?,?,'miniprogram_user',?,?,?,'SUCCEEDED','EXTRA_PHONE_SET',?,?,UTC_TIMESTAMP(6))`, scopeHash[:], meta.ActorUserID, extraPhoneAction, meta.ActorUserID, operationHash[:], requestIDHash[:], evidenceRaw, responseRaw)
-	var mysqlError *mysqlDriver.MySQLError
-	if errors.As(err, &mysqlError) && mysqlError.Number == 1062 {
+	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','USER',$1,$2,$3,'miniprogram_user',$4,$5,$6,'SUCCEEDED','EXTRA_PHONE_SET',$7,$8,clock_timestamp())`, scopeHash[:], meta.ActorUserID, extraPhoneAction, meta.ActorUserID, operationHash[:], requestIDHash[:], evidenceRaw, responseRaw)
+	var pgError *pgconn.PgError
+	if errors.As(err, &pgError) && pgError.Code == "23505" && pgError.ConstraintName == "uq_action_audits_command_receipt" {
 		return errExtraReceiptExists
 	}
 	return err

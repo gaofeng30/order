@@ -57,7 +57,7 @@ type Result struct {
 	RatePercent uint8
 }
 
-// Application keeps phone normalization, duplicate protection, receipts and MySQL locks internal.
+// Application keeps phone normalization, duplicate protection, receipts and PostgreSQL locks internal.
 type Application interface {
 	List(context.Context, string) ([]Staff, error)
 	DiscountRate(context.Context) (uint8, error)

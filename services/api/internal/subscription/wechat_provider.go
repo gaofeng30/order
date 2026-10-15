@@ -7,9 +7,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"mime"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -29,7 +31,7 @@ type RecipientResolver interface {
 }
 
 type TemplateResolver interface {
-	ResolveTemplate(context.Context, Kind, uint64, Message) (ResolvedTemplate, error)
+	ResolveTemplate(context.Context, Kind, uint64, Message, uint64) (ResolvedTemplate, error)
 }
 
 type ResolvedTemplate struct {
@@ -85,7 +87,7 @@ func (provider *WeChatProvider) SendSubscription(ctx context.Context, delivery D
 	if !validOpaqueValue(openID, 1, 128) {
 		return SendResult{}, weChatSendError("RECIPIENT_INVALID", true)
 	}
-	resolved, err := provider.templateResolver.ResolveTemplate(ctx, delivery.Kind, delivery.TemplateConfigVersion, delivery.Message)
+	resolved, err := provider.templateResolver.ResolveTemplate(ctx, delivery.Kind, delivery.TemplateConfigVersion, delivery.Message, delivery.OrderID)
 	if err != nil {
 		return SendResult{}, weChatSendError("TEMPLATE_UNAVAILABLE", false)
 	}
@@ -119,10 +121,23 @@ func (provider *WeChatProvider) SendSubscription(ctx context.Context, delivery D
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		return SendResult{}, weChatSendError("WECHAT_HTTP_STATUS", false)
 	}
+	mediaType := "<invalid>"
+	if values := response.Header.Values("Content-Type"); len(values) == 1 {
+		if parsed, _, parseErr := mime.ParseMediaType(values[0]); parseErr == nil {
+			switch parsed {
+			case "application/json", "text/plain", "text/html":
+				mediaType = parsed
+			default:
+				mediaType = "<other>"
+			}
+		}
+	}
 	if !validJSONContentType(response.Header) {
+		encoded, _ := io.ReadAll(io.LimitReader(response.Body, maxWeChatResponseBodyBytes))
+		logWeChatResponseInvalid(response.StatusCode, mediaType, "content_type", encoded)
 		return SendResult{}, weChatSendError("WECHAT_RESPONSE_INVALID", false)
 	}
-	result, err := decodeWeChatResponse(response.Body)
+	result, err := decodeWeChatResponse(response.Body, response.StatusCode, mediaType)
 	if err != nil {
 		return SendResult{}, err
 	}
@@ -172,28 +187,58 @@ func buildWeChatRequest(openID string, resolved ResolvedTemplate, config WeChatP
 }
 
 type weChatResponse struct {
-	ErrCode *int64  `json:"errcode"`
-	ErrMsg  *string `json:"errmsg"`
+	ErrCode *int64          `json:"errcode"`
+	ErrMsg  *string         `json:"errmsg"`
+	MsgID   json.RawMessage `json:"msgid"`
 }
 
-func decodeWeChatResponse(body io.Reader) (weChatResponse, error) {
+func decodeWeChatResponse(body io.Reader, status int, mediaType string) (weChatResponse, error) {
 	encoded, err := io.ReadAll(io.LimitReader(body, maxWeChatResponseBodyBytes+1))
 	if err != nil || len(encoded) == 0 || len(encoded) > maxWeChatResponseBodyBytes || !utf8.Valid(encoded) {
+		logWeChatResponseInvalid(status, mediaType, "decode", encoded)
 		return weChatResponse{}, weChatSendError("WECHAT_RESPONSE_INVALID", false)
 	}
 	decoder := json.NewDecoder(bytes.NewReader(encoded))
 	decoder.DisallowUnknownFields()
 	var response weChatResponse
 	if err := decoder.Decode(&response); err != nil {
+		logWeChatResponseInvalid(status, mediaType, "decode", encoded)
 		return weChatResponse{}, weChatSendError("WECHAT_RESPONSE_INVALID", false)
 	}
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		logWeChatResponseInvalid(status, mediaType, "decode", encoded)
 		return weChatResponse{}, weChatSendError("WECHAT_RESPONSE_INVALID", false)
 	}
 	if response.ErrCode == nil || response.ErrMsg == nil || *response.ErrCode < 0 || *response.ErrCode > 999999 || !utf8.ValidString(*response.ErrMsg) || len(*response.ErrMsg) > 1024 {
+		logWeChatResponseInvalid(status, mediaType, "missing_fields", encoded)
 		return weChatResponse{}, weChatSendError("WECHAT_RESPONSE_INVALID", false)
 	}
 	return response, nil
+}
+
+func logWeChatResponseInvalid(status int, mediaType, stage string, encoded []byte) {
+	keys := []string{}
+	unknownFieldCount := 0
+	var code any
+	var fields map[string]json.RawMessage
+	if len(encoded) <= maxWeChatResponseBodyBytes && utf8.Valid(encoded) && json.Unmarshal(encoded, &fields) == nil {
+		for key := range fields {
+			switch key {
+			case "errcode", "errmsg", "msgid":
+				keys = append(keys, key)
+			default:
+				unknownFieldCount++
+			}
+		}
+		sort.Strings(keys)
+		var parsed int64
+		if raw, ok := fields["errcode"]; ok && string(raw) != "null" && json.Unmarshal(raw, &parsed) == nil && parsed >= -1 && parsed <= 999999 {
+			code = parsed
+		}
+	}
+	slog.Warn("wechat_subscription_response_invalid",
+		"http_status", status, "media_type", mediaType, "stage", stage,
+		"json_keys", keys, "unknown_field_count", unknownFieldCount, "errcode", code)
 }
 
 func classifyWeChatError(code int64) error {
@@ -268,7 +313,7 @@ func validJSONContentType(header http.Header) bool {
 		return false
 	}
 	mediaType, _, err := mime.ParseMediaType(values[0])
-	return err == nil && mediaType == "application/json"
+	return err == nil && (mediaType == "application/json" || mediaType == "text/plain")
 }
 
 func weChatSendError(code string, permanent bool) error {

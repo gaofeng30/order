@@ -1,0 +1,4621 @@
+{
+  "migrations": {
+    "services/api/migrations/postgresql/000001_create_schema_migrations.sql": "498f1059ba70d846158f097eea40fcba795e0555bcff95787d853f5f469fbd44",
+    "services/api/migrations/postgresql/000002_create_categories.sql": "aff2b4f1e463c08c27ae010f02413d86df2143cb1552942144c8cb0a59befa6a",
+    "services/api/migrations/postgresql/000003_create_products.sql": "fe60db7a7943c4ce6a5911c50e8c8ee150f9740f19442d0d52e1cbc1c44d59a2",
+    "services/api/migrations/postgresql/000004_add_products_meal_period.sql": "b58524f93fca0f516a76bc09c7deebe31b283b5d6f5e5ec3c0474732a3a39497",
+    "services/api/migrations/postgresql/000005_create_meal_periods.sql": "9aa2354dd6450e18e74ec1436a315208727acfd5ff1b3c921eaa8115467011ad",
+    "services/api/migrations/postgresql/000006_initialize_meal_periods.sql": "8cb6e403152293c34d2d36e4f52f4d54132057cf5c32716614d84d12bb315d46",
+    "services/api/migrations/postgresql/000007_create_product_sold_out_dates.sql": "ca0ae4bcf9837db06312c473d94a161ba8b3683071f96fe91ba23ecc83c6dd55",
+    "services/api/migrations/postgresql/000008_create_miniprogram_users.sql": "672095c2874a1d850c107a3d3048ee0ad63b0294678533e6ebb14788a90a185e",
+    "services/api/migrations/postgresql/000009_create_miniprogram_sessions.sql": "3f7ae08f825fc0adf795c0248d4e03e1c8272948b845f34edc5bdaf6f15efd61",
+    "services/api/migrations/postgresql/000010_add_miniprogram_primary_phone.sql": "967d39f1c6a6982d64e8e3e2f7875213d3c70840d605017d4c07216337394ee1",
+    "services/api/migrations/postgresql/000011_create_storefront_settings.sql": "9c50ef286dc9a1a80fdaf750c94304fb53defe9f54d3648abdd2008c34bb9da2",
+    "services/api/migrations/postgresql/000012_create_merchant_accounts.sql": "ef356948ab654ad56b1d7519478d9b1ea8b0598f326f62b223acc1318f79f47a",
+    "services/api/migrations/postgresql/000013_create_merchant_action_audits.sql": "a3092191afe5bed0edadc3948fb062db522b58787ef626427fe562386347dfa0",
+    "services/api/migrations/postgresql/000014_create_staff_whitelist.sql": "bc088f2d628ad2e79d3a82e542f4df60bfd027a855a0d17f9ceee0834f317992",
+    "services/api/migrations/postgresql/000015_create_discount_settings.sql": "b2d756cb1c80b45c598cbae5dfef630babe2856ad868a507d18437c612f1ba45",
+    "services/api/migrations/postgresql/000016_create_quotes.sql": "6978897c2f210e361cf57ffc3f05506920cf174c2e167d8ebd512c674228096a",
+    "services/api/migrations/postgresql/000017_create_quote_items.sql": "ee7c76db1f7b5fcd1fb8028feec7d83e9f060a0fd8fa1eb778ff63316e15b43c",
+    "services/api/migrations/postgresql/000018_extend_miniprogram_users.sql": "1446bbf2df8ee47a863ea2c684881dad1615ccee48278742c30bd18e9d06c288",
+    "services/api/migrations/postgresql/000019_add_category_name_key.sql": "4c12cc3c871f8c35a723e420b8d15c4bd0ea35f0c777f92143be1eb5f8869f93",
+    "services/api/migrations/postgresql/000020_backfill_category_name_keys.sql": "a1c1c4186ca3ade12fc3765b2d93643d8fa12609bd98dca1c17afe4e2135c2fe",
+    "services/api/migrations/postgresql/000021_constrain_category_name_key.sql": "26cd858a2446bd5c697d01f6027d04a51b9be826136fbb52c33af708c8cd7481",
+    "services/api/migrations/postgresql/000022_add_product_name_key_images.sql": "70da0c0e122cb530275d037ee2df6178e822b45c549dbf36754490913bbb0779",
+    "services/api/migrations/postgresql/000023_backfill_product_name_keys.sql": "bfac96532305746aa278073791564ec361e7ff6ee476276518433ac19a10eaf9",
+    "services/api/migrations/postgresql/000024_constrain_product_catalog_fields.sql": "6e7347a8bb5dedc420fdb2e3dc4a267821e1678927ea4d2aa58e5e8586273241",
+    "services/api/migrations/postgresql/000025_extend_storefront_settings.sql": "c1b3bff69f61b122d23beff0ad2b74eb2eb8b3e41bdcfdac5ec04602961efec0",
+    "services/api/migrations/postgresql/000026_clear_legacy_launch_layer.sql": "940a106ea2768c7231a971fe1e788cdb74c9a19be1f9ee2e1db17d3d59d59d6b",
+    "services/api/migrations/postgresql/000027_constrain_storefront_settings.sql": "088d61e05de79b833e32d004b5edc31feb7b2b732d0a73dd01cec8ee84319d13",
+    "services/api/migrations/postgresql/000028_soft_delete_merchant_accounts.sql": "b6f8a095492a276e993d615f0a39955e030456877edf2a7ad9cecd71771ffc3c",
+    "services/api/migrations/postgresql/000029_create_service_dates.sql": "327b3182d8f914c9d4bfdddf2d36b47068fa1a3aaf4b1954ced0cebb8db41206",
+    "services/api/migrations/postgresql/000030_create_merchant_pc_sessions.sql": "3c1aa42dd0e4898a68e4e7cc4d358f8920df9ea7dd539e21c04c5df1716ff8a2",
+    "services/api/migrations/postgresql/000031_create_prepayments.sql": "0c6f764cfec3824346a22d351204f6529d15bc38a5f61e6f0a1e29740631bd53",
+    "services/api/migrations/postgresql/000032_create_payment_observations.sql": "9fbcbe0ade65e564b6852247164c34d446f1e025af3040a46f7e2a178fc232f3",
+    "services/api/migrations/postgresql/000033_create_pickup_sequences.sql": "307891cfc99caecf0bc0d617743e98cc84707c071e815a1a8b762c50ef4c97f8",
+    "services/api/migrations/postgresql/000034_create_orders.sql": "fb21c0d98794d0cc0a5c37b3a91dc011392d3ece8738650bc8faea5d7b0f2d35",
+    "services/api/migrations/postgresql/000035_create_order_items.sql": "ac52f11aee0e0ec4e8290046c6914dc8e467cccfa79c60717d062ef13cdc48e3",
+    "services/api/migrations/postgresql/000036_create_refunds.sql": "e8a4717f7b7ef3fd7fa44310f0c5c4c8fa8422b0e38d00f624ab758b64927931",
+    "services/api/migrations/postgresql/000037_create_refund_observations.sql": "be374b7af950868b56977bdfd5fca2fa45c2fc3023cbeb8cb50e6263657b16a3",
+    "services/api/migrations/postgresql/000038_create_notification_consents.sql": "320c21801b2ee5d51bb2b46a5bff4101f56a1321f8035a11354684438456a8c2",
+    "services/api/migrations/postgresql/000039_create_notification_outbox.sql": "4a0257db787a45dbebd441fb0efe3146723b2e814ac9d7cf65f8edb41dab4370",
+    "services/api/migrations/postgresql/000040_create_import_batches.sql": "1902624e167b76d77d89f452c2290aa1810092dbb6380466e92c915458cb7d6c",
+    "services/api/migrations/postgresql/000041_rename_action_audits.sql": "5552f3dd6bc8fd246d7301cf84a3a36fe90e779b241ff5cd02e9c88eea9a629e",
+    "services/api/migrations/postgresql/000042_generalize_action_audits.sql": "126a89a10d7a7a5d67caf940fa2fd6c41e061b744938c9f8aa495eeb433bdeaa",
+    "services/api/migrations/postgresql/000043_backfill_action_audits.sql": "493b2ae7e3cafa9be9c7a3ac0cc40d321a9f6a83cdd9cf86e5b6989d0f669431",
+    "services/api/migrations/postgresql/000044_constrain_action_audits.sql": "bf324923d6f7bf3272d58a1d93178476b50958cc1b4e549f95a2d39d76fa1e57"
+  },
+  "sequences": {
+    "categories_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "categories",
+      "start": 1,
+      "type": "bigint"
+    },
+    "import_batches_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "import_batches",
+      "start": 1,
+      "type": "bigint"
+    },
+    "merchant_accounts_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "merchant_accounts",
+      "start": 1,
+      "type": "bigint"
+    },
+    "merchant_action_audits_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "action_audits",
+      "start": 1,
+      "type": "bigint"
+    },
+    "merchant_pc_sessions_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "merchant_pc_sessions",
+      "start": 1,
+      "type": "bigint"
+    },
+    "miniprogram_users_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "miniprogram_users",
+      "start": 1,
+      "type": "bigint"
+    },
+    "notification_consents_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "notification_consents",
+      "start": 1,
+      "type": "bigint"
+    },
+    "notification_outbox_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "notification_outbox",
+      "start": 1,
+      "type": "bigint"
+    },
+    "orders_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "orders",
+      "start": 1,
+      "type": "bigint"
+    },
+    "payment_observations_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "payment_observations",
+      "start": 1,
+      "type": "bigint"
+    },
+    "prepayments_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "prepayments",
+      "start": 1,
+      "type": "bigint"
+    },
+    "products_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "products",
+      "start": 1,
+      "type": "bigint"
+    },
+    "quotes_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "quotes",
+      "start": 1,
+      "type": "bigint"
+    },
+    "refund_observations_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "refund_observations",
+      "start": 1,
+      "type": "bigint"
+    },
+    "refunds_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "refunds",
+      "start": 1,
+      "type": "bigint"
+    },
+    "staff_whitelist_id_seq": {
+      "cache": 1,
+      "cycle": false,
+      "increment": 1,
+      "max": 9223372036854775807,
+      "min": 1,
+      "owner_column": "id",
+      "owner_table": "staff_whitelist",
+      "start": 1,
+      "type": "bigint"
+    }
+  },
+  "tables": {
+    "action_audits": {
+      "columns": {
+        "action": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(64)"
+        },
+        "actor_account_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "actor_account_id_snapshot": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "actor_auth_version_snapshot": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "actor_kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "actor_role_snapshot": {
+          "default": null,
+          "not_null": false,
+          "type": "text"
+        },
+        "actor_scope_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "actor_user_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "after_state_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        },
+        "before_state_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        },
+        "entry_kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "id": {
+          "default": "nextval('merchant_action_audits_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "occurred_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "operation_key_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "reason_code": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(64)"
+        },
+        "request_id_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "response_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        },
+        "result": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "target_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "target_key_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "target_type": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        }
+      },
+      "constraints": {
+        "action_audits_actor_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_kind = ANY (ARRAY['USER'::text, 'MERCHANT'::text, 'SYSTEM'::text, 'PROVIDER'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "action_audits_actor_scope_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(actor_scope_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "action_audits_entry_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (entry_kind = ANY (ARRAY['LEGACY_EVIDENCE'::text, 'COMMAND_RECEIPT'::text, 'SYSTEM_EVIDENCE'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "action_audits_request_id_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(request_id_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "action_audits_target_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(target_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_action_audits_entry": {
+          "deferrable": false,
+          "definition": "CHECK (entry_kind = 'LEGACY_EVIDENCE'::text AND actor_kind = 'MERCHANT'::text AND response_json IS NULL OR entry_kind = 'COMMAND_RECEIPT'::text AND response_json IS NOT NULL AND (actor_kind = 'USER'::text AND actor_user_id IS NOT NULL AND actor_account_id IS NULL OR actor_kind = 'MERCHANT'::text AND actor_user_id IS NOT NULL AND actor_account_id IS NOT NULL) OR entry_kind = 'SYSTEM_EVIDENCE'::text AND (actor_kind = ANY (ARRAY['SYSTEM'::text, 'PROVIDER'::text])) AND actor_user_id IS NULL AND actor_account_id IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_action_audits_operation_key": {
+          "deferrable": false,
+          "definition": "CHECK (entry_kind = 'COMMAND_RECEIPT'::text AND operation_key_hash IS NOT NULL OR entry_kind <> 'COMMAND_RECEIPT'::text AND operation_key_hash IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_action_audits_snapshot": {
+          "deferrable": false,
+          "definition": "CHECK (actor_account_id_snapshot IS NULL AND actor_role_snapshot IS NULL AND actor_auth_version_snapshot IS NULL OR actor_account_id_snapshot IS NOT NULL AND actor_account_id_snapshot > 0::numeric AND actor_role_snapshot IS NOT NULL AND actor_auth_version_snapshot IS NOT NULL AND actor_auth_version_snapshot > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_action_audits_target": {
+          "deferrable": false,
+          "definition": "CHECK (target_type IS NULL AND target_id IS NULL AND target_key_hash IS NULL OR target_type IS NOT NULL AND char_length(TRIM(BOTH FROM target_type)) > 0 AND (target_id IS NOT NULL AND target_id > 0::numeric AND target_key_hash IS NULL OR target_id IS NULL AND target_key_hash IS NOT NULL))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_action_audits_text": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM action)) > 0 AND char_length(TRIM(BOTH FROM reason_code)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_action_audits_account": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (actor_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_action_audits_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (actor_user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "merchant_action_audits_account_id_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_account_id_snapshot >= 0::numeric AND actor_account_id_snapshot <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_actor_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_user_id >= 0::numeric AND actor_user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_auth_version_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_auth_version_snapshot >= 0::numeric AND actor_auth_version_snapshot <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(operation_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_merchant_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_account_id >= 0::numeric AND actor_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "merchant_action_audits_result_check": {
+          "deferrable": false,
+          "definition": "CHECK (result = ANY (ARRAY['SUCCEEDED'::text, 'REJECTED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_role_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_role_snapshot = ANY (ARRAY['OWNER'::text, 'SUBACCOUNT'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_action_audits_target_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (target_id >= 0::numeric AND target_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_action_audits_command_receipt": {
+          "deferrable": false,
+          "definition": "UNIQUE (actor_scope_hash, action, operation_key_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "categories": {
+      "columns": {
+        "id": {
+          "default": "nextval('categories_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "is_active": {
+          "default": "true",
+          "not_null": true,
+          "type": "boolean"
+        },
+        "name": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(100)"
+        },
+        "name_key": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "sort_order": {
+          "default": "0",
+          "not_null": true,
+          "type": "bigint"
+        }
+      },
+      "constraints": {
+        "categories_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "categories_name_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "categories_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "categories_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "categories_sort_order_check": {
+          "deferrable": false,
+          "definition": "CHECK (sort_order >= 0 AND sort_order <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_categories_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(name::text) > 0 AND octet_length(name::text) = octet_length(TRIM(BOTH FROM name)))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_categories_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_categories_name_key": {
+          "deferrable": false,
+          "definition": "UNIQUE (name_key)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "discount_settings": {
+      "columns": {
+        "discount_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "id": {
+          "default": null,
+          "not_null": true,
+          "type": "smallint"
+        },
+        "rate_percent": {
+          "default": null,
+          "not_null": true,
+          "type": "smallint"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "whitelist_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_discount_settings_rate": {
+          "deferrable": false,
+          "definition": "CHECK (rate_percent >= 1 AND rate_percent <= 100)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_discount_settings_singleton": {
+          "deferrable": false,
+          "definition": "CHECK (id = 1)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_discount_settings_versions": {
+          "deferrable": false,
+          "definition": "CHECK (discount_version > 0::numeric AND whitelist_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "discount_settings_discount_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_version >= 0::numeric AND discount_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "discount_settings_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0 AND id <= 255)",
+          "kind": "c",
+          "validated": true
+        },
+        "discount_settings_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "discount_settings_rate_percent_check": {
+          "deferrable": false,
+          "definition": "CHECK (rate_percent >= 0 AND rate_percent <= 255)",
+          "kind": "c",
+          "validated": true
+        },
+        "discount_settings_whitelist_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (whitelist_version >= 0::numeric AND whitelist_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "import_batches": {
+      "columns": {
+        "actor_account_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "commit_idempotency_key_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "committed_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "error_count": {
+          "default": null,
+          "not_null": true,
+          "type": "bigint"
+        },
+        "expires_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "file_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "file_object_key": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "file_size_bytes": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "id": {
+          "default": "nextval('import_batches_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "new_count": {
+          "default": null,
+          "not_null": true,
+          "type": "bigint"
+        },
+        "preview_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        },
+        "preview_token_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "result_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        },
+        "row_count": {
+          "default": null,
+          "not_null": true,
+          "type": "bigint"
+        },
+        "skip_invalid": {
+          "default": null,
+          "not_null": false,
+          "type": "boolean"
+        },
+        "state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "update_count": {
+          "default": null,
+          "not_null": true,
+          "type": "bigint"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        }
+      },
+      "constraints": {
+        "chk_import_batches_file": {
+          "deferrable": false,
+          "definition": "CHECK ((file_object_key IS NULL OR octet_length(file_object_key) >= 1 AND octet_length(file_object_key) <= 1024) AND file_size_bytes >= 1::numeric AND file_size_bytes <= 10485760::numeric AND (kind = 'PRODUCT'::text AND row_count >= 1 AND row_count <= 500 OR kind = 'STAFF'::text AND row_count >= 1 AND row_count <= 5000) AND (new_count + update_count + error_count) = row_count)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_import_batches_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_import_batches_state": {
+          "deferrable": false,
+          "definition": "CHECK (state = 'PREVIEWED'::text AND preview_json IS NOT NULL AND commit_idempotency_key_hash IS NULL AND skip_invalid IS NULL AND result_json IS NULL AND committed_at IS NULL AND expires_at > created_at OR state = 'COMMITTED'::text AND commit_idempotency_key_hash IS NOT NULL AND skip_invalid IS NOT NULL AND result_json IS NOT NULL AND committed_at IS NOT NULL AND committed_at <= expires_at AND (kind <> 'STAFF'::text OR preview_json IS NULL) OR state = 'EXPIRED'::text AND preview_json IS NULL AND commit_idempotency_key_hash IS NULL AND skip_invalid IS NULL AND result_json IS NULL AND committed_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_import_batches_actor": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (actor_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "import_batches_actor_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (actor_account_id >= 0::numeric AND actor_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_commit_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(commit_idempotency_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_error_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (error_count >= 0 AND error_count <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_file_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(file_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_file_object_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(file_object_key) <= 1024)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_file_size_bytes_check": {
+          "deferrable": false,
+          "definition": "CHECK (file_size_bytes >= 0::numeric AND file_size_bytes <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (kind = ANY (ARRAY['PRODUCT'::text, 'STAFF'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_new_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (new_count >= 0 AND new_count <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "import_batches_preview_token_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(preview_token_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_row_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (row_count >= 0 AND row_count <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (state = ANY (ARRAY['PREVIEWED'::text, 'COMMITTED'::text, 'EXPIRED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "import_batches_update_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (update_count >= 0 AND update_count <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_import_batches_commit": {
+          "deferrable": false,
+          "definition": "UNIQUE (actor_account_id, commit_idempotency_key_hash)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_import_batches_preview_token": {
+          "deferrable": false,
+          "definition": "UNIQUE (preview_token_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "meal_periods": {
+      "columns": {
+        "code": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "cutoff_time": {
+          "default": null,
+          "not_null": true,
+          "type": "time without time zone"
+        },
+        "interval_minutes": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "pickup_end_time": {
+          "default": null,
+          "not_null": true,
+          "type": "time without time zone"
+        },
+        "pickup_start_time": {
+          "default": null,
+          "not_null": true,
+          "type": "time without time zone"
+        }
+      },
+      "constraints": {
+        "chk_meal_periods_cutoff_minute": {
+          "deferrable": false,
+          "definition": "CHECK (cutoff_time >= '00:00:00'::time without time zone AND cutoff_time <= '23:59:00'::time without time zone AND EXTRACT(second FROM cutoff_time) = 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_meal_periods_cutoff_order": {
+          "deferrable": false,
+          "definition": "CHECK (cutoff_time <= pickup_start_time)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_meal_periods_end_minute": {
+          "deferrable": false,
+          "definition": "CHECK (pickup_end_time >= '00:00:00'::time without time zone AND pickup_end_time <= '23:59:00'::time without time zone AND EXTRACT(second FROM pickup_end_time) = 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_meal_periods_interval": {
+          "deferrable": false,
+          "definition": "CHECK (interval_minutes >= 1 AND interval_minutes <= 1440)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_meal_periods_pickup_order": {
+          "deferrable": false,
+          "definition": "CHECK (pickup_start_time <= pickup_end_time)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_meal_periods_start_minute": {
+          "deferrable": false,
+          "definition": "CHECK (pickup_start_time >= '00:00:00'::time without time zone AND pickup_start_time <= '23:59:00'::time without time zone AND EXTRACT(second FROM pickup_start_time) = 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "meal_periods_code_check": {
+          "deferrable": false,
+          "definition": "CHECK (code = ANY (ARRAY['lunch'::text, 'dinner'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "meal_periods_interval_minutes_check": {
+          "deferrable": false,
+          "definition": "CHECK (interval_minutes >= 0 AND interval_minutes <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "meal_periods_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (code)",
+          "kind": "p",
+          "validated": true
+        }
+      }
+    },
+    "merchant_accounts": {
+      "columns": {
+        "auth_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "bound_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "bound_user_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "created_by": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "deleted_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "deleted_by_account_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "enabled": {
+          "default": "true",
+          "not_null": true,
+          "type": "boolean"
+        },
+        "id": {
+          "default": "nextval('merchant_accounts_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "name": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "phone": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "role": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "updated_by": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_merchant_accounts_binding_pair": {
+          "deferrable": false,
+          "definition": "CHECK (bound_user_id IS NULL AND bound_at IS NULL OR bound_user_id IS NOT NULL AND bound_at IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_accounts_deleted_group": {
+          "deferrable": false,
+          "definition": "CHECK (deleted_at IS NULL AND deleted_by_account_id IS NULL OR deleted_at IS NOT NULL AND deleted_by_account_id IS NOT NULL AND enabled = false AND bound_user_id IS NULL AND bound_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_accounts_enabled": {
+          "deferrable": false,
+          "definition": "CHECK (enabled = ANY (ARRAY[false, true]))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_accounts_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM name)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_accounts_phone": {
+          "deferrable": false,
+          "definition": "CHECK (convert_from(phone, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_accounts_versions": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric AND auth_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_merchant_accounts_bound_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (bound_user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_merchant_accounts_deleted_by": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (deleted_by_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "merchant_accounts_auth_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (auth_version >= 0::numeric AND auth_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_bound_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (bound_user_id >= 0::numeric AND bound_user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_created_by_check": {
+          "deferrable": false,
+          "definition": "CHECK (created_by >= 0::numeric AND created_by <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_deleted_by_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (deleted_by_account_id >= 0::numeric AND deleted_by_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_phone_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(phone) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "merchant_accounts_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_role_check": {
+          "deferrable": false,
+          "definition": "CHECK (role = ANY (ARRAY['OWNER'::text, 'SUBACCOUNT'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_accounts_updated_by_check": {
+          "deferrable": false,
+          "definition": "CHECK (updated_by >= 0::numeric AND updated_by <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_merchant_accounts_bound_user": {
+          "deferrable": false,
+          "definition": "UNIQUE (bound_user_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_merchant_accounts_phone": {
+          "deferrable": false,
+          "definition": "UNIQUE (phone)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "merchant_pc_sessions": {
+      "columns": {
+        "access_expires_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "access_issued_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "access_token_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "approval_secret_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "approved_account_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "approved_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "approved_auth_version": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "approved_user_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "consumed_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "id": {
+          "default": "nextval('merchant_pc_sessions_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "login_expires_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "poll_secret_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        }
+      },
+      "constraints": {
+        "chk_merchant_pc_sessions_login_expiry": {
+          "deferrable": false,
+          "definition": "CHECK (login_expires_at = (created_at + '00:02:00'::interval))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_pc_sessions_state": {
+          "deferrable": false,
+          "definition": "CHECK (state = 'WAITING'::text AND approved_account_id IS NULL AND approved_user_id IS NULL AND approved_auth_version IS NULL AND approved_at IS NULL AND consumed_at IS NULL AND access_token_hash IS NULL AND access_issued_at IS NULL AND access_expires_at IS NULL OR state = 'APPROVED'::text AND approved_account_id IS NOT NULL AND approved_user_id IS NOT NULL AND approved_auth_version IS NOT NULL AND approved_at IS NOT NULL AND approved_at >= created_at AND approved_at <= login_expires_at AND consumed_at IS NULL AND access_token_hash IS NULL AND access_issued_at IS NULL AND access_expires_at IS NULL OR state = 'CONSUMED'::text AND approved_account_id IS NOT NULL AND approved_user_id IS NOT NULL AND approved_auth_version IS NOT NULL AND approved_at IS NOT NULL AND approved_at >= created_at AND approved_at <= login_expires_at AND consumed_at IS NOT NULL AND consumed_at >= approved_at AND consumed_at <= login_expires_at AND access_token_hash IS NOT NULL AND access_issued_at IS NOT NULL AND access_issued_at >= consumed_at AND access_expires_at IS NOT NULL AND access_expires_at = (access_issued_at + '12:00:00'::interval))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_merchant_pc_sessions_updated": {
+          "deferrable": false,
+          "definition": "CHECK (updated_at >= created_at)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_merchant_pc_sessions_account": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (approved_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_merchant_pc_sessions_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (approved_user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "merchant_pc_sessions_access_token_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(access_token_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_approval_secret_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(approval_secret_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_approved_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (approved_account_id >= 0::numeric AND approved_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_approved_auth_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (approved_auth_version >= 0::numeric AND approved_auth_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_approved_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (approved_user_id >= 0::numeric AND approved_user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "merchant_pc_sessions_poll_secret_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(poll_secret_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "merchant_pc_sessions_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (state = ANY (ARRAY['WAITING'::text, 'APPROVED'::text, 'CONSUMED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_merchant_pc_sessions_access_token": {
+          "deferrable": false,
+          "definition": "UNIQUE (access_token_hash)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_merchant_pc_sessions_approval_secret": {
+          "deferrable": false,
+          "definition": "UNIQUE (approval_secret_hash)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_merchant_pc_sessions_poll_secret": {
+          "deferrable": false,
+          "definition": "UNIQUE (poll_secret_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "miniprogram_sessions": {
+      "columns": {
+        "expires_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "issued_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "token_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_miniprogram_sessions_expiry": {
+          "deferrable": false,
+          "definition": "CHECK (expires_at > issued_at)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_miniprogram_sessions_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "miniprogram_sessions_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (token_hash)",
+          "kind": "p",
+          "validated": true
+        },
+        "miniprogram_sessions_token_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(token_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_sessions_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (user_id >= 0::numeric AND user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "miniprogram_users": {
+      "columns": {
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "extra_name": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(100)"
+        },
+        "extra_name_key": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "extra_phone": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "extra_phone_set_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "id": {
+          "default": "nextval('miniprogram_users_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "last_login_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "openid": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "primary_phone": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "primary_phone_bound_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_miniprogram_users_extra_group": {
+          "deferrable": false,
+          "definition": "CHECK (extra_phone IS NULL AND extra_name IS NULL AND extra_name_key IS NULL AND extra_phone_set_at IS NULL OR extra_phone IS NOT NULL AND extra_name IS NOT NULL AND extra_name_key IS NOT NULL AND extra_phone_set_at IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_extra_name": {
+          "deferrable": false,
+          "definition": "CHECK (extra_name IS NULL OR char_length(extra_name::text) > 0 AND octet_length(extra_name_key) >= 1 AND octet_length(extra_name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_extra_phone": {
+          "deferrable": false,
+          "definition": "CHECK (extra_phone IS NULL OR convert_from(extra_phone, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_primary_phone": {
+          "deferrable": false,
+          "definition": "CHECK (primary_phone IS NULL OR convert_from(primary_phone, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_primary_phone_pair": {
+          "deferrable": false,
+          "definition": "CHECK (primary_phone IS NULL AND primary_phone_bound_at IS NULL OR primary_phone IS NOT NULL AND primary_phone_bound_at IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_extra_name_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(extra_name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_extra_phone_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(extra_phone) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_openid_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(openid) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "miniprogram_users_primary_phone_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(primary_phone) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "miniprogram_users_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_miniprogram_users_openid": {
+          "deferrable": false,
+          "definition": "UNIQUE (openid)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_miniprogram_users_primary_phone": {
+          "deferrable": false,
+          "definition": "UNIQUE (primary_phone)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "notification_consents": {
+      "columns": {
+        "consumed_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "decided_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "decision": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "grant_sequence": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "id": {
+          "default": "nextval('notification_consents_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "idempotency_key_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "order_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "template_config_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_notification_consents_values": {
+          "deferrable": false,
+          "definition": "CHECK (grant_sequence > 0::numeric AND template_config_version > 0::numeric AND (decision = 'ACCEPTED'::text OR consumed_at IS NULL) AND (consumed_at IS NULL OR consumed_at >= decided_at))",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_notification_consents_order": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_notification_consents_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "notification_consents_decision_check": {
+          "deferrable": false,
+          "definition": "CHECK (decision = ANY (ARRAY['ACCEPTED'::text, 'REJECTED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_grant_sequence_check": {
+          "deferrable": false,
+          "definition": "CHECK (grant_sequence >= 0::numeric AND grant_sequence <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(idempotency_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (kind = ANY (ARRAY['READY'::text, 'REFUND_RESULT'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_order_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (order_id >= 0::numeric AND order_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "notification_consents_template_config_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (template_config_version >= 0::numeric AND template_config_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_consents_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (user_id >= 0::numeric AND user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_notification_consents_grant": {
+          "deferrable": false,
+          "definition": "UNIQUE (order_id, kind, grant_sequence)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_notification_consents_user_idempotency": {
+          "deferrable": false,
+          "definition": "UNIQUE (user_id, idempotency_key_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "notification_outbox": {
+      "columns": {
+        "attempt_count": {
+          "default": "0",
+          "not_null": true,
+          "type": "integer"
+        },
+        "consent_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "id": {
+          "default": "nextval('notification_outbox_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "immutable_message_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "last_error_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "lease_expires_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "lease_owner": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "next_attempt_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "order_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "provider_message_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "recipient_user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "sent_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "template_config_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_notification_outbox_state": {
+          "deferrable": false,
+          "definition": "CHECK (state = 'PENDING'::text AND next_attempt_at IS NOT NULL AND lease_owner IS NULL AND lease_expires_at IS NULL AND sent_at IS NULL AND provider_message_id IS NULL OR state = 'IN_FLIGHT'::text AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL AND sent_at IS NULL AND provider_message_id IS NULL OR state = 'SENT'::text AND sent_at IS NOT NULL AND lease_owner IS NULL AND lease_expires_at IS NULL AND last_error_code IS NULL OR state = 'FAILED_PERMANENT'::text AND last_error_code IS NOT NULL AND char_length(TRIM(BOTH FROM last_error_code)) > 0 AND lease_owner IS NULL AND lease_expires_at IS NULL AND sent_at IS NULL AND provider_message_id IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_notification_outbox_values": {
+          "deferrable": false,
+          "definition": "CHECK (jsonb_typeof(immutable_message_json) = 'object'::text AND template_config_version > 0::numeric AND record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_notification_outbox_consent": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (consent_id) REFERENCES notification_consents(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_notification_outbox_order": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_notification_outbox_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (recipient_user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "notification_outbox_attempt_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (attempt_count >= 0 AND attempt_count <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_consent_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (consent_id >= 0::numeric AND consent_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (kind = ANY (ARRAY['READY'::text, 'REFUND_RESULT'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_lease_owner_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(lease_owner) = 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_order_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (order_id >= 0::numeric AND order_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "notification_outbox_provider_message_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_message_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_recipient_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (recipient_user_id >= 0::numeric AND recipient_user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (state = ANY (ARRAY['PENDING'::text, 'IN_FLIGHT'::text, 'SENT'::text, 'FAILED_PERMANENT'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "notification_outbox_template_config_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (template_config_version >= 0::numeric AND template_config_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_notification_outbox_consent": {
+          "deferrable": false,
+          "definition": "UNIQUE (consent_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_notification_outbox_order_kind": {
+          "deferrable": false,
+          "definition": "UNIQUE (order_id, kind)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "order_items": {
+      "columns": {
+        "discounted_unit_price_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "flavors_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "image_object_key_snapshot": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "line_note": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "line_number": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "order_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "original_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "original_unit_price_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "payable_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "product_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "product_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "product_source_version": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "quantity": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_order_items_amounts": {
+          "deferrable": false,
+          "definition": "CHECK (quantity > 0::numeric AND discounted_unit_price_cents <= original_unit_price_cents AND original_unit_price_cents <= floor('18446744073709551615'::numeric / NULLIF(quantity, 0::numeric)) AND discounted_unit_price_cents <= floor('18446744073709551615'::numeric / NULLIF(quantity, 0::numeric)) AND original_subtotal_cents = (original_unit_price_cents * quantity) AND payable_subtotal_cents = (discounted_unit_price_cents * quantity))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_order_items_flavors": {
+          "deferrable": false,
+          "definition": "CHECK (jsonb_typeof(flavors_json) = 'array'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_order_items_line": {
+          "deferrable": false,
+          "definition": "CHECK (line_number > 0 AND product_id > 0::numeric AND char_length(TRIM(BOTH FROM product_name_snapshot)) > 0 AND (image_object_key_snapshot IS NULL OR octet_length(image_object_key_snapshot) >= 1 AND octet_length(image_object_key_snapshot) <= 1024))",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_order_items_order": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "order_items_discounted_unit_price_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (discounted_unit_price_cents >= 0::numeric AND discounted_unit_price_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_image_object_key_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(image_object_key_snapshot) <= 1024)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_line_number_check": {
+          "deferrable": false,
+          "definition": "CHECK (line_number >= 0 AND line_number <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_order_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (order_id >= 0::numeric AND order_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_original_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents >= 0::numeric AND original_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_original_unit_price_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_unit_price_cents >= 0::numeric AND original_unit_price_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_payable_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (payable_subtotal_cents >= 0::numeric AND payable_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (order_id, line_number)",
+          "kind": "p",
+          "validated": true
+        },
+        "order_items_product_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (product_id >= 0::numeric AND product_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_product_source_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(product_source_version) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "order_items_quantity_check": {
+          "deferrable": false,
+          "definition": "CHECK (quantity >= 0::numeric AND quantity <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "orders": {
+      "columns": {
+        "completed_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "contact_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(64)"
+        },
+        "contact_phone_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "discount_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "discount_rate_percent": {
+          "default": null,
+          "not_null": true,
+          "type": "smallint"
+        },
+        "discount_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "id": {
+          "default": "nextval('orders_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "identity_kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "identity_source_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "item_count": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "materialized_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "meal_period": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "order_no": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "order_note": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "original_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "paid_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "payable_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "payment_observation_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "pickup_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "pickup_date": {
+          "default": null,
+          "not_null": true,
+          "type": "date"
+        },
+        "pickup_number": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "pickup_point_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "pickup_time": {
+          "default": null,
+          "not_null": true,
+          "type": "time without time zone"
+        },
+        "preparing_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "prepayment_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "quote_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "ready_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "redeemed_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "redeemed_by_account_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "redemption_issued_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "redemption_key_version": {
+          "default": null,
+          "not_null": false,
+          "type": "integer"
+        },
+        "redemption_token_ciphertext": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "redemption_token_hash": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "refunded_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "refunding_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "snapshot_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "store_address_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "store_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "transaction_id": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_orders_history": {
+          "deferrable": false,
+          "definition": "CHECK (materialized_at >= paid_at AND updated_at >= created_at AND (preparing_at IS NULL OR preparing_at >= materialized_at) AND (ready_at IS NULL OR preparing_at IS NOT NULL AND ready_at >= preparing_at) AND (redemption_issued_at IS NULL OR ready_at IS NOT NULL AND redemption_issued_at >= ready_at) AND (redeemed_at IS NULL OR redemption_issued_at IS NOT NULL AND redeemed_at >= redemption_issued_at) AND (completed_at IS NULL OR ready_at IS NOT NULL AND completed_at >= ready_at) AND (refunding_at IS NULL OR refunding_at >= materialized_at) AND (refunded_at IS NULL OR refunding_at IS NOT NULL AND refunded_at >= refunding_at))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_orders_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_orders_snapshots": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(order_no) >= 1 AND octet_length(order_no) <= 64 AND char_length(TRIM(BOTH FROM contact_name_snapshot)) > 0 AND convert_from(contact_phone_snapshot, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text AND identity_source_version > 0::numeric AND discount_rate_percent >= 1 AND discount_rate_percent <= 100 AND discount_version > 0::numeric AND char_length(TRIM(BOTH FROM store_name_snapshot)) > 0 AND char_length(TRIM(BOTH FROM store_address_snapshot)) > 0 AND char_length(TRIM(BOTH FROM pickup_point_snapshot)) > 0 AND EXTRACT(second FROM pickup_time) = 0::numeric AND item_count > 0 AND original_subtotal_cents = (discount_cents + payable_cents) AND payable_cents > 0::numeric AND octet_length(transaction_id) >= 1 AND octet_length(transaction_id) <= 64 AND pickup_number >= 1 AND pickup_number <= 9999)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_orders_state": {
+          "deferrable": false,
+          "definition": "CHECK (state = 'RESERVED'::text AND preparing_at IS NULL AND ready_at IS NULL AND completed_at IS NULL AND refunding_at IS NULL AND refunded_at IS NULL AND redemption_token_ciphertext IS NULL AND redemption_token_hash IS NULL AND redemption_key_version IS NULL AND redemption_issued_at IS NULL AND redeemed_by_account_id IS NULL AND redeemed_at IS NULL OR state = 'PREPARING'::text AND preparing_at IS NOT NULL AND ready_at IS NULL AND completed_at IS NULL AND refunding_at IS NULL AND refunded_at IS NULL AND redemption_token_ciphertext IS NULL AND redemption_token_hash IS NULL AND redemption_key_version IS NULL AND redemption_issued_at IS NULL AND redeemed_by_account_id IS NULL AND redeemed_at IS NULL OR state = 'READY_FOR_PICKUP'::text AND preparing_at IS NOT NULL AND ready_at IS NOT NULL AND completed_at IS NULL AND refunding_at IS NULL AND refunded_at IS NULL AND redemption_token_ciphertext IS NOT NULL AND redemption_token_hash IS NOT NULL AND redemption_key_version IS NOT NULL AND redemption_issued_at IS NOT NULL AND redeemed_by_account_id IS NULL AND redeemed_at IS NULL OR state = 'COMPLETED'::text AND preparing_at IS NOT NULL AND ready_at IS NOT NULL AND completed_at IS NOT NULL AND refunding_at IS NULL AND refunded_at IS NULL AND redemption_token_ciphertext IS NULL AND redemption_token_hash IS NOT NULL AND redemption_key_version IS NULL AND redemption_issued_at IS NOT NULL AND redeemed_by_account_id IS NOT NULL AND redeemed_at IS NOT NULL OR state = 'REFUNDING'::text AND refunding_at IS NOT NULL AND refunded_at IS NULL AND redemption_token_ciphertext IS NULL AND redemption_key_version IS NULL AND (redemption_token_hash IS NULL AND redemption_issued_at IS NULL OR redemption_token_hash IS NOT NULL AND redemption_issued_at IS NOT NULL) AND (completed_at IS NULL AND redeemed_by_account_id IS NULL AND redeemed_at IS NULL OR completed_at IS NOT NULL AND redeemed_by_account_id IS NOT NULL AND redeemed_at IS NOT NULL) OR state = 'REFUNDED'::text AND refunding_at IS NOT NULL AND refunded_at IS NOT NULL AND redemption_token_ciphertext IS NULL AND redemption_key_version IS NULL AND (redemption_token_hash IS NULL AND redemption_issued_at IS NULL OR redemption_token_hash IS NOT NULL AND redemption_issued_at IS NOT NULL) AND (completed_at IS NULL AND redeemed_by_account_id IS NULL AND redeemed_at IS NULL OR completed_at IS NOT NULL AND redeemed_by_account_id IS NOT NULL AND redeemed_at IS NOT NULL))",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_orders_observation": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (payment_observation_id) REFERENCES payment_observations(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_orders_prepayment": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (prepayment_id) REFERENCES prepayments(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_orders_quote": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (quote_id) REFERENCES quotes(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_orders_redeemed_by": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (redeemed_by_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_orders_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "orders_contact_phone_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(contact_phone_snapshot) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_discount_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_cents >= 0::numeric AND discount_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_discount_rate_percent_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_rate_percent >= 0 AND discount_rate_percent <= 255)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_discount_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_version >= 0::numeric AND discount_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_identity_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (identity_kind = ANY (ARRAY['STAFF'::text, 'VISITOR'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_identity_source_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (identity_source_version >= 0::numeric AND identity_source_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_item_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (item_count >= 0 AND item_count <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_meal_period_check": {
+          "deferrable": false,
+          "definition": "CHECK (meal_period = ANY (ARRAY['lunch'::text, 'dinner'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_order_no_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(order_no) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_original_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents >= 0::numeric AND original_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_payable_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (payable_cents >= 0::numeric AND payable_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_payment_observation_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (payment_observation_id >= 0::numeric AND payment_observation_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_pickup_number_check": {
+          "deferrable": false,
+          "definition": "CHECK (pickup_number >= 0 AND pickup_number <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "orders_prepayment_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (prepayment_id >= 0::numeric AND prepayment_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_quote_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (quote_id >= 0::numeric AND quote_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_redeemed_by_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (redeemed_by_account_id >= 0::numeric AND redeemed_by_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_redemption_key_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (redemption_key_version >= 0 AND redemption_key_version <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_redemption_token_ciphertext_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(redemption_token_ciphertext) <= 192)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_redemption_token_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(redemption_token_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_snapshot_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(snapshot_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (state = ANY (ARRAY['RESERVED'::text, 'PREPARING'::text, 'READY_FOR_PICKUP'::text, 'COMPLETED'::text, 'REFUNDING'::text, 'REFUNDED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_transaction_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(transaction_id) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "orders_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (user_id >= 0::numeric AND user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_orders_observation": {
+          "deferrable": false,
+          "definition": "UNIQUE (payment_observation_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_order_no": {
+          "deferrable": false,
+          "definition": "UNIQUE (order_no)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_pickup": {
+          "deferrable": false,
+          "definition": "UNIQUE (pickup_date, pickup_number)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_prepayment": {
+          "deferrable": false,
+          "definition": "UNIQUE (prepayment_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_quote": {
+          "deferrable": false,
+          "definition": "UNIQUE (quote_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_redemption_hash": {
+          "deferrable": false,
+          "definition": "UNIQUE (redemption_token_hash)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_orders_transaction": {
+          "deferrable": false,
+          "definition": "UNIQUE (transaction_id)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "payment_observations": {
+      "columns": {
+        "amount_cents": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "applied_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "apply_reason_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "apply_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "currency": {
+          "default": null,
+          "not_null": false,
+          "type": "character(3)"
+        },
+        "dedupe_key": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "id": {
+          "default": "nextval('payment_observations_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "materialization_mode": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "mismatch_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "out_trade_no": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "prepayment_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "provider_event_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "provider_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "received_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "source": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "success_time": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "transaction_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "validation": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        }
+      },
+      "constraints": {
+        "chk_payment_observations_apply": {
+          "deferrable": false,
+          "definition": "CHECK (apply_state = 'NEW'::text AND apply_reason_code IS NULL AND applied_at IS NULL OR apply_state = 'APPLIED'::text AND apply_reason_code IS NULL AND applied_at IS NOT NULL OR apply_state = 'DEFERRED'::text AND apply_reason_code IS NOT NULL AND char_length(TRIM(BOTH FROM apply_reason_code)) > 0 AND applied_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_payment_observations_auto": {
+          "deferrable": false,
+          "definition": "CHECK (materialization_mode <> 'AUTO'::text OR validation = 'MATCH'::text AND provider_state = 'PAID'::text AND success_time IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_payment_observations_identity": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_trade_no) >= 1 AND octet_length(out_trade_no) <= 64 AND (provider_event_id IS NULL OR octet_length(provider_event_id) >= 1 AND octet_length(provider_event_id) <= 128))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_payment_observations_payment": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = 'PAID'::text AND transaction_id IS NOT NULL AND amount_cents IS NOT NULL AND currency IS NOT NULL AND success_time IS NOT NULL OR (provider_state = ANY (ARRAY['NOT_PAID'::text, 'CLOSED'::text])) AND transaction_id IS NULL AND success_time IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_payment_observations_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_payment_observations_validation": {
+          "deferrable": false,
+          "definition": "CHECK (validation = 'MATCH'::text AND mismatch_code IS NULL OR validation = 'MISMATCH'::text AND mismatch_code IS NOT NULL AND char_length(TRIM(BOTH FROM mismatch_code)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_payment_observations_prepayment": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (prepayment_id) REFERENCES prepayments(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "payment_observations_amount_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (amount_cents >= 0::numeric AND amount_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_apply_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (apply_state = ANY (ARRAY['NEW'::text, 'APPLIED'::text, 'DEFERRED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_dedupe_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(dedupe_key) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_materialization_mode_check": {
+          "deferrable": false,
+          "definition": "CHECK (materialization_mode = ANY (ARRAY['AUTO'::text, 'DELAYED_MANUAL'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_out_trade_no_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_trade_no) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "payment_observations_prepayment_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (prepayment_id >= 0::numeric AND prepayment_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_provider_event_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_event_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_provider_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = ANY (ARRAY['PAID'::text, 'NOT_PAID'::text, 'CLOSED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_source_check": {
+          "deferrable": false,
+          "definition": "CHECK (source = ANY (ARRAY['CALLBACK'::text, 'ACTIVE_QUERY'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_transaction_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(transaction_id) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "payment_observations_validation_check": {
+          "deferrable": false,
+          "definition": "CHECK (validation = ANY (ARRAY['MATCH'::text, 'MISMATCH'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_payment_observations_dedupe": {
+          "deferrable": false,
+          "definition": "UNIQUE (dedupe_key)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_payment_observations_transaction": {
+          "deferrable": false,
+          "definition": "UNIQUE (transaction_id)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "pickup_sequences": {
+      "columns": {
+        "last_number": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "service_date": {
+          "default": null,
+          "not_null": true,
+          "type": "date"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        }
+      },
+      "constraints": {
+        "chk_pickup_sequences_number": {
+          "deferrable": false,
+          "definition": "CHECK (last_number >= 0 AND last_number <= 9999)",
+          "kind": "c",
+          "validated": true
+        },
+        "pickup_sequences_last_number_check": {
+          "deferrable": false,
+          "definition": "CHECK (last_number >= 0 AND last_number <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "pickup_sequences_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (service_date)",
+          "kind": "p",
+          "validated": true
+        }
+      }
+    },
+    "prepayments": {
+      "columns": {
+        "create_attempted_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "currency": {
+          "default": null,
+          "not_null": true,
+          "type": "character(3)"
+        },
+        "effective_deadline": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "expected_amount_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "expected_appid": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "expected_mchid": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "id": {
+          "default": "nextval('prepayments_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "idempotency_key_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "last_queried_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "lease_expires_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "lease_kind": {
+          "default": null,
+          "not_null": false,
+          "type": "text"
+        },
+        "lease_owner": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "materialization_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "materialized_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "next_reconcile_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "out_trade_no": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "pending_reason_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "provider_create_request_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "provider_create_request_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "provider_prepay_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "provider_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "quote_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "wx_request_payment_json": {
+          "default": null,
+          "not_null": false,
+          "type": "jsonb"
+        }
+      },
+      "constraints": {
+        "chk_prepayments_immutable": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_trade_no) >= 1 AND octet_length(out_trade_no) <= 64 AND octet_length(expected_appid) >= 1 AND octet_length(expected_appid) <= 64 AND octet_length(expected_mchid) >= 1 AND octet_length(expected_mchid) <= 64 AND expected_amount_cents > 0::numeric AND currency = 'CNY'::bpchar AND jsonb_typeof(provider_create_request_json) = 'object'::text AND effective_deadline > created_at)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_prepayments_lease_group": {
+          "deferrable": false,
+          "definition": "CHECK (lease_kind IS NULL AND lease_owner IS NULL AND lease_expires_at IS NULL OR lease_kind IS NOT NULL AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_prepayments_materialization": {
+          "deferrable": false,
+          "definition": "CHECK ((materialization_state = ANY (ARRAY['AWAITING_PAYMENT'::text, 'READY'::text])) AND pending_reason_code IS NULL AND materialized_at IS NULL OR (materialization_state = ANY (ARRAY['APPLIED'::text, 'REFUNDED_WITHOUT_ORDER'::text])) AND pending_reason_code IS NULL AND materialized_at IS NOT NULL OR materialization_state = 'PENDING_MANUAL'::text AND pending_reason_code IS NOT NULL AND char_length(TRIM(BOTH FROM pending_reason_code)) > 0 AND materialized_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_prepayments_provider_state": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = 'READY'::text AND create_attempted_at IS NULL AND provider_prepay_id IS NULL AND wx_request_payment_json IS NULL AND lease_kind IS NULL OR provider_state = 'CREATE_CLAIMED'::text AND create_attempted_at IS NOT NULL AND provider_prepay_id IS NULL AND wx_request_payment_json IS NULL AND lease_kind = 'CREATE'::text OR provider_state = 'CREATE_UNKNOWN'::text AND create_attempted_at IS NOT NULL AND provider_prepay_id IS NULL AND wx_request_payment_json IS NULL AND (lease_kind IS NULL OR lease_kind = 'QUERY'::text) OR provider_state = 'PAYMENT_REQUESTED'::text AND create_attempted_at IS NOT NULL AND provider_prepay_id IS NOT NULL AND wx_request_payment_json IS NOT NULL AND (lease_kind IS NULL OR lease_kind = 'QUERY'::text) OR (provider_state = ANY (ARRAY['NOT_PAID'::text, 'PAID'::text, 'CLOSED'::text])) AND create_attempted_at IS NOT NULL AND (provider_prepay_id IS NULL AND wx_request_payment_json IS NULL OR provider_prepay_id IS NOT NULL AND wx_request_payment_json IS NOT NULL) AND (lease_kind IS NULL OR lease_kind = 'QUERY'::text))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_prepayments_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_prepayments_quote": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (quote_id) REFERENCES quotes(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_prepayments_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "prepayments_expected_amount_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (expected_amount_cents >= 0::numeric AND expected_amount_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_expected_appid_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(expected_appid) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_expected_mchid_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(expected_mchid) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(idempotency_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_lease_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (lease_kind = ANY (ARRAY['CREATE'::text, 'QUERY'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_lease_owner_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(lease_owner) = 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_materialization_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (materialization_state = ANY (ARRAY['AWAITING_PAYMENT'::text, 'READY'::text, 'APPLIED'::text, 'PENDING_MANUAL'::text, 'REFUNDED_WITHOUT_ORDER'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_out_trade_no_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_trade_no) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "prepayments_provider_create_request_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_create_request_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_provider_prepay_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_prepay_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_provider_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = ANY (ARRAY['READY'::text, 'CREATE_CLAIMED'::text, 'CREATE_UNKNOWN'::text, 'PAYMENT_REQUESTED'::text, 'NOT_PAID'::text, 'PAID'::text, 'CLOSED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_quote_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (quote_id >= 0::numeric AND quote_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "prepayments_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (user_id >= 0::numeric AND user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_prepayments_out_trade_no": {
+          "deferrable": false,
+          "definition": "UNIQUE (out_trade_no)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_prepayments_quote": {
+          "deferrable": false,
+          "definition": "UNIQUE (quote_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_prepayments_user_idempotency": {
+          "deferrable": false,
+          "definition": "UNIQUE (user_id, idempotency_key_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "product_sold_out_dates": {
+      "columns": {
+        "product_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "service_date": {
+          "default": null,
+          "not_null": true,
+          "type": "date"
+        }
+      },
+      "constraints": {
+        "fk_product_sold_out_dates_product": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (product_id) REFERENCES products(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "product_sold_out_dates_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (service_date, product_id)",
+          "kind": "p",
+          "validated": true
+        },
+        "product_sold_out_dates_product_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (product_id >= 0::numeric AND product_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "products": {
+      "columns": {
+        "category_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "description": {
+          "default": "''::character varying",
+          "not_null": true,
+          "type": "character varying(1000)"
+        },
+        "id": {
+          "default": "nextval('products_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "images_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "is_listed": {
+          "default": "true",
+          "not_null": true,
+          "type": "boolean"
+        },
+        "meal_period": {
+          "default": "'all'::text",
+          "not_null": true,
+          "type": "text"
+        },
+        "name": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(100)"
+        },
+        "name_key": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "price_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "bigint"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "sort_order": {
+          "default": "0",
+          "not_null": true,
+          "type": "bigint"
+        },
+        "specification": {
+          "default": "''::character varying",
+          "not_null": true,
+          "type": "character varying(255)"
+        }
+      },
+      "constraints": {
+        "chk_products_images": {
+          "deferrable": false,
+          "definition": "CHECK (\nCASE\n    WHEN jsonb_typeof(images_json) = 'array'::text THEN jsonb_array_length(images_json) >= 0 AND jsonb_array_length(images_json) <= 3 AND (jsonb_array_length(images_json) < 1 OR COALESCE(jsonb_typeof(images_json -> 0) = 'object'::text AND (images_json -> 0) = jsonb_build_object('object_key', (images_json -> 0) -> 'object_key'::text) AND jsonb_typeof((images_json -> 0) -> 'object_key'::text) = 'string'::text AND char_length((images_json -> 0) ->> 'object_key'::text) >= 1 AND char_length((images_json -> 0) ->> 'object_key'::text) <= 1024, false)) AND (jsonb_array_length(images_json) < 2 OR COALESCE(jsonb_typeof(images_json -> 1) = 'object'::text AND (images_json -> 1) = jsonb_build_object('object_key', (images_json -> 1) -> 'object_key'::text) AND jsonb_typeof((images_json -> 1) -> 'object_key'::text) = 'string'::text AND char_length((images_json -> 1) ->> 'object_key'::text) >= 1 AND char_length((images_json -> 1) ->> 'object_key'::text) <= 1024 AND ((images_json -> 1) ->> 'object_key'::text) <> ((images_json -> 0) ->> 'object_key'::text), false)) AND (jsonb_array_length(images_json) < 3 OR COALESCE(jsonb_typeof(images_json -> 2) = 'object'::text AND (images_json -> 2) = jsonb_build_object('object_key', (images_json -> 2) -> 'object_key'::text) AND jsonb_typeof((images_json -> 2) -> 'object_key'::text) = 'string'::text AND char_length((images_json -> 2) ->> 'object_key'::text) >= 1 AND char_length((images_json -> 2) ->> 'object_key'::text) <= 1024 AND ((images_json -> 2) ->> 'object_key'::text) <> ((images_json -> 0) ->> 'object_key'::text) AND ((images_json -> 2) ->> 'object_key'::text) <> ((images_json -> 1) ->> 'object_key'::text), false))\n    ELSE false\nEND)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_products_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(name::text) > 0 AND octet_length(name::text) = octet_length(TRIM(BOTH FROM name)))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_products_price": {
+          "deferrable": false,
+          "definition": "CHECK (price_cents > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_products_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_products_category": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (category_id) REFERENCES categories(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "products_category_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (category_id >= 0::numeric AND category_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "products_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "products_meal_period_check": {
+          "deferrable": false,
+          "definition": "CHECK (meal_period = ANY (ARRAY['all'::text, 'lunch'::text, 'dinner'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "products_name_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "products_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "products_price_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (price_cents >= 0 AND price_cents <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "products_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "products_sort_order_check": {
+          "deferrable": false,
+          "definition": "CHECK (sort_order >= 0 AND sort_order <= '4294967295'::bigint)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_products_name_key": {
+          "deferrable": false,
+          "definition": "UNIQUE (name_key)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "quote_items": {
+      "columns": {
+        "discounted_unit_price_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "flavors_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "image_object_key_snapshot": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "line_note": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "line_number": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "original_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "original_unit_price_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "payable_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "product_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "product_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "product_source_version": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "quantity": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "quote_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_quote_items_flavors": {
+          "deferrable": false,
+          "definition": "CHECK (jsonb_typeof(flavors_json) = 'array'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_image_key": {
+          "deferrable": false,
+          "definition": "CHECK (image_object_key_snapshot IS NULL OR octet_length(image_object_key_snapshot) >= 1 AND octet_length(image_object_key_snapshot) <= 1024)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_line_number": {
+          "deferrable": false,
+          "definition": "CHECK (line_number > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_original_subtotal": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents = (original_unit_price_cents * quantity))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_payable_subtotal": {
+          "deferrable": false,
+          "definition": "CHECK (payable_subtotal_cents = (discounted_unit_price_cents * quantity))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_prices": {
+          "deferrable": false,
+          "definition": "CHECK (discounted_unit_price_cents <= original_unit_price_cents)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_product_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM product_name_snapshot)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quote_items_quantity": {
+          "deferrable": false,
+          "definition": "CHECK (quantity > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_quote_items_quote": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (quote_id) REFERENCES quotes(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "quote_items_discounted_unit_price_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (discounted_unit_price_cents >= 0::numeric AND discounted_unit_price_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_image_object_key_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(image_object_key_snapshot) <= 1024)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_line_number_check": {
+          "deferrable": false,
+          "definition": "CHECK (line_number >= 0 AND line_number <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_original_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents >= 0::numeric AND original_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_original_unit_price_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_unit_price_cents >= 0::numeric AND original_unit_price_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_payable_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (payable_subtotal_cents >= 0::numeric AND payable_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (quote_id, line_number)",
+          "kind": "p",
+          "validated": true
+        },
+        "quote_items_product_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (product_id >= 0::numeric AND product_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_product_source_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(product_source_version) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_quantity_check": {
+          "deferrable": false,
+          "definition": "CHECK (quantity >= 0::numeric AND quantity <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quote_items_quote_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (quote_id >= 0::numeric AND quote_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "quotes": {
+      "columns": {
+        "contact_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(64)"
+        },
+        "contact_phone_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "discount_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "discount_rate_percent": {
+          "default": null,
+          "not_null": true,
+          "type": "smallint"
+        },
+        "discount_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "expires_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "id": {
+          "default": "nextval('quotes_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "idempotency_key_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "identity_kind": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "identity_source_version": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "item_count": {
+          "default": null,
+          "not_null": true,
+          "type": "integer"
+        },
+        "meal_period": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "order_note": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "original_subtotal_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "payable_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "pickup_date": {
+          "default": null,
+          "not_null": true,
+          "type": "date"
+        },
+        "pickup_point_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "pickup_time": {
+          "default": null,
+          "not_null": true,
+          "type": "time without time zone"
+        },
+        "request_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "snapshot_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "store_address_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "store_name_snapshot": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "user_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_quotes_contact_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM contact_name_snapshot)) > 0 AND octet_length(contact_name_snapshot::text) = octet_length(TRIM(BOTH FROM contact_name_snapshot)) AND octet_length(contact_name_snapshot::text) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_contact_phone": {
+          "deferrable": false,
+          "definition": "CHECK (convert_from(contact_phone_snapshot, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_discount": {
+          "deferrable": false,
+          "definition": "CHECK (discount_rate_percent >= 1 AND discount_rate_percent <= 100 AND discount_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_expiry": {
+          "deferrable": false,
+          "definition": "CHECK (expires_at > created_at)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_identity_version": {
+          "deferrable": false,
+          "definition": "CHECK (identity_source_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_item_count": {
+          "deferrable": false,
+          "definition": "CHECK (item_count > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_pickup_minute": {
+          "deferrable": false,
+          "definition": "CHECK (EXTRACT(second FROM pickup_time) = 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_text_snapshots": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM store_name_snapshot)) > 0 AND char_length(TRIM(BOTH FROM store_address_snapshot)) > 0 AND char_length(TRIM(BOTH FROM pickup_point_snapshot)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_quotes_totals": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents = (discount_cents + payable_cents) AND payable_cents > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_quotes_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "quotes_contact_phone_snapshot_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(contact_phone_snapshot) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_discount_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_cents >= 0::numeric AND discount_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_discount_rate_percent_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_rate_percent >= 0 AND discount_rate_percent <= 255)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_discount_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (discount_version >= 0::numeric AND discount_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(idempotency_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_identity_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (identity_kind = ANY (ARRAY['STAFF'::text, 'VISITOR'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_identity_source_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (identity_source_version >= 0::numeric AND identity_source_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_item_count_check": {
+          "deferrable": false,
+          "definition": "CHECK (item_count >= 0 AND item_count <= 65535)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_meal_period_check": {
+          "deferrable": false,
+          "definition": "CHECK (meal_period = ANY (ARRAY['lunch'::text, 'dinner'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_original_subtotal_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (original_subtotal_cents >= 0::numeric AND original_subtotal_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_payable_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (payable_cents >= 0::numeric AND payable_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "quotes_request_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(request_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_snapshot_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(snapshot_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "quotes_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (user_id >= 0::numeric AND user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_quotes_user_idempotency": {
+          "deferrable": false,
+          "definition": "UNIQUE (user_id, idempotency_key_hash)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "refund_observations": {
+      "columns": {
+        "applied_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "apply_reason_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "apply_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "dedupe_key": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "id": {
+          "default": "nextval('refund_observations_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "mismatch_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "out_refund_no": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "provider_event_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "provider_refund_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "provider_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "received_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "refund_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "source": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "success_time": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "validation": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        }
+      },
+      "constraints": {
+        "chk_refund_observations_apply": {
+          "deferrable": false,
+          "definition": "CHECK (apply_state = 'NEW'::text AND apply_reason_code IS NULL AND applied_at IS NULL OR apply_state = 'APPLIED'::text AND apply_reason_code IS NULL AND applied_at IS NOT NULL OR apply_state = 'DEFERRED'::text AND apply_reason_code IS NOT NULL AND char_length(TRIM(BOTH FROM apply_reason_code)) > 0 AND applied_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refund_observations_identity": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_refund_no) >= 1 AND octet_length(out_refund_no) <= 64 AND (provider_event_id IS NULL OR octet_length(provider_event_id) >= 1 AND octet_length(provider_event_id) <= 128) AND (provider_refund_id IS NULL OR octet_length(provider_refund_id) >= 1 AND octet_length(provider_refund_id) <= 128))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refund_observations_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refund_observations_success": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = 'SUCCESS'::text AND provider_refund_id IS NOT NULL AND success_time IS NOT NULL OR (provider_state = ANY (ARRAY['PROCESSING'::text, 'CLOSED'::text])) AND success_time IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refund_observations_validation": {
+          "deferrable": false,
+          "definition": "CHECK (validation = 'MATCH'::text AND mismatch_code IS NULL OR validation = 'MISMATCH'::text AND mismatch_code IS NOT NULL AND char_length(TRIM(BOTH FROM mismatch_code)) > 0)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_refund_observations_refund": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (refund_id) REFERENCES refunds(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "refund_observations_apply_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (apply_state = ANY (ARRAY['NEW'::text, 'APPLIED'::text, 'DEFERRED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_dedupe_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(dedupe_key) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_out_refund_no_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_refund_no) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "refund_observations_provider_event_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_event_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_provider_refund_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_refund_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_provider_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = ANY (ARRAY['PROCESSING'::text, 'SUCCESS'::text, 'CLOSED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_refund_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (refund_id >= 0::numeric AND refund_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_source_check": {
+          "deferrable": false,
+          "definition": "CHECK (source = ANY (ARRAY['CALLBACK'::text, 'ACTIVE_QUERY'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refund_observations_validation_check": {
+          "deferrable": false,
+          "definition": "CHECK (validation = ANY (ARRAY['MATCH'::text, 'MISMATCH'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_refund_observations_dedupe": {
+          "deferrable": false,
+          "definition": "UNIQUE (dedupe_key)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "refunds": {
+      "columns": {
+        "amount_cents": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "create_attempted_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "currency": {
+          "default": null,
+          "not_null": true,
+          "type": "character(3)"
+        },
+        "id": {
+          "default": "nextval('refunds_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "idempotency_key_hash": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "lease_expires_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "lease_kind": {
+          "default": null,
+          "not_null": false,
+          "type": "text"
+        },
+        "lease_owner": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "materialization_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "materialized_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "next_query_at": {
+          "default": null,
+          "not_null": false,
+          "type": "timestamp(6) with time zone"
+        },
+        "order_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "out_refund_no": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "pending_reason_code": {
+          "default": null,
+          "not_null": false,
+          "type": "character varying(64)"
+        },
+        "prepayment_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "provider_refund_id": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "provider_request_digest": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "provider_request_json": {
+          "default": null,
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "provider_state": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "reason_code": {
+          "default": null,
+          "not_null": true,
+          "type": "character varying(64)"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "requested_by_account_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "requested_by_user_id": {
+          "default": null,
+          "not_null": false,
+          "type": "numeric(20,0)"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        }
+      },
+      "constraints": {
+        "chk_refunds_immutable": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_refund_no) >= 1 AND octet_length(out_refund_no) <= 64 AND amount_cents > 0::numeric AND currency = 'CNY'::bpchar AND char_length(TRIM(BOTH FROM reason_code)) > 0 AND (requested_by_user_id IS NOT NULL AND requested_by_account_id IS NULL OR requested_by_user_id IS NULL AND requested_by_account_id IS NOT NULL) AND jsonb_typeof(provider_request_json) = 'object'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refunds_lease_group": {
+          "deferrable": false,
+          "definition": "CHECK (lease_kind IS NULL AND lease_owner IS NULL AND lease_expires_at IS NULL OR lease_kind IS NOT NULL AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refunds_materialization": {
+          "deferrable": false,
+          "definition": "CHECK (materialization_state = 'AWAITING_PROVIDER'::text AND pending_reason_code IS NULL AND materialized_at IS NULL OR materialization_state = 'APPLIED'::text AND pending_reason_code IS NULL AND materialized_at IS NOT NULL OR materialization_state = 'PENDING_MANUAL'::text AND pending_reason_code IS NOT NULL AND char_length(TRIM(BOTH FROM pending_reason_code)) > 0 AND materialized_at IS NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refunds_provider_state": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = 'READY'::text AND create_attempted_at IS NULL AND provider_refund_id IS NULL AND lease_kind IS NULL OR provider_state = 'CREATE_CLAIMED'::text AND create_attempted_at IS NOT NULL AND provider_refund_id IS NULL AND lease_kind = 'CREATE'::text OR provider_state = 'CREATE_UNKNOWN'::text AND create_attempted_at IS NOT NULL AND provider_refund_id IS NULL AND (lease_kind IS NULL OR lease_kind = 'QUERY'::text) OR (provider_state = ANY (ARRAY['PROCESSING'::text, 'SUCCESS'::text, 'CLOSED'::text])) AND create_attempted_at IS NOT NULL AND provider_refund_id IS NOT NULL AND (lease_kind IS NULL OR lease_kind = 'QUERY'::text))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_refunds_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_refunds_order": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_refunds_prepayment": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (prepayment_id) REFERENCES prepayments(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_refunds_requested_account": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (requested_by_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "fk_refunds_requested_user": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (requested_by_user_id) REFERENCES miniprogram_users(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "refunds_amount_cents_check": {
+          "deferrable": false,
+          "definition": "CHECK (amount_cents >= 0::numeric AND amount_cents <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_idempotency_key_hash_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(idempotency_key_hash) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_lease_kind_check": {
+          "deferrable": false,
+          "definition": "CHECK (lease_kind = ANY (ARRAY['CREATE'::text, 'QUERY'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_lease_owner_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(lease_owner) = 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_materialization_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (materialization_state = ANY (ARRAY['AWAITING_PROVIDER'::text, 'APPLIED'::text, 'PENDING_MANUAL'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_order_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (order_id >= 0::numeric AND order_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_out_refund_no_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(out_refund_no) <= 64)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "refunds_prepayment_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (prepayment_id >= 0::numeric AND prepayment_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_provider_refund_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_refund_id) <= 128)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_provider_request_digest_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(provider_request_digest) = 32)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_provider_state_check": {
+          "deferrable": false,
+          "definition": "CHECK (provider_state = ANY (ARRAY['READY'::text, 'CREATE_CLAIMED'::text, 'CREATE_UNKNOWN'::text, 'PROCESSING'::text, 'SUCCESS'::text, 'CLOSED'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_requested_by_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (requested_by_account_id >= 0::numeric AND requested_by_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "refunds_requested_by_user_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (requested_by_user_id >= 0::numeric AND requested_by_user_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_refunds_order": {
+          "deferrable": false,
+          "definition": "UNIQUE (order_id)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_refunds_out_refund_no": {
+          "deferrable": false,
+          "definition": "UNIQUE (out_refund_no)",
+          "kind": "u",
+          "validated": true
+        },
+        "uq_refunds_prepayment": {
+          "deferrable": false,
+          "definition": "UNIQUE (prepayment_id)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "service_dates": {
+      "columns": {
+        "is_open": {
+          "default": null,
+          "not_null": true,
+          "type": "boolean"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "service_date": {
+          "default": null,
+          "not_null": true,
+          "type": "date"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "updated_by_account_id": {
+          "default": null,
+          "not_null": true,
+          "type": "numeric(20,0)"
+        }
+      },
+      "constraints": {
+        "chk_service_dates_open": {
+          "deferrable": false,
+          "definition": "CHECK (is_open = ANY (ARRAY[false, true]))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_service_dates_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "fk_service_dates_account": {
+          "deferrable": false,
+          "definition": "FOREIGN KEY (updated_by_account_id) REFERENCES merchant_accounts(id) ON UPDATE RESTRICT ON DELETE RESTRICT",
+          "kind": "f",
+          "validated": true
+        },
+        "service_dates_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (service_date)",
+          "kind": "p",
+          "validated": true
+        },
+        "service_dates_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "service_dates_updated_by_account_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (updated_by_account_id >= 0::numeric AND updated_by_account_id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    },
+    "staff_whitelist": {
+      "columns": {
+        "created_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        },
+        "enabled": {
+          "default": "true",
+          "not_null": true,
+          "type": "boolean"
+        },
+        "id": {
+          "default": "nextval('staff_whitelist_id_seq'::regclass)",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "name": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "name_key": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "phone": {
+          "default": null,
+          "not_null": true,
+          "type": "bytea"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "updated_at": {
+          "default": null,
+          "not_null": true,
+          "type": "timestamp(6) with time zone"
+        }
+      },
+      "constraints": {
+        "chk_staff_whitelist_enabled": {
+          "deferrable": false,
+          "definition": "CHECK (enabled = ANY (ARRAY[false, true]))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_staff_whitelist_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM name)) > 0 AND octet_length(name) = octet_length(TRIM(BOTH FROM name)) AND octet_length(name_key) >= 1 AND octet_length(name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_staff_whitelist_phone": {
+          "deferrable": false,
+          "definition": "CHECK (convert_from(phone, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_staff_whitelist_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "staff_whitelist_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0::numeric AND id <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "staff_whitelist_name_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(name_key) <= 400)",
+          "kind": "c",
+          "validated": true
+        },
+        "staff_whitelist_phone_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(phone) <= 16)",
+          "kind": "c",
+          "validated": true
+        },
+        "staff_whitelist_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "staff_whitelist_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "uq_staff_whitelist_phone": {
+          "deferrable": false,
+          "definition": "UNIQUE (phone)",
+          "kind": "u",
+          "validated": true
+        }
+      }
+    },
+    "storefront_settings": {
+      "columns": {
+        "announcement": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "aspect_ratio": {
+          "default": null,
+          "not_null": false,
+          "type": "double precision"
+        },
+        "business_status": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "center_x": {
+          "default": null,
+          "not_null": false,
+          "type": "double precision"
+        },
+        "center_y": {
+          "default": null,
+          "not_null": false,
+          "type": "double precision"
+        },
+        "flavor_options_json": {
+          "default": "'[]'::jsonb",
+          "not_null": true,
+          "type": "jsonb"
+        },
+        "id": {
+          "default": null,
+          "not_null": true,
+          "type": "smallint"
+        },
+        "launch_image_object_key": {
+          "default": null,
+          "not_null": false,
+          "type": "bytea"
+        },
+        "pickup_point": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "record_version": {
+          "default": "1",
+          "not_null": true,
+          "type": "numeric(20,0)"
+        },
+        "store_address": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "store_name": {
+          "default": null,
+          "not_null": true,
+          "type": "text"
+        },
+        "width_ratio": {
+          "default": null,
+          "not_null": false,
+          "type": "double precision"
+        }
+      },
+      "constraints": {
+        "chk_storefront_settings_announcement": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(announcement) <= 1000)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_aspect_ratio": {
+          "deferrable": false,
+          "definition": "CHECK (aspect_ratio > 0::double precision)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_center_x": {
+          "deferrable": false,
+          "definition": "CHECK (center_x >= 0::double precision AND center_x <= 1::double precision)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_center_y": {
+          "deferrable": false,
+          "definition": "CHECK (center_y >= 0::double precision AND center_y <= 1::double precision)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_flavors": {
+          "deferrable": false,
+          "definition": "CHECK (jsonb_typeof(flavor_options_json) = 'array'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_launch_object_group": {
+          "deferrable": false,
+          "definition": "CHECK (launch_image_object_key IS NULL AND center_x IS NULL AND center_y IS NULL AND width_ratio IS NULL AND aspect_ratio IS NULL OR launch_image_object_key IS NOT NULL AND octet_length(launch_image_object_key) >= 1 AND octet_length(launch_image_object_key) <= 1024 AND center_x IS NOT NULL AND center_y IS NOT NULL AND width_ratio IS NOT NULL AND aspect_ratio IS NOT NULL)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_pickup_point": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM pickup_point)) > 0 AND octet_length(pickup_point) = octet_length(TRIM(BOTH FROM pickup_point)))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_record_version": {
+          "deferrable": false,
+          "definition": "CHECK (record_version > 0::numeric)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_singleton": {
+          "deferrable": false,
+          "definition": "CHECK (id = 1)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_store_address": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM store_address)) > 0 AND octet_length(store_address) = octet_length(TRIM(BOTH FROM store_address)))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_store_name": {
+          "deferrable": false,
+          "definition": "CHECK (char_length(TRIM(BOTH FROM store_name)) > 0 AND octet_length(store_name) = octet_length(TRIM(BOTH FROM store_name)))",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_storefront_settings_width_ratio": {
+          "deferrable": false,
+          "definition": "CHECK (width_ratio > 0::double precision AND width_ratio <= 1::double precision)",
+          "kind": "c",
+          "validated": true
+        },
+        "storefront_settings_business_status_check": {
+          "deferrable": false,
+          "definition": "CHECK (business_status = ANY (ARRAY['open'::text, 'closed'::text, 'cutoff'::text]))",
+          "kind": "c",
+          "validated": true
+        },
+        "storefront_settings_id_check": {
+          "deferrable": false,
+          "definition": "CHECK (id >= 0 AND id <= 255)",
+          "kind": "c",
+          "validated": true
+        },
+        "storefront_settings_launch_image_object_key_check": {
+          "deferrable": false,
+          "definition": "CHECK (octet_length(launch_image_object_key) <= 1024)",
+          "kind": "c",
+          "validated": true
+        },
+        "storefront_settings_pkey": {
+          "deferrable": false,
+          "definition": "PRIMARY KEY (id)",
+          "kind": "p",
+          "validated": true
+        },
+        "storefront_settings_record_version_check": {
+          "deferrable": false,
+          "definition": "CHECK (record_version >= 0::numeric AND record_version <= '18446744073709551615'::numeric)",
+          "kind": "c",
+          "validated": true
+        }
+      }
+    }
+  },
+  "version": 44
+}

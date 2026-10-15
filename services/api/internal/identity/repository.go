@@ -10,7 +10,7 @@ import (
 
 var errPersistence = errors.New("identity persistence failed")
 
-// Repository stores Mini Program users and hash-only sessions in MySQL.
+// Repository stores Mini Program users and hash-only sessions in PostgreSQL.
 type Repository struct {
 	db           *sql.DB
 	beforeCommit func(*sql.Tx)
@@ -37,21 +37,19 @@ func (repository *Repository) CreateSession(ctx context.Context, params CreateSe
 		}
 	}()
 
-	userResult, err := transaction.ExecContext(ctx, `
+	var userID uint64
+	err = transaction.QueryRowContext(ctx, `
 		INSERT INTO miniprogram_users(openid,created_at,last_login_at)
-		VALUES (?,?,?)
-		ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id),last_login_at=?
-	`, params.OpenID, params.IssuedAt, params.IssuedAt, params.IssuedAt)
-	if err != nil {
-		return errPersistence
-	}
-	userID, err := userResult.LastInsertId()
-	if err != nil || userID <= 0 {
+		VALUES ($1,$2,$2)
+		ON CONFLICT (openid) DO UPDATE SET last_login_at=EXCLUDED.last_login_at
+		RETURNING id
+	`, []byte(params.OpenID), params.IssuedAt).Scan(&userID)
+	if err != nil || userID == 0 {
 		return errPersistence
 	}
 	if _, err := transaction.ExecContext(ctx, `
 		INSERT INTO miniprogram_sessions(token_hash,user_id,issued_at,expires_at)
-		VALUES (?,?,?,?)
+		VALUES ($1,$2,$3,$4)
 	`, params.TokenHash[:], userID, params.IssuedAt, params.ExpiresAt); err != nil {
 		return errPersistence
 	}
@@ -70,8 +68,8 @@ func (repository *Repository) FindActiveUser(ctx context.Context, tokenHash [sha
 	err := repository.db.QueryRowContext(ctx, `
 		SELECT user_id
 		FROM miniprogram_sessions
-		WHERE token_hash=? AND issued_at<=? AND expires_at>?
-	`, tokenHash[:], at, at).Scan(&userID)
+		WHERE token_hash=$1 AND issued_at<=$2 AND expires_at>$2
+	`, tokenHash[:], at).Scan(&userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrSessionNotFound
 	}
@@ -79,4 +77,12 @@ func (repository *Repository) FindActiveUser(ctx context.Context, tokenHash [sha
 		return 0, errPersistence
 	}
 	return userID, nil
+}
+
+// RevokeSession removes only the presented hash. Zero affected rows is a successful replay.
+func (repository *Repository) RevokeSession(ctx context.Context, tokenHash [sha256.Size]byte) error {
+	if _, err := repository.db.ExecContext(ctx, `DELETE FROM miniprogram_sessions WHERE token_hash=$1`, tokenHash[:]); err != nil {
+		return errPersistence
+	}
+	return nil
 }

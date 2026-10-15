@@ -28,8 +28,9 @@ Component({
           { id: 'admin-orders', icon: 'layers', label: '订单' },
           { id: 'admin-verify', icon: 'scan', label: '核销' },
           { id: 'admin-products', icon: 'box', label: '菜品' },
+          { id: 'admin-profile', icon: 'user', label: '我的' },
         ];
-        activeColor = '#2a5fa6';
+        activeColor = '#3d6b2f';
       } else {
         items = [
           { id: 'home', icon: 'home', label: '首页' },
@@ -37,7 +38,7 @@ Component({
           { id: 'orders', icon: 'receipt', label: '订单' },
           { id: 'profile', icon: 'user', label: '我的' },
         ];
-        activeColor = '#467a32';
+        activeColor = '#3d6b2f';
       }
       this.setData({ items, activeColor, safeBottom: g.safeBottom });
     },

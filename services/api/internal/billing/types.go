@@ -3,6 +3,7 @@ package billing
 import (
 	"context"
 	"errors"
+	"github.com/gaofeng30/order/services/api/internal/wechatpay"
 	"io"
 	"time"
 )
@@ -34,6 +35,7 @@ type BillEntry struct {
 }
 
 type TransactionBill struct {
+	Details []wechatpay.BillEntry
 	Date    time.Time
 	Digest  [32]byte
 	Entries []BillEntry

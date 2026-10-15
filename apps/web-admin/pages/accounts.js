@@ -4,7 +4,7 @@
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
-  let kw = '';
+  let kw = '', readGeneration = 0;
 
   function render(el) {
     el.innerHTML =
@@ -22,9 +22,13 @@
   }
 
   function paint(el) {
-    Api.listMerchantAccounts(kw).then(list => {
-      const owners = list.filter(a => a.role === 'owner' && a.enabled).length;
+    const generation = ++readGeneration;
+    Promise.all([Api.listMerchantAccounts(kw), Api.listMerchantAccounts('')]).then(([list, full]) => {
+      if (generation !== readGeneration || !el.isConnected) return;
+      const owners = full.filter(a => a.role === 'owner' && a.enabled).length;
+      const protectedOwner = a => a.role === 'owner' && a.enabled && owners <= 1;
       const host = el.querySelector('#acc-host');
+      el.querySelector('#acc-warn')?.remove();
       host.innerHTML = T.render({
         cols: [
           { t: '姓名', w: '130px', render: a => T.esc(a.name) },
@@ -34,17 +38,17 @@
           { t: '状态', w: '90px', render: a => T.pill(a.enabled ? '启用' : '停用', a.enabled ? 'ok' : 'mute') },
           { t: '微信绑定', w: '96px', render: a => a.boundOpenId ? T.pill('已绑定', 'ok') : `<span class="faint">未绑定</span>` },
           { t: '操作', w: '196px', cls: 'act', render: a => `
-            <button class="btn btn--sm btn--line" data-act="toggle" data-id="${a.id}">${a.enabled ? '停用' : '启用'}</button>
+            <button class="btn btn--sm btn--line" data-act="toggle" data-id="${a.id}" ${protectedOwner(a) ? 'disabled title="最后一个启用的主账号不能停用"' : ''}>${a.enabled ? '停用' : '启用'}</button>
             <button class="btn btn--sm btn--ghost-blue" data-act="edit" data-id="${a.id}">编辑</button>
-            <button class="btn btn--sm btn--line danger" data-act="del" data-id="${a.id}">删除</button>` },
+            <button class="btn btn--sm btn--line danger" data-act="del" data-id="${a.id}" ${protectedOwner(a) ? 'disabled title="最后一个启用的主账号不能删除"' : ''}>删除</button>` },
         ],
         rows: list,
         empty: kw ? `没有匹配「${T.esc(kw)}」的账号` : '名单为空',
       });
 
-      if (!kw && owners <= 1) {
+      if (owners <= 1) {
         host.insertAdjacentHTML('afterend',
-          `<div class="card card-pad imp-note warn" id="acc-warn">当前只有 1 个启用的主账号。它不能被停用、删除或降级 —— 否则将没有人能登录 PC 后台。建议再添加一个主账号作为备份。</div>`);
+          `<div class="card card-pad imp-note warn" id="acc-warn">至少保留一个启用的主账号。最后一个启用的主账号不能停用、删除或降为子账号。</div>`);
       }
 
       T.bind(host, {
@@ -54,7 +58,7 @@
             .then(saved => { render(el); window.Toast.show(saved.enabled ? '已启用' : '已停用', { icon: 'check' }); })
             .catch(e => window.Toast.show(e.message, { icon: 'warn' }));
         },
-        edit(id) { openEdit(el, list.find(x => x.id === id)); },
+        edit(id) { openEdit(el, list.find(x => x.id === id), owners); },
         del(id) {
           const a = list.find(x => x.id === id);
           window.Modal.confirm({
@@ -72,9 +76,10 @@
     });
   }
 
-  function openEdit(el, a) {
+  function openEdit(el, a, owners) {
     const isEdit = !!a;
     window.Drawer.open({
+      guardChanges: true,
       title: isEdit ? '编辑商户账号' : '添加商户账号',
       bodyHtml:
         `<div class="fld">
@@ -88,7 +93,7 @@
          </div>
          <div class="fld">
            <div class="fld-lb">角色 <span class="req">*</span></div>
-           <select class="sel" id="f-role">
+           <select class="sel" id="f-role" ${a && a.role === 'owner' && a.enabled && owners <= 1 ? 'disabled title="最后一个启用的主账号不能降级"' : ''}>
              ${Api.ROLES.map(r => `<option value="${r}"${a && a.role === r ? ' selected' : ''}>${Api.ROLE_LABEL[r]}</option>`).join('')}
            </select>
            <div class="fld-hint">主账号：PC 后台全部功能 + 小程序商户端。子账号：只能用小程序的订单、核销、菜品三个页面，不能登录 PC。</div>
@@ -103,18 +108,19 @@
          <button class="btn btn--primary" data-a="ok">${isEdit ? '保存' : '添加'}</button>`,
       onMount(root, close) {
         root.querySelector('[data-a="cancel"]').onclick = close;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.saveMerchantAccount({
+        const save = root.querySelector('[data-a="ok"]');
+        save.onclick = window.FormUI.submit(save, async () => {
+          await Api.saveMerchantAccount({
             id: a ? a.id : '',
             name: root.querySelector('#f-name').value,
             phone: root.querySelector('#f-phone').value,
             role: root.querySelector('#f-role').value,
           }).then(() => {
-            close();
+            close(true);
             render(el);
             window.Toast.show(isEdit ? '已保存' : '已添加', { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }

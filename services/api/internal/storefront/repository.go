@@ -10,7 +10,7 @@ import (
 
 const settingsQuery = `SELECT
   store_name, store_address, pickup_point, announcement, business_status,
-  CONVERT(launch_image_object_key USING utf8mb4), center_x, center_y, width_ratio, aspect_ratio,
+  convert_from(launch_image_object_key,'UTF8'), center_x, center_y, width_ratio, aspect_ratio,
   flavor_options_json
 FROM storefront_settings
 WHERE id = 1

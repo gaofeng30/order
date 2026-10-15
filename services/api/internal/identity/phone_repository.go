@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // FindPhoneUser reads only the provider identity and current immutable binding.
@@ -16,7 +16,7 @@ func (repository *Repository) FindPhoneUser(ctx context.Context, userID uint64) 
 	err := repository.db.QueryRowContext(ctx, `
 		SELECT openid,primary_phone
 		FROM miniprogram_users
-		WHERE id=?
+		WHERE id=$1
 	`, userID).Scan(&openID, &phone)
 	if err != nil || userID == 0 || openID == "" {
 		return PhoneUser{}, errPersistence
@@ -40,7 +40,7 @@ func (repository *Repository) BindPrimaryPhone(ctx context.Context, userID uint6
 	if err := transaction.QueryRowContext(ctx, `
 		SELECT primary_phone
 		FROM miniprogram_users
-		WHERE id=?
+		WHERE id=$1
 		FOR UPDATE
 	`, userID).Scan(&current); err != nil {
 		return "", errPersistence
@@ -56,9 +56,9 @@ func (repository *Repository) BindPrimaryPhone(ctx context.Context, userID uint6
 	if !current.Valid {
 		update, err := transaction.ExecContext(ctx, `
 			UPDATE miniprogram_users
-			SET primary_phone=?,primary_phone_bound_at=?
-			WHERE id=? AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
-		`, phone, boundAt, userID)
+			SET primary_phone=$1,primary_phone_bound_at=$2
+			WHERE id=$3 AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
+		`, []byte(phone), boundAt, userID)
 		if isDuplicatePhone(err) {
 			return "", ErrPhoneInUse
 		}
@@ -80,6 +80,6 @@ func (repository *Repository) BindPrimaryPhone(ctx context.Context, userID uint6
 }
 
 func isDuplicatePhone(err error) bool {
-	var mysqlError *mysql.MySQLError
-	return errors.As(err, &mysqlError) && mysqlError.Number == 1062
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && pgError.Code == "23505" && pgError.ConstraintName == "uq_miniprogram_users_primary_phone"
 }

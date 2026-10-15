@@ -61,7 +61,7 @@ func (provider *WeChatBillProvider) DownloadTransactionBill(ctx context.Context,
 		entries = append(entries, mapped)
 	}
 	sortEntries(entries)
-	return TransactionBill{Date: bill.Date, Digest: bill.Digest, Entries: entries}, nil
+	return TransactionBill{Date: bill.Date, Digest: bill.Digest, Entries: entries, Details: append([]wechatpay.BillEntry{}, bill.Entries...)}, nil
 }
 
 var _ BillProvider = (*WeChatBillProvider)(nil)

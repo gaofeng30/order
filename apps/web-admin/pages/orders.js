@@ -12,8 +12,15 @@
      按取餐号 / 订单号 / 手机号搜索，跨泳道 —— 要核销时并不知道单子在哪个状态。 */
   let kw = '';
   let date = '';
+  let paintGeneration = 0, searchTimer;
+  let loadedOrders = [], nextPage = '', pageBusy = false;
 
   function render(el) {
+    if (window.__orderTarget) {
+      const target = window.__orderTarget;
+      lane = target.status || '全部'; date = target.date || ''; kw = target.no || '';
+      uncollected = false; selId = target.id; window.__orderTarget = null;
+    }
     // 由工作台带过来的泳道 / 选中项
     if (window.__ordersLane) { lane = window.__ordersLane; window.__ordersLane = ''; }
     if (window.__orderSel) { selId = window.__orderSel; window.__orderSel = ''; }
@@ -27,24 +34,22 @@
            <input class="inp" id="f-date" type="date" value="${T.esc(date)}" aria-label="营业日期">
            <input class="inp" id="f-kw" placeholder="取餐号 / 订单号 / 手机号" value="${T.esc(kw)}" style="width:210px">
          </div>
-         <div id="tbl-host"></div>
+         <div id="tbl-host"></div><div id="order-pages" class="order-pages" aria-live="polite"></div>
        </div>
        <aside class="split-r" id="detail"></aside>`;
 
     const search = el.querySelector('#f-kw');
-    search.oninput = () => { kw = search.value; paint(el); };
+    search.oninput = () => { kw = search.value; ++paintGeneration; clearList(el); clearTimeout(searchTimer); searchTimer = setTimeout(() => {if(el.isConnected)paint(el);},300); };
+    search.onkeydown = e => {if(e.key==='Enter'){clearTimeout(searchTimer);kw=search.value;paint(el);}};
     const dateInput = el.querySelector('#f-date');
     if (dateInput) dateInput.onchange = () => { date = dateInput.value; paint(el); };
     paint(el);
   }
 
-  function paint(el) {
-    const counts = Api.laneCounts();
-    paintUncollected(el);
-    paintHint(el);
+  function renderLaneCounts(el, counts, failed) {
     el.querySelector('#lanes').innerHTML = Api.LANES.map(l =>
-      `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts[l]}</span></span>`
-    ).join('');
+      `<span class="seg${l === lane ? ' on' : ''}" data-lane="${l}">${l}<span class="cnt">${counts ? counts[l] : '—'}</span></span>`
+    ).join('') + (failed ? '<span class="faint" role="status">计数不可用，请重新加载</span>' : '');
     el.querySelectorAll('[data-lane]').forEach(n => {
       /* 点泳道即退出搜索态：两者都决定列表内容，同时生效会让人不知道自己在看什么 */
       n.onclick = () => {
@@ -56,9 +61,56 @@
         paint(el);
       };
     });
+  }
 
-    const q = kw.trim();
-    (q ? Api.searchOrders(q, { date }) : Api.listOrders(lane, { uncollected, date })).then(list => {
+  function paint(el) {
+    clearTimeout(searchTimer);
+    const generation = ++paintGeneration;
+    paintUncollected(el);
+    paintHint(el);
+    renderLaneCounts(el, null, false);
+    Api.readOrderCounts().then(counts => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      renderLaneCounts(el, counts, false);
+    }).catch(() => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      renderLaneCounts(el, null, true);
+    });
+
+    clearList(el);
+    fetchPage(el, generation, false);
+  }
+
+  function clearList(el) {
+    loadedOrders = []; nextPage = ''; pageBusy = false;
+    el.querySelector('#tbl-host').innerHTML = '<div class="card card-pad" role="status">正在读取订单…</div>';
+    el.querySelector('#order-pages').innerHTML = '';
+    detail(el, '');
+  }
+
+  async function fetchPage(el, generation, append) {
+    if (pageBusy) return;
+    pageBusy = true;
+    const pager = el.querySelector('#order-pages');
+    pager.innerHTML = `<span role="status">已显示 ${loadedOrders.length} 笔 · 正在加载…</span>`;
+    try {
+      const page = await Api.orderPage({ lane, date, q: kw.trim(), uncollected, after: append ? nextPage : '' });
+      if (generation !== paintGeneration || !el.isConnected) return;
+      loadedOrders = append ? loadedOrders.concat(page.orders) : page.orders;
+      nextPage = page.next;
+      drawOrders(el, loadedOrders);
+      pager.innerHTML = `<span>已显示 ${loadedOrders.length} 笔${nextPage ? '' : ' · 已全部加载'}</span>${nextPage ? '<button class="btn btn--line" data-more>加载更多</button>' : ''}`;
+      const more = pager.querySelector('[data-more]');
+      if (more) more.onclick = () => fetchPage(el, generation, true);
+    } catch (error) {
+      if (generation !== paintGeneration || !el.isConnected) return;
+      if (!append) { loadedOrders = []; el.querySelector('#tbl-host').innerHTML = ''; detail(el, ''); }
+      pager.innerHTML = `<span role="alert">${append ? '已显示 ' + loadedOrders.length + ' 笔，后续订单加载失败：' : '订单加载失败：'}${T.esc(error.message)}</span><button class="btn btn--line" data-retry>重试</button>`;
+      pager.querySelector('[data-retry]').onclick = () => fetchPage(el, generation, append);
+    } finally { if (generation === paintGeneration) pageBusy = false; }
+  }
+
+  function drawOrders(el, list) {
       // 选中项不在当前泳道时，回落到本泳道第一条
       if (!list.some(o => o.id === selId)) selId = list.length ? list[0].id : '';
 
@@ -69,7 +121,7 @@
         cols: [
           { t: '取餐号', w: '72px', render: r => `<b class="tnum">${r.code}</b>` },
           { t: '菜品', render: r => {
-            const band = [...new Set(r.items.flatMap(it => [it[5], it[6]]).filter(Boolean)), r.orderNote]
+            const band = [...new Set(r.items.flatMap(it => Array.isArray(it) ? [it[5], it[6]] : [...(it.flavors || []), it.note]).filter(Boolean)), r.orderNote]
               .filter(Boolean).join(' · ');
             return `<div class="ellipsis">${T.esc(Api.itemsSummary(r.items))}</div>` +
                    (band ? `<div class="ord-band ellipsis">${T.esc(band)}</div>` : '');
@@ -83,12 +135,21 @@
         onRow: true,
       });
 
+      // Keep the long summary in its own column instead of expanding the table.
+      const table = host.querySelector('table');
+      if (table) table.style.tableLayout = 'fixed';
+
       T.bind(host, {
-        row(id) { selId = id; paint(el); },
+        row(id) {
+          selId = id;
+          host.querySelectorAll('tr[data-id]').forEach(row => {
+            row.classList.toggle('sel', row.dataset.id === selId);
+          });
+          detail(el, selId);
+        },
       });
 
       detail(el, selId);
-    });
   }
 
   /* 跨营业日取餐号的提示。搜不到就以为没有，是 §6.6 那条规则最容易造成的误判 ——
@@ -108,13 +169,12 @@
   /* 「未取餐」筛选。只在 待取餐 泳道下有意义 —— 其余状态谈不上"未取"。 */
   function paintUncollected(el) {
     const host = el.querySelector('#unc-host');
-    const n = Api.uncollectedCount();
     if (lane !== '待取餐') {
       host.innerHTML = `<span class="faint" style="font-size:12.5px">选中左侧订单，右侧显示完整单据</span>`;
       return;
     }
     host.innerHTML =
-      `<span class="seg${uncollected ? ' on' : ''}" data-unc>未取餐<span class="cnt">${n}</span></span>
+      `<span class="seg${uncollected ? ' on' : ''}" data-unc>未取餐</span>
        <span class="faint" style="font-size:12.5px;margin-left:10px">营业日已结束仍未核销的单，可事后核销或发起退款</span>`;
     const btn = host.querySelector('[data-unc]');
     if (btn) btn.onclick = () => { uncollected = !uncollected; paint(el); };
@@ -122,7 +182,7 @@
 
   function detail(el, id) {
     const host = el.querySelector('#detail');
-    const o = id ? Api.findOrder(id) : null;
+    const o = id ? loadedOrders.find(order => order.id === id) : null;
     if (!o) {
       host.innerHTML = `<div class="dt-empty">${I.svg('receipt', 30, '#c7cab8')}<div>选择左侧订单查看详情</div></div>`;
       return;
@@ -132,6 +192,9 @@
        小计按折后单价算 —— 逐行折后价之和恒等于 o.total，展示与结算不会各说各话。 */
     // 名称取订单自身的快照，不回查商品表（§15.6.2）
     const rows = o.items.map(item => {
+      if (!Array.isArray(item)) {
+        return { name: item.product_name || item.name, q: item.quantity, sub: item.line_total_cents, band: [...(item.flavors || []), item.note].filter(Boolean).join(' · ') };
+      }
       const [, iname, q, , discountedUnitPrice, flavor, note] = item;
       // 当前 admin HTTP 投影的第 4 位是行应付小计；旧视觉蓝本的 7 位数组才含
       // 折后单价。两种公开形状在页面边界收敛，不回查商品或重算历史价格。
@@ -142,7 +205,7 @@
       `<div class="dt-hero">
          <span class="ring r1"></span>
          <div class="dt-code tnum">${o.code}</div>
-         <div class="dt-no tnum">${o.no}</div>
+         <div class="dt-no tnum">${T.esc(o.no)} ${o.no ? `<button class="btn btn--sm btn--line" data-copy="${T.esc(o.no)}">复制</button>` : ''}</div>
          <span class="pill pill--ondark"><i class="pd"></i>${o.status}</span>
        </div>
        <div class="dt-body">
@@ -150,7 +213,7 @@
          <div class="card card-pad">
            ${rows.map(r => `
              <div class="dt-item">
-               <span class="grow">${T.esc(r.name)}${r.band ? `<span class="ord-band">${T.esc(r.band)}</span>` : ''}</span>
+               <span class="grow" style="min-width:0;overflow-wrap:anywhere">${T.esc(r.name)}${r.band ? `<span class="ord-band">${T.esc(r.band)}</span>` : ''}</span>
                <span class="faint tnum">×${r.q}</span>
                <span class="tnum" style="width:64px;text-align:right">${T.money(Api.yuan(r.sub))}</span>
              </div>`).join('')}
@@ -164,9 +227,9 @@
            <div class="kv"><span class="k">手机号</span><span class="v tnum">${o.phone}</span></div>
            <div class="kv"><span class="k">支付时间</span><span class="v tnum">${o.paidAt}</span></div>
            <div class="kv"><span class="k">取餐时间</span><span class="v tnum">${o.pickupDate} ${o.pickupTime}</span></div>
-           <div class="kv"><span class="k">整单备注</span><span class="v">${T.esc(o.orderNote || '—')}</span></div>
+           <div class="kv"><span class="k">整单备注</span><span class="v" style="overflow-wrap:anywhere">${T.esc(o.orderNote || '—')}</span></div>
            <div class="kv"><span class="k">取餐点</span><span class="v">${T.esc(o.pickupPoint)}</span></div>
-           <div class="kv"><span class="k">微信交易号</span><span class="v tnum">${T.esc(o.txnId)}</span></div>
+           <div class="kv"><span class="k">微信交易号</span><span class="v tnum">${T.esc(o.txnId)} ${o.txnId ? `<button class="btn btn--sm btn--line" data-copy="${T.esc(o.txnId)}">复制</button>` : ''}</span></div>
          </div>
        </div>
        <div class="dt-foot">
@@ -175,6 +238,7 @@
          <span class="faint" style="font-size:12.5px">履约操作请使用商户小程序</span>
        </div>`;
 
+    window.FormUI.copyButtons(host);
     const refundBtn = host.querySelector('[data-refund]');
     if (refundBtn) refundBtn.onclick = () => openRefund(el, o);
   }
@@ -191,7 +255,7 @@
       width: '460px',
       bodyHtml:
         `<div class="kv"><span class="k">订单</span><span class="v tnum">${T.esc(o.no)} · 取餐号 ${T.esc(o.code)}</span></div>
-         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(o.total))} <span class="faint" style="font-size:12px">全额，不可修改</span></span></div>
+         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(o.total))} <span class="faint" style="font-size: 12px">全额，不可修改</span></span></div>
          <div class="kv"><span class="k">操作人</span><span class="v">${T.esc(me ? me.name : '—')}</span></div>
          <div style="margin-top:12px">
            <div class="fld-lb">退款原因<span class="req">*</span></div>
@@ -208,20 +272,27 @@
         const why = root.querySelector('#rf-why');
         why.focus();
         root.querySelector('[data-a="cancel"]').onclick = done;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.refundOrder(o.id, why.value).then(r => {
+        const submit = root.querySelector('[data-a="ok"]');
+        submit.onclick = window.FormUI.submit(submit, async () => {
+          await Api.refundOrder(o.id, why.value).then(r => {
             done();
             /* 跳到退款中并选中该单。uncollected 必须一并清掉 ——
                它是挂在 待取餐 上的筛选，带到别的泳道会把列表筛成空的。 */
             lane = '退款中'; uncollected = false; selId = r.id;
             paint(el);
             window.Toast.show(`已对「${r.code}」发起全额退款，等待微信到账`, { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }
 
+  window.addEventListener('pc-session-expired', () => {
+    ++paintGeneration; clearTimeout(searchTimer);
+    lane = '已预约'; selId = ''; date = ''; kw = ''; uncollected = false;
+    loadedOrders = []; nextPage = ''; pageBusy = false;
+    window.__orderTarget = null; window.__orderSel = ''; window.__ordersLane = '';
+  });
   window.Pages = window.Pages || {};
   window.Pages['orders'] = { sub: '订单查询、未取餐筛选与全额退款', flush: true, render };
 })();

@@ -1,4 +1,6 @@
+const PRODUCTION_ORIGIN = 'https://order.suianwuye.com';
 const ENV_VERSIONS = ['develop', 'trial', 'release'];
+const TRIAL_ORIGIN = 'https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com';
 
 function errorState(envVersion, errorCode) {
   return { state: 'error', envVersion, origin: '', errorCode };
@@ -59,9 +61,15 @@ function isRuntimeOrigin(envVersion, origin) {
   if (!ENV_VERSIONS.includes(envVersion)) return false;
   const normalized = normalizeOrigin(origin);
   if (!normalized || normalized.origin !== origin) return false;
-  return envVersion === 'develop'
-    ? isDevelopLoopbackOrigin(normalized)
-    : isDeployableHTTPSOrigin(normalized);
+  if (envVersion === 'release') return origin === PRODUCTION_ORIGIN && isDeployableHTTPSOrigin(normalized);
+  if (envVersion === 'develop') return origin === TRIAL_ORIGIN && isDeployableHTTPSOrigin(normalized);
+  return isDeployableHTTPSOrigin(normalized)
+    && (envVersion !== 'trial' || origin === TRIAL_ORIGIN);
+}
+
+function isRuntimeEndpointReady(endpoint, apiBaseUrl) {
+  if (!endpoint || endpoint.state !== 'ready') return false;
+  return endpoint.origin === apiBaseUrl && isRuntimeOrigin(endpoint.envVersion, apiBaseUrl);
 }
 
 function detectEnvVersion(wxApi) {
@@ -85,13 +93,11 @@ function resolveRuntimeEndpoint(wxApi, deploymentConfig) {
     return errorState(envVersion, 'RUNTIME_ENDPOINT_UNCONFIGURED');
   }
   const normalized = normalizeOrigin(configured);
-  const isAllowed = envVersion === 'develop'
-    ? isDevelopLoopbackOrigin(normalized)
-    : isDeployableHTTPSOrigin(normalized);
+  const isAllowed = normalized && isRuntimeOrigin(envVersion, normalized.origin);
   if (!isAllowed) {
     return errorState(envVersion, 'RUNTIME_ENDPOINT_INVALID');
   }
   return { state: 'ready', envVersion, origin: normalized.origin, errorCode: '' };
 }
 
-module.exports = { isRuntimeOrigin, resolveRuntimeEndpoint };
+module.exports = { isRuntimeOrigin, isRuntimeEndpointReady, resolveRuntimeEndpoint };

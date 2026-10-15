@@ -37,6 +37,7 @@ type CodeExchanger interface {
 type SessionStore interface {
 	CreateSession(context.Context, CreateSessionParams) error
 	FindActiveUser(context.Context, [sha256.Size]byte, time.Time) (uint64, error)
+	RevokeSession(context.Context, [sha256.Size]byte) error
 }
 
 // CreateSessionParams contains no raw token or provider credential.
@@ -103,13 +104,10 @@ func (service *Service) Issue(ctx context.Context, code string) (IssuedSession, 
 
 // Authenticate resolves only an active hash-backed session for internal use.
 func (service *Service) Authenticate(ctx context.Context, token string) (uint64, error) {
-	entropy, err := base64.RawURLEncoding.DecodeString(token)
-	if err != nil || len(entropy) != tokenEntropyBytes || base64.RawURLEncoding.EncodeToString(entropy) != token {
-		clear(entropy)
+	hash, ok := sessionTokenHash(token)
+	if !ok {
 		return 0, ErrUnauthenticated
 	}
-	clear(entropy)
-	hash := sha256.Sum256([]byte(token))
 	at := service.now().UTC().Truncate(time.Microsecond)
 	userID, err := service.store.FindActiveUser(ctx, hash, at)
 	if errors.Is(err, ErrSessionNotFound) {
@@ -119,4 +117,27 @@ func (service *Service) Authenticate(ctx context.Context, token string) (uint64,
 		return 0, ErrUnavailable
 	}
 	return userID, nil
+}
+
+// Revoke invalidates only the session identified by the presented opaque token.
+// Deleting an already absent token is intentionally successful so logout is idempotent.
+func (service *Service) Revoke(ctx context.Context, token string) error {
+	hash, ok := sessionTokenHash(token)
+	if !ok {
+		return ErrUnauthenticated
+	}
+	if err := service.store.RevokeSession(ctx, hash); err != nil {
+		return ErrUnavailable
+	}
+	return nil
+}
+
+func sessionTokenHash(token string) ([sha256.Size]byte, bool) {
+	entropy, err := base64.RawURLEncoding.DecodeString(token)
+	if err != nil || len(entropy) != tokenEntropyBytes || base64.RawURLEncoding.EncodeToString(entropy) != token {
+		clear(entropy)
+		return [sha256.Size]byte{}, false
+	}
+	clear(entropy)
+	return sha256.Sum256([]byte(token)), true
 }

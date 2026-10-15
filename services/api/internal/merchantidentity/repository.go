@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// Repository stores merchant identity state in MySQL.
+// Repository stores durable merchant identity state.
 type Repository struct {
 	db     *sql.DB
 	commit func(*sql.Tx) error
@@ -47,14 +47,14 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 	var extraPhoneSetAt sql.NullTime
 	var extraNameKey, whitelistExtraNameKey []byte
 	var recordVersion uint64
-	var accountID, authVersion sql.NullInt64
+	var accountID, authVersion sql.Null[uint64]
 	var role sql.NullString
 	var ratePercent uint8
 	var whitelistVersion uint64
 	var primaryEnabled, extraEnabled sql.NullBool
 	err := repository.db.QueryRowContext(ctx, `
-		SELECT CONVERT(u.primary_phone USING ascii),u.primary_phone_bound_at,
-		       CONVERT(u.extra_phone USING ascii),u.extra_name,u.extra_name_key,u.extra_phone_set_at,u.record_version,
+		SELECT u.primary_phone,u.primary_phone_bound_at,
+		       u.extra_phone,u.extra_name,u.extra_name_key,u.extra_phone_set_at,u.record_version,
 		       a.id,a.role,a.auth_version,d.rate_percent,d.whitelist_version,
 		       primary_staff.enabled,extra_staff.enabled,extra_staff.name_key
 		FROM miniprogram_users AS u
@@ -62,13 +62,45 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 		LEFT JOIN merchant_accounts AS a ON a.bound_user_id=u.id AND a.enabled=TRUE AND a.deleted_at IS NULL
 		LEFT JOIN staff_whitelist AS primary_staff ON primary_staff.phone=u.primary_phone
 		LEFT JOIN staff_whitelist AS extra_staff ON extra_staff.phone=u.extra_phone
-		WHERE u.id=?
+		WHERE u.id=$1
 	`, userID).Scan(
 		&phone, &phoneBoundAt, &extraPhone, &extraName, &extraNameKey, &extraPhoneSetAt, &recordVersion,
 		&accountID, &role, &authVersion, &ratePercent, &whitelistVersion,
 		&primaryEnabled, &extraEnabled, &whitelistExtraNameKey,
 	)
-	if err != nil || !validPhoneState(phone, phoneBoundAt) || recordVersion == 0 || ratePercent < 1 || ratePercent > 100 || whitelistVersion == 0 {
+	if err != nil {
+		return Identity{}, ErrUnavailable
+	}
+	return projectIdentity(identityRecord{phone: phone, phoneBoundAt: phoneBoundAt, extraPhone: extraPhone, extraName: extraName, extraNameKey: extraNameKey, extraPhoneSetAt: extraPhoneSetAt, recordVersion: recordVersion, accountID: accountID, role: role, authVersion: authVersion, ratePercent: ratePercent, whitelistVersion: whitelistVersion, primaryEnabled: primaryEnabled, extraEnabled: extraEnabled, whitelistExtraNameKey: whitelistExtraNameKey})
+}
+
+type identityRecord struct {
+	phone, extraPhone, extraName, role  sql.NullString
+	phoneBoundAt, extraPhoneSetAt       sql.NullTime
+	extraNameKey, whitelistExtraNameKey []byte
+	recordVersion, whitelistVersion     uint64
+	accountID, authVersion              sql.Null[uint64]
+	ratePercent                         uint8
+	primaryEnabled, extraEnabled        sql.NullBool
+}
+
+func projectIdentity(r identityRecord) (Identity, error) {
+	phone := r.phone
+	phoneBoundAt := r.phoneBoundAt
+	extraPhone := r.extraPhone
+	extraName := r.extraName
+	extraNameKey := r.extraNameKey
+	extraPhoneSetAt := r.extraPhoneSetAt
+	recordVersion := r.recordVersion
+	accountID := r.accountID
+	role := r.role
+	authVersion := r.authVersion
+	ratePercent := r.ratePercent
+	whitelistVersion := r.whitelistVersion
+	primaryEnabled := r.primaryEnabled
+	extraEnabled := r.extraEnabled
+	whitelistExtraNameKey := r.whitelistExtraNameKey
+	if !validPhoneState(phone, phoneBoundAt) || recordVersion == 0 || ratePercent < 1 || ratePercent > 100 || whitelistVersion == 0 {
 		return Identity{}, ErrUnavailable
 	}
 	extraCount := 0
@@ -104,14 +136,14 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 	if !accountID.Valid && !role.Valid && !authVersion.Valid {
 		return projection, nil
 	}
-	if !accountID.Valid || accountID.Int64 <= 0 || !role.Valid || !authVersion.Valid || authVersion.Int64 <= 0 || !phone.Valid {
+	if !accountID.Valid || accountID.V <= 0 || !role.Valid || !authVersion.Valid || authVersion.V <= 0 || !phone.Valid {
 		return Identity{}, ErrUnavailable
 	}
 	parsedRole := Role(role.String)
 	if !validRole(parsedRole) {
 		return Identity{}, ErrUnavailable
 	}
-	projection.Merchant = &MerchantProjection{Role: parsedRole, AuthVersion: uint64(authVersion.Int64)}
+	projection.Merchant = &MerchantProjection{Role: parsedRole, AuthVersion: uint64(authVersion.V)}
 	return projection, nil
 }
 
@@ -136,7 +168,7 @@ func (repository *Repository) StartLogin(ctx context.Context, userID uint64, cod
 	if err := transaction.QueryRowContext(ctx, `
 		SELECT openid,primary_phone,primary_phone_bound_at
 		FROM miniprogram_users
-		WHERE id=?
+		WHERE id=$1
 		FOR SHARE
 	`, userID).Scan(&openID, &phone, &phoneBoundAt); err != nil || openID == "" || !validPhoneState(phone, phoneBoundAt) {
 		return LoginStart{}, ErrUnavailable
@@ -215,7 +247,7 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 	if err := transaction.QueryRowContext(ctx, `
 		SELECT primary_phone,primary_phone_bound_at
 		FROM miniprogram_users
-		WHERE id=?
+		WHERE id=$1
 		FOR UPDATE
 	`, userID).Scan(&currentPhone, &currentPhoneBoundAt); err != nil || !validPhoneState(currentPhone, currentPhoneBoundAt) {
 		if err == nil {
@@ -260,8 +292,8 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		return Identity{}, ErrUnavailable
 	}
 
-	var accountBoundUser sql.NullInt64
-	if err := transaction.QueryRowContext(ctx, "SELECT bound_user_id FROM merchant_accounts WHERE id=?", account.ID).Scan(&accountBoundUser); err != nil {
+	var accountBoundUser sql.Null[uint64]
+	if err := transaction.QueryRowContext(ctx, "SELECT bound_user_id FROM merchant_accounts WHERE id=$1", account.ID).Scan(&accountBoundUser); err != nil {
 		return Identity{}, err
 	}
 	if currentPhone.Valid && currentPhone.String != phone {
@@ -280,22 +312,36 @@ func (repository *Repository) completeLoginOnce(ctx context.Context, userID uint
 		return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "ACCOUNT_NOT_AVAILABLE", "BOUND_OTHER", "BOUND_OTHER", at, Identity{}, ErrMerchantAccountNotAvailable)
 	}
 	if !currentPhone.Valid {
+		// PostgreSQL aborts the transaction after a unique violation. Keep the
+		// immutable-phone rejection and its audit in the same transaction.
+		if _, err := transaction.ExecContext(ctx, "SAVEPOINT merchant_phone_binding"); err != nil {
+			return Identity{}, err
+		}
 		if _, err := transaction.ExecContext(ctx, `
 			UPDATE miniprogram_users
-			SET primary_phone=?,primary_phone_bound_at=?
-			WHERE id=? AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
-		`, phone, at, userID); err != nil {
+			SET primary_phone=$1,primary_phone_bound_at=$2
+			WHERE id=$3 AND primary_phone IS NULL AND primary_phone_bound_at IS NULL
+		`, []byte(phone), at, userID); err != nil {
 			if duplicateKey(err) {
+				if _, rollbackErr := transaction.ExecContext(ctx, "ROLLBACK TO SAVEPOINT merchant_phone_binding"); rollbackErr != nil {
+					return Identity{}, rollbackErr
+				}
+				if _, releaseErr := transaction.ExecContext(ctx, "RELEASE SAVEPOINT merchant_phone_binding"); releaseErr != nil {
+					return Identity{}, releaseErr
+				}
 				return repository.finishLogin(ctx, transaction, userID, codeHash, requestID, &account, "REJECTED", "PHONE_IN_USE", "UNBOUND", "UNBOUND", at, Identity{}, ErrPhoneInUse)
 			}
+			return Identity{}, err
+		}
+		if _, err := transaction.ExecContext(ctx, "RELEASE SAVEPOINT merchant_phone_binding"); err != nil {
 			return Identity{}, err
 		}
 	}
 
 	update, err := transaction.ExecContext(ctx, `
 		UPDATE merchant_accounts
-		SET bound_user_id=?,bound_at=?,record_version=record_version+1,auth_version=auth_version+1,updated_at=?
-		WHERE id=? AND bound_user_id IS NULL AND record_version=? AND auth_version=?
+		SET bound_user_id=$1,bound_at=$2,record_version=record_version+1,auth_version=auth_version+1,updated_at=$3
+		WHERE id=$4 AND bound_user_id IS NULL AND record_version=$5 AND auth_version=$6
 	`, userID, at, at, account.ID, account.RecordVersion, account.AuthVersion)
 	if err != nil {
 		return Identity{}, err
@@ -330,7 +376,7 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 	var phone sql.NullString
 	var phoneBoundAt sql.NullTime
 	if err := transaction.QueryRowContext(ctx, `
-		SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=? FOR SHARE
+		SELECT primary_phone,primary_phone_bound_at FROM miniprogram_users WHERE id=$1 FOR SHARE
 	`, userID).Scan(&phone, &phoneBoundAt); err != nil || !validPhoneState(phone, phoneBoundAt) {
 		return Identity{}, ErrUnavailable
 	}
@@ -347,15 +393,15 @@ func (repository *Repository) RecoverRejectedLogin(ctx context.Context, userID u
 		err := transaction.QueryRowContext(ctx, `
 			SELECT 1
 			FROM action_audits
-			WHERE actor_user_id=?
-			  AND actor_account_id_snapshot=?
-			  AND actor_auth_version_snapshot=?
+			WHERE actor_user_id=$1
+			  AND actor_account_id_snapshot=$2
+			  AND actor_auth_version_snapshot=$3
 			  AND target_type='merchant_login_code'
-			  AND target_key_hash=?
+			  AND target_key_hash=$4
 			  AND action='merchant.login'
 			  AND result='SUCCEEDED'
 			  AND reason_code IN ('FIRST_BINDING','CONCURRENT_BINDING_CONFIRMED')
-			  AND occurred_at>=?
+			  AND occurred_at>=$5
 			ORDER BY id DESC
 			LIMIT 1
 		`, userID, account.ID, account.AuthVersion, codeHash[:], startedAt).Scan(&marker)
@@ -393,7 +439,7 @@ func readBoundAccount(ctx context.Context, transaction *sql.Tx, userID uint64, l
 	return scanAccount(transaction.QueryRowContext(ctx, `
 		SELECT id,role,enabled,record_version,auth_version
 		FROM merchant_accounts
-		WHERE bound_user_id=?
+		WHERE bound_user_id=$1
 		`+lock, userID))
 }
 
@@ -401,9 +447,9 @@ func readPhoneAccount(ctx context.Context, transaction *sql.Tx, phone string) (a
 	return scanAccount(transaction.QueryRowContext(ctx, `
 		SELECT id,role,enabled,record_version,auth_version
 		FROM merchant_accounts
-		WHERE phone=?
+		WHERE phone=$1
 		FOR UPDATE
-	`, phone))
+	`, []byte(phone)))
 }
 
 type scanner interface {
@@ -448,7 +494,7 @@ func insertLoginAudit(ctx context.Context, transaction *sql.Tx, userID uint64, c
 			actor_account_id_snapshot,actor_role_snapshot,actor_auth_version_snapshot,
 			action,result,reason_code,target_type,target_key_hash,request_id_hash,
 			before_state_json,after_state_json,occurred_at
-		) VALUES ('LEGACY_EVIDENCE','MERCHANT',?,?,?,?,?,?,'merchant.login',?,?,'merchant_login_code',?,?,?, ?,?)
+		) VALUES ('LEGACY_EVIDENCE','MERCHANT',$1,$2,$3,$4,$5,$6,'merchant.login',$7,$8,'merchant_login_code',$9,$10,$11, $12,$13)
 	`, scopeHash[:], userID, accountID, snapshotID, role, authVersion, result, reason, codeHash[:], requestIDHash[:], beforeJSON, afterJSON, at)
 	return err
 }
@@ -488,13 +534,13 @@ func validLoginCodeHash(codeHash LoginCodeHash) bool {
 }
 
 func duplicateKey(err error) bool {
-	var mysqlError *mysql.MySQLError
-	return errors.As(err, &mysqlError) && mysqlError.Number == 1062
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && pgError.Code == "23505" && pgError.ConstraintName == "uq_miniprogram_users_primary_phone"
 }
 
 func retryableTransaction(err error) bool {
-	var mysqlError *mysql.MySQLError
-	return errors.As(err, &mysqlError) && (mysqlError.Number == 1213 || mysqlError.Number == 1205)
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && (pgError.Code == "40P01" || pgError.Code == "40001" || pgError.Code == "55P03")
 }
 
 func isBusinessError(err error) bool {

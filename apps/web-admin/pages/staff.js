@@ -5,7 +5,7 @@
 (function () {
   const Api = window.Api, T = window.Table, I = window.Icon;
 
-  let kw = '';
+  let kw = '', readGeneration = 0;
 
   function render(el) {
     el.innerHTML =
@@ -58,7 +58,9 @@
 
   /* ---------------- 名单 ---------------- */
   function paintList(el) {
+    const generation = ++readGeneration;
     Api.listStaff(kw).then(list => {
+      if (generation !== readGeneration || !el.isConnected) return;
       const host = el.querySelector('#staff-host');
       host.innerHTML = T.render({
         cols: [
@@ -107,6 +109,7 @@
   function openEdit(el, r) {
     const isEdit = !!r;
     window.Drawer.open({
+      guardChanges: true,
       title: isEdit ? '编辑员工' : '添加员工',
       bodyHtml:
         `<div class="fld">
@@ -130,17 +133,18 @@
          <button class="btn btn--primary" data-a="ok">${isEdit ? '保存' : '添加'}</button>`,
       onMount(root, close) {
         root.querySelector('[data-a="cancel"]').onclick = close;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.saveStaff({
+        const save = root.querySelector('[data-a="ok"]');
+        save.onclick = window.FormUI.submit(save, async () => {
+          await Api.saveStaff({
             id: r ? r.id : '',
             name: root.querySelector('#f-name').value,
             phone: root.querySelector('#f-phone').value,
           }).then(() => {
-            close();
+            close(true);
             paintList(el);
             window.Toast.show(isEdit ? '已保存' : '已添加', { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }

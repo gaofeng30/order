@@ -17,7 +17,7 @@ import (
 
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
 	"github.com/gaofeng30/order/services/api/internal/storefront"
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -138,7 +138,7 @@ func (core *Core) applyOnce(ctx context.Context, command Command) (result Result
 	if changed {
 		reason = "OPERATING_STATUS_CHANGED"
 		update, err := transaction.ExecContext(ctx, `
-			UPDATE storefront_settings SET business_status=? WHERE id=1
+			UPDATE storefront_settings SET business_status=$1 WHERE id=1
 		`, command.DesiredStatus)
 		if err != nil {
 			return Result{}, err
@@ -167,8 +167,8 @@ func (core *Core) applyOnce(ctx context.Context, command Command) (result Result
 			action,target_type,target_id,target_key_hash,operation_key_hash,request_id_hash,
 			result,reason_code,before_state_json,after_state_json,response_json,occurred_at
 		) VALUES (
-			'COMMAND_RECEIPT','MERCHANT',?,?,?,?,?,?,?,
-			'storefront_settings',1,NULL,?,?,'SUCCEEDED',?,?,?,?,?
+			'COMMAND_RECEIPT','MERCHANT',$1,$2,$3,$4,$5,$6,$7,
+			'storefront_settings',1,NULL,$8,$9,'SUCCEEDED',$10,$11,$12,$13,$14
 		)
 	`,
 		actorScopeHash[:], command.UserID, authorization.MerchantAccountID, authorization.MerchantAccountID,
@@ -196,7 +196,7 @@ func readReplay(ctx context.Context, transaction *sql.Tx, command Command, autho
 		       before_state_json,after_state_json,response_json
 		FROM action_audits
 		WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='MERCHANT'
-		  AND actor_scope_hash=? AND action=? AND operation_key_hash=?
+		  AND actor_scope_hash=$1 AND action=$2 AND operation_key_hash=$3
 		LIMIT 1
 	`, actorScopeHash[:], merchantidentity.ActionStoreStatusWrite, operationKeyHash[:]).Scan(
 		&actorUserID, &actorAccountID, &snapshotAccountID, &role, &snapshotAuthVersion,
@@ -331,8 +331,8 @@ func retryableTransaction(err error) bool {
 	if errors.Is(err, merchantidentity.ErrUnavailable) {
 		return true
 	}
-	var mysqlError *mysql.MySQLError
-	return errors.As(err, &mysqlError) && (mysqlError.Number == 1213 || mysqlError.Number == 1205)
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && (pgError.Code == "40P01" || pgError.Code == "40001" || pgError.Code == "55P03")
 }
 
 func stableApplyError(err error) bool {

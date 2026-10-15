@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	weChatPaySecretName    = "order-production-wechatpay-api-v3"
+	weChatPaySecretPurpose = "wechatpay-api-v3"
+	weChatPaySecretName    = "order-production-" + weChatPaySecretPurpose
 	maxWeChatPaySecretSize = 64 * 1024
 	weChatPayNotifyPath    = "/api/v1/payments/wechat/notify"
 )
@@ -65,12 +66,16 @@ type weChatPayPublicKeySecret struct {
 // secret. Provider errors and secret values are deliberately collapsed into
 // stable, non-sensitive error categories.
 func LoadWeChatPayMaterial(ctx context.Context, source SecretSource) (WeChatPayMaterial, error) {
+	return loadWeChatPayMaterial(ctx, source, weChatPaySecretName)
+}
+
+func loadWeChatPayMaterial(ctx context.Context, source SecretSource, secretName string) (WeChatPayMaterial, error) {
 	if ctx == nil || source == nil {
 		return WeChatPayMaterial{}, loadError{reason: "production_wechatpay_secret_unavailable"}
 	}
 	loadContext, cancel := context.WithTimeout(ctx, secretLoadTimeout)
 	defer cancel()
-	encoded, err := source.Get(loadContext, weChatPaySecretName)
+	encoded, err := source.Get(loadContext, secretName)
 	if err != nil {
 		return WeChatPayMaterial{}, loadError{reason: "production_wechatpay_secret_unavailable"}
 	}
@@ -93,10 +98,15 @@ func LoadWeChatPayMaterial(ctx context.Context, source SecretSource) (WeChatPayM
 // LoadProductionWeChatPayMaterial binds the narrow parser to the existing CVM
 // role backed production SecretSource. The region itself is not secret.
 func LoadProductionWeChatPayMaterial(ctx context.Context, region string) (WeChatPayMaterial, error) {
-	if !validTencentRegion(region) {
+	return LoadCloudWeChatPayMaterial(ctx, Production, region)
+}
+
+func LoadCloudWeChatPayMaterial(ctx context.Context, environment Environment, region string) (WeChatPayMaterial, error) {
+	secretName, ok := environment.SecretName(weChatPaySecretPurpose)
+	if !ok || !validTencentRegion(region) {
 		return WeChatPayMaterial{}, loadError{reason: "production_wechatpay_secret_unavailable"}
 	}
-	return LoadWeChatPayMaterial(ctx, newProductionSecretSource(region))
+	return loadWeChatPayMaterial(ctx, newCloudSecretSource(environment, region), secretName)
 }
 
 func parseWeChatPaySecret(secret weChatPaySecret) (WeChatPayMaterial, error) {

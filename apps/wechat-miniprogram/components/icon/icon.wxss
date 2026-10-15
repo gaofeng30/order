@@ -1,1 +1,2 @@
-.icon-img { display: inline-block; vertical-align: middle; }
+:host { display: inline-flex; flex-shrink: 0; }
+.icon-img { display: block; }

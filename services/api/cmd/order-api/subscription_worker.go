@@ -29,7 +29,7 @@ func consumeSubscriptionTicks(ctx context.Context, runner subscriptionRunner, ti
 		case <-ctx.Done():
 			return
 		case now, open := <-ticks:
-			if !open {
+			if !open || ctx.Err() != nil {
 				return
 			}
 			result, err := runner.RunDue(ctx, now.UTC(), subscriptionWorkerLimit)

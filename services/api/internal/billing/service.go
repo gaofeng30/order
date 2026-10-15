@@ -3,17 +3,27 @@ package billing
 import (
 	"context"
 	"database/sql"
+	"net/url"
 	"time"
 )
 
+type Config struct {
+	Environment      string
+	AppID            string
+	MerchantID       string
+	PaymentNotifyURL string
+	RefundNotifyURL  string
+}
+
 type Service struct {
+	config   Config
 	db       *sql.DB
 	provider BillProvider
 	now      func() time.Time
 }
 
-func New(db *sql.DB, provider BillProvider) *Service {
-	return &Service{db: db, provider: provider, now: func() time.Time { return time.Now().UTC() }}
+func New(db *sql.DB, provider BillProvider, config Config) *Service {
+	return &Service{db: db, provider: provider, config: config, now: func() time.Time { return time.Now().UTC() }}
 }
 
 func (service *Service) Summary(ctx context.Context, ownerUserID uint64, period BillingRange) (Summary, error) {
@@ -24,11 +34,11 @@ func (service *Service) Summary(ctx context.Context, ownerUserID uint64, period 
 		return Summary{}, err
 	}
 	var summary Summary
-	err := service.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(IF(state='COMPLETED',payable_cents,0)),0),COALESCE(SUM(state='COMPLETED'),0) FROM orders WHERE paid_at>=? AND paid_at<?`, period.From.UTC(), period.To.UTC()).Scan(&summary.EffectiveRevenueCents, &summary.EffectiveOrders)
+	err := service.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(payable_cents) FILTER (WHERE state='COMPLETED'),0),COUNT(*) FILTER (WHERE state='COMPLETED') FROM orders WHERE paid_at>=$1 AND paid_at<$2`, period.From.UTC(), period.To.UTC()).Scan(&summary.EffectiveRevenueCents, &summary.EffectiveOrders)
 	if err != nil {
 		return Summary{}, ErrUnavailable
 	}
-	err = service.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(IF(materialization_state='APPLIED',amount_cents,0)),0),COALESCE(SUM(materialization_state='APPLIED'),0),COALESCE(SUM(materialization_state<>'APPLIED'),0) FROM refunds WHERE created_at>=? AND created_at<?`, period.From.UTC(), period.To.UTC()).Scan(&summary.RefundCents, &summary.RefundCount, &summary.PendingRefunds)
+	err = service.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(amount_cents) FILTER (WHERE materialization_state='APPLIED'),0),COUNT(*) FILTER (WHERE materialization_state='APPLIED'),COUNT(*) FILTER (WHERE materialization_state<>'APPLIED') FROM refunds WHERE created_at>=$1 AND created_at<$2`, period.From.UTC(), period.To.UTC()).Scan(&summary.RefundCents, &summary.RefundCount, &summary.PendingRefunds)
 	if err != nil {
 		return Summary{}, ErrUnavailable
 	}
@@ -42,7 +52,7 @@ func (service *Service) ListPayments(ctx context.Context, ownerUserID uint64, pe
 	if err := authorizeOwner(ctx, service.db, ownerUserID); err != nil {
 		return nil, 0, err
 	}
-	rows, err := service.db.QueryContext(ctx, `SELECT o.id,CONVERT(o.order_no USING utf8mb4),CONVERT(p.out_trade_no USING utf8mb4),CONVERT(o.transaction_id USING utf8mb4),o.state,o.payable_cents,o.paid_at FROM orders o JOIN prepayments p ON p.id=o.prepayment_id WHERE o.id>? AND o.paid_at>=? AND o.paid_at<? ORDER BY o.id LIMIT ?`, page.AfterID, period.From.UTC(), period.To.UTC(), page.Limit)
+	rows, err := service.db.QueryContext(ctx, `SELECT o.id,convert_from(o.order_no,'UTF8'),convert_from(p.out_trade_no,'UTF8'),convert_from(o.transaction_id,'UTF8'),o.state,o.payable_cents,o.paid_at FROM orders o JOIN prepayments p ON p.id=o.prepayment_id WHERE o.id>$1 AND o.paid_at>=$2 AND o.paid_at<$3 ORDER BY o.id LIMIT $4`, page.AfterID, period.From.UTC(), period.To.UTC(), page.Limit)
 	if err != nil {
 		return nil, 0, ErrUnavailable
 	}
@@ -68,7 +78,7 @@ func (service *Service) ListRefunds(ctx context.Context, ownerUserID uint64, per
 	if err := authorizeOwner(ctx, service.db, ownerUserID); err != nil {
 		return nil, 0, err
 	}
-	rows, err := service.db.QueryContext(ctx, `SELECT id,COALESCE(order_id,0),CONVERT(out_refund_no USING utf8mb4),COALESCE(CONVERT(provider_refund_id USING utf8mb4),''),provider_state,amount_cents,created_at FROM refunds WHERE id>? AND created_at>=? AND created_at<? ORDER BY id LIMIT ?`, page.AfterID, period.From.UTC(), period.To.UTC(), page.Limit)
+	rows, err := service.db.QueryContext(ctx, `SELECT id,COALESCE(order_id,0),convert_from(out_refund_no,'UTF8'),COALESCE(convert_from(provider_refund_id,'UTF8'),''),provider_state,amount_cents,created_at FROM refunds WHERE id>$1 AND created_at>=$2 AND created_at<$3 ORDER BY id LIMIT $4`, page.AfterID, period.From.UTC(), period.To.UTC(), page.Limit)
 	if err != nil {
 		return nil, 0, ErrUnavailable
 	}
@@ -87,7 +97,9 @@ func (service *Service) ListRefunds(ctx context.Context, ownerUserID uint64, per
 	return items, nextRefundCursor(items, page.Limit), nil
 }
 
-func (service *Service) valid() bool { return service != nil && service.db != nil }
+func (service *Service) valid() bool {
+	return service != nil && service.db != nil && validBillingConfig(service.config)
+}
 
 func validRange(period BillingRange) bool {
 	return !period.From.IsZero() && !period.To.IsZero() && period.From.Before(period.To) && period.To.Sub(period.From) <= 366*24*time.Hour
@@ -97,7 +109,7 @@ func validPage(page PageQuery) bool { return page.Limit > 0 && page.Limit <= 100
 
 func authorizeOwner(ctx context.Context, db *sql.DB, userID uint64) error {
 	var accountID uint64
-	err := db.QueryRowContext(ctx, `SELECT id FROM merchant_accounts WHERE bound_user_id=? AND enabled=TRUE AND deleted_at IS NULL AND role='OWNER'`, userID).Scan(&accountID)
+	err := db.QueryRowContext(ctx, `SELECT id FROM merchant_accounts WHERE bound_user_id=$1 AND enabled=TRUE AND deleted_at IS NULL AND role='OWNER'`, userID).Scan(&accountID)
 	if err == sql.ErrNoRows {
 		return ErrForbidden
 	}
@@ -119,4 +131,23 @@ func nextRefundCursor(items []Refund, limit uint16) uint64 {
 		return items[len(items)-1].ID
 	}
 	return 0
+}
+
+func validBillingConfig(config Config) bool {
+	if config.Environment == "development" || config.Environment == "test" {
+		return true
+	}
+	if (config.Environment != "uat" && config.Environment != "production") || config.AppID == "" || config.MerchantID == "" {
+		return false
+	}
+	for _, raw := range []string{config.PaymentNotifyURL, config.RefundNotifyURL} {
+		u, err := url.Parse(raw)
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawFragment != "" {
+			return false
+		}
+	}
+	return true
+}
+func cloudBilling(config Config) bool {
+	return config.Environment == "uat" || config.Environment == "production"
 }

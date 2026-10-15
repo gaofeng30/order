@@ -44,7 +44,7 @@ func (service *Service) replayUserCommand(ctx context.Context, meta WriteMeta, a
 		SELECT before_state_json,response_json
 		FROM action_audits
 		WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER'
-		  AND actor_scope_hash=? AND action=? AND operation_key_hash=?
+		  AND actor_scope_hash=$1 AND action=$2 AND operation_key_hash=$3
 	`, scope[:], action, operation[:]).Scan(&evidenceJSON, &responseJSON)
 	if errors.Is(err, sql.ErrNoRows) {
 		return commandReceiptResponse{}, false, nil
@@ -86,7 +86,7 @@ func (service *Service) appendUserCommand(ctx context.Context, meta WriteMeta, a
 		INSERT INTO action_audits(
 			entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,
 			operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at
-		) VALUES ('COMMAND_RECEIPT','USER',?,?,?,?,?,?,?,'SUCCEEDED',?,?,?,?)
+		) VALUES ('COMMAND_RECEIPT','USER',$1,$2,$3,$4,$5,$6,$7,'SUCCEEDED',$8,$9,$10,$11)
 	`, scope[:], meta.ActorUserID, action, targetType, targetID, operation[:], requestID[:],
 		reason, evidenceJSON, responseJSON, service.now().UTC().Truncate(time.Microsecond))
 	if isDuplicate(err) {

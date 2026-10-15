@@ -52,7 +52,8 @@ function parseLaunchLayer(value) {
     leftPercent: value.center_x * 100,
     topPercent: value.center_y * 100,
     widthPercent,
-    heightVw: widthPercent / value.aspect_ratio,
+    // aspect_ratio 由 PC 按「高 ÷ 宽」保存（web-admin pages/layer.js）
+    heightVw: widthPercent * value.aspect_ratio,
   };
 }
 
@@ -66,12 +67,14 @@ function parse(value) {
   const point = settings.pickup_point;
   const announcement = settings.announcement;
   const status = settings.business_status;
-  if (!Object.hasOwn(STATUS, status)) throw new api.APIError('STOREFRONT_UNAVAILABLE');
+  if (!Object.prototype.hasOwnProperty.call(STATUS, status)) throw new api.APIError('STOREFRONT_UNAVAILABLE');
   return {
     name: text(name, true), address: text(address, true), pickupPoint: text(point, true),
     announcement: text(announcement, false), businessStatus: status,
     businessStatusLabel: STATUS[status], launchLayer: parseLaunchLayer(settings.launch_layer),
     flavors: parseFlavors(settings.flavors),
+    // 客服电话（B2，后端字段 service_phone）；后端未提供时为空串，由页面显示占位号码
+    servicePhone: typeof settings.service_phone === 'string' ? settings.service_phone.trim() : '',
   };
 }
 

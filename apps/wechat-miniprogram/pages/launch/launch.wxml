@@ -1,4 +1,4 @@
-<view class="page launch" style="padding-top:{{statusBarH}}px;padding-bottom:{{safeBottom + 30}}px">
+<view class="page launch" style="padding-top:{{navTotal}}px;padding-bottom:{{safeBottom + 30}}px">
   <view class="ring r1"></view>
   <view class="ring r2"></view>
   <view class="ring r3"></view>
@@ -8,16 +8,15 @@
     class="launch-layer"
     style="left:{{launchLayer.leftPercent}}%;top:{{launchLayer.topPercent}}%;width:{{launchLayer.widthPercent}}vw;height:{{launchLayer.heightVw}}vw"
     catchtap="dismissLaunchLayer"
+    aria-role="button"
+    aria-label="关闭开屏图"
   >
-    <image src="{{launchLayer.image.url}}" mode="scaleToFill" />
+    <image src="{{launchLayer.image.url}}" mode="aspectFit" bindload="onLaunchImageLoad" binderror="onLaunchImageError" />
   </view>
 
-  <!-- 顶部：返回品牌选择（仅图标） -->
-  <view class="back-btn" bindtap="back"><icon name="back" size="22" color="rgba(255,255,255,0.85)" /></view>
-
-  <!-- 左上角 商户 logo -->
+  <!-- 左上角 商户 logo：页面顶部已让出状态栏与胶囊栏（D41） -->
   <view class="brand">
-    <view class="brand-logo"><image src="/assets/emblem.png" class="brand-emblem" mode="aspectFit" /></view>
+    <view class="brand-logo"><image src="/assets/logo.jpeg" class="brand-emblem" mode="aspectFit" /></view>
     <view>
       <view class="brand-name serif">绥安食品</view>
       <view class="brand-sub">在地手作 · 到店自提</view>
@@ -33,12 +32,12 @@
 
   <!-- 身份卡 -->
   <view wx:if="{{entryState !== 'loading'}}" class="cards">
-    <view class="id-card primary fade-up" data-to="home" bindtap="go">
+    <view class="id-card primary fade-up" data-to="home" bindtap="go" hover-class="tap-dim" hover-stay-time="80">
       <view class="id-ico"><icon name="bag" size="28" color="#ffffff" /></view>
       <view class="id-body">
         <view class="id-name serif">用户端</view>
       </view>
-      <view class="id-go primary"><icon name="arrowRight" size="18" color="#3d6b2f" /></view>
+      <view class="id-go primary"><icon name="arrowRight" size="16" color="#3d6b2f" /></view>
     </view>
 
     <!-- 仅服务端已判定绑定商户的会话会看到本入口；首次绑定在个人中心完成。 -->
@@ -46,21 +45,23 @@
       wx:if="{{entryState === 'merchant'}}"
       class="id-plain fade-up"
       bindtap="goMerchant"
+      hover-class="tap-dim"
+      hover-stay-time="80"
     >
       <view class="id-card">
         <view class="id-ico ghost"><icon name="store" size="28" color="#ffffff" /></view>
         <view class="id-body">
           <view class="id-name serif">商户端</view>
         </view>
-        <view class="id-go"><icon name="arrowRight" size="18" color="#ffffff" /></view>
+        <view class="id-go"><icon name="arrowRight" size="16" color="#ffffff" /></view>
       </view>
     </view>
 
+    <button wx:if="{{entryState === 'merchant' && merchantRole === 'OWNER'}}" class="pc-login-entry" hover-class="b-active" hover-stay-time="80" bindtap="goPCLogin">登录电脑后台</button>
+
     <view wx:if="{{hint}}" class="id-hint">{{hint}}</view>
 
-    <view wx:if="{{storefrontState === 'error'}}" class="id-hint" bindtap="retryStorefront">门店信息加载失败，点此重试</view>
+    <view wx:if="{{storefrontState === 'error'}}" class="id-hint" bindtap="retryStorefront" hover-class="tap-dim" hover-stay-time="80">门店信息加载失败，点此重试</view>
     <view class="ver">{{storeName || '门店'}}　小程序 v1.0</view>
   </view>
-
-
 </view>

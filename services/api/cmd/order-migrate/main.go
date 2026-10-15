@@ -11,7 +11,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/config"
 	"github.com/gaofeng30/order/services/api/internal/database"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
-	"github.com/gaofeng30/order/services/api/migrations"
+	"github.com/gaofeng30/order/services/api/migrations/postgresql"
 )
 
 type commandFunc func(context.Context) (migrate.Result, error)
@@ -62,7 +62,7 @@ func runMigrationCommand(ctx context.Context) (migrate.Result, error) {
 		return migrate.Result{}, commandError{reason: database.Reason(err), cause: err}
 	}
 	defer closeDatabase(db)
-	set, err := migrate.Load(migrations.FS)
+	set, err := migrate.Load(postgresql.FS)
 	if err != nil {
 		return migrate.Result{}, commandError{reason: migrate.Reason(err), cause: err}
 	}

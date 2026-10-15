@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "change": "prepare-cloudbase-production",
+  "base_sha": "531638a8961796a7938072463e31ff15dba466ac",
+  "tdd": {
+    "red": {
+      "task_id": "release-red",
+      "command": "node --test tools/tests/mini-production-endpoint.test.cjs (2 failures: release blank and UAT accepted)"
+    },
+    "green": {
+      "task_id": "release-green",
+      "command": "node --test apps/wechat-miniprogram/tests/*.test.cjs apps/web-admin/tests/*.test.cjs tools/tests/*.test.cjs"
+    },
+    "refactor": {
+      "task_id": "release-refactor",
+      "command": "No unrelated refactor; exact production origin bound; rerun focused suite and git diff --check."
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI3",
+    "native_capabilities": [
+      "request",
+      "uploadFile",
+      "downloadFile",
+      "requestPayment",
+      "requestSubscribeMessage",
+      "scanCode"
+    ],
+    "scenarios": [
+      {
+        "id": "release-customer-payment",
+        "kind": "primary",
+        "steps": [
+          "Use exact candidate release build on a real device with approved production test account.",
+          "Verify login, menu, checkout, payment interruption/recovery, approved refund and 30 minute cancellation boundary."
+        ],
+        "expected": [
+          "All API calls use https://order.suianwuye.com; no UAT requests.",
+          "Order/payment/refund state and notifications agree with durable server receipts."
+        ]
+      },
+      {
+        "id": "merchant-pc-production",
+        "kind": "primary",
+        "steps": [
+          "Use approved merchant account to scan PC login at https://order.suianwuye.com/pc/.",
+          "Verify pagination, batch ready, redemption, duplicate/concurrent actions and denied permissions."
+        ],
+        "expected": [
+          "PC and mini-program use the same production environment.",
+          "No duplicate business actions or cross-environment credentials/data."
+        ]
+      },
+      {
+        "id": "trial-isolation-images-notifications",
+        "kind": "regression",
+        "steps": [
+          "Verify develop/trial retain UAT endpoint configuration without connecting to a stopped environment.",
+          "On approved production device validate existing/new/three-image import rendering, subscription prompts and actual formal notification delivery."
+        ],
+        "expected": [
+          "Configuration rejects production origin in develop/trial and UAT origin in release.",
+          "Actual image sizes/timings and formal delivery receipts are recorded separately from local tests."
+        ]
+      }
+    ]
+  }
+}

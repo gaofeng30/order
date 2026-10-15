@@ -28,15 +28,15 @@ const detailProductQuery = `SELECT
   (sold.product_id IS NOT NULL) AS sold_out
 FROM products AS p
 INNER JOIN categories AS c ON c.id = p.category_id AND c.is_active = TRUE
-LEFT JOIN product_sold_out_dates AS sold ON sold.product_id = p.id AND sold.service_date = ?
-WHERE p.id = ? AND p.is_listed = TRUE
+LEFT JOIN product_sold_out_dates AS sold ON sold.product_id = p.id AND sold.service_date = $1
+WHERE p.id = $2 AND p.is_listed = TRUE
 LIMIT 1`
 
 const currentFactsQuery = `SELECT
   settings.business_status,
-  DATE_FORMAT(dates.service_date,'%Y-%m-%d'), dates.is_open
+  to_char(dates.service_date,'YYYY-MM-DD'), dates.is_open
 FROM storefront_settings AS settings
-LEFT JOIN service_dates AS dates ON dates.service_date = ?
+LEFT JOIN service_dates AS dates ON dates.service_date = $1
 WHERE settings.id = 1
 LIMIT 1`
 

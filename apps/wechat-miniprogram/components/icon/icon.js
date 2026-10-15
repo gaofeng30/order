@@ -3,7 +3,7 @@ const ICONS = require('../../utils/icons.js');
 Component({
   properties: {
     name: { type: String, value: '' },
-    size: { type: Number, value: 22 },        // px
+    size: { type: Number, value: 22 },        // 以 375 宽设计稿的 px 计，渲染为 size×2 rpx 随屏宽缩放（D23）
     color: { type: String, value: 'currentColor' },
     stroke: { type: Number, value: 2 },
     fill: { type: String, value: 'none' },

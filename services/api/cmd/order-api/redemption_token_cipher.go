@@ -10,11 +10,11 @@ import (
 )
 
 func composeRedemptionTokenCipher(environment config.Environment, region string) (*fulfillment.AESGCMTokenCipher, error) {
-	if environment != config.Production {
+	if !environment.UsesCloudProviders() {
 		key := sha256.Sum256([]byte("order-local-redemption-token-key-v1"))
 		return fulfillment.NewAESGCMTokenCipher(map[uint16][]byte{1: key[:]}, 1, rand.Reader)
 	}
-	material, err := config.LoadProductionRedemptionTokenMaterial(context.Background(), region)
+	material, err := config.LoadCloudRedemptionTokenMaterial(context.Background(), environment, region)
 	if err != nil {
 		return nil, err
 	}

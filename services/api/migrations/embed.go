@@ -8,5 +8,5 @@ import (
 //go:embed *.sql
 var embedded embed.FS
 
-// FS contains the immutable forward-only migration set.
+// FS preserves the immutable historical MySQL migration set. Runtime commands use postgresql.FS.
 var FS fs.FS = embedded

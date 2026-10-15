@@ -1,47 +1,77 @@
 <view class="page verify-page">
   <navbar tone="dark" title="扫码核销" />
 
-  <view class="verify-body">
+  <view class="verify-body pad">
+    <!-- 中间：大号扫码按钮（A14） -->
     <view class="verify-center">
-      <view class="verify-tip">将取餐二维码对准框内，自动识别核销</view>
-      <view class="btn btn--primary" bindtap="scan">打开相机扫码</view>
-      <!-- 取景框 -->
-      <view class="finder">
-        <view class="finder-bg"><view class="scan-line"></view></view>
-        <view class="corner tl"></view>
-        <view class="corner tr"></view>
-        <view class="corner bl"></view>
-        <view class="corner br"></view>
+      <view class="scan-ico"><icon name="scan" size="40" color="#8fd06a" stroke="1.8" /></view>
+      <view class="serif scan-title">扫描顾客的取餐二维码</view>
+      <view class="scan-desc">扫码后自动核销，无需再次确认</view>
+      <view
+        class="btn btn--primary scan-btn {{scanning || redeeming ? 'is-disabled' : ''}}"
+        bindtap="scan"
+        hover-class="{{scanning || redeeming ? 'none' : 'b-active'}}"
+        hover-stay-time="80"
+        aria-role="button"
+        aria-disabled="{{scanning || redeeming}}"
+      >
+        <icon name="scan" size="20" color="{{scanning || redeeming ? '#9a9e8c' : '#ffffff'}}" />
+        <text>{{redeeming ? '核销中…' : scanning ? '正在扫码…' : '扫码核销'}}</text>
       </view>
     </view>
 
-    <!-- 手动兜底 -->
-    <view class="manual" style="padding-bottom:{{safeBottom + 24}}px">
-      <view class="manual-tip">无法扫码？手动输入取餐号</view>
-      <view wx:if="{{lookupState === 'error'}}" class="verify-error">核销失败，请核对取餐码、日期与订单状态后重试</view>
+    <!-- 下方：手输取餐号（A18） -->
+    <view class="manual">
+      <view class="manual-title">无法扫码？手动输入取餐号</view>
       <view class="manual-row">
-        <input class="manual-in" placeholder="如 0118" placeholder-class="manual-ph" value="{{code}}" bindinput="onCode" confirm-type="done" bindconfirm="manual" />
-        <view class="btn btn--primary manual-btn" bindtap="manual">核销</view>
+        <input
+          class="manual-in {{redeeming ? 'is-locked' : ''}}"
+          type="number"
+          maxlength="4"
+          placeholder="4 位取餐号"
+          placeholder-class="manual-ph"
+          value="{{code}}"
+          disabled="{{redeeming}}"
+          bindinput="onCode"
+          confirm-type="done"
+          bindconfirm="manual"
+        />
+        <view
+          class="btn btn--primary manual-btn {{code.length === 4 && !redeeming && !scanning ? '' : 'is-disabled'}}"
+          bindtap="manual"
+          hover-class="{{code.length === 4 && !redeeming && !scanning ? 'b-active' : 'none'}}"
+          hover-stay-time="80"
+          aria-role="button"
+          aria-disabled="{{code.length !== 4 || redeeming || scanning}}"
+        >{{redeeming ? '核销中…' : '核销'}}</view>
       </view>
     </view>
   </view>
 
   <!-- scan/code 调用服务端原子核销；成功响应本身就是最终结果，不再二次确认。 -->
-  <view wx:if="{{lastResult}}" class="sheet-mask"></view>
-  <view wx:if="{{lastResult}}" class="sheet verify-sheet" style="padding-bottom:{{safeBottom + 28}}px">
-    <view class="vr-err-ico"><icon name="check" size="32" color="#5b8f3f" /></view>
-    <view class="serif vr-err-title">核销成功</view>
-    <view class="vr-err-sub">取餐号 {{lastResult.code}} · {{lastResult.contactName}}</view>
-    <view class="card vr-items">
-      <view wx:for="{{lastResult.rows}}" wx:key="name" class="vr-item">
+  <view wx:if="{{result}}" class="sheet-mask" bindtap="done"></view>
+  <view wx:if="{{result}}" class="sheet vr-sheet" style="padding-bottom:{{safeBottom + 28}}px" aria-role="dialog">
+    <view class="vr-head">
+      <view class="vr-ico"><icon name="check" size="28" color="#467a32" stroke="2.4" /></view>
+      <view class="serif vr-title">已核销</view>
+      <view class="vr-lbl">取餐号</view>
+      <view class="serif vr-code">{{result.code}}</view>
+      <view wx:if="{{result.contactName}}" class="vr-name">{{result.contactName}}</view>
+    </view>
+    <!-- 菜品多时只滚动这一块，按钮始终可见（D29） -->
+    <scroll-view class="vr-items" scroll-y enhanced show-scrollbar="{{false}}">
+      <view wx:for="{{result.rows}}" wx:key="key" class="vr-item {{index === result.rows.length - 1 ? 'last' : ''}}">
         <view class="vr-item-info">
           <view class="vr-item-name">{{item.name}}</view>
-          <view class="vr-item-unit"><money cents="{{item.p}}" size="24" /> × {{item.q}}</view>
+          <view class="vr-item-unit"><money cents="{{item.p}}" size="28" /><text class="vr-item-q">× {{item.q}}</text></view>
         </view>
-        <money cents="{{item.sub}}" blue size="28" />
+        <money cents="{{item.sub}}" size="28" />
       </view>
+    </scroll-view>
+    <view class="vr-actions">
+      <view class="btn btn--ghost vr-done" bindtap="done" hover-class="b-active" hover-stay-time="80">完成</view>
+      <view class="btn btn--primary vr-next" bindtap="continueScan" hover-class="b-active" hover-stay-time="80">继续扫码</view>
     </view>
-    <view class="btn btn--primary btn--block vr-back vr-back-orders" bindtap="backToOrders">返回已完成订单</view>
   </view>
 
   <tabbar variant="admin" active="admin-verify" />

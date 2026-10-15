@@ -44,7 +44,7 @@ func (handler *Handler) getPickupOptions(ctx *gin.Context) {
 
 func newPickupOptionsResponse(facts PickupFacts, now time.Time) (pickupOptionsResponse, error) {
 	periods, err := validateMealPeriods(facts.MealPeriods)
-	if err != nil || facts.ServiceDates == nil {
+	if err != nil || facts.ServiceDates == nil || facts.AvailableMeals == nil {
 		return pickupOptionsResponse{}, ErrMenuUnavailable
 	}
 	sort.SliceStable(periods, func(left, right int) bool { return periods[left].pickupStartMinute < periods[right].pickupStartMinute })
@@ -57,7 +57,7 @@ func newPickupOptionsResponse(facts PickupFacts, now time.Time) (pickupOptionsRe
 		dateResponse := pickupOptionsDateResponse{Date: dateValue, MealPeriods: make([]pickupOptionsMealResponse, 0, 2)}
 		for _, period := range periods {
 			cutoff := time.Date(date.Year(), date.Month(), date.Day(), period.cutoffMinute/60, period.cutoffMinute%60, 0, 0, shanghaiLocation)
-			available := facts.BusinessStatus == "open" && servicePresent && serviceOpen && now.Before(cutoff)
+			available := facts.BusinessStatus == "open" && servicePresent && serviceOpen && facts.AvailableMeals[dateValue][period.code] && now.Before(cutoff)
 			pickupTimes := make([]string, 0)
 			for minute := period.pickupStartMinute; minute <= period.pickupEndMinute; minute += period.intervalMinutes {
 				pickupTimes = append(pickupTimes, fmt.Sprintf("%02d:%02d", minute/60, minute%60))

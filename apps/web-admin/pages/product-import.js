@@ -16,12 +16,12 @@
         { name: '餐段可售', required: true, note: '只能填 全天 / 午餐 / 晚餐' },
         { name: '描述', required: false },
       ],
-      preview: f => Api.previewProductImport(f),
+      preview: (f, images) => Api.previewProductImport(f, images),
       commit: t => Api.commitProductImport(t),
       extra: p => `
         ${p.newCategories && p.newCategories.length
           ? `<div class="imp-note">本次将新建分类：${p.newCategories.map(T.esc).join('、')}</div>` : ''}
-        <div class="imp-note warn">图片不在模板中。导入的菜品先无图上架，请随后在菜品管理中逐个补图。</div>`,
+        <div class="imp-note warn">上传后可在下方预览中编辑信息、上传图片。确认导入前不会创建菜品；图片随确认导入一起保存。</div>`,
     });
   }
 

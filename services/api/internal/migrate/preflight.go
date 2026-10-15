@@ -1,7 +1,6 @@
 package migrate
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"unicode"
@@ -13,37 +12,6 @@ import (
 type legacyCatalogName struct {
 	id   uint64
 	name string
-}
-
-func (connection *mysqlRunnerConnection) preflight(ctx context.Context, migration Migration) error {
-	var table string
-	switch migration.Version {
-	case 20:
-		table = "categories"
-	case 23:
-		table = "products"
-	default:
-		return nil
-	}
-
-	rows, err := connection.conn.QueryContext(ctx, "SELECT id,name FROM "+table+" ORDER BY id")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	names := make([]legacyCatalogName, 0)
-	for rows.Next() {
-		var row legacyCatalogName
-		if err := rows.Scan(&row.id, &row.name); err != nil {
-			return err
-		}
-		names = append(names, row)
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-	return validateLegacyCatalogNames(names)
 }
 
 func validateLegacyCatalogNames(rows []legacyCatalogName) error {

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -69,6 +69,7 @@ func bootstrapOnce(ctx context.Context, db *sql.DB, input bootstrapInput) (boots
 	if err != nil {
 		return "", unavailableBootstrapError(err)
 	}
+	defer tx.Rollback()
 	outcome, err := bootstrapInTransaction(ctx, tx, input)
 	if err != nil {
 		_ = tx.Rollback()
@@ -96,7 +97,7 @@ func bootstrapInTransaction(ctx context.Context, tx *sql.Tx, input bootstrapInpu
 		INSERT INTO storefront_settings(
 			id,store_name,store_address,pickup_point,announcement,business_status,
 			launch_image_object_key,center_x,center_y,width_ratio,aspect_ratio,flavor_options_json,record_version
-		) VALUES(1,?,?,?,'','closed',NULL,NULL,NULL,NULL,NULL,JSON_ARRAY(?,?,?,?,?,?,?,?),1)
+		) VALUES(1,$1,$2,$3,'','closed',NULL,NULL,NULL,NULL,NULL,jsonb_build_array($4::text,$5::text,$6::text,$7::text,$8::text,$9::text,$10::text,$11::text),1)
 	`, input.StoreName, input.StoreAddress, input.PickupPoint,
 		bootstrapFlavorOptions[0], bootstrapFlavorOptions[1], bootstrapFlavorOptions[2], bootstrapFlavorOptions[3],
 		bootstrapFlavorOptions[4], bootstrapFlavorOptions[5], bootstrapFlavorOptions[6], bootstrapFlavorOptions[7]); err != nil {
@@ -104,7 +105,7 @@ func bootstrapInTransaction(ctx context.Context, tx *sql.Tx, input bootstrapInpu
 	}
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO discount_settings(id,rate_percent,discount_version,whitelist_version,updated_at)
-		VALUES(1,100,1,1,UTC_TIMESTAMP(6))
+		VALUES(1,100,1,1,CURRENT_TIMESTAMP)
 	`); err != nil {
 		return "", unavailableBootstrapError(err)
 	}
@@ -112,8 +113,8 @@ func bootstrapInTransaction(ctx context.Context, tx *sql.Tx, input bootstrapInpu
 		INSERT INTO merchant_accounts(
 			phone,name,role,enabled,record_version,auth_version,bound_user_id,bound_at,
 			deleted_at,deleted_by_account_id,created_at,updated_at,created_by,updated_by
-		) VALUES(?,?,'OWNER',TRUE,1,1,NULL,NULL,NULL,NULL,UTC_TIMESTAMP(6),UTC_TIMESTAMP(6),NULL,NULL)
-	`, input.OwnerPhone, input.OwnerName); err != nil {
+		) VALUES($1,$2,'OWNER',TRUE,1,1,NULL,NULL,NULL,NULL,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,NULL,NULL)
+	`, []byte(input.OwnerPhone), input.OwnerName); err != nil {
 		return "", unavailableBootstrapError(err)
 	}
 	return outcomeCreated, nil
@@ -128,11 +129,11 @@ func retryableBootstrapTransactionError(err error) bool {
 	if !errors.As(err, &wrapped) {
 		return false
 	}
-	var mysqlError *mysql.MySQLError
-	if !errors.As(wrapped.cause, &mysqlError) {
+	var pgError *pgconn.PgError
+	if !errors.As(wrapped.cause, &pgError) {
 		return false
 	}
-	return mysqlError.Number == 1062 || mysqlError.Number == 1205 || mysqlError.Number == 1213
+	return (pgError.Code == "23505" && (pgError.ConstraintName == "storefront_settings_pkey" || pgError.ConstraintName == "discount_settings_pkey" || pgError.ConstraintName == "uq_merchant_accounts_phone")) || pgError.Code == "40P01" || pgError.Code == "40001" || pgError.Code == "55P03"
 }
 
 func readBootstrapStateForUpdate(ctx context.Context, tx *sql.Tx) (bootstrapState, error) {
@@ -141,15 +142,15 @@ func readBootstrapStateForUpdate(ctx context.Context, tx *sql.Tx) (bootstrapStat
 	err := tx.QueryRowContext(ctx, `
 		SELECT store_name,store_address,pickup_point,announcement,business_status,
 		       (launch_image_object_key IS NULL AND center_x IS NULL AND center_y IS NULL AND width_ratio IS NULL AND aspect_ratio IS NULL),
-		       JSON_TYPE(flavor_options_json),JSON_LENGTH(flavor_options_json),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[0]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[1]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[2]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[3]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[4]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[5]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[6]')),''),
-		       COALESCE(JSON_UNQUOTE(JSON_EXTRACT(flavor_options_json,'$[7]')),''),record_version
+		       upper(jsonb_typeof(flavor_options_json)),jsonb_array_length(flavor_options_json),
+		       COALESCE(flavor_options_json->>0,''),
+		       COALESCE(flavor_options_json->>1,''),
+		       COALESCE(flavor_options_json->>2,''),
+		       COALESCE(flavor_options_json->>3,''),
+		       COALESCE(flavor_options_json->>4,''),
+		       COALESCE(flavor_options_json->>5,''),
+		       COALESCE(flavor_options_json->>6,''),
+		       COALESCE(flavor_options_json->>7,''),record_version
 		FROM storefront_settings WHERE id=1 FOR UPDATE
 	`).Scan(
 		&storefront.storeName, &storefront.storeAddress, &storefront.pickupPoint, &storefront.announcement, &storefront.status,
@@ -177,7 +178,7 @@ func readBootstrapStateForUpdate(ctx context.Context, tx *sql.Tx) (bootstrapStat
 	}
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT CONVERT(phone USING ascii),name,enabled,record_version,auth_version,
+		SELECT convert_from(phone,'UTF8'),name,enabled,record_version,auth_version,
 		       (bound_user_id IS NULL AND bound_at IS NULL AND created_by IS NULL AND updated_by IS NULL AND deleted_at IS NULL AND deleted_by_account_id IS NULL),
 		       (created_at=updated_at)
 		FROM merchant_accounts WHERE role='OWNER' ORDER BY id FOR UPDATE

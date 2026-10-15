@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	redemptionTokenSecretName = "order-production-redemption-token-key"
+	redemptionTokenPurpose    = "redemption-token-key"
+	redemptionTokenSecretName = "order-production-" + redemptionTokenPurpose
 	maxRedemptionSecretSize   = 256
 )
 
@@ -33,12 +34,16 @@ type redemptionTokenSecret struct {
 }
 
 func LoadRedemptionTokenMaterial(ctx context.Context, source SecretSource) (RedemptionTokenMaterial, error) {
+	return loadRedemptionTokenMaterial(ctx, source, redemptionTokenSecretName)
+}
+
+func loadRedemptionTokenMaterial(ctx context.Context, source SecretSource, secretName string) (RedemptionTokenMaterial, error) {
 	if ctx == nil || source == nil {
 		return RedemptionTokenMaterial{}, loadError{reason: "production_redemption_secret_unavailable"}
 	}
 	loadContext, cancel := context.WithTimeout(ctx, secretLoadTimeout)
 	defer cancel()
-	encoded, err := source.Get(loadContext, redemptionTokenSecretName)
+	encoded, err := source.Get(loadContext, secretName)
 	if err != nil {
 		return RedemptionTokenMaterial{}, loadError{reason: "production_redemption_secret_unavailable"}
 	}
@@ -63,10 +68,15 @@ func LoadRedemptionTokenMaterial(ctx context.Context, source SecretSource) (Rede
 }
 
 func LoadProductionRedemptionTokenMaterial(ctx context.Context, region string) (RedemptionTokenMaterial, error) {
-	if !validTencentRegion(region) {
+	return LoadCloudRedemptionTokenMaterial(ctx, Production, region)
+}
+
+func LoadCloudRedemptionTokenMaterial(ctx context.Context, environment Environment, region string) (RedemptionTokenMaterial, error) {
+	secretName, ok := environment.SecretName(redemptionTokenPurpose)
+	if !ok || !validTencentRegion(region) {
 		return RedemptionTokenMaterial{}, loadError{reason: "production_redemption_secret_unavailable"}
 	}
-	return LoadRedemptionTokenMaterial(ctx, newProductionSecretSource(region))
+	return loadRedemptionTokenMaterial(ctx, newCloudSecretSource(environment, region), secretName)
 }
 
 func redemptionJSONEnd(decoder *json.Decoder) error {

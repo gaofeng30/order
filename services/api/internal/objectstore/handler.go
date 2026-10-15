@@ -1,16 +1,13 @@
 package objectstore
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"image"
-	_ "image/jpeg"
-	_ "image/png"
-	"io"
+	"mime"
 	"net/http"
 	"strings"
 
+	"github.com/gaofeng30/order/services/api/internal/httpdto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,6 +16,8 @@ var (
 	ErrImageTooLarge = errors.New("image too large")
 	ErrUnavailable   = errors.New("object store unavailable")
 )
+
+const maxUploadRequestBytes = 512
 
 type WriteMeta struct {
 	ActorUserID               uint64
@@ -30,56 +29,96 @@ type Image struct {
 }
 type StoredImage struct{ ObjectKey, URL string }
 
-// Application is the only HTTP-facing seam; production and deterministic fake adapters stay behind it.
 type Application interface {
-	PutImage(context.Context, WriteMeta, Image) (StoredImage, error)
+	PrepareImageUpload(context.Context, WriteMeta, UploadSpecification) (UploadIntent, error)
+	ConfirmImageUpload(context.Context, WriteMeta, UploadSpecification, string) (StoredImage, error)
 }
 type Handler struct{ app Application }
 
-func NewHandler(app Application) *Handler              { return &Handler{app: app} }
-func (h *Handler) RegisterRoutes(api *gin.RouterGroup) { api.POST("/upload", h.upload) }
-func (h *Handler) upload(c *gin.Context) {
-	meta, ok := meta(c)
-	if !ok {
-		writeError(c, ErrInvalidImage)
-		return
-	}
-	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 5*1024*1024+4096)
-	file, header, err := c.Request.FormFile("file")
-	if err != nil {
-		writeError(c, ErrInvalidImage)
-		return
-	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, 5*1024*1024+1))
-	if err != nil {
-		writeError(c, ErrInvalidImage)
-		return
-	}
-	if len(data) > 5*1024*1024 {
-		writeError(c, ErrImageTooLarge)
-		return
-	}
-	kind := http.DetectContentType(data)
-	if kind != "image/png" && kind != "image/jpeg" {
-		writeError(c, ErrInvalidImage)
-		return
-	}
-	if _, _, err := image.DecodeConfig(bytes.NewReader(data)); err != nil {
-		writeError(c, ErrInvalidImage)
-		return
-	}
-	stored, err := h.app.PutImage(c.Request.Context(), meta, Image{Name: header.Filename, ContentType: kind, Bytes: data})
-	if err != nil {
-		writeError(c, err)
-		return
-	}
-	if stored.ObjectKey == "" || stored.URL == "" {
-		writeError(c, ErrUnavailable)
-		return
-	}
-	c.JSON(http.StatusCreated, gin.H{"image": gin.H{"object_key": stored.ObjectKey, "url": stored.URL}})
+func NewHandler(app Application) *Handler { return &Handler{app: app} }
+func (h *Handler) RegisterRoutes(api *gin.RouterGroup) {
+	api.POST("/upload/intent", h.prepareUpload)
+	api.POST("/upload", h.confirmUpload)
 }
+
+type uploadSpecificationRequest struct {
+	ContentType string `json:"content_type"`
+	SizeBytes   int64  `json:"size_bytes"`
+	SHA256      string `json:"sha256"`
+}
+
+type uploadConfirmationRequest struct {
+	ContentType string `json:"content_type"`
+	SizeBytes   int64  `json:"size_bytes"`
+	SHA256      string `json:"sha256"`
+	ObjectKey   string `json:"object_key"`
+}
+
+func (h *Handler) prepareUpload(ctx *gin.Context) {
+	meta, ok := meta(ctx)
+	if !ok {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	var request uploadSpecificationRequest
+	if !decodeUploadJSON(ctx, &request) {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	specification := UploadSpecification{ContentType: request.ContentType, SizeBytes: request.SizeBytes, SHA256: request.SHA256}
+	if _, valid := objectKeyForSpecification(specification); !valid {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	intent, err := h.app.PrepareImageUpload(ctx.Request.Context(), meta, specification)
+	if err != nil {
+		writeError(ctx, err)
+		return
+	}
+	ctx.Header("Cache-Control", "no-store")
+	ctx.JSON(http.StatusCreated, gin.H{"upload": gin.H{
+		"object_key": intent.ObjectKey,
+		"method":     intent.Method,
+		"url":        intent.URL,
+		"headers":    intent.Headers,
+		"expires_at": intent.ExpiresAt.UTC().Format("2006-01-02T15:04:05.000000Z"),
+	}})
+}
+
+func (h *Handler) confirmUpload(ctx *gin.Context) {
+	meta, ok := meta(ctx)
+	if !ok {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	var request uploadConfirmationRequest
+	if !decodeUploadJSON(ctx, &request) {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	specification := UploadSpecification{ContentType: request.ContentType, SizeBytes: request.SizeBytes, SHA256: request.SHA256}
+	if !uploadObjectKeyMatches(specification, request.ObjectKey) {
+		writeError(ctx, ErrInvalidImage)
+		return
+	}
+	stored, err := h.app.ConfirmImageUpload(ctx.Request.Context(), meta, specification, request.ObjectKey)
+	if err != nil {
+		writeError(ctx, err)
+		return
+	}
+	if stored.ObjectKey != request.ObjectKey || stored.URL == "" {
+		writeError(ctx, ErrUnavailable)
+		return
+	}
+	ctx.Header("Cache-Control", "no-store")
+	ctx.JSON(http.StatusCreated, gin.H{"image": gin.H{"object_key": stored.ObjectKey, "url": stored.URL}})
+}
+
+func decodeUploadJSON(ctx *gin.Context, target any) bool {
+	mediaType, _, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
+	return err == nil && mediaType == "application/json" && httpdto.DecodeStrict(ctx.Request.Body, maxUploadRequestBytes, target) == nil
+}
+
 func meta(c *gin.Context) (WriteMeta, bool) {
 	actor := c.GetUint64("actor_user_id")
 	keys := c.Request.Header.Values("Idempotency-Key")
@@ -94,6 +133,8 @@ func writeError(c *gin.Context, err error) {
 		status, code, message = http.StatusUnprocessableEntity, "INVALID_IMAGE", "invalid image"
 	} else if errors.Is(err, ErrImageTooLarge) {
 		status, code, message = http.StatusRequestEntityTooLarge, "IMAGE_TOO_LARGE", "image too large"
+	} else if errors.Is(err, ErrIdempotencyConflict) {
+		status, code, message = http.StatusConflict, "IDEMPOTENCY_CONFLICT", "idempotency key conflicts with an earlier upload"
 	}
 	c.JSON(status, gin.H{"error": gin.H{"code": code, "message": message}})
 }

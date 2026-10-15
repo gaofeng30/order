@@ -27,7 +27,7 @@ type ssmSecretClient interface {
 
 type ssmClientFactory func(common.CredentialIface, string) (ssmSecretClient, error)
 
-type cvmSSMSecretSource struct {
+type tencentSSMSecretSource struct {
 	region   string
 	provider credentialProvider
 	factory  ssmClientFactory
@@ -36,16 +36,20 @@ type cvmSSMSecretSource struct {
 	err      error
 }
 
-func newProductionSecretSource(region string) SecretSource {
-	return newCVMSSMSecretSource(region, common.DefaultCvmRoleProvider(), defaultSSMClientFactory)
+func newCloudSecretSource(environment Environment, region string) SecretSource {
+	if environment == UAT || environment == Production {
+		return cloudRunSecretSource{}
+	}
+	provider, _ := NewCloudCredentialProvider(environment, region)
+	return newSSMSecretSource(region, provider, defaultSSMClientFactory)
 }
 
-func newCVMSSMSecretSource(region string, provider credentialProvider, factory ssmClientFactory) *cvmSSMSecretSource {
-	return &cvmSSMSecretSource{region: region, provider: provider, factory: factory}
+func newSSMSecretSource(region string, provider credentialProvider, factory ssmClientFactory) *tencentSSMSecretSource {
+	return &tencentSSMSecretSource{region: region, provider: provider, factory: factory}
 }
 
-func (source *cvmSSMSecretSource) Get(ctx context.Context, name string) (string, error) {
-	if name != databasePasswordSecret && name != miniProgramSecret && name != weChatPaySecretName && name != redemptionTokenSecretName {
+func (source *tencentSSMSecretSource) Get(ctx context.Context, name string) (string, error) {
+	if !allowedCloudSecretName(name) {
 		return "", errProductionSecretUnavailable
 	}
 	source.once.Do(func() {
@@ -73,7 +77,22 @@ func (source *cvmSSMSecretSource) Get(ctx context.Context, name string) (string,
 	return *response.Response.SecretString, nil
 }
 
+func allowedCloudSecretName(name string) bool {
+	for _, environment := range []Environment{UAT, Production} {
+		for _, purpose := range []string{databasePasswordPurpose, miniProgramPurpose, weChatPaySecretPurpose, redemptionTokenPurpose} {
+			allowed, _ := environment.SecretName(purpose)
+			if name == allowed {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func credentialWithContext(ctx context.Context, provider credentialProvider) (common.CredentialIface, error) {
+	if ctx == nil || provider == nil {
+		return nil, errProductionSecretUnavailable
+	}
 	type result struct {
 		credential common.CredentialIface
 		err        error

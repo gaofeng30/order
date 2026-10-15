@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gaofeng30/order/services/api/internal/httpdto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -70,6 +71,7 @@ type AdminApplication interface {
 	ApprovePCLogin(context.Context, uint64, string, string, string) error
 	PollPCLogin(context.Context, string, string) (PCSession, error)
 	AuthenticatePC(context.Context, string) (uint64, error)
+	RevokePC(context.Context, string) error
 }
 type AdminHandler struct{ app AdminApplication }
 
@@ -87,6 +89,21 @@ func (h *AdminHandler) RegisterAdminRoutes(group *gin.RouterGroup) {
 func (h *AdminHandler) RegisterPCAuthRoutes(api *gin.RouterGroup) {
 	api.POST("/admin/auth/qrcode", h.begin)
 	api.POST("/admin/auth/poll", h.poll)
+	api.POST("/admin/auth/logout", h.logout)
+}
+
+func (h *AdminHandler) logout(c *gin.Context) {
+	token, err := httpdto.BearerToken(c.Request)
+	if err != nil {
+		adminError(c, ErrPCSessionExpired)
+		return
+	}
+	if err := h.app.RevokePC(c.Request.Context(), token); err != nil {
+		adminError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	c.Status(http.StatusNoContent)
 }
 
 // RegisterApprovalRoute mounts below the Mini Program authenticated /api/v1/me group.

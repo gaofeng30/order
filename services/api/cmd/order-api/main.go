@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/adminreport"
-	"github.com/gaofeng30/order/services/api/internal/app"
 	"github.com/gaofeng30/order/services/api/internal/audit"
 	"github.com/gaofeng30/order/services/api/internal/billing"
 	"github.com/gaofeng30/order/services/api/internal/catalog"
@@ -26,7 +25,6 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/merchantsoldout"
 	"github.com/gaofeng30/order/services/api/internal/migrate"
 	"github.com/gaofeng30/order/services/api/internal/objectstore"
-	"github.com/gaofeng30/order/services/api/internal/orderadvance"
 	"github.com/gaofeng30/order/services/api/internal/orderquery"
 	"github.com/gaofeng30/order/services/api/internal/paymentorder"
 	"github.com/gaofeng30/order/services/api/internal/quote"
@@ -35,7 +33,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/storefront"
 	"github.com/gaofeng30/order/services/api/internal/storestatus"
 	"github.com/gaofeng30/order/services/api/internal/subscription"
-	"github.com/gaofeng30/order/services/api/migrations"
+	"github.com/gaofeng30/order/services/api/migrations/postgresql"
 )
 
 func main() {
@@ -44,6 +42,9 @@ func main() {
 
 func run() int {
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	if os.Getenv("ORDER_ENV") == "uat" || os.Getenv("ORDER_ENV") == "production" {
+		return runCloudRun(logger)
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		logger.Error("configuration error", "reason", config.Reason(err))
@@ -55,7 +56,7 @@ func run() int {
 		return 1
 	}
 	defer db.Close()
-	migrationSet, err := migrate.Load(migrations.FS)
+	migrationSet, err := migrate.Load(postgresql.FS)
 	if err != nil {
 		logger.Error("migration assets invalid", "reason", migrate.Reason(err))
 		return 1
@@ -82,18 +83,19 @@ func run() int {
 		identity.NewPhoneService(phoneProvider, identityRepository),
 	)
 	requestAuthenticator := miniRequestAuthenticator{sessions: sessionService}
-	pricingApplication := staffdiscount.NewMySQLPricing(db)
+	pricingApplication := staffdiscount.NewPostgreSQLPricing(db)
+	confirmationStore := objectstore.NewPostgreSQLConfirmationStore(db)
 	var objectService *objectstore.Service
 	var localObjects httpapi.RouteRegistrar
-	if cfg.Environment == config.Production {
+	if cfg.Environment.UsesCloudProviders() {
 		material, materialErr := config.ParseCOSMaterial(
-			os.Getenv("ORDER_COS_BUCKET"), os.Getenv("ORDER_TENCENT_REGION"), os.Getenv("ORDER_COS_PUBLIC_ORIGIN"),
+			os.Getenv("ORDER_COS_BUCKET"), os.Getenv("ORDER_TENCENT_REGION"),
 		)
 		if materialErr != nil {
 			logger.Error("cos object store configuration error", "reason", config.Reason(materialErr))
 			return 1
 		}
-		objectService, err = composeProductionObjectStore(context.Background(), material)
+		objectService, err = composeCloudObjectStore(context.Background(), cfg.Environment, material, confirmationStore)
 		if err != nil {
 			logger.Error("cos object store provider configuration error")
 			return 1
@@ -110,7 +112,7 @@ func run() int {
 			logger.Error("local object serving configuration error")
 			return 1
 		}
-		objectService = objectstore.NewService(fileAdapter)
+		objectService = objectstore.NewService(fileAdapter, confirmationStore)
 		localObjects = localObjectRoutes
 	}
 	catalogOptions := []catalog.HandlerOption{catalog.WithAuthenticator(requestAuthenticator), catalog.WithPricing(pricingApplication)}
@@ -136,8 +138,8 @@ func run() int {
 	var paymentParser paymentorder.NotificationParser
 	var paymentConfig paymentorder.Config
 	var productionPaymentRuntime productionWeChatPayRuntime
-	if cfg.Environment == config.Production {
-		material, materialErr := config.LoadProductionWeChatPayMaterial(context.Background(), os.Getenv("ORDER_TENCENT_REGION"))
+	if cfg.Environment.UsesCloudProviders() {
+		material, materialErr := config.LoadCloudWeChatPayMaterial(context.Background(), cfg.Environment, os.Getenv("ORDER_TENCENT_REGION"))
 		if materialErr != nil {
 			logger.Error("wechat payment configuration error", "reason", config.Reason(materialErr))
 			return 1
@@ -161,11 +163,12 @@ func run() int {
 			PaymentNotifyURL: "http://127.0.0.1:8080/api/v1/payments/wechat/notify",
 		}
 	}
-	paymentApplication := paymentorder.NewMySQLApplication(db, quoteApplication, paymentProvider, paymentConfig)
+	paymentConfig.Environment = string(cfg.Environment)
+	paymentApplication := paymentorder.NewPostgreSQLApplication(db, quoteApplication, paymentProvider, paymentConfig)
 	registrars = append(registrars, newPaymentRoutes(paymentorder.NewHandler(sessionService, paymentApplication, paymentParser)))
 	var notificationService *subscription.Service
 	var subscriptionTemplateVersion uint64
-	if cfg.Environment != config.Production {
+	if !cfg.Environment.UsesCloudProviders() {
 		notificationService = subscription.New(db, subscription.NewFakeProvider())
 		subscriptionTemplateVersion = 1
 	} else {
@@ -195,7 +198,7 @@ func run() int {
 		return 1
 	}
 	orderRepository := orderquery.NewRepository(db, merchantIdentityService, tokenCipher, time.Now)
-	fulfillmentApplication := fulfillment.NewMySQLApplication(db, merchantIdentityRepository, tokenCipher, notificationService)
+	fulfillmentApplication := fulfillment.NewPostgreSQLApplication(db, merchantIdentityRepository, tokenCipher, notificationService)
 	storeStatusCore := storestatus.New(db, merchantIdentityRepository, func() time.Time { return time.Now().UTC() })
 	soldOutCommander := merchantsoldout.New(db, merchantIdentityRepository, time.Now)
 	registrars = append(registrars,
@@ -206,7 +209,7 @@ func run() int {
 	var refundProvider refund.Provider
 	var refundParser refund.NotificationParser
 	var refundNotifyURL string
-	if cfg.Environment == config.Production {
+	if cfg.Environment.UsesCloudProviders() {
 		refundProvider, err = refund.NewWeChatProvider(productionPaymentRuntime.client, paymentConfig.MerchantID)
 		if err == nil {
 			refundParser, err = refund.NewWeChatNotificationParser(productionPaymentRuntime.client)
@@ -223,10 +226,17 @@ func run() int {
 		refundProvider, refundParser = provider, provider
 		refundNotifyURL = "http://127.0.0.1:8080/api/v1/refunds/wechat/notify"
 	}
-	refundService := refund.New(db, refundProvider, refundNotifyURL).WithNotificationEnqueuer(newRefundSubscriptionAdapter(notificationService))
+	refundConfig := refund.Config{
+		Environment:      paymentConfig.Environment,
+		AppID:            paymentConfig.AppID,
+		MerchantID:       paymentConfig.MerchantID,
+		PaymentNotifyURL: paymentConfig.PaymentNotifyURL,
+		RefundNotifyURL:  refundNotifyURL,
+	}
+	refundService := refund.New(db, refundProvider, refundConfig).WithNotificationEnqueuer(newRefundSubscriptionAdapter(notificationService))
 	registrars = append(registrars, newRefundRoutes(refund.NewHandler(sessionService, refundService, orderRepository, refundParser)))
 	var billProvider billing.BillProvider
-	if cfg.Environment == config.Production {
+	if cfg.Environment.UsesCloudProviders() {
 		billProvider, err = billing.NewWeChatBillProvider(productionPaymentRuntime.client)
 		if err != nil {
 			logger.Error("wechat billing provider configuration error")
@@ -235,42 +245,50 @@ func run() int {
 	} else {
 		billProvider = billing.NewFakeBillProvider()
 	}
-	billingService := billing.New(db, billProvider)
-	merchantAdminApplication := merchantidentity.NewMySQLAdminApplication(db, merchantIdentityService)
+	billingConfig := billing.Config{
+		Environment:      paymentConfig.Environment,
+		AppID:            paymentConfig.AppID,
+		MerchantID:       paymentConfig.MerchantID,
+		PaymentNotifyURL: paymentConfig.PaymentNotifyURL,
+		RefundNotifyURL:  refundNotifyURL,
+	}
+	billingService := billing.New(db, billProvider, billingConfig)
+	merchantAdminApplication := merchantidentity.NewPostgreSQLAdminApplication(db, merchantIdentityService)
 	merchantAdminHandler := merchantidentity.NewAdminHandler(merchantAdminApplication)
-	importHandler := importbatch.NewHandler(importbatch.NewMySQLApplication(db))
-	adminOrderReader := adminreport.NewMySQLApplication(db, nil)
+	importHandler := importbatch.NewHandler(importbatch.NewPostgreSQLApplication(db, objectService))
+	adminOrderReader := adminreport.NewPostgreSQLApplication(db, nil)
 	adminCommands := newAdminCommandAdapter(paymentApplication, refundService, adminOrderReader)
 	adminFeatureRoutes := []adminGroupRegistrar{
-		catalog.NewAdminHandler(catalog.NewMySQLAdminApplication(db, objectService)),
-		storefront.NewAdminHandler(storefront.NewMySQLAdminApplication(db)),
-		staffdiscount.NewHandler(staffdiscount.NewMySQLApplication(db)),
+		catalog.NewAdminHandler(catalog.NewPostgreSQLAdminApplication(db, objectService)),
+		storefront.NewAdminHandler(storefront.NewPostgreSQLAdminApplication(db, objectService)),
+		staffdiscount.NewHandler(staffdiscount.NewPostgreSQLApplication(db)),
 		importHandler,
-		adminreport.NewHandler(adminreport.NewMySQLApplication(db, adminCommands)),
-		audit.NewHandler(audit.NewMySQLSearcher(db)),
+		adminreport.NewHandler(adminreport.NewPostgreSQLApplication(db, adminCommands)),
+		fulfillment.NewAdminHandler(fulfillmentApplication, orderRepository),
+		audit.NewHandler(audit.NewPostgreSQLSearcher(db)),
 	}
 	ownerFeatureRoutes := []adminGroupRegistrar{objectstore.NewHandler(objectService)}
 	registrars = append(registrars,
 		newAdminRoutes(sessionService, merchantAdminApplication, merchantAdminHandler, adminFeatureRoutes, ownerFeatureRoutes, importHandler),
 		localObjects,
 	)
-	orderProductionService := orderadvance.New(db)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	workers := []func(context.Context){
+		func(ctx context.Context) { runRefundWorker(ctx, refundService, logger) },
+	}
 	if notificationService != nil {
-		go runSubscriptionWorker(ctx, notificationService, logger)
+		workers = append(workers, func(ctx context.Context) { runSubscriptionWorker(ctx, notificationService, logger) })
 	}
 	if paymentApplication != nil {
-		go runPaymentWorker(ctx, paymentApplication, logger)
+		workers = append(workers, func(ctx context.Context) { runPaymentWorker(ctx, paymentApplication, logger) })
 	}
-	go runRefundWorker(ctx, refundService, logger)
-	go runOrderProductionWorker(ctx, orderProductionService, logger)
-	if cfg.Environment == config.Production {
-		go runBillingWorker(ctx, billingService, logger)
+	if cfg.Environment.UsesCloudProviders() {
+		workers = append(workers, func(ctx context.Context) { runBillingWorker(ctx, billingService, logger) })
 	}
 
-	if err := app.Run(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen); err != nil {
+	if err := runWithWorkers(ctx, cfg, httpapi.NewRouter(logger, readiness, registrars...), logger, net.Listen, workers...); err != nil {
 		logger.Error("order-api stopped with error", "error", err)
 		return 1
 	}

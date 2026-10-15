@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "change": "simplify-background-order-work",
+  "base_sha": "b1a348b96dfc6ac21fd513eb44c186eb42484dff",
+  "tdd": {
+    "red": {
+      "task_id": "3.1",
+      "command": "node --test apps/wechat-miniprogram/tests/admin-orders-refresh.test.cjs (before fix: slow requests 3 != 1; later manual refresh toast 0 != 1)"
+    },
+    "green": {
+      "task_id": "3.2",
+      "command": "node --test apps/wechat-miniprogram/tests/admin-orders-refresh.test.cjs apps/web-admin/tests/orders-selection.test.cjs"
+    },
+    "refactor": {
+      "task_id": "3.3",
+      "command": "No unrelated refactor; rerun focused Node tests and git diff --check."
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI2",
+    "native_capabilities": [],
+    "scenarios": [
+      {
+        "id": "visible-slow-refresh",
+        "kind": "primary",
+        "steps": [
+          "Open merchant orders in WeChat developer tool against UAT; delay responses beyond one refresh interval.",
+          "Switch lane/search, manually refresh, hide and return."
+        ],
+        "expected": [
+          "No overlapping identical refresh requests; new lane queries are not suppressed.",
+          "Stale responses do not overwrite current lane or hidden page; manual refresh errors are visible."
+        ]
+      },
+      {
+        "id": "order-action-adjacent",
+        "kind": "regression",
+        "steps": [
+          "Open order detail and return; change business status and refresh orders."
+        ],
+        "expected": [
+          "Order and business status reflect successful writes; ready/refund/redemption contract remains unchanged."
+        ]
+      }
+    ]
+  }
+}

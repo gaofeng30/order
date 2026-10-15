@@ -25,7 +25,7 @@ type Settings struct {
 }
 
 // LaunchLayer contains durable object-store facts only. Public URLs are
-// resolved at the HTTP read boundary and are never persisted in MySQL.
+// resolved at the HTTP read boundary and are never persisted in PostgreSQL.
 type LaunchLayer struct {
 	ImageObjectKey string
 	CenterX        float64

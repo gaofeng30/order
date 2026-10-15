@@ -2,9 +2,6 @@ package migrate
 
 import (
 	"bytes"
-	"context"
-	"database/sql"
-	"strings"
 )
 
 const (
@@ -35,31 +32,6 @@ type historyRow struct {
 	Dirty    bool
 }
 
-// Check inspects MySQL and migration history without changing schema state.
-func Check(ctx context.Context, db *sql.DB, migrations []Migration) State {
-	conn, err := db.Conn(ctx)
-	if err != nil {
-		return State{Reason: ReasonDatabaseUnreachable}
-	}
-	defer conn.Close()
-	adapter := mysqlRunnerConnection{conn: conn}
-	if err := adapter.validateSession(ctx); err != nil {
-		if Reason(err) == ReasonDatabaseIncompatible {
-			return State{Reason: ReasonDatabaseIncompatible}
-		}
-		return State{Reason: ReasonDatabaseUnreachable}
-	}
-	exists, rows, err := adapter.history(ctx)
-	if err != nil {
-		reason := Reason(err)
-		if reason != ReasonDatabaseIncompatible {
-			reason = ReasonDatabaseUnreachable
-		}
-		return State{Reason: reason}
-	}
-	return classifyHistory(exists, rows, migrations)
-}
-
 func classifyHistory(exists bool, rows []historyRow, migrations []Migration) State {
 	if !exists || len(rows) == 0 {
 		return State{Reason: ReasonSchemaUninitialized}
@@ -81,8 +53,4 @@ func classifyHistory(exists bool, rows []historyRow, migrations []Migration) Sta
 		return State{Reason: ReasonSchemaBehind, CurrentVersion: current}
 	}
 	return State{Ready: true, CurrentVersion: current}
-}
-
-func compatibleSession(version, timezone, connectionCharset, serverCharset string) bool {
-	return strings.HasPrefix(version, "8.0.") && timezone == "+00:00" && connectionCharset == "utf8mb4" && serverCharset == "utf8mb4"
 }

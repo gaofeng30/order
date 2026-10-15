@@ -21,7 +21,7 @@
 - 根 `AGENTS.md` 是跨工具硬规则的单一事实源，`.agents/skills/` 保存可复用执行流程。
 - Codex 显式调用 Skill 使用 `$skill-name`，例如 `$wait-what`；`/wait what` 不是 Skill 调用。
 - 首次配置 tracker 或 domain 文档时使用 `$setup-matt-pocock-skills`；其他入口见 `docs/agents/skills.md`。
-- `openspec/` 仅作为历史工件保留，不再提供 Codex/Cursor 工具入口。
+- 不再使用旧 OpenSpec slash command / Skill 作为 Codex/Cursor 入口；`openspec/` 的现有规格、change 与质量门禁仍生效，`tools/harness` 仍读取其中的任务。Matt Skills 的工件接入见 `docs/agents/skills.md`，工具与门禁迁移尚未完成，不得将新草稿当作生命周期通过证据。
 
 ## Worktree 与并行
 
@@ -29,6 +29,7 @@
 - 无依赖、无公共契约冲突且 owned paths 不重叠的 changes 可以并行，不得被其他 change 的本地 Gate 全局阻塞。
 - 存在依赖或共享路径时，必须在当前任务工件中声明依赖或重新划分所有权后再开工。
 - 不得直接在 `main` 上提交。提交只包含当前 change 的 owned paths，不得覆盖或回退其他人改动。
+- 仓库允许且用户未禁止时，按生命周期生成本任务的本地候选提交；先核对暂存区与 diff，仅提交本任务改动。已有暂存或同文件混合改动无法安全分离时，不自动提交、不清空或重置用户 index；提交不等于获准推送。
 
 ## GitHub 传输
 
@@ -39,15 +40,16 @@
 
 ## TDD 与实现
 
-- 行为实现严格遵循 Red → Green → Refactor：先得到可观察的失败证据，再完成最小实现，重构后重跑同一验证。
+- 行为实现严格遵循 Red → Green → Refactor：先得到可观察的失败证据，再完成最小实现；仅做本次切片必要的重构并重跑同一验证，无需重构时记录理由，不为流程扩展范围。
 - 文档、配置、迁移和文件移动使用链接、结构、契约、迁移或内容完整性检查建立 Red/Green 证据，不编造无价值测试。
 - 任何触及 `apps/wechat-miniprogram/**` 的 change 必须提交 `miniprogram-gates.json`，同时声明 Red/Green/Refactor 任务和主路径/相邻回归场景；普通功能最低 UI2，涉及微信原生能力最低 UI3。
 - 小程序 TDD Gate 未完成不得形成 CANDIDATE；绑定 exact candidate SHA 的用户侧回归 receipt 缺失、场景不全、等级不足或存在 `BLOCKED_EXTERNAL` 时，不得进入 `INDEPENDENT_VERIFIED` 或集成。
 - 每完成一项就在当前任务工件中勾选，并记录决定性命令、结果或设计理由。
+- 测试复用已确认契约与既有公共接口，不因 Skill 切换重复确认；只有新测试边界会改变业务、契约或验收方式时才提问。按影响面验证，区分本次回归、同条件未改基线也复现的既有失败、未运行、跳过和外部阻断；既有失败不扩展修复范围，也不使必需门禁变为 PASS。
 
 ## 独立验证与集成
 
-- 实现 worktree 自测通过后产生候选 SHA；验证者必须在另一个干净的 detached worktree 对该精确 SHA 只读验证。
+- 实现 worktree 完成提交前自测及 Writer Gate 后，先提交候选并记录完整 SHA；验证者再在另一个干净的 detached worktree 对该精确 SHA 只读验证。候选提交不代表 `INDEPENDENT_VERIFIED` 或发布完成。
 - 验证者不得修改业务文件。验证失败后由 writer 在实现 worktree 修复并产生新 SHA。
 - 实现、规格、任务或 SHA 在验证后发生任何变化，旧验证立即失效，必须重新验证。
 - 只有依赖满足且精确 SHA 独立验证通过的 change 才能集成；rebase 或 merge 新 `main` 后视为新候选并重验。
@@ -71,3 +73,7 @@
 - 客户持有小程序账号、管理员身份、主体资质、微信支付商户号、收款账户和经营责任。
 - 开发方负责开发、配置、联调、提审、上线协助、技术排障和运维支持。
 - 为了交付效率，开发方可以在项目成员可授权范围内尽量开放权限，但不得混同为客户管理员、收款主体或经营责任人。
+
+## 本轮用户覆盖：停测与删除（2026-10-10）
+
+用户明确要求本交付分支删除项目自动化测试用例、纯测试 helper/fixture 和测试 runner，并立即停止测试、回归及 Gate。本轮按该指示推进生产编译、部署与实际 UAT；Prod 上线后由用户重新编写 smoke。此指示覆盖上文要求本轮执行或补齐测试及测试独验门禁的规定。未运行、已停止或历史通过证据均按实际状态记录，不能登记为本轮 PASS；不自动恢复测试，新的测试执行以用户后续指示为准。

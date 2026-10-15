@@ -3,7 +3,10 @@ package quote
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -28,7 +31,7 @@ const (
 
 var quoteLocation = time.FixedZone(quoteTimezone, 8*60*60)
 
-// Provider is the MySQL implementation behind the deep quote interface.
+// Provider is the PostgreSQL implementation behind the deep quote interface.
 type Provider struct {
 	db           *sql.DB
 	receipts     OperationReceiptStore
@@ -138,10 +141,9 @@ func (provider *Provider) Create(ctx context.Context, meta WriteMeta, rawInput C
 	}()
 
 	// The connection-scoped named lock already serializes this exact owner/key.
-	// Avoid a missing-row next-key lock here: different new keys for one owner
-	// must be able to insert concurrently without forming an InnoDB gap-lock
-	// deadlock.
-	existing, found, err := readQuoteHeader(ctx, transaction, "WHERE user_id=? AND idempotency_key_hash=?", userID, keyHash[:])
+	// Different new keys for one owner remain independently insertable.
+	// Database uniqueness is the final idempotency constraint.
+	existing, found, err := readQuoteHeader(ctx, transaction, "WHERE user_id=$1 AND idempotency_key_hash=$2", userID, keyHash[:])
 	if err != nil {
 		return CreateResult{}, normalizeSnapshotReadError(err)
 	}
@@ -309,7 +311,7 @@ func (provider *Provider) replayCreatedQuote(ctx context.Context, meta WriteMeta
 			_ = transaction.Rollback()
 		}
 	}()
-	header, found, err := readQuoteHeader(ctx, transaction, "WHERE user_id=? AND idempotency_key_hash=?", meta.ActorUserID, keyHash[:])
+	header, found, err := readQuoteHeader(ctx, transaction, "WHERE user_id=$1 AND idempotency_key_hash=$2", meta.ActorUserID, keyHash[:])
 	if err != nil {
 		return CreateResult{}, normalizeSnapshotReadError(err)
 	}
@@ -357,7 +359,7 @@ func (provider *Provider) Read(ctx context.Context, userID, quoteID uint64) (Quo
 			_ = transaction.Rollback()
 		}
 	}()
-	header, found, err := readQuoteHeader(ctx, transaction, "WHERE id=? AND user_id=?", quoteID, userID)
+	header, found, err := readQuoteHeader(ctx, transaction, "WHERE id=$1 AND user_id=$2", quoteID, userID)
 	if err != nil {
 		return Quote{}, normalizeSnapshotReadError(err)
 	}
@@ -489,17 +491,28 @@ func quoteLockName(keyHash [32]byte) string {
 	return "order_quote_" + hex.EncodeToString(keyHash[:26])
 }
 
+func quotePostgreSQLLockID(name string) int64 {
+	digest := sha256.Sum256([]byte(name))
+	return int64(binary.BigEndian.Uint64(digest[:8]))
+}
+
 func acquireQuoteLock(ctx context.Context, connection *sql.Conn, name string) (bool, error) {
-	var value sql.NullInt64
-	if err := connection.QueryRowContext(ctx, "SELECT GET_LOCK(?, ?)", name, quoteLockSeconds).Scan(&value); err != nil || !value.Valid {
-		return false, err
+	lockContext, cancel := context.WithTimeout(ctx, quoteLockSeconds*time.Second)
+	defer cancel()
+	var ignored any
+	var acquired bool
+	if err := connection.QueryRowContext(lockContext, "SELECT pg_advisory_lock($1), TRUE", quotePostgreSQLLockID(name)).Scan(&ignored, &acquired); err != nil || !acquired {
+		// The server may hold the session lock even when its result was lost.
+		_ = connection.Raw(func(any) error { return driver.ErrBadConn })
+		return false, ErrUnavailable
 	}
-	return value.Int64 == 1, nil
+	return true, nil
 }
 
 func releaseQuoteLock(ctx context.Context, connection *sql.Conn, name string) error {
-	var value sql.NullInt64
-	if err := connection.QueryRowContext(ctx, "SELECT RELEASE_LOCK(?)", name).Scan(&value); err != nil || !value.Valid || value.Int64 != 1 {
+	var released bool
+	if err := connection.QueryRowContext(ctx, "SELECT pg_advisory_unlock($1)", quotePostgreSQLLockID(name)).Scan(&released); err != nil || !released {
+		_ = connection.Raw(func(any) error { return driver.ErrBadConn })
 		return ErrUnavailable
 	}
 	return nil
@@ -524,7 +537,7 @@ func readUserIdentity(ctx context.Context, transaction *sql.Tx, userID uint64) (
 	if err := transaction.QueryRowContext(ctx, `SELECT
   primary_phone,primary_phone_bound_at,extra_phone,extra_name,extra_name_key,extra_phone_set_at,record_version
 FROM miniprogram_users
-WHERE id=?
+WHERE id=$1
 FOR SHARE`, userID).Scan(
 		&primaryPhone, &primaryBoundAt, &extraPhone, &extraName, &extraNameKey, &extraPhoneSetAt, &recordVersion,
 	); err != nil {
@@ -565,11 +578,11 @@ func resolveIdentitySnapshot(ctx context.Context, transaction *sql.Tx, user user
 	if !validPrimaryPhone(user.PrimaryPhone) || whitelistVersion == 0 {
 		return resolvedIdentitySnapshot{}, ErrUnavailable
 	}
-	phones := []any{user.PrimaryPhone}
-	query := `SELECT phone,name,name_key,enabled FROM staff_whitelist WHERE phone=? ORDER BY id FOR SHARE`
+	phones := []any{[]byte(user.PrimaryPhone)}
+	query := `SELECT phone,name,name_key,enabled FROM staff_whitelist WHERE phone=$1 ORDER BY id FOR SHARE`
 	if user.Extra != nil && user.Extra.Phone != user.PrimaryPhone {
-		phones = append(phones, user.Extra.Phone)
-		query = `SELECT phone,name,name_key,enabled FROM staff_whitelist WHERE phone IN (?,?) ORDER BY id FOR SHARE`
+		phones = append(phones, []byte(user.Extra.Phone))
+		query = `SELECT phone,name,name_key,enabled FROM staff_whitelist WHERE phone IN ($1,$2) ORDER BY id FOR SHARE`
 	}
 	rows, err := transaction.QueryContext(ctx, query, phones...)
 	if err != nil {
@@ -700,7 +713,7 @@ func readServiceDate(ctx context.Context, transaction *sql.Tx, serviceDate strin
 	}
 	var isOpen bool
 	var recordVersion uint64
-	err := transaction.QueryRowContext(ctx, `SELECT is_open,record_version FROM service_dates WHERE service_date=? FOR SHARE`, serviceDate).Scan(&isOpen, &recordVersion)
+	err := transaction.QueryRowContext(ctx, `SELECT is_open,record_version FROM service_dates WHERE service_date=$1 FOR SHARE`, serviceDate).Scan(&isOpen, &recordVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -722,7 +735,7 @@ func nullableImageObjectKey(value string) any {
 	if value == "" {
 		return nil
 	}
-	return value
+	return []byte(value)
 }
 
 func readMealSelection(ctx context.Context, transaction *sql.Tx, serviceDate time.Time, pickup string, now time.Time) (menu.MealSelection, error) {
@@ -752,13 +765,13 @@ func readProduct(ctx context.Context, transaction *sql.Tx, productID uint64, ser
 	err := transaction.QueryRowContext(ctx, `SELECT
   p.id,p.category_id,p.name,p.price_cents,p.meal_period,p.is_listed,c.is_active,
   (s.product_id IS NOT NULL) AS sold_out,
-  JSON_UNQUOTE(JSON_EXTRACT(p.images_json,'$[0].object_key')) AS image_object_key
+  p.images_json->0->>'object_key' AS image_object_key
 FROM products AS p
 INNER JOIN categories AS c ON c.id=p.category_id
-LEFT JOIN product_sold_out_dates AS s ON s.product_id=p.id AND s.service_date=?
-WHERE p.id=?
+LEFT JOIN product_sold_out_dates AS s ON s.product_id=p.id AND s.service_date=$1
+WHERE p.id=$2
 LIMIT 1
-FOR SHARE`, serviceDate, productID).Scan(
+FOR SHARE OF p,c`, serviceDate, productID).Scan(
 		&result.ID, &result.CategoryID, &result.Name, &price, &result.MealPeriod, &result.Listed, &result.CategoryActive, &result.SoldOut, &imageObjectKey,
 	)
 	if err != nil {
@@ -779,25 +792,25 @@ FOR SHARE`, serviceDate, productID).Scan(
 }
 
 func insertQuote(ctx context.Context, transaction *sql.Tx, quote Quote, keyHash, requestDigest [32]byte) (uint64, error) {
-	result, err := transaction.ExecContext(ctx, `INSERT INTO quotes(
+	var inserted uint64
+	err := transaction.QueryRowContext(ctx, `INSERT INTO quotes(
 	  user_id,contact_name_snapshot,contact_phone_snapshot,idempotency_key_hash,request_digest,identity_kind,identity_source_version,
 	  discount_rate_percent,discount_version,store_name_snapshot,store_address_snapshot,pickup_point_snapshot,
 	  pickup_date,pickup_time,meal_period,order_note,item_count,
 	  original_subtotal_cents,discount_cents,payable_cents,snapshot_digest,created_at,expires_at
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-		quote.UserID, quote.Contact.Name, quote.Contact.Phone, keyHash[:], requestDigest[:], string(quote.Identity.Kind), quote.Identity.SourceVersion,
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23) RETURNING id`,
+		quote.UserID, quote.Contact.Name, []byte(quote.Contact.Phone), keyHash[:], requestDigest[:], string(quote.Identity.Kind), quote.Identity.SourceVersion,
 		quote.Discount.RatePercent, quote.Discount.Version, quote.Store.Name, quote.Store.Address, quote.Pickup.Point,
 		quote.Pickup.Date, quote.Pickup.Time+":00", quote.Pickup.Meal, quote.OrderNote, len(quote.Items),
 		quote.OriginalSubtotalCents, quote.DiscountCents, quote.PayableCents, quote.SnapshotDigest[:], quote.CreatedAt, quote.ExpiresAt,
-	)
+	).Scan(&inserted)
 	if err != nil {
 		return 0, err
 	}
-	inserted, err := result.LastInsertId()
-	if err != nil || inserted <= 0 {
+	if inserted == 0 {
 		return 0, ErrUnavailable
 	}
-	return uint64(inserted), nil
+	return inserted, nil
 }
 
 func insertQuoteItem(ctx context.Context, transaction *sql.Tx, quoteID uint64, item ItemSnapshot) error {
@@ -809,7 +822,7 @@ func insertQuoteItem(ctx context.Context, transaction *sql.Tx, quoteID uint64, i
   quote_id,line_number,product_id,product_name_snapshot,product_source_version,image_object_key_snapshot,
   original_unit_price_cents,discounted_unit_price_cents,quantity,original_subtotal_cents,payable_subtotal_cents,
   flavors_json,line_note
-) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
 		quoteID, item.LineNumber, item.ProductID, item.ProductName, item.ProductSourceVersion[:], nullableImageObjectKey(item.ImageObjectKey),
 		item.OriginalUnitPriceCents, item.DiscountedUnitPriceCents, item.Quantity, item.OriginalSubtotalCents, item.PayableSubtotalCents,
 		flavors, item.Note,
@@ -853,8 +866,8 @@ FROM quotes ` + predicate
 	if err != nil {
 		return storedQuoteHeader{}, false, ErrUnavailable
 	}
-	date, validDate := mysqlDateString(pickupDate)
-	timeOfDay, validTime := mysqlPickupTimeString(pickupTime)
+	date, validDate := postgresDateString(pickupDate)
+	timeOfDay, validTime := postgresPickupTimeString(pickupTime)
 	if len(requestDigest) != 32 || len(snapshotDigest) != 32 || !validDate || !validTime {
 		return storedQuoteHeader{}, false, ErrSnapshotInvalid
 	}
@@ -868,7 +881,7 @@ FROM quotes ` + predicate
 	return result, true, nil
 }
 
-func mysqlDateString(value any) (string, bool) {
+func postgresDateString(value any) (string, bool) {
 	var result string
 	switch typed := value.(type) {
 	case time.Time:
@@ -886,7 +899,7 @@ func mysqlDateString(value any) (string, bool) {
 	return result, strictDate(result)
 }
 
-func mysqlPickupTimeString(value any) (string, bool) {
+func postgresPickupTimeString(value any) (string, bool) {
 	var result string
 	switch typed := value.(type) {
 	case string:
@@ -912,7 +925,7 @@ func completeStoredQuoteWithLock(ctx context.Context, transaction *sql.Tx, heade
   original_unit_price_cents,discounted_unit_price_cents,quantity,original_subtotal_cents,payable_subtotal_cents,
   flavors_json,line_note
 FROM quote_items
-WHERE quote_id=?
+WHERE quote_id=$1
 ORDER BY line_number`
 	if lock {
 		query += " FOR UPDATE"

@@ -9,7 +9,7 @@ import (
 	"github.com/gaofeng30/order/services/api/internal/audit"
 	"github.com/gaofeng30/order/services/api/internal/fulfillment"
 	"github.com/gaofeng30/order/services/api/internal/merchantidentity"
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const soldOutAction = string(merchantidentity.ActionProductSoldOutWrite)
@@ -26,7 +26,7 @@ type Commander struct {
 
 var _ fulfillment.SoldOutCommander = (*Commander)(nil)
 
-// New constructs the v44 MySQL sold-out command adapter.
+// New constructs the v44 PostgreSQL sold-out command adapter.
 func New(db *sql.DB, authorizer merchantidentity.Authorizer, clock func() time.Time) *Commander {
 	return &Commander{db: db, authorizer: authorizer, clock: clock}
 }
@@ -106,7 +106,7 @@ func (commander *Commander) SetSoldOut(ctx context.Context, meta fulfillment.Wri
 
 func (commander *Commander) locateProduct(ctx context.Context, productID uint64) (productLocator, error) {
 	var categoryID uint64
-	err := commander.db.QueryRowContext(ctx, `SELECT category_id FROM products WHERE id=?`, productID).Scan(&categoryID)
+	err := commander.db.QueryRowContext(ctx, `SELECT category_id FROM products WHERE id=$1`, productID).Scan(&categoryID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return productLocator{}, nil
 	}
@@ -155,7 +155,7 @@ func (commander *Commander) executeOnce(ctx context.Context, meta fulfillment.Wr
 	}
 	changed := currentlySoldOut != request.SoldOut
 	if changed && request.SoldOut {
-		result, err := transaction.ExecContext(ctx, `INSERT INTO product_sold_out_dates(service_date,product_id) VALUES(?,?)`, request.ServiceDate, request.ProductID)
+		result, err := transaction.ExecContext(ctx, `INSERT INTO product_sold_out_dates(service_date,product_id) VALUES($1,$2)`, request.ServiceDate, request.ProductID)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,7 @@ func (commander *Commander) executeOnce(ctx context.Context, meta fulfillment.Wr
 		}
 	}
 	if changed && !request.SoldOut {
-		result, err := transaction.ExecContext(ctx, `DELETE FROM product_sold_out_dates WHERE service_date=? AND product_id=?`, request.ServiceDate, request.ProductID)
+		result, err := transaction.ExecContext(ctx, `DELETE FROM product_sold_out_dates WHERE service_date=$1 AND product_id=$2`, request.ServiceDate, request.ProductID)
 		if err != nil {
 			return err
 		}
@@ -183,7 +183,7 @@ func (commander *Commander) executeOnce(ctx context.Context, meta fulfillment.Wr
 
 func lockServiceDate(ctx context.Context, transaction *sql.Tx, serviceDate string) error {
 	var recordVersion uint64
-	err := transaction.QueryRowContext(ctx, `SELECT record_version FROM service_dates WHERE service_date=? FOR UPDATE`, serviceDate).Scan(&recordVersion)
+	err := transaction.QueryRowContext(ctx, `SELECT record_version FROM service_dates WHERE service_date=$1 FOR UPDATE`, serviceDate).Scan(&recordVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fulfillment.ErrNotFound
 	}
@@ -198,7 +198,7 @@ func lockServiceDate(ctx context.Context, transaction *sql.Tx, serviceDate strin
 
 func lockProductAggregate(ctx context.Context, transaction *sql.Tx, productID, categoryID uint64) error {
 	var categoryVersion uint64
-	err := transaction.QueryRowContext(ctx, `SELECT record_version FROM categories WHERE id=? FOR UPDATE`, categoryID).Scan(&categoryVersion)
+	err := transaction.QueryRowContext(ctx, `SELECT record_version FROM categories WHERE id=$1 FOR UPDATE`, categoryID).Scan(&categoryVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fulfillment.ErrNotFound
 	}
@@ -209,7 +209,7 @@ func lockProductAggregate(ctx context.Context, transaction *sql.Tx, productID, c
 		return fulfillment.ErrUnavailable
 	}
 	var lockedCategoryID, productVersion uint64
-	err = transaction.QueryRowContext(ctx, `SELECT category_id,record_version FROM products WHERE id=? FOR UPDATE`, productID).Scan(&lockedCategoryID, &productVersion)
+	err = transaction.QueryRowContext(ctx, `SELECT category_id,record_version FROM products WHERE id=$1 FOR UPDATE`, productID).Scan(&lockedCategoryID, &productVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fulfillment.ErrNotFound
 	}
@@ -224,7 +224,7 @@ func lockProductAggregate(ctx context.Context, transaction *sql.Tx, productID, c
 
 func lockSoldOutFact(ctx context.Context, transaction *sql.Tx, serviceDate string, productID uint64) (bool, error) {
 	var lockedProductID uint64
-	err := transaction.QueryRowContext(ctx, `SELECT product_id FROM product_sold_out_dates WHERE service_date=? AND product_id=? FOR UPDATE`, serviceDate, productID).Scan(&lockedProductID)
+	err := transaction.QueryRowContext(ctx, `SELECT product_id FROM product_sold_out_dates WHERE service_date=$1 AND product_id=$2 FOR UPDATE`, serviceDate, productID).Scan(&lockedProductID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -281,8 +281,8 @@ func retryableTransaction(err error) bool {
 	if errors.Is(err, merchantidentity.ErrUnavailable) {
 		return true
 	}
-	var mysqlError *mysqlDriver.MySQLError
-	return errors.As(err, &mysqlError) && (mysqlError.Number == 1205 || mysqlError.Number == 1213)
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && (pgError.Code == "40P01" || pgError.Code == "40001" || pgError.Code == "55P03")
 }
 
 func publicError(err error) error {

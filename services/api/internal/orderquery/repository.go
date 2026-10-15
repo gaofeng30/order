@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -38,16 +39,16 @@ func (repository *Repository) ListUser(ctx context.Context, userID uint64, query
 	if repository == nil || repository.db == nil || repository.now == nil || userID == 0 || !validUserQuery(query) {
 		return Page{}, ErrInvalidInput
 	}
-	where := []string{"user_id=?"}
+	where := []string{"user_id=$1"}
 	args := []any{userID}
 	if query.State != "" {
-		where, args = append(where, "state=?"), append(args, query.State)
+		where, args = append(where, fmt.Sprintf("(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)=$%d", len(args)+1)), append(args, query.State)
 	}
 	if query.Active {
 		where = append(where, "state IN ('RESERVED','PREPARING','READY_FOR_PICKUP')")
 	}
 	if query.AfterID > 0 {
-		where, args = append(where, "id<?"), append(args, query.AfterID)
+		where, args = append(where, fmt.Sprintf("id<$%d", len(args)+1)), append(args, query.AfterID)
 	}
 	return repository.list(ctx, where, args, query.Limit, false)
 }
@@ -62,27 +63,27 @@ func (repository *Repository) SearchMerchant(ctx context.Context, userID uint64,
 	where := make([]string, 0, 4)
 	args := make([]any, 0, 8)
 	if query.State != "" {
-		where, args = append(where, "state=?"), append(args, query.State)
+		where, args = append(where, fmt.Sprintf("(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END)=$%d", len(args)+1)), append(args, query.State)
 	}
 	if query.Date != "" {
-		where, args = append(where, "pickup_date=?"), append(args, query.Date)
+		where, args = append(where, fmt.Sprintf("pickup_date=$%d", len(args)+1)), append(args, query.Date)
 	}
 	if query.Search != "" {
-		where = append(where, `(CONVERT(order_no USING utf8mb4)=? OR LPAD(CAST(pickup_number AS CHAR),4,'0')=? OR CONVERT(contact_phone_snapshot USING utf8mb4) LIKE ? ESCAPE '=')`)
-		args = append(args, query.Search, query.Search, "%"+escapeLike(query.Search))
+		where = append(where, fmt.Sprintf(`(order_no=$%d OR LPAD(pickup_number::text,4,'0')=$%d OR convert_from(contact_phone_snapshot,'UTF8') LIKE $%d ESCAPE '=')`, len(args)+1, len(args)+2, len(args)+3))
+		args = append(args, []byte(query.Search), query.Search, "%"+escapeLike(query.Search))
 	}
 	if query.AfterID > 0 {
-		where, args = append(where, "id<?"), append(args, query.AfterID)
+		where, args = append(where, fmt.Sprintf("id<$%d", len(args)+1)), append(args, query.AfterID)
 	}
 	return repository.list(ctx, where, args, query.Limit, true)
 }
 
 func (repository *Repository) list(ctx context.Context, where []string, args []any, limit uint16, merchant bool) (Page, error) {
-	query := `SELECT id,order_no,state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at FROM orders`
+	query := `SELECT id,order_no,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at FROM orders`
 	if len(where) > 0 {
 		query += " WHERE " + strings.Join(where, " AND ")
 	}
-	query += " ORDER BY id DESC LIMIT ?"
+	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d", len(args)+1)
 	args = append(args, uint64(limit)+1)
 	rows, err := repository.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -124,7 +125,7 @@ func (repository *Repository) GetUser(ctx context.Context, userID, orderID uint6
 	if repository == nil || repository.db == nil || repository.now == nil || userID == 0 || orderID == 0 {
 		return Detail{}, ErrInvalidInput
 	}
-	return repository.get(ctx, "id=? AND user_id=?", []any{orderID, userID}, false, "")
+	return repository.get(ctx, "id=$1 AND user_id=$2", []any{orderID, userID}, false, "")
 }
 
 func (repository *Repository) GetMerchant(ctx context.Context, userID, orderID uint64) (Detail, error) {
@@ -138,14 +139,18 @@ func (repository *Repository) GetMerchantAtState(ctx context.Context, userID, or
 	if err := repository.authorizeMerchant(ctx, userID); err != nil {
 		return Detail{}, err
 	}
-	return repository.get(ctx, "id=?", []any{orderID}, true, state)
+	return repository.get(ctx, "id=$1", []any{orderID}, true, state)
 }
 
 func (repository *Repository) authorizeMerchant(ctx context.Context, userID uint64) error {
-	if repository.merchant == nil {
+	return authorizeMerchant(ctx, repository.merchant, userID)
+}
+
+func authorizeMerchant(ctx context.Context, merchant MerchantIdentity, userID uint64) error {
+	if merchant == nil {
 		return ErrUnavailable
 	}
-	projection, err := repository.merchant.Identity(ctx, userID)
+	projection, err := merchant.Identity(ctx, userID)
 	if err != nil {
 		return ErrUnavailable
 	}
@@ -155,7 +160,7 @@ func (repository *Repository) authorizeMerchant(ctx context.Context, userID uint
 	return nil
 }
 
-const detailSelect = `SELECT id,order_no,state,DATE_FORMAT(pickup_date,'%Y-%m-%d'),TIME_FORMAT(pickup_time,'%H:%i'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at,contact_name_snapshot,contact_phone_snapshot,identity_kind,discount_rate_percent,transaction_id,paid_at,order_note,item_count,preparing_at,ready_at,completed_at,refunding_at,refunded_at,redemption_token_ciphertext,redemption_token_hash,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at FROM orders WHERE `
+const detailSelect = `SELECT id,order_no,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN 'PREPARING' ELSE state END),to_char(pickup_date,'YYYY-MM-DD'),to_char(pickup_date+pickup_time,'HH24:MI'),pickup_point_snapshot,pickup_number,payable_cents,materialized_at,pickup_at,contact_name_snapshot,contact_phone_snapshot,identity_kind,discount_rate_percent,transaction_id,paid_at,order_note,item_count,(CASE WHEN state='RESERVED' AND pickup_at<=statement_timestamp()+interval '30 minutes' THEN GREATEST(materialized_at,pickup_at-interval '30 minutes') ELSE preparing_at END),ready_at,completed_at,refunding_at,refunded_at,redemption_token_ciphertext,redemption_token_hash,redemption_key_version,redemption_issued_at,redeemed_by_account_id,redeemed_at FROM orders WHERE `
 
 type orderRecord struct {
 	summary                 Summary
@@ -175,7 +180,7 @@ type orderRecord struct {
 	redemptionHash          []byte
 	redemptionVersion       sql.NullInt64
 	redemptionIssuedAt      sql.NullTime
-	redeemedByAccountID     sql.NullInt64
+	redeemedByAccountID     sql.Null[uint64]
 	redeemedAt              sql.NullTime
 }
 
@@ -191,6 +196,14 @@ func (repository *Repository) get(ctx context.Context, where string, args []any,
 	if err != nil {
 		return Detail{}, err
 	}
+	return projectOrderDetail(ctx, record, items, merchant, override, repository.tokens, repository.now)
+}
+
+func projectOrderDetail(ctx context.Context, record orderRecord, items []Item, merchant bool, override State, tokens TokenOpener, clock func() time.Time) (Detail, error) {
+	var err error
+	if !validRecord(record) || clock == nil {
+		return Detail{}, ErrUnavailable
+	}
 	state := record.summary.State
 	if override != "" {
 		if !historicalStateAllowed(record, override) {
@@ -198,7 +211,7 @@ func (repository *Repository) get(ctx context.Context, where string, args []any,
 		}
 		state = override
 	}
-	now := repository.now().UTC()
+	now := clock().UTC()
 	if now.IsZero() {
 		return Detail{}, ErrUnavailable
 	}
@@ -219,7 +232,7 @@ func (repository *Repository) get(ctx context.Context, where string, args []any,
 		TransitionTimes: transitionTimesFor(record, state), NotificationOptions: notificationOptions(state, merchant), OrderNote: record.orderNote,
 	}
 	if !merchant && state == StateReadyForPickup {
-		detail.RedemptionToken, err = openRedemption(ctx, repository.tokens, uint16(record.redemptionVersion.Int64), record.redemptionCiphertext, record.redemptionHash)
+		detail.RedemptionToken, err = openRedemption(ctx, tokens, uint16(record.redemptionVersion.Int64), record.redemptionCiphertext, record.redemptionHash)
 		if err != nil {
 			return Detail{}, err
 		}
@@ -273,29 +286,45 @@ func scanRecord(scanner rowScanner) (orderRecord, error) {
 	return record, nil
 }
 
+type itemRecord struct {
+	line uint16
+	item Item
+	raw  []byte
+}
+
 func (repository *Repository) readItems(ctx context.Context, orderID uint64, itemCount uint16, payableCents uint64) ([]Item, error) {
 	rows, err := repository.db.QueryContext(ctx, `
-		SELECT line_number,product_id,product_name_snapshot,discounted_unit_price_cents,quantity,payable_subtotal_cents,flavors_json,line_note
-		FROM order_items WHERE order_id=? ORDER BY line_number
-	`, orderID)
+  SELECT line_number,product_id,product_name_snapshot,discounted_unit_price_cents,quantity,payable_subtotal_cents,flavors_json,line_note
+  FROM order_items WHERE order_id=$1 ORDER BY line_number
+ `, orderID)
 	if err != nil {
 		return nil, ErrUnavailable
 	}
 	defer rows.Close()
+	records := make([]itemRecord, 0, itemCount)
+	for rows.Next() {
+		var r itemRecord
+		if err := rows.Scan(&r.line, &r.item.ProductID, &r.item.Name, &r.item.UnitPriceCents, &r.item.Quantity, &r.item.LineTotalCents, &r.raw, &r.item.Note); err != nil {
+			return nil, ErrUnavailable
+		}
+		records = append(records, r)
+	}
+	if rows.Err() != nil {
+		return nil, ErrUnavailable
+	}
+	return projectItems(records, itemCount, payableCents)
+}
+
+func projectItems(records []itemRecord, itemCount uint16, payableCents uint64) ([]Item, error) {
 	items := make([]Item, 0, itemCount)
 	var total uint64
-	for rows.Next() {
-		var line uint16
-		var item Item
-		var raw []byte
-		if err := rows.Scan(&line, &item.ProductID, &item.Name, &item.UnitPriceCents, &item.Quantity, &item.LineTotalCents, &raw, &item.Note); err != nil {
+	for _, r := range records {
+		item := r.item
+		if r.line != uint16(len(items)+1) || item.ProductID == 0 || strings.TrimSpace(item.Name) == "" || !utf8.ValidString(item.Name) ||
+			item.Quantity == 0 || item.UnitPriceCents > math.MaxUint64/item.Quantity || item.UnitPriceCents*item.Quantity != item.LineTotalCents || !json.Valid(r.raw) {
 			return nil, ErrUnavailable
 		}
-		if line != uint16(len(items)+1) || item.ProductID == 0 || strings.TrimSpace(item.Name) == "" || !utf8.ValidString(item.Name) ||
-			item.Quantity == 0 || item.UnitPriceCents > math.MaxUint64/item.Quantity || item.UnitPriceCents*item.Quantity != item.LineTotalCents || !json.Valid(raw) {
-			return nil, ErrUnavailable
-		}
-		if err := json.Unmarshal(raw, &item.Flavors); err != nil || item.Flavors == nil || !validStrings(item.Flavors) || !utf8.ValidString(item.Note) {
+		if err := json.Unmarshal(r.raw, &item.Flavors); err != nil || item.Flavors == nil || !validStrings(item.Flavors) || !utf8.ValidString(item.Note) {
 			return nil, ErrUnavailable
 		}
 		if total > math.MaxUint64-item.LineTotalCents {
@@ -304,7 +333,7 @@ func (repository *Repository) readItems(ctx context.Context, orderID uint64, ite
 		total += item.LineTotalCents
 		items = append(items, item)
 	}
-	if rows.Err() != nil || len(items) != int(itemCount) || total != payableCents {
+	if len(items) != int(itemCount) || total != payableCents {
 		return nil, ErrUnavailable
 	}
 	return items, nil
@@ -334,7 +363,7 @@ func validRecord(record orderRecord) bool {
 			hasCipher && hasHash && hasVersion && hasIssued && !record.redeemedByAccountID.Valid && !record.redeemedAt.Valid
 	case StateCompleted:
 		return record.preparingAt.Valid && record.readyAt.Valid && record.completedAt.Valid && !record.refundingAt.Valid && !record.refundedAt.Valid &&
-			!hasCipher && hasHash && !record.redemptionVersion.Valid && hasIssued && record.redeemedByAccountID.Valid && record.redeemedByAccountID.Int64 > 0 && record.redeemedAt.Valid
+			!hasCipher && hasHash && !record.redemptionVersion.Valid && hasIssued && record.redeemedByAccountID.Valid && record.redeemedByAccountID.V > 0 && record.redeemedAt.Valid
 	case StateRefunding:
 		return record.refundingAt.Valid && !record.refundedAt.Valid && !hasCipher && !record.redemptionVersion.Valid && validHistoricRedemption(record, hasHash, hasIssued)
 	case StateRefunded:
@@ -371,7 +400,7 @@ func validHistoricRedemption(record orderRecord, hasHash, hasIssued bool) bool {
 		return false
 	}
 	completed := record.completedAt.Valid
-	redeemed := record.redeemedByAccountID.Valid && record.redeemedByAccountID.Int64 > 0 && record.redeemedAt.Valid
+	redeemed := record.redeemedByAccountID.Valid && record.redeemedByAccountID.V > 0 && record.redeemedAt.Valid
 	return completed == redeemed
 }
 

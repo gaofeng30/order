@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/quote"
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const maxQuoteReceiptResponseBytes = 4096
@@ -36,7 +36,7 @@ func (store *QuoteReceiptStore) ReplayInTx(ctx context.Context, transaction *sql
 	scopeHash := quoteUserScopeHash(meta.ActorUserID)
 	operationHash := quoteOperationKeyHash(meta.IdempotencyKey)
 	var evidence, response []byte
-	err := transaction.QueryRowContext(ctx, `SELECT before_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER' AND actor_scope_hash=? AND action=? AND operation_key_hash=? LIMIT 1`, scopeHash[:], string(action), operationHash[:]).Scan(&evidence, &response)
+	err := transaction.QueryRowContext(ctx, `SELECT before_state_json,response_json FROM action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER' AND actor_scope_hash=$1 AND action=$2 AND operation_key_hash=$3 LIMIT 1`, scopeHash[:], string(action), operationHash[:]).Scan(&evidence, &response)
 	if errors.Is(err, sql.ErrNoRows) {
 		return quote.OperationReceipt{}, false, nil
 	}
@@ -61,9 +61,9 @@ func (store *QuoteReceiptStore) AppendInTx(ctx context.Context, transaction *sql
 	scopeHash := quoteUserScopeHash(meta.ActorUserID)
 	operationHash := quoteOperationKeyHash(meta.IdempotencyKey)
 	requestIDHash := quoteRequestIDHash(meta.RequestID)
-	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','USER',?,?,?,?,?,'SUCCEEDED','QUOTE_CREATED',?,?,?)`, scopeHash[:], meta.ActorUserID, string(action), operationHash[:], requestIDHash[:], evidence, receipt.ResponseJSON, store.now().UTC().Truncate(time.Microsecond))
-	var mysqlError *mysqlDriver.MySQLError
-	if errors.As(err, &mysqlError) && mysqlError.Number == 1062 {
+	_, err = transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','USER',$1,$2,$3,$4,$5,'SUCCEEDED','QUOTE_CREATED',$6,$7,$8)`, scopeHash[:], meta.ActorUserID, string(action), operationHash[:], requestIDHash[:], evidence, receipt.ResponseJSON, store.now().UTC().Truncate(time.Microsecond))
+	var pgError *pgconn.PgError
+	if errors.As(err, &pgError) && pgError.Code == "23505" && pgError.ConstraintName == "uq_action_audits_command_receipt" {
 		return quote.ErrOperationReceiptExists
 	}
 	return err

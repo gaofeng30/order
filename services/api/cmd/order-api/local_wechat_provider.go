@@ -18,7 +18,7 @@ const (
 var errLocalWeChatIdentityMismatch = errors.New("local wechat identity mismatch")
 
 // localWeChatProvider supplies only deterministic, non-production identity facts
-// required by local API, MySQL and official DevTools end-to-end tests.
+// required by local API, PostgreSQL and official DevTools end-to-end tests.
 type localWeChatProvider struct{}
 
 func (localWeChatProvider) Exchange(_ context.Context, code string) (string, error) {
@@ -54,7 +54,7 @@ func composeWeChatProviders(
 	case config.Development, config.Test:
 		local := localWeChatProvider{}
 		return local, localWeChatPhoneProvider{provider: local}, nil, nil
-	case config.Production:
+	case config.UAT, config.Production:
 		phone := wechat.NewPhoneNumberClient(credentials)
 		return wechat.NewCode2SessionClient(credentials), phone, phone, nil
 	default:

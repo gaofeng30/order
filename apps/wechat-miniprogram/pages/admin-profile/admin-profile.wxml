@@ -1,0 +1,59 @@
+<view class="page">
+  <navbar tone="dark" overlay title="我的" solid="{{navSolid}}" />
+
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onNavScroll">
+    <!-- 身份卡 -->
+    <view class="hero-dark id-card" style="padding-top:{{navTotal}}px">
+      <view class="ring r1"></view>
+      <view class="ring r2"></view>
+      <view class="id-inner">
+        <view class="avatar"><icon name="store" size="30" color="#ffffff" stroke="1.8" /></view>
+        <view class="id-body">
+          <view class="serif id-name">{{loadState === 'ready' ? roleLabel : '商户账号'}}</view>
+          <view wx:if="{{loadState === 'ready' && phoneMask}}" class="id-sub tnum">{{phoneMask}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="pad body">
+      <state wx:if="{{loadState === 'loading'}}" kind="loading" text="正在读取账号信息" />
+      <state wx:elif="{{loadState === 'error'}}" kind="error" text="网络不太好，账号信息没加载出来" bind:action="load" />
+
+      <view class="card group">
+        <view
+          wx:if="{{loadState === 'ready' && isOwner}}"
+          class="prow"
+          bindtap="toPCLogin"
+          hover-class="tap-dim"
+          hover-stay-time="80"
+          aria-role="button"
+        >
+          <view class="prow-ico"><icon name="dash" size="19" color="#467a32" /></view>
+          <view class="prow-main">
+            <view class="prow-label">登录电脑后台</view>
+            <view class="prow-sub">扫描电脑上的登录二维码</view>
+          </view>
+          <icon name="chevron" size="16" color="#8f9384" />
+        </view>
+        <view
+          class="prow last"
+          bindtap="switchIdentity"
+          hover-class="tap-dim"
+          hover-stay-time="80"
+          aria-role="button"
+        >
+          <view class="prow-ico"><icon name="refresh" size="19" color="#467a32" /></view>
+          <view class="prow-main">
+            <view class="prow-label">切换身份</view>
+            <view class="prow-sub">回到身份选择页</view>
+          </view>
+          <icon name="chevron" size="16" color="#8f9384" />
+        </view>
+      </view>
+      <view class="tail-space"></view>
+    </view>
+  </scroll-view>
+
+  <tabbar variant="admin" active="admin-profile" />
+  <toast id="toast" />
+</view>

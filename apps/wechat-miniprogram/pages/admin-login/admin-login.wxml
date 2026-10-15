@@ -1,0 +1,21 @@
+<view class="page">
+  <navbar tone="light" title="登录电脑后台" back />
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="card login-card">
+      <view class="login-icon"><icon name="store" size="32" color="#3d6b2f" /></view>
+      <view class="login-title serif">确认电脑登录</view>
+      <view class="login-tip">在电脑打开管理台，用这里的扫码按钮扫描登录二维码。登录码有效期为两分钟。</view>
+      <view wx:if="{{message && ownerState !== 'error'}}" class="login-message {{stage === 'approved' ? 'success' : ''}}">{{message}}</view>
+      <state wx:if="{{ownerState === 'loading'}}" kind="loading" compact text="正在读取主账号身份" />
+      <state wx:elif="{{ownerState === 'error'}}" kind="error" compact text="网络不太好，账号身份没加载出来" bind:action="loadOwner" />
+      <view class="login-actions">
+        <block wx:if="{{ownerState === 'ready'}}">
+          <button wx:if="{{stage !== 'confirm' && stage !== 'approved'}}" class="btn btn--primary login-btn" hover-class="b-active" hover-stay-time="80" disabled="{{busy}}" loading="{{busy}}" bindtap="scan">扫描电脑登录码</button>
+          <button wx:if="{{stage === 'confirm'}}" class="btn btn--primary login-btn" hover-class="b-active" hover-stay-time="80" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber" disabled="{{busy}}" loading="{{busy}}">确认登录电脑后台</button>
+          <button wx:if="{{stage === 'confirm' || stage === 'approved'}}" class="btn btn--ghost login-btn" hover-class="b-active" hover-stay-time="80" disabled="{{busy}}" bindtap="scan">重新扫描登录码</button>
+        </block>
+        <button class="btn btn--ghost login-btn" hover-class="b-active" hover-stay-time="80" disabled="{{busy}}" bindtap="back">返回小程序</button>
+      </view>
+    </view>
+  </scroll-view>
+</view>

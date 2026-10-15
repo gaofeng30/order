@@ -1,17 +1,18 @@
 <view class="page">
+  <!-- 开屏装饰图：等比显示；图片加载完成后才开始倒计时，加载失败直接关闭（D10、D11）；层级高于导航栏（D42） -->
   <view
     wx:if="{{launchLayer}}"
     class="launch-layer"
     style="left:{{launchLayer.leftPercent}}%;top:{{launchLayer.topPercent}}%;width:{{launchLayer.widthPercent}}vw;height:{{launchLayer.heightVw}}vw"
     catchtap="dismissLaunchLayer"
+    aria-role="button"
+    aria-label="关闭开屏图"
   >
-    <image src="{{launchLayer.image.url}}" mode="scaleToFill" />
+    <image src="{{launchLayer.image.url}}" mode="aspectFit" bindload="onLaunchImageLoad" binderror="onLaunchImageError" />
   </view>
-  <navbar tone="dark" overlay>
-    <view slot="right"><icon name="bell" size="20" color="#ffffff" /></view>
-  </navbar>
+  <navbar tone="dark" overlay solid="{{navSolid}}" />
 
-  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}">
+  <scroll-view class="scroll" scroll-y enhanced show-scrollbar="{{false}}" bindscroll="onNavScroll">
     <!-- 英雄头 -->
     <view class="hero-dark home-hero" style="padding-top:{{navTotal}}px">
       <view class="ring r1"></view>
@@ -20,45 +21,58 @@
         <view class="greet">你好，欢迎光临</view>
         <!-- 冷启动改为直接进首页后启动页不再露面，徽标在这里取得曝光位。 -->
         <view class="hero-brand">
-          <view class="hero-logo"><image src="/assets/emblem.png" class="hero-emblem" mode="aspectFit" /></view>
+          <view class="hero-logo"><image src="/assets/logo.jpeg" class="hero-emblem" mode="aspectFit" /></view>
           <view class="store-name serif">{{storeName}}</view>
         </view>
-        <view class="store-meta">
-          <icon name="pin" size="13" color="#b79a55" />
-          <text class="addr">{{storeAddress}}</text>
-          <text class="biz biz--{{bizStatus === '营业中' ? 'open' : 'closed'}}">　·　{{bizStatus}}</text>
-        </view>
-        <view class="search" bindtap="toMenu">
-          <icon name="search" size="17" color="rgba(255,255,255,0.8)" />
-          <text class="search-ph">进入菜单查看当日商品目录</text>
-        </view>
+        <block wx:if="{{settingsState === 'ready'}}">
+          <view class="store-meta">
+            <icon name="pin" size="13" color="#b79a55" />
+            <text class="addr ellipsis-1">{{storeAddress}}</text>
+            <text wx:if="{{bizStatus}}" class="biz biz--{{bizStatus === '营业中' ? 'open' : 'closed'}}">·　{{bizStatus}}</text>
+          </view>
+          <view class="hero-search" bindtap="toMenu" hover-class="tap-dim" hover-stay-time="80" aria-role="button" aria-label="进入菜单">
+            <icon name="search" size="17" color="#ffffff" />
+            <text class="hero-search-ph">进入菜单查看当日菜品</text>
+          </view>
+        </block>
       </view>
     </view>
 
     <view class="body">
-      <!-- 进行中订单提示条（§5.1）。也是 §5.10 订阅被拒时的兜底 -->
-      <view wx:if="{{ongoing}}" class="ob {{ongoing.ready ? 'ob--ready' : ''}}" bindtap="tapOngoing">
-        <icon name="{{ongoing.ready ? 'ticket' : 'calendarClock'}}" size="17" color="{{ongoing.ready ? '#ffffff' : '#467a32'}}" />
-        <text class="ob-txt">{{ongoing.text}}</text>
-        <view wx:if="{{ongoing.ready}}" class="supplement-ready" catchtap="supplementReady">开启提醒</view>
-        <icon name="arrowRight" size="15" color="{{ongoing.ready ? 'rgba(255,255,255,0.9)' : '#8f9384'}}" />
-      </view>
-
-      <!-- 门店公告，内容来自营业设置（§5.1、§6.9） -->
-      <view wx:if="{{notice}}" class="notice">
-        <icon name="bell" size="15" color="#b79a55" />
-        <text class="notice-txt">{{notice}}</text>
-      </view>
-
-      <!-- 服务宫格 -->
-      <view class="card grid">
-        <view wx:for="{{grid}}" wx:key="k" class="grid-item" data-k="{{item.k}}" bindtap="gridTap">
-          <view class="grid-ico"><icon name="{{item.icon}}" size="24" color="#467a32" /></view>
-          <text class="grid-cn">{{item.cn}}</text>
+      <state wx:if="{{settingsState === 'loading'}}" kind="loading" text="门店信息加载中" />
+      <state wx:elif="{{settingsState === 'error'}}" kind="error" text="网络不太好，门店信息没加载出来" bind:action="retrySettings" />
+      <block wx:else>
+        <!-- 进行中订单提示条（§5.1）。也是 §5.10 订阅被拒时的兜底 -->
+        <view wx:if="{{ongoing}}" class="ob {{ongoing.ready ? 'ob--ready' : ''}}" bindtap="tapOngoing" hover-class="tap-dim" hover-stay-time="80">
+          <icon name="{{ongoing.ready ? 'ticket' : 'calendarClock'}}" size="17" color="{{ongoing.ready ? '#ffffff' : '#467a32'}}" />
+          <text class="ob-txt">{{ongoing.text}}</text>
+          <view
+            wx:if="{{ongoing.ready}}"
+            class="ob-capsule {{subscribing ? 'is-busy' : ''}}"
+            catchtap="supplementReady"
+            hover-stop-propagation="{{true}}" hover-class="tap-dim"
+            hover-stay-time="80"
+            aria-role="button"
+          >{{subscribing ? '开启中' : '开启提醒'}}</view>
+          <icon name="arrowRight" size="16" color="{{ongoing.ready ? '#ffffff' : '#8f9384'}}" />
         </view>
-      </view>
 
-      <view style="height:{{safeBottom + 24}}px"></view>
+        <!-- 门店公告，内容来自营业设置（§5.1、§6.9） -->
+        <view wx:if="{{notice}}" class="notice">
+          <icon name="bell" size="15" color="#b79a55" />
+          <text class="notice-txt">{{notice}}</text>
+        </view>
+
+        <!-- 服务宫格 -->
+        <view class="card grid">
+          <view wx:for="{{grid}}" wx:key="k" class="grid-item" data-k="{{item.k}}" bindtap="gridTap" hover-class="tap-dim" hover-stay-time="80">
+            <view class="grid-ico"><icon name="{{item.icon}}" size="24" color="#467a32" /></view>
+            <text class="grid-cn">{{item.cn}}</text>
+          </view>
+        </view>
+      </block>
+
+      <view class="tail-space"></view>
     </view>
   </scroll-view>
 

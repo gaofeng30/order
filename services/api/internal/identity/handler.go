@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gaofeng30/order/services/api/internal/httpdto"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,19 +25,25 @@ type SessionIssuer interface {
 	Issue(context.Context, string) (IssuedSession, error)
 }
 
+type SessionApplication interface {
+	SessionIssuer
+	Revoke(context.Context, string) error
+}
+
 // Handler serves only Mini Program session creation.
 type Handler struct {
-	issuer SessionIssuer
+	app SessionApplication
 }
 
 // NewHandler constructs the session HTTP handler.
-func NewHandler(issuer SessionIssuer) *Handler {
-	return &Handler{issuer: issuer}
+func NewHandler(app SessionApplication) *Handler {
+	return &Handler{app: app}
 }
 
 // RegisterRoutes adds only the versioned session-creation route.
 func (handler *Handler) RegisterRoutes(engine *gin.Engine) {
 	engine.POST("/api/v1/auth/miniprogram/session", handler.create)
+	engine.POST("/api/v1/auth/miniprogram/logout", handler.logout)
 }
 
 type sessionResponse struct {
@@ -70,7 +77,7 @@ func (handler *Handler) create(ctx *gin.Context) {
 		writeInvalidRequest(ctx)
 		return
 	}
-	issued, err := handler.issuer.Issue(ctx.Request.Context(), code)
+	issued, err := handler.app.Issue(ctx.Request.Context(), code)
 	if errors.Is(err, ErrLoginRejected) {
 		ctx.JSON(http.StatusUnauthorized, sessionErrorEnvelope{Error: sessionErrorResponse{
 			Code: "MINIPROGRAM_LOGIN_REJECTED", Message: "miniprogram login rejected",
@@ -86,6 +93,25 @@ func (handler *Handler) create(ctx *gin.Context) {
 		TokenType:   "Bearer",
 		ExpiresAt:   issued.ExpiresAt.UTC().Format(time.RFC3339Nano),
 	})
+}
+
+func (handler *Handler) logout(ctx *gin.Context) {
+	token, err := httpdto.BearerToken(ctx.Request)
+	if err != nil {
+		writeSessionUnauthenticated(ctx)
+		return
+	}
+	err = handler.app.Revoke(ctx.Request.Context(), token)
+	if errors.Is(err, ErrUnauthenticated) {
+		writeSessionUnauthenticated(ctx)
+		return
+	}
+	if err != nil {
+		writeSessionUnavailable(ctx)
+		return
+	}
+	ctx.Header("Cache-Control", "no-store")
+	ctx.Status(http.StatusNoContent)
 }
 
 func decodeSessionRequest(body []byte) (string, bool) {
@@ -126,5 +152,11 @@ func writeInvalidRequest(ctx *gin.Context) {
 func writeSessionUnavailable(ctx *gin.Context) {
 	ctx.JSON(http.StatusServiceUnavailable, sessionErrorEnvelope{Error: sessionErrorResponse{
 		Code: "SESSION_UNAVAILABLE", Message: "session temporarily unavailable",
+	}})
+}
+
+func writeSessionUnauthenticated(ctx *gin.Context) {
+	ctx.JSON(http.StatusUnauthorized, sessionErrorEnvelope{Error: sessionErrorResponse{
+		Code: "UNAUTHENTICATED", Message: "authentication required",
 	}})
 }

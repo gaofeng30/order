@@ -5,26 +5,28 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"errors"
+	"net/url"
 	"time"
 	"unicode/utf8"
 
-	"github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const (
 	refundLeaseDuration = 30 * time.Second
-	refundQueryDelay    = time.Minute
+	refundFailureDelay  = 30 * time.Minute
 )
 
 type refundStore interface {
 	requestOrder(context.Context, WriteMeta, uint64, string, time.Time, string) (Refund, bool, error)
 	requestPaidPrepayment(context.Context, WriteMeta, uint64, string, time.Time, string) (Refund, bool, error)
 	claimCreate(context.Context, uint64, [16]byte, time.Time, time.Duration) (createClaim, bool, error)
-	finishCreate(context.Context, createClaim, ProviderRefund, error, time.Time) error
+	finishCreate(context.Context, createClaim, ProviderRefund, error, time.Time) (Refund, error)
 	get(context.Context, uint64) (Refund, error)
 	ingest(context.Context, VerifiedRefund, time.Time, NotificationEnqueuer) (bool, error)
-	claimDue(context.Context, time.Time, uint16, [16]byte, time.Duration) ([]queryClaim, error)
-	finishQuery(context.Context, queryClaim, ProviderRefund, error, time.Time) (bool, error)
+	listDueIDs(context.Context, time.Time, time.Time, uint16) ([]uint64, error)
+	claimOneQuery(context.Context, uint64, [16]byte, time.Time, time.Time, time.Duration) (queryClaim, bool, error)
+	finishQuery(context.Context, queryClaim, ProviderRefund, error, time.Time, NotificationEnqueuer) (bool, bool, error)
 	listPending(context.Context, uint64, PendingFilter) ([]Refund, error)
 }
 
@@ -42,7 +44,16 @@ type queryClaim struct {
 	version     uint64
 }
 
+type Config struct {
+	Environment      string
+	AppID            string
+	MerchantID       string
+	PaymentNotifyURL string
+	RefundNotifyURL  string
+}
+
 type Service struct {
+	config    Config
 	store     refundStore
 	provider  Provider
 	notifier  NotificationEnqueuer
@@ -51,8 +62,16 @@ type Service struct {
 	owner     func() ([16]byte, error)
 }
 
-func New(db *sql.DB, provider Provider, notifyURL string) *Service {
-	return &Service{store: newMySQLStore(db), provider: provider, notifyURL: notifyURL, now: func() time.Time { return time.Now().UTC() }, owner: randomLeaseOwner}
+func New(db *sql.DB, provider Provider, config Config) *Service {
+	return &Service{config: config, store: newPostgreSQLStore(db, config), provider: provider, notifyURL: config.RefundNotifyURL, now: func() time.Time { return time.Now().UTC() }, owner: randomLeaseOwner}
+}
+
+// WithClock configures the service clock before it starts handling requests.
+func (service *Service) WithClock(now func() time.Time) *Service {
+	if service != nil && now != nil {
+		service.now = now
+	}
+	return service
 }
 
 func (service *Service) WithNotificationEnqueuer(enqueuer NotificationEnqueuer) *Service {
@@ -67,7 +86,7 @@ func (service *Service) RequestOrder(ctx context.Context, meta WriteMeta, orderI
 		return Refund{}, ErrInvalidInput
 	}
 	created, isNew, err := service.store.requestOrder(ctx, meta, orderID, reason, service.now().UTC(), service.notifyURL)
-	if err != nil || !isNew {
+	if err != nil || (!isNew && created.State != ProviderReady) {
 		return created, err
 	}
 	return service.createOutsideTransaction(ctx, created)
@@ -78,7 +97,7 @@ func (service *Service) RequestPaidPrepayment(ctx context.Context, meta WriteMet
 		return Refund{}, ErrInvalidInput
 	}
 	created, isNew, err := service.store.requestPaidPrepayment(ctx, meta, prepaymentID, reason, service.now().UTC(), service.notifyURL)
-	if err != nil || !isNew {
+	if err != nil || (!isNew && created.State != ProviderReady) {
 		return created, err
 	}
 	return service.createOutsideTransaction(ctx, created)
@@ -96,12 +115,13 @@ func (service *Service) createOutsideTransaction(ctx context.Context, created Re
 		}
 		return service.store.get(ctx, created.ID)
 	}
+	return service.finishClaimedCreate(ctx, claim)
+}
+
+func (service *Service) finishClaimedCreate(ctx context.Context, claim createClaim) (Refund, error) {
 	providerRefund, providerErr := service.provider.CreateRefund(ctx, claim.request)
 	finishedAt := service.now().UTC()
-	if err := service.store.finishCreate(ctx, claim, providerRefund, providerErr, finishedAt); err != nil {
-		return Refund{}, err
-	}
-	return service.store.get(ctx, created.ID)
+	return service.store.finishCreate(ctx, claim, providerRefund, providerErr, finishedAt)
 }
 
 func (service *Service) IngestRefund(ctx context.Context, verified VerifiedRefund) error {
@@ -120,25 +140,60 @@ func (service *Service) RunDue(ctx context.Context, now time.Time, limit uint16)
 	if err != nil {
 		return RunResult{}, ErrUnavailable
 	}
-	claims, err := service.store.claimDue(ctx, now.UTC(), limit, owner, refundLeaseDuration)
+	ids, err := service.store.listDueIDs(ctx, now.UTC(), service.now().UTC(), limit)
 	if err != nil {
 		return RunResult{}, err
 	}
-	result := RunResult{Claimed: uint16(len(claims))}
-	for _, claim := range claims {
-		providerRefund, providerErr := service.provider.QueryRefund(ctx, claim.outRefundNo)
-		finished, err := service.store.finishQuery(ctx, claim, providerRefund, providerErr, now.UTC())
+	return service.runDueIDs(ctx, now, owner, ids)
+}
+
+// RunOne preserves the provider claim/CAS flow without scanning other refunds.
+func (service *Service) RunOne(ctx context.Context, now time.Time, id uint64) (RunResult, error) {
+	if !service.valid() || now.IsZero() || id == 0 {
+		return RunResult{}, ErrInvalidInput
+	}
+	owner, err := service.owner()
+	if err != nil {
+		return RunResult{}, ErrUnavailable
+	}
+	return service.runDueIDs(ctx, now, owner, []uint64{id})
+}
+
+func (service *Service) runDueIDs(ctx context.Context, now time.Time, owner [16]byte, ids []uint64) (RunResult, error) {
+	var result RunResult
+	for _, id := range ids {
+		if err := ctx.Err(); err != nil {
+			return result, err
+		}
+		create, createClaimed, err := service.store.claimCreate(ctx, id, owner, service.now().UTC(), refundLeaseDuration)
 		if err != nil {
 			return result, err
 		}
-		if !finished || providerErr != nil {
+		if createClaimed {
+			result.Claimed++
+			if _, err := service.finishClaimedCreate(ctx, create); err != nil {
+				return result, err
+			}
 			result.Pending++
 			continue
 		}
-		verified := VerifiedRefund{Source: SourceActiveQuery, Refund: providerRefund}
-		applied, err := service.store.ingest(ctx, verified, now.UTC(), service.notifier)
+		claim, claimed, err := service.store.claimOneQuery(ctx, id, owner, now.UTC(), service.now().UTC(), refundLeaseDuration)
 		if err != nil {
 			return result, err
+		}
+		if !claimed {
+			continue
+		}
+		result.Claimed++
+		providerRefund, providerErr := service.provider.QueryRefund(ctx, claim.outRefundNo)
+		finishedAt := service.now().UTC()
+		observed, applied, err := service.store.finishQuery(ctx, claim, providerRefund, providerErr, finishedAt, service.notifier)
+		if err != nil {
+			return result, err
+		}
+		if !observed {
+			result.Pending++
+			continue
 		}
 		result.Observed++
 		if applied {
@@ -158,7 +213,7 @@ func (service *Service) ListPending(ctx context.Context, ownerUserID uint64, fil
 }
 
 func (service *Service) valid() bool {
-	return service != nil && service.store != nil && service.provider != nil && service.now != nil && service.owner != nil && validNotifyURL(service.notifyURL)
+	return service != nil && service.store != nil && service.provider != nil && service.now != nil && service.owner != nil && validRefundEnvironment(service.config.Environment) && validCloudRefundConfig(service.config) && validNotifyURL(service.notifyURL)
 }
 
 func randomLeaseOwner() ([16]byte, error) {
@@ -217,9 +272,33 @@ func mapStoreError(err error) error {
 			return stable
 		}
 	}
-	var mysqlError *mysql.MySQLError
-	if errors.As(err, &mysqlError) && mysqlError.Number == 1062 {
+	var pgError *pgconn.PgError
+	if errors.As(err, &pgError) && pgError.Code == "23505" && (pgError.ConstraintName == "uq_refunds_prepayment" || pgError.ConstraintName == "uq_refunds_order" || pgError.ConstraintName == "uq_refunds_out_refund_no" || pgError.ConstraintName == "uq_action_audits_command_receipt") {
 		return ErrIdempotencyConflict
 	}
 	return ErrUnavailable
+}
+
+func validRefundEnvironment(environment string) bool {
+	switch environment {
+	case "development", "test", "uat", "production":
+		return true
+	}
+	return false
+}
+
+func validCloudRefundConfig(config Config) bool {
+	if config.Environment != "uat" && config.Environment != "production" {
+		return true
+	}
+	if config.AppID == "" || config.MerchantID == "" {
+		return false
+	}
+	for _, value := range []string{config.PaymentNotifyURL, config.RefundNotifyURL} {
+		u, err := url.Parse(value)
+		if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawFragment != "" {
+			return false
+		}
+	}
+	return true
 }

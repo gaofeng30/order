@@ -1,0 +1,50 @@
+<view class="page">
+  <navbar tone="light" title="确认订单" back />
+  <scroll-view class="scroll pad" scroll-y enhanced show-scrollbar="{{false}}">
+    <view class="group-intro">按用餐时段分单，每单分别支付、取餐</view>
+    <state wx:if="{{loading}}" kind="loading" />
+    <state wx:elif="{{!groups.length}}" kind="empty" text="购物车里没有待结算的菜品" action="去选菜" bind:action="goMenu" />
+    <view wx:for="{{groups}}" wx:for-item="group" wx:key="key" class="card group-card">
+      <view class="group-head"><text class="serif group-title">{{group.label}}</text><text class="group-count">共 {{group.count}} 件</text></view>
+      <view class="group-time {{group.state !== 'ready' || group.locked ? 'off' : ''}}" data-group="{{group.key}}" bindtap="openPicker" aria-role="button">
+        <text>取餐时间</text><text>{{group.selection.timeConfirmed ? group.selection.time : '请选择'}}</text>
+        <icon wx:if="{{!group.locked}}" name="chevron" size="16" color="#3d6b2f" />
+      </view>
+      <view wx:for="{{group.items}}" wx:for-item="line" wx:key="key" class="group-item">
+        <imageph item="{{line.item}}" h="88" w="88" radius="12" tag="{{false}}" />
+        <view class="item-info">
+          <view class="item-name">{{line.item.name}} × {{line.q}}</view>
+          <view class="item-price"><text wx:if="{{line.item.isStaffPrice}}" class="staff-price-label">员工价</text><money v="{{line.item.price_text}}" size="28" staff="{{line.item.isStaffPrice}}" /><text wx:if="{{line.item.isStaffPrice}}" class="original-price">¥{{line.item.original_price_text}}</text></view>
+          <view wx:if="{{line.flavors.length || line.note}}" class="item-note"><text wx:for="{{line.flavors}}" wx:key="*this">{{item}} </text>{{line.note}}</view>
+          <view wx:if="{{line.unavailableLabel}}" class="group-warning">{{line.unavailableLabel}}</view>
+        </view>
+        <view wx:if="{{!group.locked}}" class="item-actions">
+          <view data-group="{{group.key}}" data-id="{{line.id}}" bindtap="editItem" aria-role="button">修改</view>
+          <view data-group="{{group.key}}" data-id="{{line.id}}" bindtap="removeItem" aria-role="button">移除</view>
+        </view>
+      </view>
+      <view wx:if="{{group.state === 'loading'}}" class="group-note">正在确认本组菜品与取餐时间…</view>
+      <view wx:elif="{{group.state === 'error' && !group.locked}}" class="group-warning" bindtap="loadGroups">暂时无法确认本组状态，点击重试</view>
+      <view wx:elif="{{group.state === 'unavailable'}}" class="group-warning">{{group.reason}}</view>
+      <view wx:if="{{group.locked}}" class="group-note">本组有未完成的支付，请继续处理</view>
+      <view class="group-foot">
+        <view><view class="group-note">本单预估</view><money v="{{group.total}}" size="36" /></view>
+        <view class="btn btn--primary {{group.busy || (!group.locked && group.state !== 'ready') ? 'is-disabled' : ''}}" data-group="{{group.key}}" bindtap="checkout" aria-role="button">{{group.busy ? '支付处理中' : group.locked ? '继续处理支付' : group.selection.timeConfirmed ? '确认本单' : '选择取餐时间'}}</view>
+      </view>
+    </view>
+    <view class="group-end"></view>
+  </scroll-view>
+  <view class="group-bottom"><view class="btn btn--ghost btn--block" bindtap="goMenu">继续选菜</view></view>
+  <view wx:if="{{picker}}">
+    <view class="sheet-mask" catchtap="closePicker"></view>
+    <view class="sheet">
+      <view class="picker-head"><text class="serif">选择取餐时间</text><view class="sheet-close" catchtap="closePicker" aria-role="button" aria-label="关闭"><icon name="close" size="20" color="#8f9384" /></view></view>
+      <view class="picker-label">{{picker.label}}</view>
+      <scroll-view scroll-y class="picker-body"><view class="picker-times">
+        <view wx:for="{{picker.times}}" wx:key="*this" class="picker-time {{picker.selection.timeConfirmed && picker.selection.time === item ? 'on' : ''}}" data-time="{{item}}" catchtap="selectTime" aria-role="button">{{item}}</view>
+      </view></scroll-view>
+      <view style="height:{{safeBottom}}px"></view>
+    </view>
+  </view>
+  <customize visible="{{czVisible}}" item="{{czItem}}" init="{{czInit}}" flavor-options="{{flavors}}" confirm-label="保存" bind:close="onCzClose" bind:confirm="onCzConfirm" />
+</view>

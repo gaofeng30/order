@@ -16,6 +16,7 @@
   let today = '';                       // Api.bootstrap 完成后才有服务端营业日
   let range = { from: '', to: '' };
   let tab = 'pay';                       // pay | refund
+  let paintGeneration = 0;
 
   function render(el) {
     today = Api.today();
@@ -36,7 +37,7 @@
          <button class="btn btn--line" data-quick="today">今天</button>
          <button class="btn btn--line" data-quick="7">近 7 天</button>
          <span class="grow"></span>
-         <button class="btn btn--primary" data-export>${I.svg('box', 16)}导出明细</button>
+         <button class="btn btn--primary" data-export>${I.svg('box', 16)}导出收款明细</button>
        </div>
        <div id="sum-host"></div>
        <div class="page-head" style="margin-top:14px">
@@ -72,14 +73,32 @@
       };
     });
 
-    el.querySelector('[data-export]').onclick = () => doExport();
+    const exportButton = el.querySelector('[data-export]');
+    exportButton.onclick = window.FormUI.submit(exportButton, doExport, '正在导出…');
     paint(el);
   }
 
   function paint(el) {
-    Api.financeSummary(range).then(s => paintSummary(el, s));
-    paintTabs(el);
-    if (tab === 'pay') paintPayments(el); else paintRefunds(el);
+    const generation = ++paintGeneration;
+    const selectedRange = Object.assign({}, range);
+    const selectedTab = tab;
+    el.querySelector('#sum-host').innerHTML = '<div class="card card-pad" role="status">正在读取财务数据…</div>';
+    el.querySelector('#fin-tabs').innerHTML = '';
+    el.querySelector('#fin-host').innerHTML = '<div class="tbl-empty">正在读取财务数据…</div>';
+    Promise.all([
+      Api.financeSummary(selectedRange), Api.listPayments(selectedRange), Api.listRefunds(selectedRange),
+    ]).then(([summary, payments, refunds]) => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      paintSummary(el, summary);
+      paintTabs(el, payments, refunds, selectedTab);
+      if (selectedTab === 'pay') paintPayments(el, payments); else paintRefunds(el, refunds);
+    }).catch(error => {
+      if (generation !== paintGeneration || el.isConnected === false) return;
+      el.querySelector('#sum-host').innerHTML = `<div class="card card-pad" role="alert"><b>财务数据暂不可用</b><div class="faint" style="margin-top:8px">${T.esc(error.message || '请稍后重试')}</div><button class="btn btn--line" data-retry style="margin-top:12px">重试</button></div>`;
+      el.querySelector('#fin-tabs').innerHTML = '';
+      el.querySelector('#fin-host').innerHTML = '';
+      el.querySelector('[data-retry]').onclick = () => paint(el);
+    });
   }
 
   /* 金额的符号必须在 ¥ 之前：Api.yuan 只管数字，负号跟在 ¥ 后面（¥-12.00）
@@ -110,24 +129,21 @@
        </div>`;
   }
 
-  function paintTabs(el) {
-    Promise.all([Api.listPayments(range), Api.listRefunds(range)]).then(([p, r]) => {
-      el.querySelector('#fin-tabs').innerHTML =
-        [['pay', '收款明细', p.length], ['refund', '退款记录', r.length]]
-          .map(([k, t, n]) => `<button class="seg${tab === k ? ' on' : ''}" data-tab="${k}">${t}<span class="cnt">${n}</span></button>`).join('');
-      el.querySelectorAll('[data-tab]').forEach(b => {
-        b.onclick = () => { tab = b.dataset.tab; paint(el); };
-      });
+  function paintTabs(el, payments, refunds, selectedTab) {
+    el.querySelector('#fin-tabs').innerHTML =
+      [['pay', '收款明细', payments.length], ['refund', '退款记录', refunds.length]]
+        .map(([k, t, n]) => `<button class="seg${selectedTab === k ? ' on' : ''}" data-tab="${k}">${t}<span class="cnt">${n}</span></button>`).join('');
+    el.querySelectorAll('[data-tab]').forEach(b => {
+      b.onclick = () => { tab = b.dataset.tab; paint(el); };
     });
   }
 
-  function paintPayments(el) {
-    Api.listPayments(range).then(list => {
+  function paintPayments(el, list) {
       el.querySelector('#fin-host').innerHTML = T.render({
         cols: [
           { t: '订单号', w: '150px', render: o => `<span class="tnum">${T.esc(o.no)}</span><br><span class="faint tnum" style="font-size:11.5px">取餐号 ${T.esc(o.code)}</span>` },
           { t: '支付时间', w: '160px', render: o => `<span class="tnum">${T.esc(o.paidAt)}</span>` },
-          { t: '微信交易号', w: '200px', render: o => `<span class="tnum" style="font-size:12px">${T.esc(o.txnId)}</span>` },
+          { t: '微信交易号', w: '200px', render: o => `<span class="tnum" style="font-size: 12px">${T.esc(o.txnId)}</span>` },
           { t: '原价', w: '92px', cls: 'num', render: o => `<span class="faint tnum">¥${Api.yuan(o.subtotal)}</span>` },
           { t: '折扣', w: '104px', cls: 'num', render: o => o.discountCut
               ? `<span class="tnum">−¥${Api.yuan(o.discountCut)}</span><br><span class="faint tnum" style="font-size:11.5px">员工价 ${o.discountRate}%</span>`
@@ -139,41 +155,43 @@
         rows: list,
         empty: '所选日期没有收款记录',
       });
-    });
   }
 
-  function paintRefunds(el) {
-    Api.listRefunds(range).then(list => {
+  function paintRefunds(el, list) {
       el.querySelector('#fin-host').innerHTML = T.render({
         cols: [
-          { t: '退款单号', w: '210px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.no)}</span>` },
+          { t: '退款单号', w: '210px', render: r => `<span class="tnum" style="font-size: 12px">${T.esc(r.no)}</span>` },
           { t: '原订单', w: '150px', render: r => `<span class="tnum">${T.esc(r.orderNo)}</span><br><span class="faint tnum" style="font-size:11.5px">付于 ${T.esc(r.paidAt.slice(0, 10))}</span>` },
-          { t: '微信交易号', w: '190px', render: r => `<span class="tnum" style="font-size:12px">${T.esc(r.txnId)}</span>` },
+          { t: '微信交易号', w: '190px', render: r => `<span class="tnum" style="font-size: 12px">${T.esc(r.txnId)}</span>` },
           { t: '退款金额', w: '110px', cls: 'num', render: r => T.money(Api.yuan(r.amount)) },
           { t: '退款状态', w: '96px', render: r => T.pill(r.status) },
           { t: '操作人', w: '90px', render: r => T.esc(r.operator) },
           { t: '退款时间', w: '160px', render: r => `<span class="tnum">${T.esc(r.at)}</span>` },
-          { t: '原因', render: r => `<span class="faint ellipsis">${T.esc(r.reason || '—')}</span>` },
+          { t: '原因', render: r => r.reason ? `<button class="btn btn--sm btn--line refund-reason" data-act="reason" data-id="${T.esc(r.no)}">${T.esc(r.reason)}</button>` : '<span class="faint">—</span>' },
         ],
         rows: list,
         key: r => r.no,
         empty: '所选日期没有退款记录',
       });
-    });
+      T.bind(el.querySelector('#fin-host'), {reason(id){
+        const row=list.find(r=>r.no===id);if(!row)return;
+        window.Modal.open({title:'退款原因',bodyHtml:`<div class="full-text">${T.esc(row.reason || '—')}</div>`,footerHtml:'<button class="btn btn--line" data-close>关闭</button>',onMount(root,done){root.querySelector('[data-close]').onclick=done;}});
+      }});
   }
 
   /* 导出走 Blob + a[download]。契约层只产出文本，落盘方式属页面职责；
      接后端后改为服务端出文件、页面拿 URL，本函数是唯一要改的地方。 */
   function doExport() {
-    Api.buildPaymentExport(range).then(csv => {
-      const name = `收款明细_${range.from}_至_${range.to}.csv`;
+    const selectedRange = Object.assign({}, range);
+    const name = `收款明细_${selectedRange.from}_至_${selectedRange.to}.csv`;
+    return Api.buildPaymentExport(selectedRange).then(csv => {
       const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
       const a = document.createElement('a');
       a.href = url; a.download = name;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      window.Toast.show(`已导出「${name}」`, { icon: 'check' });
-    });
+      window.Toast.show(`已开始下载「${name}」`, { icon: 'check' });
+    }).catch(error => window.Toast.show(error.message || '导出失败，请重试', { icon: 'warn' }));
   }
 
   window.Pages = window.Pages || {};

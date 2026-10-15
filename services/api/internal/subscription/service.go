@@ -12,7 +12,7 @@ import (
 
 const (
 	leaseDuration = 30 * time.Second
-	retryDelay    = time.Minute
+	retryDelay    = 30 * time.Minute
 )
 
 type Service struct {
@@ -23,7 +23,7 @@ type Service struct {
 }
 
 func New(db *sql.DB, provider Provider) *Service {
-	return newService(newMySQLStore(db), provider)
+	return newService(newPostgreSQLStore(db), provider)
 }
 
 func newService(store store, provider Provider) *Service {
@@ -63,15 +63,26 @@ func (service *Service) RunDue(ctx context.Context, now time.Time, limit uint16)
 	if err != nil {
 		return RunResult{}, ErrUnavailable
 	}
-	claimed, err := service.store.claimDue(ctx, now.UTC(), limit, owner, leaseDuration)
-	if err != nil {
-		return RunResult{}, err
-	}
-	result := RunResult{Claimed: uint16(len(claimed))}
-	for _, delivery := range claimed {
+	var result RunResult
+	for result.Claimed < limit {
+		if err := ctx.Err(); err != nil {
+			return result, err
+		}
+		// Waiting notifications must not spend their lease behind earlier sends.
+		// The tick remains the due cutoff; each lease starts at the current time.
+		claimed, err := service.store.claimDue(ctx, now.UTC(), service.now().UTC(), 1, owner, leaseDuration)
+		if err != nil {
+			return result, err
+		}
+		if len(claimed) == 0 {
+			break
+		}
+		delivery := claimed[0]
+		result.Claimed++
 		providerResult, sendErr := service.provider.SendSubscription(ctx, delivery.Delivery)
+		completedAt := service.now().UTC()
 		if sendErr == nil {
-			if err := service.store.markSent(ctx, delivery, providerResult, now.UTC()); err != nil {
+			if err := service.store.markSent(ctx, delivery, providerResult, completedAt); err != nil {
 				return result, err
 			}
 			result.Sent++
@@ -79,13 +90,19 @@ func (service *Service) RunDue(ctx context.Context, now time.Time, limit uint16)
 		}
 		code, permanent := classifySendError(sendErr)
 		if permanent {
-			if err := service.store.markPermanentFailure(ctx, delivery, code, now.UTC()); err != nil {
+			if err := service.store.markPermanentFailure(ctx, delivery, code, completedAt); err != nil {
 				return result, err
 			}
 			result.PermanentFailed++
 			continue
 		}
-		if err := service.store.markTemporaryFailure(ctx, delivery, code, now.UTC().Add(retryDelay)); err != nil {
+		// A caller may supply a future cutoff; never retry this failure in the
+		// same run, even when that cutoff is ahead of the wall clock.
+		retryFrom := completedAt
+		if now.After(retryFrom) {
+			retryFrom = now.UTC()
+		}
+		if err := service.store.markTemporaryFailure(ctx, delivery, code, completedAt, retryFrom.Add(retryDelay)); err != nil {
 			return result, err
 		}
 		result.TemporaryFailed++

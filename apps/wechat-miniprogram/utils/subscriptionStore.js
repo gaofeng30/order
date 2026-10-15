@@ -13,7 +13,10 @@ async function requestAndRecord(orderID, kind) {
       wx.requestSubscribeMessage({
         tmplIds: [templateID],
         success(result) { resolve(result && result[templateID] === 'accept' ? 'ACCEPTED' : 'REJECTED'); },
-        fail() { resolve(''); },
+        fail(error) {
+          console.warn('[subscription] authorization failed', { errCode: error && error.errCode, errMsg: error && error.errMsg });
+          resolve('');
+        },
       });
     });
     if (!decision) return false;

@@ -29,7 +29,7 @@ func consumePaymentTicks(ctx context.Context, runner paymentRunner, ticks <-chan
 		case <-ctx.Done():
 			return
 		case now, open := <-ticks:
-			if !open {
+			if !open || ctx.Err() != nil {
 				return
 			}
 			result, err := runner.RunDue(ctx, now.UTC(), paymentWorkerLimit)

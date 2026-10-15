@@ -10,6 +10,16 @@
   const LANES = ['已预约', '制作中', '待取餐', '已完成', '退款中', '已退款', '全部'];
   const MAX_IMPORT_ROWS = 500;
   const MAX_STAFF_IMPORT_ROWS = 5000;
+  const ERROR_MESSAGES = {
+    INVALID_REQUEST: '请检查必填项和填写格式',
+    CATALOG_CONFLICT: '名称重复或数据已变更，请检查后重试',
+    IMPORT_UNAVAILABLE: '导入服务暂时不可用，请稍后重试',
+    INVALID_FILE: '无法读取文件，请使用有效的 .xlsx 文件',
+    INVALID_TEMPLATE: '表格格式不正确，请按下载的模板填写',
+    FILE_TOO_LARGE: '文件不能超过 10 MiB',
+    TOO_MANY_ROWS: '表格行数超过限制，请拆分后导入',
+    PREVIEW_EXPIRED: '导入预览已过期，请重新选择文件并核对',
+  };
   const STATUS_MAP = {
     已预约: 'info', 制作中: 'info', 待取餐: 'info', 已完成: 'ok', 成功: 'ok',
     已接单: 'ok', 已核销: 'ok', 营业中: 'ok', 可购: 'ok', 已授权: 'ok',
@@ -18,8 +28,21 @@
   const ORDER_STATE_LABEL = { RESERVED: '已预约', PREPARING: '制作中', READY_FOR_PICKUP: '待取餐', COMPLETED: '已完成', REFUNDING: '退款中', REFUNDED: '已退款' };
   const state = {
     products: [], categories: [], orders: [], pending: [], soldOut: new Set(),
-    settings: null, account: null, imageURLs: new Map(),
+    settings: null, account: null, imageURLs: new Map(), orderCounts: null,
   };
+  let orderReadGeneration = 0;
+  let orderCountGeneration = 0;
+  let sessionGeneration = 0;
+
+  function clearSession() {
+    sessionGeneration += 1;
+    orderReadGeneration += 1;
+    orderCountGeneration += 1; state.orderCounts = null;
+    if (window.sessionStorage) window.sessionStorage.removeItem('pc_session_token');
+    state.products = []; state.categories = []; state.orders = []; state.pending = [];
+    state.soldOut.clear(); state.imageURLs.clear(); state.settings = null; state.account = null;
+    if (window.dispatchEvent && window.CustomEvent) window.dispatchEvent(new window.CustomEvent('pc-session-expired'));
+  }
 
   class ApiError extends Error {
     constructor(message, status, code) {
@@ -31,6 +54,9 @@
   }
 
   function token() { return window.sessionStorage && window.sessionStorage.getItem('pc_session_token'); }
+  function assertSession(generation, bearer) {
+    if (generation !== sessionGeneration || bearer !== token()) throw new ApiError('登录已失效，请重新扫码登录', 401, 'SESSION_EXPIRED');
+  }
   function idempotencyKey() {
     return window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : `pc-${Date.now()}-${Math.random()}`;
   }
@@ -44,6 +70,7 @@
   }
   function unwrap(body) { return body && Object.prototype.hasOwnProperty.call(body, 'data') ? body.data : body; }
   async function request(path, options) {
+    const generation = sessionGeneration;
     const opts = Object.assign({ method: 'GET' }, options || {});
     const headers = Object.assign({ Accept: 'application/json' }, opts.headers || {});
     const bearer = token();
@@ -62,10 +89,15 @@
     let body = null;
     const kind = response.headers && response.headers.get ? response.headers.get('content-type') || '' : '';
     try { body = kind.indexOf('application/json') >= 0 ? await response.json() : await response.text(); }
-    catch (_) { throw new ApiError('服务端响应无法解析，请稍后重试', response.status, 'INVALID_RESPONSE'); }
+    catch (_) {
+      if (response.status === 401 && generation === sessionGeneration && bearer === token()) clearSession();
+      throw new ApiError('服务端响应无法解析，请稍后重试', response.status, 'INVALID_RESPONSE');
+    }
+    assertSession(generation, bearer);
     if (!response.ok) {
+      if (response.status === 401) clearSession();
       const err = body && (body.error || body);
-      throw new ApiError((err && (err.message || err.detail)) || `请求失败（${response.status}）`, response.status, err && err.code);
+      throw new ApiError((err && (ERROR_MESSAGES[err.code] || err.message || err.detail)) || `请求失败（${response.status}）`, response.status, err && err.code);
     }
     return unwrap(body);
   }
@@ -96,12 +128,12 @@
       pickupTime: o.pickup_time || o.pickupTime, pickupPoint: o.pickup_point || o.pickupPoint,
       mealPeriod: o.meal_period || o.mealPeriod, paidAt: o.paid_at || o.paidAt,
       txnId: o.transaction_id || o.provider_transaction_id || o.txnId, contact: o.contact_name || o.contact,
-      phone: o.phone_masked || o.phone, orderNote: o.note || o.orderNote,
+      phone: o.phone_masked || o.phone, orderNote: o.order_note || o.note || o.orderNote,
       subtotal: o.subtotal_cents !== undefined ? o.subtotal_cents : o.subtotal,
       discountRate: o.discount_rate_percent !== undefined ? o.discount_rate_percent : o.discountRate,
       discountCut: o.discount_cents !== undefined ? o.discount_cents : o.discountCut,
       total: o.payable_cents !== undefined ? o.payable_cents : o.total,
-      items: (o.items || []).map(i => Array.isArray(i) ? i : [String(i.product_id || ''), i.product_name || i.name, i.quantity, i.line_total_cents]),
+      items: o.items || [],
     });
   }
   function accountOf(a) {
@@ -110,42 +142,75 @@
   }
 
   async function bootstrap() {
+    const generation = sessionGeneration, bearer = token();
     const results = await Promise.all([request('/admin/settings'), request('/admin/me')]);
+    assertSession(generation, bearer);
     state.settings = results[0];
     state.account = accountOf(results[1].account || results[1]);
     return { settings: state.settings, account: state.account };
   }
-  function logout() { if (window.sessionStorage) window.sessionStorage.removeItem('pc_session_token'); state.account = null; }
+  async function logout() {
+    try { await request('/admin/auth/logout', { method: 'POST', intrinsic: true }); }
+    catch (error) { if (error.status === 401) return; throw error; }
+    clearSession();
+  }
   function beginPCLogin() { return request('/admin/auth/qrcode', { method: 'POST', body: {}, intrinsic: true }); }
-  async function pollPCLogin(loginID, pollSecret) {
+  async function pollPCLogin(loginID, pollSecret, isCurrent = () => true) {
     const result = await request('/admin/auth/poll', { method: 'POST', body: { login_id: loginID, poll_secret: pollSecret }, intrinsic: true });
-    if (result.state === 'APPROVED' && result.session && result.session.token && window.sessionStorage) {
+    if (isCurrent() && result.state === 'APPROVED' && result.session && result.session.token && window.sessionStorage) {
       window.sessionStorage.setItem('pc_session_token', result.session.token);
     }
     return result;
   }
 
   async function listProducts() {
-    const body = await request('/admin/products' + qs({ service_date: today() }));
+    const generation = sessionGeneration, bearer = token();
+    const settings = await getSettings();
+    assertSession(generation, bearer);
+    const day = settings.service_date || settings.serviceDate;
+    const body = await request('/admin/products' + qs({ service_date: day }));
+    assertSession(generation, bearer);
     state.products = listOf(body, 'products').map(productOf);
-    state.soldOut = new Set(state.products.filter(p => p.soldOut).map(p => p.id + '|' + today()));
+    state.soldOut = new Set(state.products.filter(p => p.soldOut).map(p => p.id + '|' + day));
     return state.products.slice();
   }
-  async function getProduct(id) { return productOf(await request('/admin/products/' + encodeURIComponent(id) + qs({ service_date: today() }))); }
+  async function getProduct(id) {
+    const generation = sessionGeneration, bearer = token();
+    const settings = await getSettings();
+    assertSession(generation, bearer);
+    const day = settings.service_date || settings.serviceDate;
+    const body = await request('/admin/products/' + encodeURIComponent(id) + qs({ service_date: day }));
+    assertSession(generation, bearer);
+    return productOf(body.product);
+  }
   function productBody(p) {
     const category = state.categories.find(c => c.name === p.cat);
     return { name: String(p.name || '').trim(), price_cents: Math.round(Number(p.price) * 100), category_id: p.categoryId || (category && category.id) || '', meal_period: p.meal, description: p.desc || '', images: (p.imgs || []).slice(0, 3).map((key, sort) => ({ object_key: key, sort_order: sort })) };
   }
   async function saveProduct(p) {
-    const saved = await request('/admin/products' + (p.id ? '/' + encodeURIComponent(p.id) : ''), { method: p.id ? 'PUT' : 'POST', body: productBody(p) });
+    const generation = sessionGeneration, bearer = token();
+    const body = productBody(p);
+    if (!body.name) throw new ApiError('请填写菜品名称', 400, 'INVALID_REQUEST');
+    if (!Number.isInteger(body.price_cents) || body.price_cents <= 0 || body.price_cents > 4294967295) throw new ApiError('请填写有效售价（金额必须大于 0 元）', 400, 'INVALID_REQUEST');
+    if (!body.category_id) throw new ApiError('请选择分类', 400, 'INVALID_REQUEST');
+    if (!MEALS.includes(body.meal_period)) throw new ApiError('请选择餐段', 400, 'INVALID_REQUEST');
+    const saved = await request('/admin/products' + (p.id ? '/' + encodeURIComponent(p.id) : ''), { method: p.id ? 'PUT' : 'POST', body });
+    assertSession(generation, bearer);
     return productOf(saved.product || saved);
   }
   function deleteProduct(id) { return request('/admin/products/' + encodeURIComponent(id), { method: 'DELETE' }); }
   async function setShelf(id, status) { await request('/admin/products/' + encodeURIComponent(id) + '/status', { method: 'PUT', body: { status: status === 'on' ? 'ON' : 'OFF' } }); const product = state.products.find(p => p.id === String(id)); if (product) product.status = status; return product || { id: String(id), status }; }
   const setProductStatus = setShelf;
   async function setSoldOut(id, soldOut, serviceDate) {
-    const day = serviceDate || today();
+    const generation = sessionGeneration, bearer = token();
+    let day = serviceDate;
+    if (!day) {
+      const settings = await getSettings();
+      day = settings.service_date || settings.serviceDate;
+    }
+    assertSession(generation, bearer);
     const saved = await request('/admin/products/' + encodeURIComponent(id) + '/soldout', { method: 'PUT', body: { service_date: day, sold_out: !!soldOut } });
+    assertSession(generation, bearer);
     const key = String(id) + '|' + day;
     if (soldOut) state.soldOut.add(key); else state.soldOut.delete(key);
     return saved;
@@ -155,13 +220,33 @@
   function isSellable(product, serviceDate) { const p = typeof product === 'string' ? state.products.find(x => x.id === product) : product; return !!p && p.status === 'on' && !isSoldOut(p.id, serviceDate); }
 
   async function uploadImage(file) {
-    const form = new FormData(); form.append('file', file);
-    const body = await request('/upload', { method: 'POST', body: form });
-    const image = body.image || body;
-    if (image.object_key && image.url) state.imageURLs.set(image.object_key, image.url);
-    return image.object_key || image.key;
+    const generation = sessionGeneration, bearer = token();
+    const bytes = await file.arrayBuffer();
+    const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    const spec = {
+      content_type: file.type, size_bytes: file.size,
+      sha256: Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join(''),
+    };
+    const identity = idempotencyKey();
+    const intent = (await request('/upload/intent', { method: 'POST', body: spec, idempotencyKey: identity })).upload;
+    if (!intent || intent.method !== 'PUT' || typeof intent.object_key !== 'string' || !intent.object_key || typeof intent.url !== 'string' || !intent.url || !intent.headers || typeof intent.headers !== 'object' || Array.isArray(intent.headers)) throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+    let uploaded;
+    try { uploaded = await window.fetch(intent.url, { method: 'PUT', headers: intent.headers, body: file, credentials: 'omit', redirect: 'error' }); }
+    catch (_) { throw new ApiError('无法连接图片存储，请检查网络后重试', 0, 'NETWORK_UNAVAILABLE'); }
+    if (!uploaded.ok) throw new ApiError('图片上传失败，请重试', uploaded.status, 'UPLOAD_FAILED');
+    const body = await request('/upload', { method: 'POST', body: Object.assign({}, spec, { object_key: intent.object_key }), idempotencyKey: identity });
+    assertSession(generation, bearer);
+    const image = body.image;
+    if (!image || image.object_key !== intent.object_key || typeof image.url !== 'string' || !image.url) throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+    state.imageURLs.set(image.object_key, image.url);
+    return image.object_key;
   }
-  async function listCategories() { const body = await request('/admin/categories'); state.categories = listOf(body, 'categories').map(categoryOf); return state.categories.slice(); }
+  async function listCategories() {
+    const generation = sessionGeneration, bearer = token();
+    const body = await request('/admin/categories');
+    assertSession(generation, bearer);
+    state.categories = listOf(body, 'categories').map(categoryOf); return state.categories.slice();
+  }
   async function addCategory(name) { const b = await request('/admin/categories', { method: 'POST', body: { name: String(name || '').trim() } }); return categoryOf(b.category || b); }
   async function renameCategory(id, name) { const b = await request('/admin/categories/' + encodeURIComponent(id), { method: 'PUT', body: { name: String(name || '').trim() } }); return categoryOf(b.category || b); }
   async function setCategoryEnabled(id, on) { const b = await request('/admin/categories/' + encodeURIComponent(id), { method: 'PUT', body: { enabled: !!on } }); return categoryOf(b.category || b); }
@@ -169,18 +254,97 @@
   async function reorderCategories(ids) { await request('/admin/categories/order', { method: 'PUT', body: { ids } }); return listCategories(); }
 
   async function listOrders(lane, opts) {
+    const generation = ++orderReadGeneration;
     const body = await request('/admin/orders' + qs({
       state: lane && lane !== '全部' ? lane : '',
       date: opts && opts.date,
       unclaimed: opts && opts.uncollected ? 'true' : '',
     }));
-    state.orders = listOf(body, 'orders').map(orderOf); return state.orders.slice();
+    const orders = listOf(body, 'orders').map(orderOf);
+    if (generation === orderReadGeneration) state.orders = orders;
+    return orders;
   }
+  async function orderPage({ lane, date, q, uncollected, after = '' }) {
+    const body = await request('/admin/orders' + qs({
+      state: !q && lane !== '全部' ? lane : '', date, q,
+      unclaimed: !q && uncollected ? 'true' : '', limit: 50, after_id: after,
+    }));
+    if (!body || !Array.isArray(body.orders) || !Object.prototype.hasOwnProperty.call(body, 'next_after_id')) {
+      throw new ApiError('订单数据不完整，请重试');
+    }
+    const orders = body.orders.map(orderOf), seen = new Set();
+    let previous = after;
+    for (const order of orders) {
+      if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || (previous && BigInt(order.id) <= BigInt(previous))) throw new ApiError('订单分页异常，请重试');
+      seen.add(order.id); previous = order.id;
+    }
+    const next = body.next_after_id == null ? '' : String(body.next_after_id);
+    if (next && (!/^[1-9]\d*$/.test(next) || !orders.length || next !== previous)) throw new ApiError('订单分页异常，请重试');
+    return { orders, next };
+  }
+
+  async function preparationOrders(date) {
+    const generation = sessionGeneration, bearer = token();
+    const result = [], seen = new Set();
+    let after = '';
+    do {
+      const body = await request('/admin/orders' + qs({ date, limit: 100, after_id: after }));
+      assertSession(generation, bearer);
+      if (!body || !Array.isArray(body.orders) || !Object.prototype.hasOwnProperty.call(body, 'next_after_id')) throw new ApiError('订单数据不完整，请重新加载');
+      let previous = after;
+      for (const raw of body.orders) {
+        const order = orderOf(raw);
+        if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || (previous && BigInt(order.id) <= BigInt(previous)) || order.pickupDate !== date) throw new ApiError('订单数据不完整，请重新加载');
+        if (!['lunch', 'dinner'].includes(String(order.mealPeriod).toLowerCase()) || !Array.isArray(order.items)
+          || !order.items.length || order.items.some(i => !i || !i.product_id || !(i.name || i.product_name)
+            || !Number.isSafeInteger(i.quantity) || i.quantity < 1 || !Array.isArray(i.flavors))) {
+          throw new ApiError('订单菜品数据不完整，请重新加载');
+        }
+        seen.add(order.id); previous = order.id;
+        if (['已预约', '制作中'].includes(order.status)) result.push(order);
+      }
+      const next = body.next_after_id;
+      if (next === null || next === '') break;
+      if (!/^[1-9]\d*$/.test(String(next)) || !body.orders.length || String(next) !== previous) throw new ApiError('订单分页异常，请重新加载');
+      after = String(next);
+    } while (true);
+    return result;
+  }
+  function markOrderReady(id, key) {
+    return request('/admin/orders/' + encodeURIComponent(id) + '/ready', { method: 'POST', body: {}, idempotencyKey: key });
+  }
+
   async function searchOrders(q, opts) {
+    const generation = ++orderReadGeneration;
     const body = await request('/admin/orders' + qs({ q, date: opts && opts.date }));
-    state.orders = listOf(body, 'orders').map(orderOf); return state.orders.slice();
+    const orders = listOf(body, 'orders').map(orderOf);
+    if (generation === orderReadGeneration) state.orders = orders;
+    return orders;
   }
-  function laneCounts() { const c = {}; LANES.forEach(l => { c[l] = l === '全部' ? state.orders.length : state.orders.filter(o => o.status === l).length; }); return c; }
+  function laneCounts() {
+    return Object.assign({}, state.orderCounts || Object.fromEntries(LANES.map(l => [l, null])));
+  }
+  async function readOrderCounts() {
+    const generation = ++orderCountGeneration;
+    state.orderCounts = null;
+    const counts = Object.fromEntries(LANES.map(l => [l, 0]));
+    const body = await request('/admin/orders/counts');
+    const values = body && body.counts;
+    if (!values || typeof values !== 'object' || Array.isArray(values)
+      || Object.keys(values).length !== Object.keys(ORDER_STATE_LABEL).length) {
+      throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+    }
+    for (const [status, label] of Object.entries(ORDER_STATE_LABEL)) {
+      const count = values[status];
+      if (!Number.isSafeInteger(count) || count < 0 || !Number.isSafeInteger(counts['全部'] + count)) {
+        throw new ApiError('服务端响应无法解析，请稍后重试', 200, 'INVALID_RESPONSE');
+      }
+      counts[label] = count; counts['全部'] += count;
+    }
+    if (generation === orderCountGeneration) state.orderCounts = counts;
+    return Object.assign({}, counts);
+  }
+
   function uncollectedCount() { return state.orders.filter(o => o.unclaimed).length; }
   function findOrder(id) { return state.orders.find(o => o.id === String(id)); }
   function findOrderByCode(code) { return state.orders.find(o => o.code === String(code)); }
@@ -203,7 +367,9 @@
     QUOTE_SNAPSHOT_INVALID: '数据校验不通过',
   };
   async function listPendingPayments() {
+    const generation = sessionGeneration, bearer = token();
     const b = await request('/admin/pending-payments');
+    assertSession(generation, bearer);
     state.pending = listOf(b, 'prepayments').map(p => {
       const reason = p.blocking_reason || '';
       return Object.assign({}, p, {
@@ -269,22 +435,31 @@
   async function setMerchantAccountEnabled(id, enabled) { return accountOf(await request('/admin/merchant-accounts/' + encodeURIComponent(id), { method: 'PUT', body: { enabled: !!enabled } })); }
   function deleteMerchantAccount(id) { return request('/admin/merchant-accounts/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
-  async function previewImport(kind, file) {
+  async function previewImport(kind, file, images) {
     if (!file || !/\.xlsx$/i.test(file.name || '')) throw new ApiError('只接受 .xlsx 文件', 400, 'INVALID_FILE');
     if (file.size > 10 * 1024 * 1024) throw new ApiError('文件不能超过 10 MiB', 413, 'FILE_TOO_LARGE');
     const form = new FormData(); form.append('file', file);
+    if(images)form.append('product_images',JSON.stringify(images));
     const path = kind === 'product' ? '/admin/products/import/preview' : '/admin/staff-whitelist/import/preview';
     const p = await request(path, { method: 'POST', body: form });
-    return { token: p.preview_token, added: Number(p.new_count || 0), updated: Number(p.update_count || 0), errors: (p.rows || []).filter(r => r.outcome === 'ERROR').map(r => ({ row: r.row, reason: r.reason })), ignoredColumns: p.ignored_columns || [], newCategories: p.new_categories || [] };
+    return { rows:p.rows || [], token: p.preview_token, added: Number(p.new_count || 0), updated: Number(p.update_count || 0), errors: (p.rows || []).filter(r => r.outcome === 'ERROR').map(r => ({ row: r.row, reason: r.reason })), ignoredColumns: p.ignored_columns || [], newCategories: p.new_categories || [] };
   }
-  async function commitImport(tokenValue) { const r = await request('/import/commit', { method: 'POST', body: { preview_token: tokenValue, skip_invalid: true } }); return { added: Number(r.new_count || 0), updated: Number(r.update_count || 0), skipped: Number(r.skipped_count || 0), duplicate: !!r.duplicate }; }
-  const previewProductImport = file => previewImport('product', file);
+  const importKeys = new Map();
+  async function commitImport(tokenValue) {
+    if(!importKeys.has(tokenValue))importKeys.set(tokenValue,idempotencyKey());
+    const r=await request('/import/commit',{method:'POST',body:{preview_token:tokenValue,skip_invalid:true},idempotencyKey:importKeys.get(tokenValue)});
+    return {batchId:r.batch_id,added:Number(r.new_count||0),updated:Number(r.update_count||0),skipped:Number(r.skipped_count||0),duplicate:!!r.duplicate};
+  }
+  async function importResult(id) {return request('/import/batches/'+encodeURIComponent(id)+'/result');}
+  const previewProductImport = (file, images) => previewImport('product', file, images);
   const previewStaffImport = file => previewImport('staff', file);
   const commitProductImport = commitImport;
   const commitStaffImport = commitImport;
 
   async function getSettings() {
+    const generation = sessionGeneration, bearer = token();
     const s = await request('/admin/settings');
+    assertSession(generation, bearer);
     const meals = s.meal_periods || s.mealPeriods || [];
     const receivedDates = s.service_dates || s.serviceDates || [];
     const byDate = new Map(receivedDates.map(d => [d.date, d.status]));
@@ -312,12 +487,13 @@
     ApiError, bootstrap, logout, beginPCLogin, pollPCLogin, storeView, dashboardStats,
     listProducts, getProduct, saveProduct, deleteProduct, setProductStatus, uploadImage, setShelf, setSoldOut, reorderProducts, isSoldOut, isSellable,
     listCategories, addCategory, renameCategory, setCategoryEnabled, deleteCategory, reorderCategories,
-    listOrders, laneCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
+    orderPage, preparationOrders, markOrderReady, idempotencyKey,
+    listOrders, laneCounts, readOrderCounts, findOrder, findOrderByCode, itemsSummary, yuan, today, currentAccount, refundOrder, canRefund,
     uncollectedCount, searchOrders, codeHint, listPendingPayments, pendingPaymentCount, rebuildOrder, refundPendingPayment, blockingReason,
     listPayments, listRefunds, financeSummary, buildPaymentExport, statusTone, LANES,
     getSettings, saveSettings, setStoreStatus, getLayer, saveLayer, clearLayer, imgUrl, MEALS, MEAL_LABEL,
     listStaff, saveStaff, setStaffEnabled, deleteStaff, getDiscountRate, saveDiscountRate,
-    previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, MAX_IMPORT_ROWS, MAX_STAFF_IMPORT_ROWS,
+    previewProductImport, commitProductImport, previewStaffImport, commitStaffImport, importResult, MAX_IMPORT_ROWS, MAX_STAFF_IMPORT_ROWS,
     listMerchantAccounts, saveMerchantAccount, setMerchantAccountEnabled, deleteMerchantAccount, ROLES, ROLE_LABEL,
   };
 })();

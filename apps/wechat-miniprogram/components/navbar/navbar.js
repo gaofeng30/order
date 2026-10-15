@@ -1,10 +1,12 @@
 Component({
+  options: { multipleSlots: true },
   properties: {
     title: { type: String, value: '' },
     tone: { type: String, value: 'light' },       // light / dark
     back: { type: Boolean, value: false },
     exit: { type: Boolean, value: false },          // true: 左上角显示退出键，点击回身份选择页
     overlay: { type: Boolean, value: false },       // true: 透明浮层（沉浸式深色头使用）
+    solid: { type: Boolean, value: false },         // overlay 时滚动离开头部后置 true，转为深蓝底
     leftLabel: { type: String, value: '' },
   },
   data: { statusBarH: 20, navH: 44, capsuleGap: 95 },

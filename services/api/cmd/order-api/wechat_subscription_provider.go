@@ -26,7 +26,7 @@ const (
 	weChatSubscriptionRefundResultKeyEnv      = "ORDER_WECHAT_SUBSCRIPTION_REFUND_RESULT_RESULT_KEY"
 	weChatSubscriptionMiniProgramStateEnv     = "ORDER_WECHAT_SUBSCRIPTION_MINIPROGRAM_STATE"
 	weChatSubscriptionLanguageEnv             = "ORDER_WECHAT_SUBSCRIPTION_LANGUAGE"
-	weChatSubscriptionOrderPage               = "pages/order-detail/index"
+	weChatSubscriptionOrderPage               = "pages/order-detail/order-detail"
 )
 
 var (
@@ -212,15 +212,17 @@ func (resolver staticWeChatSubscriptionTemplateResolver) ResolveTemplate(
 	kind subscription.Kind,
 	version uint64,
 	message subscription.Message,
+	orderID uint64,
 ) (subscription.ResolvedTemplate, error) {
-	if ctx == nil || version != resolver.config.templateConfigVersion || !validWeChatSubscriptionProviderConfig(resolver.config) {
+	if ctx == nil || orderID == 0 || version != resolver.config.templateConfigVersion || !validWeChatSubscriptionProviderConfig(resolver.config) {
 		return subscription.ResolvedTemplate{}, errWeChatSubscriptionTemplate
 	}
+	page := weChatSubscriptionOrderPage + "?id=" + strconv.FormatUint(orderID, 10)
 	switch kind {
 	case subscription.KindReady:
 		return subscription.ResolvedTemplate{
 			TemplateID: resolver.config.readyTemplateID,
-			Page:       weChatSubscriptionOrderPage,
+			Page:       page,
 			Data: map[string]string{
 				resolver.config.readyKeys.orderNumber: message.OrderNumber,
 				resolver.config.readyKeys.pickupDate:  message.PickupDate,
@@ -231,10 +233,10 @@ func (resolver staticWeChatSubscriptionTemplateResolver) ResolveTemplate(
 	case subscription.KindRefundResult:
 		return subscription.ResolvedTemplate{
 			TemplateID: resolver.config.refundResultTemplateID,
-			Page:       weChatSubscriptionOrderPage,
+			Page:       page,
 			Data: map[string]string{
 				resolver.config.refundResultKeys.orderNumber: message.OrderNumber,
-				resolver.config.refundResultKeys.result:      message.RefundResult,
+				resolver.config.refundResultKeys.result:      "退款成功",
 			},
 		}, nil
 	default:

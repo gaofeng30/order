@@ -1,33 +1,36 @@
 .detail-hero { border-radius: 0 0 48rpx 48rpx; padding-left: 40rpx; padding-right: 40rpx; padding-bottom: 44rpx; color: #fff; }
 .dh-row { display: flex; align-items: flex-end; gap: 28rpx; position: relative; z-index: 2; }
-.dh-lbl { font-size: 21rpx; letter-spacing: 8rpx; color: var(--gold); }
-.dh-code { font-size: 104rpx; font-weight: 900; line-height: 1; letter-spacing: 6rpx; }
+.dh-lbl { font-size: var(--fs-xs); letter-spacing: 8rpx; color: var(--gold); }
+.dh-code { font-size: 96rpx; font-weight: 900; line-height: 1; letter-spacing: 6rpx; margin-top: 8rpx; }
 .dh-pill { margin-bottom: 12rpx; }
-.dh-no { font-size: 24rpx; color: var(--ink-on-dark-2); margin-top: 20rpx; position: relative; z-index: 2; }
+.dh-no { font-size: var(--fs-sm); color: var(--ink-on-dark-2); margin-top: 20rpx; position: relative; z-index: 2; word-break: break-all; }
 
-.flavor-card {
-  background: var(--gold-bg); border-radius: var(--r-card); padding: 28rpx 32rpx; margin-top: 28rpx;
-  display: flex; align-items: center; gap: 20rpx;
-}
-.flavor-lbl { font-size: 22rpx; color: var(--gold-2); }
-.flavor-val { font-size: 34rpx; font-weight: 700; color: #8a6d2a; margin-top: 4rpx; }
+/* 口味高亮：按菜品分行（A12） */
+.flavor-card { background: var(--gold-bg); border-radius: var(--r-card); padding: 28rpx 32rpx; margin-top: 28rpx; }
+.flavor-head { display: flex; align-items: center; gap: 12rpx; }
+.flavor-lbl { font-size: var(--fs-xs); color: var(--gold-2); }
+.flavor-line { display: flex; align-items: flex-start; gap: 20rpx; margin-top: 16rpx; line-height: 1.5; }
+.flavor-name { flex-shrink: 0; max-width: 45%; font-size: var(--fs-md); font-weight: 600; color: var(--ink); word-break: break-all; }
+.flavor-val { flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: 700; color: var(--gold-2); word-break: break-all; }
 
 .sec-card { padding: 4rpx 36rpx; margin-top: 24rpx; }
-.order-item { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; border-bottom: 1rpx solid var(--line-2); }
-.order-item-info { flex: 1; }
-.order-item-name { font-size: 28rpx; color: var(--ink); font-weight: 500; }
-.order-item-unit { font-size: 23rpx; color: var(--ink-3); margin-top: 4rpx; }
-.pay-row { display: flex; justify-content: flex-end; align-items: center; gap: 16rpx; padding: 24rpx 0; border-top: 1rpx solid var(--line); }
-.pay-lbl { font-size: 24rpx; color: var(--ink-3); }
+.sec-card .sec-h { padding-bottom: 4rpx; }
+.order-item { display: flex; align-items: center; gap: 24rpx; padding: 24rpx 0; border-bottom: 2rpx solid var(--line-2); }
+/* 最后一项不画线，避免与实付行上边框叠成双线（D32） */
+.order-item.last { border-bottom: none; }
+.order-item-info { flex: 1; min-width: 0; }
+.order-item-name { font-size: var(--fs-md); color: var(--ink); font-weight: 500; word-break: break-all; }
+.order-item-unit { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 4rpx; }
+/* 小字标签与大号金额按文字底线对齐（D38） */
+.pay-row { display: flex; justify-content: flex-end; align-items: baseline; gap: 16rpx; padding: 24rpx 0; border-top: 2rpx solid var(--line); }
+.pay-lbl { font-size: var(--fs-sm); color: var(--ink-3); }
 
-.info-row { display: flex; align-items: center; padding: 28rpx 0; border-bottom: 1rpx solid var(--line-2); }
+/* 长文字限宽换行，标签顶部对齐（A13、D39） */
+.info-row { display: flex; align-items: flex-start; gap: 32rpx; padding: 28rpx 0; border-bottom: 2rpx solid var(--line-2); line-height: 1.5; }
 .info-row.last { border-bottom: none; }
-.ir-label { font-size: 27rpx; color: var(--ink-2); }
-.ir-val { margin-left: auto; font-size: 27rpx; color: var(--ink); }
+.ir-label { flex-shrink: 0; font-size: var(--fs-md); color: var(--ink-3); }
+.ir-val { flex: 1; min-width: 0; max-width: 72%; margin-left: auto; text-align: right; font-size: var(--fs-md); color: var(--ink); word-break: break-all; }
 
-.bottom-bar {
-  flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98);
-  border-top: 1rpx solid var(--line); display: flex; gap: 24rpx; align-items: center;
-}
-.foot-main { flex: 1; }
-.action-error { color: #9a493e; font-size: 22rpx; max-width: 220rpx; }
+.end-space { height: 24rpx; }
+
+.bottom-bar { flex: 0 0 auto; padding: 20rpx 32rpx; background: rgba(255, 255, 255, .98); border-top: 2rpx solid var(--line); }

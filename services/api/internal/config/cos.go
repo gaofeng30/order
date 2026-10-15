@@ -1,34 +1,26 @@
 package config
 
 import (
-	"net/url"
 	"strings"
 )
 
 // COSMaterial contains public bucket coordinates only. COS credentials come
 // from the CVM role and never enter environment-backed runtime configuration.
 type COSMaterial struct {
-	bucket       string
-	region       string
-	publicOrigin string
+	bucket string
+	region string
 }
 
-func (material COSMaterial) Bucket() string       { return material.bucket }
-func (material COSMaterial) Region() string       { return material.region }
-func (material COSMaterial) PublicOrigin() string { return material.publicOrigin }
+func (material COSMaterial) Bucket() string { return material.bucket }
+func (material COSMaterial) Region() string { return material.region }
 
-// ParseCOSMaterial validates the exact production bucket and public-read
-// origin used by the object-store adapter.
-func ParseCOSMaterial(bucket, region, publicOrigin string) (COSMaterial, error) {
+// ParseCOSMaterial validates the exact private production bucket coordinates.
+// Read and write access is always issued as a short-lived signed URL.
+func ParseCOSMaterial(bucket, region string) (COSMaterial, error) {
 	if !validCOSBucket(bucket) || !validTencentRegion(region) {
 		return COSMaterial{}, loadError{reason: "production_cos_configuration_invalid"}
 	}
-	origin, err := url.ParseRequestURI(publicOrigin)
-	if err != nil || origin.Scheme != "https" || origin.Hostname() == "" || origin.Port() != "" ||
-		origin.User != nil || (origin.Path != "" && origin.Path != "/") || origin.RawQuery != "" || origin.Fragment != "" {
-		return COSMaterial{}, loadError{reason: "production_cos_configuration_invalid"}
-	}
-	return COSMaterial{bucket: bucket, region: region, publicOrigin: strings.TrimRight(publicOrigin, "/")}, nil
+	return COSMaterial{bucket: bucket, region: region}, nil
 }
 
 func validCOSBucket(value string) bool {

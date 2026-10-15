@@ -12,6 +12,8 @@ A **flow** is a path through the skills. Most paths run along one **main flow**,
 
 ## The main flow: idea → ship
 
+In Order, first read the [repository workflow bridge](../../../docs/agents/skills.md). This flow selects skills; its drafts and reviews do not replace the existing OpenSpec artifacts, Writer Gate, exact-SHA independent verification or separately authorized integration.
+
 The route most work travels. You have an idea and want it built.
 
 1. **`$grill-with-docs`** sharpens the idea by interview. Start here whenever you are **working in a working directory**: it's stateful, retaining what it learns in `CONTEXT.md` and ADRs. (No working directory? Use `$grill-me` instead, covered under Standalone. Both run the same `$grilling` primitive; `grill-with-docs` is the one that leaves a paper trail, which makes it the better of the two whenever a repo is there to leave it in.)

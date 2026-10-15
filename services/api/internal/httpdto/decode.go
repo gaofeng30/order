@@ -14,7 +14,7 @@ var (
 	ErrBodyTooLarge = errors.New("body_too_large")
 )
 
-// ID is the public JSON representation for a positive MySQL identifier.
+// ID is the public JSON representation for a positive PostgreSQL identifier.
 type ID uint64
 
 // ParseID accepts only the canonical positive decimal representation used by public paths.

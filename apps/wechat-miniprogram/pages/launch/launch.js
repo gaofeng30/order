@@ -10,6 +10,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     entryState: 'loading',
+    merchantRole: '',
     storefrontState: 'loading',
     storeName: '',
     launchLayer: null,
@@ -21,36 +22,45 @@ Page({
     if (routing.state === 'user') return;
     this.setData({
       entryState: routing.state,
+      merchantRole: routing.state === 'merchant' ? routing.role : '',
       hint: routing.state === 'error' ? '身份状态暂不可用，仍可进入用户端浏览或重试商户验证。' : '',
     });
     this.setData({ storefrontState: 'loading', storeName: '', launchLayer: null });
     try {
       const settings = await storefrontStore.load();
-      getApp().globalData.storefrontFlavors = settings.flavors;
-      this.setData({ storefrontState: 'ready', storeName: settings.name, launchLayer: settings.launchLayer });
-      this.scheduleLaunchLayer();
+      const g = getApp().globalData;
+      g.storefrontFlavors = settings.flavors;
+      const patch = { storefrontState: 'ready', storeName: settings.name };
+      // 开屏装饰图每次打开小程序只弹一次，首页与启动页共用标记（E5）
+      if (settings.launchLayer && !g.launchLayerShown) {
+        g.launchLayerShown = true;
+        patch.launchLayer = settings.launchLayer;
+      }
+      this.setData(patch);
     } catch (error) {
       this.setData({ storefrontState: 'error' });
     }
   },
-  onHide() { this.clearLaunchTimer(); },
+  onHide() { this.dismissLaunchLayer(); },
   onUnload() { this.clearLaunchTimer(); },
   clearLaunchTimer() {
     if (this._launchTimer) clearTimeout(this._launchTimer);
     this._launchTimer = null;
   },
-  scheduleLaunchLayer() {
+  // 图片加载完成后才开始 1.5 秒倒计时（D11）
+  onLaunchImageLoad() {
     this.clearLaunchTimer();
     if (!this.data.launchLayer) return;
     this._launchTimer = setTimeout(() => this.dismissLaunchLayer(), 1500);
   },
+  // 加载失败直接关闭，不留下透明层吞点击（D11）
+  onLaunchImageError() { this.dismissLaunchLayer(); },
   dismissLaunchLayer() {
     this.clearLaunchTimer();
     if (this.data.launchLayer) this.setData({ launchLayer: null });
     return true;
   },
   retryStorefront() { return this.onShow(); },
-  back() { nav.back(); },
   go(e) {
     if (this.data.storefrontState !== 'ready') return false;
     nav.go(e.currentTarget.dataset.to);
@@ -59,6 +69,11 @@ Page({
   goMerchant() {
     if (this.data.entryState !== 'merchant' || this.data.storefrontState !== 'ready') return false;
     nav.go('admin-orders');
+    return true;
+  },
+  goPCLogin() {
+    if (this.data.entryState !== 'merchant' || this.data.merchantRole !== 'OWNER') return false;
+    nav.go('admin-login');
     return true;
   },
 });

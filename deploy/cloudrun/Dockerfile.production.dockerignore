@@ -1,0 +1,15 @@
+# Default-deny the repository; send only the Go runtime and its embedded assets.
+**
+!go.mod
+!go.sum
+!services/api/**/*.go
+!services/api/**/*.sql
+!services/api/internal/migrate/postgresql_schema_contract.json
+**/*_test.go
+**/.git/**
+**/.env*
+**/*.pem
+**/*.key
+**/node_modules/**
+**/vendor/**
+**/testdata/**

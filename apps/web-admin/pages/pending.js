@@ -17,13 +17,13 @@
     el.innerHTML =
       `<div class="page-head">
          <span class="ph-s grow">
-           顾客已付款但系统未建单的条目。由后端定时任务核对微信支付结果后自动补建，
-           <b>只有自动补建也失败的才会出现在这里</b>，需主账号人工处理。这些条目不是订单：没有状态，也没有取餐号。
+           顾客已付款但尚未生成订单的记录。系统会自动核对并尝试补建订单，
+           <b>只有自动补建也失败的才会出现在这里</b>，需主账号人工处理。处理完成前，顾客尚未获得取餐号。
          </span>
        </div>
        <div class="tbl-wrap" id="pd-host"></div>
        <div class="card card-pad imp-note" style="margin-top:14px">
-         <b>人工建单</b>会按 §7.4 排产（距取餐不足 30 分钟直接进「制作中」）并分配取餐号；阻塞原因未解除时会被拒绝，
+         <b>人工建单</b>会按取餐时间安排制作（距取餐不足 30 分钟直接进「制作中」）并分配取餐号；阻塞原因未解除时会被拒绝，
          请先到菜品管理恢复销售状态再重试。<b>退款作废</b>为原路全额退回，订单不会生成，退款进入「退款中」，
          到账以微信为准，可在财务与对账页跟进。两个动作都不可撤销。
        </div>`;
@@ -75,7 +75,7 @@
          <div class="kv"><span class="k">意向取餐</span><span class="v tnum">${T.esc(p.pickupDate)} ${T.esc(p.pickupTime)}</span></div>
          <div class="kv"><span class="k">菜品</span><span class="v">${T.esc(Api.itemsSummary(p.items))}</span></div>
          <div class="imp-note ${why ? 'warn' : ''}" style="margin-top:12px">
-           ${why ? `<b>上次阻塞原因：</b>${T.esc(why)}<br>确认后服务端将按当前事实重新校验，未解除仍会拒绝。`
+           ${why ? `<b>上次阻塞原因：</b>${T.esc(why)}<br>确认时会重新检查，问题未解决时仍无法建单。`
                  : '将按原支付金额与取餐信息生成订单，分配取餐号，并按取餐时间自动排产。该动作不可撤销。'}
          </div>`,
       footerHtml:
@@ -83,13 +83,14 @@
          <button class="btn btn--blue" data-a="ok">确认建单</button>`,
       onMount(root, done) {
         root.querySelector('[data-a="cancel"]').onclick = done;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.rebuildOrder(p.id).then(o => {
+        const submit = root.querySelector('[data-a="ok"]');
+        submit.onclick = window.FormUI.submit(submit, async () => {
+          await Api.rebuildOrder(p.id).then(o => {
             done();
             paint(el);
             window.Toast.show(`已建单「${o.code}」· ${o.status}`, { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }
@@ -102,7 +103,7 @@
       width: '460px',
       bodyHtml:
         `<div class="kv"><span class="k">预支付单号</span><span class="v tnum">${T.esc(p.outTradeNo)}</span></div>
-         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(p.amount))} <span class="faint" style="font-size:12px">全额，不可修改</span></span></div>
+         <div class="kv"><span class="k">退款金额</span><span class="v">${T.money(Api.yuan(p.amount))} <span class="faint" style="font-size: 12px">全额，不可修改</span></span></div>
          <div class="kv"><span class="k">操作人</span><span class="v">${T.esc(me ? me.name : '—')}</span></div>
          <div style="margin-top:12px">
            <div class="fld-lb">作废原因<span class="req">*</span></div>
@@ -119,13 +120,14 @@
         const why = root.querySelector('#pv-why');
         why.focus();
         root.querySelector('[data-a="cancel"]').onclick = done;
-        root.querySelector('[data-a="ok"]').onclick = () => {
-          Api.refundPendingPayment(p.id, why.value).then(v => {
+        const submit = root.querySelector('[data-a="ok"]');
+        submit.onclick = window.FormUI.submit(submit, async () => {
+          await Api.refundPendingPayment(p.id, why.value).then(v => {
             done();
             paint(el);
             window.Toast.show(`已作废「${v.outTradeNo}」并发起全额退款`, { icon: 'check' });
-          }).catch(e => window.Toast.show(e.message, { icon: 'warn' }));
-        };
+          });
+        });
       },
     });
   }

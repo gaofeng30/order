@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "change": "simplify-mini-uiux-uat",
+  "base_sha": "01312131fb16c7121fc72b2d02532af4bd4ab65d",
+  "tdd": {
+    "red": {
+      "task_id": "2.1",
+      "command": "node --test tools/mini-uiux-clarity/page.test.cjs"
+    },
+    "green": {
+      "task_id": "2.2",
+      "command": "node --test tools/mini-uiux-clarity/page.test.cjs"
+    },
+    "refactor": {
+      "task_id": "2.3",
+      "command": "node --test tools/mini-uiux-clarity/page.test.cjs"
+    }
+  },
+  "user_regression": {
+    "minimum_ui_level": "UI2",
+    "native_capabilities": [],
+    "scenarios": [
+      {
+        "id": "quote-and-selection-feedback",
+        "kind": "primary",
+        "steps": [
+          "独立开发项目使用合成菜品旧单价10分数量2，隔离fixture返回quote原价42分折扣8分应付34分；确认页填写合成联系人与两级备注，点确认支付；fixture预支付失败，无真实支付",
+          "另一次fixture返回QUOTE_SELECTION_UNAVAILABLE，点击返回菜单重新选择，再点击确认返回原页"
+        ],
+        "expected": [
+          "报价阶段展示0.42/0.08/0.34及同一quote行；预支付失败后恢复预估，不混用快照",
+          "失败没有预支付，返回保留表单与购物车，刷新选择清旧报价"
+        ]
+      },
+      {
+        "id": "editing-and-existing-transaction",
+        "kind": "regression",
+        "steps": [
+          "在外部独立UI2 fixture项目中，通过测试控制API挂起核价/预支付；实际点击支付、输入表单、附加手机号保存、修改取餐，临时进入测试控制页再返回（真实页面onHide/onShow）；释放测试响应后切合成pending和confirm失败，实际点重新确认",
+          "普通菜单进入确认、打开returnToConfirm菜单后返回；记录exact页面文件hash与测试bootstraphash，测试响应不产生真实资金",
+          "修改菜单出现空购物车或菜单加载错误时，实际点击本页返回确认按钮，回到保留表单的确认页；普通菜单不显示此返回入口",
+          "隔离项目mock navigateBack失败，实际点击返回确认，确认停留原菜单且显示失败提示；恢复API后再次返回，原联系人仍在"
+        ],
+        "expected": [
+          "执行中与已有预支付时编辑被拒，重新确认调用同一id；不把本项标作真实原生支付验证",
+          "普通菜单入口不变，返回原确认页且表单保留，错误后可继续修改",
+          "在途页面离开再返回不清权威Quote，锁定时附加手机号无写入，所有锁定/错误态在实际UI2中可见"
+        ]
+      }
+    ]
+  }
+}

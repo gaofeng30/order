@@ -1,0 +1,15 @@
+# 唯一路线：保留页面的选择修改与权威报价显示
+确认页在新报价前只用当前购物车预估。Quote.items按line_number映射，不按product_id合并。权威字段为name、original_unit_price_cents、discounted_unit_price_cents、quantity、payable_subtotal_cents、flavors、note；原价小计用Quote.original_subtotal_cents，折扣和应付直接格式化，绝不重算。Quote尚在使用时禁止商品/表单变更。
+返回菜单保留原confirm Page，仅从新增returnToConfirm菜单回到原页；正常菜单checkout不变。返回onShow无prepayment时refreshItems清quote和旧错误，刷新pickup而保留form。空购物车显示可返回菜单，不能支付。栈深/导航失败不销毁原页，不存全局PII草稿。
+支付流程顺序和已有prepayment分支保持；界面编辑锁只表达现有交易快照已确定。执行中拒绝onInput/editPickup/editItem/onCzConfirm；有prepayment时锁持续。请求失败且没有prepayment时解锁。过期quote不自行刷新或代替用户发起新支付。
+Node Page seam注入合成cart/quote和可控promise，只检查页面显示/导航与既有transaction调用次数，不称真实微信支付证据。UI2正常页面路径由独立IDE项目或executor交接窗口运行，失败态可以通过该项目开发配置指向隔离fixture；不得修改线上配置或复制session。
+
+## 原生 Review 第二轮闭环
+- onShow刷新报价的前提是没有prepayment且没有在途_paying/promise（实现标识使用现有_paying对应的ASCII _paying），不能仅检查prepayment；核价、prepay挂起时前后台切换不清报价。
+- 编辑锁覆盖saveExtraPhone；附加手机号正在保存时不开始Quote，避免身份写入跨越核价。原生手机号授权入口保持现有phoneState规则，原生调用不变。
+- UI2隔离fixture：生成外部临时微信测试项目，复制exact candidate确认/menu页面与组件字节，使用独立测试bootstrap和transaction/phone适配器控制合成响应；不改部署源码/runtimeEndpoint，不连接UAT或发起真实requestPayment。fixture提供专用测试控制API切换quote挂起/prepay挂起/pending/confirm失败；实际点击页面输入与保存按钮、切前后台、重试并观察合成调用计数。逐一记录exact业务文件hash、测试bootstraphash、工具/基础库版本和步骤，不能把合成支付当UI3或UAT。正常UAT显示路径仍在协调窗口验证。
+
+## 实现审查修正
+商品编辑使上一次选择失败/支付错误失效；回到修改菜单时只有确认页确在上一层才显示 本页专用返回确认按钮，返回不依赖可结算状态，结算 guard 保持不变。外部 UI2 fixture 的依赖控制通过专用 getApp().fixture 测试 API 调用，业务页面只通过真实 tap/input 操作；不对业务 Page setData。
+
+返回按钮暴露出的异步边界：menu.onUnload 同时使 options/menu 请求 generation 失效；返回后迟到的成功或失败不能改写全局 pickup。页面显示和下一次 quoteRequest 使用相同选择。fixture 提供 menu-error/menu-hold 支持实际返回与迟到响应场景。

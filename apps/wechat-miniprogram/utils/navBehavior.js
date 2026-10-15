@@ -20,9 +20,15 @@ module.exports = Behavior({
     navH: 44,
     navTotal: 64,
     safeBottom: 0,
+    navSolid: false,
   },
   methods: {
     _initNav() { applyNav(this); },
+    // 透明导航页面的 scroll-view 绑定 bindscroll="onNavScroll"，navbar 传 solid="{{navSolid}}"（D17）
+    onNavScroll(e) {
+      const solid = ((e && e.detail && e.detail.scrollTop) || 0) > 10;
+      if (solid !== this.data.navSolid) this.setData({ navSolid: solid });
+    },
   },
   // 组件场景
   lifetimes: { attached() { applyNav(this); } },

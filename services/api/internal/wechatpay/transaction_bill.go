@@ -39,6 +39,11 @@ type BillEntry struct {
 	Currency    string
 	State       string
 	OccurredAt  time.Time
+
+	Ordinal           uint64
+	AppID             string
+	MerchantID        string
+	PaymentProviderID string
 }
 
 // TransactionBill is one verified-integrity provider file and its strict entries.
@@ -201,6 +206,7 @@ func parseTransactionBill(body []byte, appID, merchantID string) ([]BillEntry, e
 		if err != nil {
 			return nil, err
 		}
+		entry.Ordinal = detailCount + 1
 		entries = append(entries, entry)
 		detailCount++
 	}
@@ -234,7 +240,10 @@ func parseTransactionBillEntry(record []string, appID, merchantID string) (BillE
 	if err != nil {
 		return BillEntry{}, &Error{kind: ErrorProtocol}
 	}
-	entry := BillEntry{OutTradeNo: record[6], Currency: record[11], State: record[9], OccurredAt: occurredAt.UTC()}
+	entry := BillEntry{
+		OutTradeNo: record[6], Currency: record[11], State: record[9], OccurredAt: occurredAt.UTC(),
+		AppID: record[1], MerchantID: record[2], PaymentProviderID: record[5],
+	}
 	switch record[9] {
 	case "SUCCESS":
 		entry.Kind = BillEntryPayment

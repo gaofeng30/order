@@ -97,9 +97,9 @@ type RunResult struct {
 type store interface {
 	recordConsent(context.Context, WriteMeta, ConsentInput, time.Time) (Subscription, error)
 	enqueueInTx(context.Context, *sql.Tx, NotificationIntent, time.Time) error
-	claimDue(context.Context, time.Time, uint16, [16]byte, time.Duration) ([]claimedDelivery, error)
+	claimDue(context.Context, time.Time, time.Time, uint16, [16]byte, time.Duration) ([]claimedDelivery, error)
 	markSent(context.Context, claimedDelivery, SendResult, time.Time) error
-	markTemporaryFailure(context.Context, claimedDelivery, string, time.Time) error
+	markTemporaryFailure(context.Context, claimedDelivery, string, time.Time, time.Time) error
 	markPermanentFailure(context.Context, claimedDelivery, string, time.Time) error
 }
 

@@ -1,5 +1,6 @@
 const SUCCESS = new Set([200, 201, 202, 204]);
-const { isRuntimeOrigin } = require('./runtimeEndpoint.js');
+const { isRuntimeEndpointReady } = require('./runtimeEndpoint.js');
+const { requestRuntime } = require('./cloudrunTransport.js');
 let keySequence = 0;
 
 class APIError extends Error {
@@ -13,9 +14,7 @@ class APIError extends Error {
 
 function runtime() {
   const state = getApp().globalData;
-  if (!state.runtimeEndpoint || state.runtimeEndpoint.state !== 'ready' || !state.apiBaseUrl
-    || state.runtimeEndpoint.origin !== state.apiBaseUrl
-    || !isRuntimeOrigin(state.runtimeEndpoint.envVersion, state.apiBaseUrl)) {
+  if (!isRuntimeEndpointReady(state.runtimeEndpoint, state.apiBaseUrl)) {
     throw new APIError('RUNTIME_NOT_READY');
   }
   return state;
@@ -36,6 +35,7 @@ function resolvePublicURL(value, objectKey) {
 
   const localPrefix = '/api/v1/objects/';
   if (value.startsWith('/')) {
+    if (state.runtimeEndpoint.envVersion !== 'develop') throw new APIError('OBJECT_URL_INVALID');
     if (!value.startsWith(localPrefix) || value.includes('?')) throw new APIError('OBJECT_URL_INVALID');
     const encoded = value.slice(localPrefix.length);
     if (!encoded) throw new APIError('OBJECT_URL_INVALID');
@@ -78,11 +78,13 @@ function responseError(response) {
   return new APIError(code, response && response.statusCode);
 }
 
-function request(path, options) {
+async function request(path, options) {
   const config = options || {};
   const app = getApp();
-  if (config.auth === true && app.globalData.session && app.globalData.session.state === 'loading' && app.sessionPromise) {
-    return app.sessionPromise.then(() => request(path, config));
+  const session = app.globalData.session;
+  if (config.auth !== false && session && ((session.state === 'loading' && app.sessionPromise)
+    || (session.state === 'ready' && session.accessToken && !(Date.parse(session.expiresAt) > Date.now())))) {
+    await app.startSession();
   }
   let state;
   let token;
@@ -94,11 +96,10 @@ function request(path, options) {
   }
   const header = {};
   if (token && config.auth !== false) header.Authorization = `Bearer ${token}`;
-  if (Object.hasOwn(config, 'data')) header['content-type'] = 'application/json';
-  if (config.idempotencyKey) header['Idempotency-Key'] = config.idempotencyKey;
+  if (Object.prototype.hasOwnProperty.call(config, 'data')) header['content-type'] = 'application/json';
+  if (config.idempotencyKey) header['Idempotency-Key'] = await config.idempotencyKey;
   return new Promise((resolve, reject) => {
-    wx.request({
-      url: `${state.apiBaseUrl}${path}`,
+    requestRuntime(state.runtimeEndpoint, path, {
       method: config.method || 'GET',
       header,
       data: config.data,
@@ -114,10 +115,18 @@ function request(path, options) {
   });
 }
 
-function newIdempotencyKey(scope) {
-  if (!wx.getRandomValues) throw new APIError('IDEMPOTENCY_UNAVAILABLE');
-  const bytes = new Uint8Array(16);
-  wx.getRandomValues(bytes);
+async function newIdempotencyKey(scope) {
+  if (typeof wx.getRandomValues !== 'function') throw new APIError('IDEMPOTENCY_UNAVAILABLE');
+  let bytes;
+  try {
+    const result = await wx.getRandomValues({ length: 16 });
+    if (!result || Object.prototype.toString.call(result.randomValues) !== '[object ArrayBuffer]' || result.randomValues.byteLength !== 16) {
+      throw new Error('Invalid random values');
+    }
+    bytes = new Uint8Array(result.randomValues);
+  } catch (error) {
+    throw new APIError('IDEMPOTENCY_UNAVAILABLE');
+  }
   keySequence += 1;
   return `${scope}-${Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('')}-${keySequence}`;
 }

@@ -30,8 +30,8 @@ type pricingSnapshotLoader interface {
 // authoritative and repeats the same current-fact resolution transactionally.
 type PricingApplication struct{ snapshots pricingSnapshotLoader }
 
-func NewMySQLPricing(db *sql.DB) *PricingApplication {
-	return newPricingApplication(&mysqlPricingSnapshotLoader{db: db})
+func NewPostgreSQLPricing(db *sql.DB) *PricingApplication {
+	return newPricingApplication(&postgresPricingSnapshotLoader{db: db})
 }
 
 func newPricingApplication(loader pricingSnapshotLoader) *PricingApplication {
@@ -95,13 +95,13 @@ func (application *PricingApplication) ResolvePrices(ctx context.Context, userID
 	return result, nil
 }
 
-type mysqlPricingSnapshotLoader struct{ db *sql.DB }
+type postgresPricingSnapshotLoader struct{ db *sql.DB }
 
-func (loader *mysqlPricingSnapshotLoader) Load(ctx context.Context, userID uint64) (result pricingSnapshot, resultErr error) {
+func (loader *postgresPricingSnapshotLoader) Load(ctx context.Context, userID uint64) (result pricingSnapshot, resultErr error) {
 	if loader == nil || loader.db == nil || userID == 0 {
 		return pricingSnapshot{}, ErrUnavailable
 	}
-	transaction, err := loader.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	transaction, err := loader.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelRepeatableRead})
 	if err != nil {
 		return pricingSnapshot{}, ErrUnavailable
 	}
@@ -115,9 +115,9 @@ func (loader *mysqlPricingSnapshotLoader) Load(ctx context.Context, userID uint6
 	var primaryPhone, extraPhone, extraName sql.NullString
 	var extraNameKey []byte
 	err = transaction.QueryRowContext(ctx, `SELECT
-  CONVERT(primary_phone USING ascii), CONVERT(extra_phone USING ascii), extra_name, extra_name_key
+  convert_from(primary_phone,'UTF8'), convert_from(extra_phone,'UTF8'), extra_name, extra_name_key
 FROM miniprogram_users
-WHERE id = ?`, userID).Scan(&primaryPhone, &extraPhone, &extraName, &extraNameKey)
+WHERE id = $1`, userID).Scan(&primaryPhone, &extraPhone, &extraName, &extraNameKey)
 	if err != nil {
 		return pricingSnapshot{}, ErrUnavailable
 	}
@@ -153,13 +153,13 @@ WHERE id = 1`).Scan(&result.RatePercent, &result.WhitelistVersion); err != nil |
 		return pricingSnapshot{}, ErrUnavailable
 	}
 
-	phones := []any{result.PrimaryPhone}
-	query := `SELECT CONVERT(phone USING ascii), name, name_key, enabled
+	phones := []any{[]byte(result.PrimaryPhone)}
+	query := `SELECT convert_from(phone,'UTF8'), name, name_key, enabled
 FROM staff_whitelist
-WHERE phone = ?`
+WHERE phone = $1`
 	if result.Extra != nil && result.Extra.Phone != result.PrimaryPhone {
-		query += ` OR phone = ?`
-		phones = append(phones, result.Extra.Phone)
+		query += ` OR phone = $2`
+		phones = append(phones, []byte(result.Extra.Phone))
 	}
 	query += ` ORDER BY id`
 	rows, err := transaction.QueryContext(ctx, query, phones...)

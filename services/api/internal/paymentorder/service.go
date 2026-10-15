@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -18,10 +19,12 @@ import (
 const (
 	defaultLeaseDuration     = 30 * time.Second
 	defaultReconcileInterval = 15 * time.Second
+	failedReconcileInterval  = 30 * time.Minute
 	maxWorkerBatch           = 100
 )
 
 type Config struct {
+	Environment       string
 	AppID             string
 	MerchantID        string
 	Description       string
@@ -41,22 +44,23 @@ func WithLeaseOwnerSource(source func() ([16]byte, error)) Option {
 }
 
 type Service struct {
-	db         *sql.DB
-	quotes     QuoteSource
-	provider   PaymentProvider
-	config     Config
-	now        func() time.Time
-	leaseOwner func() ([16]byte, error)
+	db             *sql.DB
+	quotes         QuoteSource
+	provider       PaymentProvider
+	config         Config
+	now            func() time.Time
+	leaseOwner     func() ([16]byte, error)
+	merchantNumber func(string, string) (string, error)
 }
 
-func NewMySQLApplication(db *sql.DB, quotes QuoteSource, provider PaymentProvider, config Config, options ...Option) *Service {
+func NewPostgreSQLApplication(db *sql.DB, quotes QuoteSource, provider PaymentProvider, config Config, options ...Option) *Service {
 	if config.LeaseDuration == 0 {
 		config.LeaseDuration = defaultLeaseDuration
 	}
 	if config.ReconcileInterval == 0 {
 		config.ReconcileInterval = defaultReconcileInterval
 	}
-	service := &Service{db: db, quotes: quotes, provider: provider, config: config, now: time.Now, leaseOwner: randomLeaseOwner}
+	service := &Service{db: db, quotes: quotes, provider: provider, config: config, now: time.Now, leaseOwner: randomLeaseOwner, merchantNumber: wechatpay.NewMerchantNumber}
 	for _, option := range options {
 		if option != nil {
 			option(service)
@@ -95,7 +99,7 @@ func (service *Service) Prepare(ctx context.Context, meta WriteMeta, quoteID uin
 	}
 
 	var openID string
-	if err := service.db.QueryRowContext(ctx, `SELECT openid FROM miniprogram_users WHERE id=?`, meta.ActorUserID).Scan(&openID); err != nil {
+	if err := service.db.QueryRowContext(ctx, `SELECT openid FROM miniprogram_users WHERE id=$1`, meta.ActorUserID).Scan(&openID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return PrepareResult{}, ErrNotFound
 		}
@@ -112,6 +116,9 @@ func (service *Service) Prepare(ctx context.Context, meta WriteMeta, quoteID uin
 		if err == nil {
 			break
 		}
+		if attempt == 0 && (service.config.Environment == "uat" || service.config.Environment == "production") && isPaymentNumberCollision(err) {
+			continue
+		}
 		if isDuplicate(err) {
 			existing, found, replayErr := service.findPrepareReplay(ctx, meta.ActorUserID, quoteID, keyHash)
 			if replayErr != nil || !found {
@@ -119,14 +126,15 @@ func (service *Service) Prepare(ctx context.Context, meta WriteMeta, quoteID uin
 			}
 			return service.finishPrepareCommand(ctx, meta, existing, false)
 		}
-		if (!isRetryableMySQL(err) && !errors.Is(err, quote.ErrUnavailable)) || attempt == 1 {
+		if (!isRetryablePostgreSQL(err) && !errors.Is(err, quote.ErrUnavailable)) || attempt == 1 {
 			return PrepareResult{}, mapPrepareError(err)
 		}
 	}
 
 	providerResult, providerErr := service.provider.CreateJSAPI(ctx, claimed.request)
+	finishedAt := service.now().UTC().Truncate(time.Microsecond)
 	if providerErr != nil {
-		if err := service.finishCreateUnknown(ctx, claimed, now); err != nil {
+		if err := service.finishCreateUnknown(ctx, claimed, finishedAt); err != nil {
 			return PrepareResult{}, err
 		}
 		record, err := service.readPrepaymentByID(ctx, claimed.id)
@@ -136,10 +144,10 @@ func (service *Service) Prepare(ctx context.Context, meta WriteMeta, quoteID uin
 		return service.finishPrepareCommand(ctx, meta, record, true)
 	}
 	if err := validateProviderCreateResult(providerResult); err != nil {
-		_ = service.finishCreateUnknown(ctx, claimed, now)
+		_ = service.finishCreateUnknown(ctx, claimed, finishedAt)
 		return PrepareResult{}, ErrUnavailable
 	}
-	if err := service.finishCreateSuccess(ctx, claimed, providerResult, now); err != nil {
+	if err := service.finishCreateSuccess(ctx, claimed, providerResult, finishedAt); err != nil {
 		return PrepareResult{}, err
 	}
 	record, err := service.readPrepaymentByID(ctx, claimed.id)
@@ -167,6 +175,9 @@ func (service *Service) Confirm(ctx context.Context, meta WriteMeta, prepaymentI
 	}
 	if record.userID != meta.ActorUserID {
 		return ConfirmResult{}, ErrNotFound
+	}
+	if !service.paymentRecordEnvironment(ctx, record) {
+		return ConfirmResult{}, ErrUnavailable
 	}
 	if result, found, err := service.existingOrder(ctx, prepaymentID); err != nil {
 		return ConfirmResult{}, err
@@ -197,6 +208,13 @@ func (service *Service) RunDue(ctx context.Context, now time.Time, limit uint16)
 	}
 	var result RunResult
 	for _, id := range ids {
+		if service.config.Environment == "uat" || service.config.Environment == "production" {
+			record, err := service.readPrepaymentByID(ctx, id)
+			if err != nil || !service.paymentRecordEnvironment(ctx, record) {
+				result.Pending++
+				continue
+			}
+		}
 		if applied, _, applyErr := service.applyReady(ctx, id, false, 0); applyErr == nil && applied.State == ConfirmOrderCreated {
 			result.Materialized++
 			continue
@@ -241,6 +259,12 @@ func (service *Service) MaterializePending(ctx context.Context, meta WriteMeta, 
 	} else if found {
 		return receiptConfirmResult(receipt)
 	}
+	if service.config.Environment == "uat" || service.config.Environment == "production" {
+		record, err := service.readPrepaymentByID(ctx, prepaymentID)
+		if err != nil || !service.paymentRecordEnvironment(ctx, record) {
+			return ConfirmResult{}, ErrUnavailable
+		}
+	}
 	result, applied, err := service.applyReady(ctx, prepaymentID, true, meta.ActorUserID)
 	if err != nil {
 		return ConfirmResult{}, err
@@ -281,7 +305,7 @@ func (service *Service) ListPending(ctx context.Context, ownerUserID uint64, fil
 
 func (service *Service) ready() bool {
 	return service != nil && service.db != nil && service.quotes != nil && service.provider != nil && service.now != nil && service.leaseOwner != nil &&
-		service.config.AppID != "" && service.config.MerchantID != "" && service.config.Description != "" && service.config.PaymentNotifyURL != "" &&
+		validPaymentEnvironment(service.config.Environment) && validCloudPaymentNotify(service.config) && service.config.AppID != "" && service.config.MerchantID != "" && service.config.Description != "" && service.config.PaymentNotifyURL != "" &&
 		service.config.LeaseDuration > 0 && service.config.ReconcileInterval > 0
 }
 
@@ -334,7 +358,7 @@ func mapPrepareError(err error) error {
 
 func (service *Service) existingOrder(ctx context.Context, prepaymentID uint64) (ConfirmResult, bool, error) {
 	var orderID uint64
-	err := service.db.QueryRowContext(ctx, `SELECT id FROM orders WHERE prepayment_id=?`, prepaymentID).Scan(&orderID)
+	err := service.db.QueryRowContext(ctx, `SELECT id FROM orders WHERE prepayment_id=$1`, prepaymentID).Scan(&orderID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return ConfirmResult{}, false, nil
 	}
@@ -346,7 +370,7 @@ func (service *Service) existingOrder(ctx context.Context, prepaymentID uint64) 
 
 func (service *Service) isEnabledOwner(ctx context.Context, userID uint64) (bool, error) {
 	var count uint64
-	err := service.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM merchant_accounts WHERE bound_user_id=? AND role='OWNER' AND enabled=1 AND deleted_at IS NULL`, userID).Scan(&count)
+	err := service.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM merchant_accounts WHERE bound_user_id=$1 AND role='OWNER' AND enabled=TRUE AND deleted_at IS NULL`, userID).Scan(&count)
 	if err != nil {
 		return false, ErrUnavailable
 	}
@@ -358,3 +382,80 @@ func sanitizeProviderError(error) error { return ErrUnavailable }
 var _ Application = (*Service)(nil)
 var _ = sanitizeProviderError
 var _ = wechatpay.RequestPayment{}
+
+func validPaymentEnvironment(environment string) bool {
+	switch environment {
+	case "development", "test", "uat", "production":
+		return true
+	}
+	return false
+}
+
+func (service *Service) newOutTradeNo(quoteID uint64) (string, error) {
+	if service.config.Environment == "uat" || service.config.Environment == "production" {
+		if service.merchantNumber == nil {
+			return "", ErrUnavailable
+		}
+		return service.merchantNumber(service.config.Environment, "payment")
+	}
+	return randomOutTradeNo(quoteID)
+}
+
+func validCloudPaymentNotify(config Config) bool {
+	if config.Environment != "uat" && config.Environment != "production" {
+		return true
+	}
+	u, err := url.Parse(config.PaymentNotifyURL)
+	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil && u.RawQuery == "" && !u.ForceQuery && u.Fragment == "" && u.RawFragment == ""
+}
+
+func paymentRecordInEnvironment(config Config, record prepaymentRecord) bool {
+	if config.Environment == "development" || config.Environment == "test" {
+		return true
+	}
+	if !record.validStored() || record.expectedAppID != config.AppID || record.expectedMerchantID != config.MerchantID {
+		return false
+	}
+	request, _, err := canonicalProviderCreateRequest(record.createRequestJSON)
+	if err != nil || request.OutTradeNo != record.outTradeNo || request.AppID != record.expectedAppID || request.MerchantID != record.expectedMerchantID || request.AmountCents != record.expectedAmountCents || request.Currency != record.currency {
+		return false
+	}
+	if environment, kind, ok := wechatpay.ParseMerchantNumber(record.outTradeNo); ok {
+		return environment == config.Environment && kind == "payment"
+	}
+	return request.NotifyURL == config.PaymentNotifyURL
+}
+
+func (service *Service) paymentRecordEnvironment(ctx context.Context, record prepaymentRecord) bool {
+	if service.config.Environment == "development" || service.config.Environment == "test" {
+		return true
+	}
+	tx, err := service.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return false
+	}
+	defer tx.Rollback()
+	return service.paymentRecordEnvironmentIn(ctx, tx, record)
+}
+func (service *Service) paymentRecordEnvironmentIn(ctx context.Context, tx *sql.Tx, record prepaymentRecord) bool {
+	if service.config.Environment == "development" || service.config.Environment == "test" {
+		return true
+	}
+	if !record.validStored() || record.expectedAppID != service.config.AppID || record.expectedMerchantID != service.config.MerchantID {
+		return false
+	}
+	var count uint64
+	var provider sql.NullString
+	if tx.QueryRowContext(ctx, `SELECT count(DISTINCT transaction_id),min(convert_from(transaction_id,'UTF8')) FROM payment_observations WHERE prepayment_id=$1 AND validation='MATCH' AND transaction_id IS NOT NULL`, record.id).Scan(&count, &provider) != nil {
+		return false
+	}
+	if count == 0 {
+		return paymentRecordInEnvironment(service.config, record)
+	}
+	if count != 1 || !provider.Valid || provider.String == "" {
+		return false
+	}
+	// The existing MATCH observation supplies only an exact provider locator.
+	// The immutable request and reviewed confirmation still establish ownership.
+	return service.paymentCallbackInEnvironment(ctx, tx, record, wechatpay.Transaction{AppID: record.expectedAppID, MerchantID: record.expectedMerchantID, OutTradeNo: record.outTradeNo, TransactionID: provider.String})
+}

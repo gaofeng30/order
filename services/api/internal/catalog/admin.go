@@ -89,7 +89,7 @@ type CatalogResult struct {
 	Product  *AdminProduct
 }
 
-// AdminApplication is the deep PC configuration seam. MySQL locking, receipts and
+// AdminApplication is the deep PC configuration seam. PostgreSQL locking, receipts and
 // last-write validation remain inside the implementation supplied at composition.
 type AdminApplication interface {
 	ListCategories(context.Context) ([]AdminCategory, error)

@@ -1,7 +1,8 @@
 {
   "navigationStyle": "custom",
-  "navigationBarTextStyle": "white",
+  "navigationBarTextStyle": "black",
   "usingComponents": {
     "customize": "/components/customize/customize"
-  }
+  },
+  "disableScroll": true
 }

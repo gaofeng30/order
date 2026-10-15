@@ -40,11 +40,13 @@ type Item struct {
 	Name           string
 	Quantity       uint32
 	LineTotalCents uint64
+	Flavors        []string
+	Note           string
 }
 type Order struct {
 	ID                                                                uint64
 	OrderNo, State, PickupDate, PickupTime, PickupPoint, PickupNumber string
-	MealPeriod                                                        string
+	MealPeriod, OrderNote                                             string
 	PayableCents, SubtotalCents, DiscountCents                        uint64
 	DiscountRate                                                      uint8
 	ContactName, MaskedPhone, TransactionID                           string
@@ -100,6 +102,7 @@ type PendingResult struct {
 // Application is an Adapter over Order/PaymentOrder/Refund/Fulfillment plus derived Billing reads.
 // It never owns duplicate transaction facts or summary tables.
 type Application interface {
+	OrderCounts(context.Context, uint64) (map[string]uint64, error)
 	SearchOrders(context.Context, uint64, OrderFilter) ([]Order, uint64, error)
 	Stats(context.Context, uint64, time.Time) (Stats, error)
 	Payments(context.Context, uint64, BillingRange, PageQuery) ([]Payment, uint64, error)
@@ -116,9 +119,26 @@ type Handler struct {
 	now func() time.Time
 }
 
-func NewHandler(app Application) *Handler { return &Handler{app: app, now: time.Now} }
+type HandlerOption func(*Handler)
+
+func WithClock(now func() time.Time) HandlerOption {
+	return func(h *Handler) {
+		if now != nil {
+			h.now = now
+		}
+	}
+}
+
+func NewHandler(app Application, options ...HandlerOption) *Handler {
+	h := &Handler{app: app, now: time.Now}
+	for _, option := range options {
+		option(h)
+	}
+	return h
+}
 func (h *Handler) RegisterRoutes(group *gin.RouterGroup) {
 	group.GET("/orders", h.orders)
+	group.GET("/orders/counts", h.orderCounts)
 	group.GET("/stats", h.stats)
 	group.GET("/finance/payments", h.payments)
 	group.GET("/finance/refunds", h.refunds)
@@ -345,9 +365,13 @@ func (h *Handler) refund(c *gin.Context) {
 func orderView(o Order) gin.H {
 	items := make([]gin.H, 0, len(o.Items))
 	for _, i := range o.Items {
-		items = append(items, gin.H{"product_id": strconv.FormatUint(i.ProductID, 10), "name": i.Name, "quantity": i.Quantity, "line_total_cents": i.LineTotalCents})
+		flavors := i.Flavors
+		if flavors == nil {
+			flavors = []string{}
+		}
+		items = append(items, gin.H{"product_id": strconv.FormatUint(i.ProductID, 10), "name": i.Name, "quantity": i.Quantity, "line_total_cents": i.LineTotalCents, "flavors": flavors, "note": i.Note})
 	}
-	return gin.H{"id": strconv.FormatUint(o.ID, 10), "order_no": o.OrderNo, "state": o.State, "pickup_date": o.PickupDate, "pickup_time": o.PickupTime, "meal_period": o.MealPeriod, "pickup_point": o.PickupPoint, "pickup_number": o.PickupNumber, "payable_cents": o.PayableCents, "subtotal_cents": o.SubtotalCents, "discount_cents": o.DiscountCents, "discount_rate_percent": o.DiscountRate, "contact_name": o.ContactName, "phone_masked": o.MaskedPhone, "transaction_id": o.TransactionID, "paid_at": o.PaidAt, "materialized_at": o.MaterializedAt, "items": items, "available_actions": o.AvailableActions}
+	return gin.H{"id": strconv.FormatUint(o.ID, 10), "order_no": o.OrderNo, "order_note": o.OrderNote, "state": o.State, "pickup_date": o.PickupDate, "pickup_time": o.PickupTime, "meal_period": o.MealPeriod, "pickup_point": o.PickupPoint, "pickup_number": o.PickupNumber, "payable_cents": o.PayableCents, "subtotal_cents": o.SubtotalCents, "discount_cents": o.DiscountCents, "discount_rate_percent": o.DiscountRate, "contact_name": o.ContactName, "phone_masked": o.MaskedPhone, "transaction_id": o.TransactionID, "paid_at": o.PaidAt, "materialized_at": o.MaterializedAt, "items": items, "available_actions": o.AvailableActions}
 }
 func pendingView(p Pending) gin.H {
 	items := make([]gin.H, 0, len(p.Items))
@@ -407,4 +431,19 @@ func writeError(c *gin.Context, err error) {
 		status, code, message = http.StatusConflict, "COMMAND_CONFLICT", "command conflict"
 	}
 	c.JSON(status, gin.H{"error": gin.H{"code": code, "message": message}})
+}
+
+func (h *Handler) orderCounts(c *gin.Context) {
+	id, ok := actor(c)
+	if !ok {
+		writeError(c, ErrForbidden)
+		return
+	}
+	counts, err := h.app.OrderCounts(c.Request.Context(), id)
+	if err != nil {
+		writeError(c, err)
+		return
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{"counts": counts})
 }

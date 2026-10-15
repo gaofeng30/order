@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gaofeng30/order/services/api/internal/orderproduction"
-	mysqlDriver "github.com/go-sql-driver/mysql"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const productionLeadTime = 30 * time.Minute
@@ -38,7 +38,7 @@ func (service *Service) RunProductionDue(ctx context.Context, now time.Time, lim
 		return RunResult{}, ErrUnavailable
 	}
 	now = now.UTC().Truncate(time.Microsecond)
-	rows, err := service.db.QueryContext(ctx, `SELECT id FROM orders WHERE state='RESERVED' AND pickup_at<=? ORDER BY pickup_at,id LIMIT ?`, now.Add(productionLeadTime), limit)
+	rows, err := service.db.QueryContext(ctx, `SELECT id FROM orders WHERE state='RESERVED' AND pickup_at<=$1 ORDER BY pickup_at,id LIMIT $2`, now.Add(productionLeadTime), limit)
 	if err != nil {
 		return RunResult{}, ErrUnavailable
 	}
@@ -91,7 +91,7 @@ func (service *Service) advanceOnce(ctx context.Context, id uint64, now time.Tim
 	var state string
 	var pickupAt, materializedAt time.Time
 	var recordVersion uint64
-	err = transaction.QueryRowContext(ctx, `SELECT state,pickup_at,materialized_at,record_version FROM orders WHERE id=? FOR UPDATE`, id).Scan(&state, &pickupAt, &materializedAt, &recordVersion)
+	err = transaction.QueryRowContext(ctx, `SELECT state,pickup_at,materialized_at,record_version FROM orders WHERE id=$1 FOR UPDATE`, id).Scan(&state, &pickupAt, &materializedAt, &recordVersion)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
@@ -108,7 +108,7 @@ func (service *Service) advanceOnce(ctx context.Context, id uint64, now time.Tim
 	if !due {
 		return false, nil
 	}
-	update, err := transaction.ExecContext(ctx, `UPDATE orders SET state='PREPARING',preparing_at=?,record_version=record_version+1,updated_at=? WHERE id=? AND state='RESERVED' AND record_version=?`, now, now, id, recordVersion)
+	update, err := transaction.ExecContext(ctx, `UPDATE orders SET state='PREPARING',preparing_at=$1,record_version=record_version+1,updated_at=$2 WHERE id=$3 AND state='RESERVED' AND record_version=$4`, now, now, id, recordVersion)
 	if err != nil {
 		return false, err
 	}
@@ -124,7 +124,7 @@ func (service *Service) advanceOnce(ctx context.Context, id uint64, now time.Tim
 		PreparingAt time.Time `json:"preparing_at"`
 	}{State: string(orderproduction.StatePreparing), PreparingAt: now})
 	scope := sha256.Sum256([]byte("SYSTEM:ORDER_PRODUCTION"))
-	if _, err := transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,action,target_type,target_id,operation_key_hash,result,reason_code,before_state_json,after_state_json,occurred_at) VALUES('SYSTEM_EVIDENCE','SYSTEM',?,NULL,NULL,'order.production_due','ORDER',?,NULL,'SUCCEEDED','PRODUCTION_STARTED',?,?,?)`, scope[:], id, before, after, now); err != nil {
+	if _, err := transaction.ExecContext(ctx, `INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,actor_account_id,action,target_type,target_id,operation_key_hash,result,reason_code,before_state_json,after_state_json,occurred_at) VALUES('SYSTEM_EVIDENCE','SYSTEM',$1,NULL,NULL,'order.production_due','ORDER',$2,NULL,'SUCCEEDED','PRODUCTION_STARTED',$3,$4,$5)`, scope[:], id, before, after, now); err != nil {
 		return false, err
 	}
 	if err := transaction.Commit(); err != nil {
@@ -142,6 +142,6 @@ func productionDecision(now, pickupAt time.Time) (bool, error) {
 }
 
 func retryable(err error) bool {
-	var mysqlError *mysqlDriver.MySQLError
-	return errors.As(err, &mysqlError) && (mysqlError.Number == 1205 || mysqlError.Number == 1213)
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && (pgError.Code == "40P01" || pgError.Code == "40001" || pgError.Code == "55P03")
 }

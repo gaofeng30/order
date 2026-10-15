@@ -1,0 +1,60 @@
+{
+  "checked_at": "2026-10-06T09:04:32.061010+00:00",
+  "scope": "Order UAT readonly check; no production or cloud mutation",
+  "mcp": {
+    "version": "2.34.8",
+    "auth_status": "READY",
+    "credential_scope": "account",
+    "env_id": "order-uat-d1gtzpzj50615c300"
+  },
+  "environment": {
+    "id": "order-uat-d1gtzpzj50615c300",
+    "status": "NORMAL",
+    "region": "ap-shanghai",
+    "package": "baas_personal",
+    "expiry": "2026-10-31 23:59:59",
+    "payg_enabled": false,
+    "auto_renew": false
+  },
+  "postgresql": {
+    "columns": [
+      "current_database",
+      "current_user",
+      "version",
+      "ssl",
+      "max_connections",
+      "public_tables"
+    ],
+    "rows": [
+      {
+        "current_database": "postgres-o7vmhmxa",
+        "current_user": "cloudbase_postgres_postgres_o7vmhmxa",
+        "version": "PostgreSQL 17.11 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 10.2.0, 64-bit",
+        "ssl": "off",
+        "max_connections": 2048,
+        "public_tables": 0
+      }
+    ],
+    "returnedRows": 1,
+    "truncated": false,
+    "truncatedCount": 0,
+    "command": "SELECT",
+    "rowCount": 0
+  },
+  "cloudrun": {
+    "envId": "order-uat-d1gtzpzj50615c300",
+    "status": "unopened",
+    "isExist": false
+  },
+  "native_pg_connection": "NOT_VERIFIED; console address unavailable on current shared tier",
+  "purchase": "NOT_DONE; standard upgrade quote80.24 CNY pending user approval; dedicated PG separate spec/cost not approved",
+  "untested": [
+    "Go native PG/TLS/tenant connection budget",
+    "CloudRun native identity/secret/COS path",
+    "cloud44 migrations and actual API callbacks",
+    "full95case/UI2/UI3/device/real payment"
+  ],
+  "excluded_by_user": [
+    "custom-domain ICP"
+  ]
+}
