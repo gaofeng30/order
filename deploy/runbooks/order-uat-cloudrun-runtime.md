@@ -9,7 +9,7 @@
 - 环境 `order-uat-d1gtzpzj50615c300`，地域 `ap-shanghai`，AppID `wx15e136b256d4dc5a`。
 - API 经共享 PostgreSQL **官方 HTTPS RPC** 访问，使用普通专用身份、完整函数/ACL/RLS与16个序列权限；没有原生 PG 私网、管理 API Key、SSM 或通用腾讯云凭据的运行时入口。
 - 启动只检查数据库，不迁移/bootstrap。ready 核对最终定义/ACL、实际身份和原迁移账本，保持 2 秒预算；不加跳过检查、禁用 worker 或权限降级开关。
-- 支付、退款、订单推进、订阅四个 1 秒循环和每小时对账仍按原合同启动；对账使用上海昨日、不提前首跑。ready 不是实际 worker 推进证明。
+- 以当前UAT源码为准：制作扫描已移除，制作状态由服务端时间派生；支付、退款、订阅仍有1秒扫描，可靠异常补偿未完成；对账北京时间10:05处理昨日，失败30分钟重试，但停机/多副本恢复仍需验收。旧四循环/每小时说明仅对应历史版本，ready不是任务推进证明。
 - 图片桶 `6f72-order-uat-d1gtzpzj50615c300-1473835269` 保持私有和版本控制，图片确认固定版本；`images/` 非当前版本按已确认 30 天策略保留。具名 COS 身份仅用于受限临时凭据及所需读写；既有核心/隔离恢复回执不代表全部生产恢复目标。
 
 用户本轮明确停止自动测试/回归、删除测试用例，交付分支已删除 485 个文件。旧 95 场景、UI3、TDD/Gate、ordinary/race 仅作历史，**不恢复、不重跑、不把未运行记 PASS**。生产构建、SQL 安装/读回、部署/ready、代码上传和用户实际操作分别记录。
@@ -133,7 +133,7 @@ ORDER_REDEMPTION_TOKEN_KEY
 
 统一 origin：`https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com`。实际 `/` → `CBR/order-api`、透传 true；`/pc` → `STATIC_STORE/staticstore`、透传 false，最长前缀优先。平台鉴权关闭，应用 Bearer/角色/支付鉴签保持。
 
-PC 保持 `web-admin/**` 和同级 `wechat-miniprogram/assets/emblem.png`，入口 `/pc/web-admin/index.html`；原生 HTML/JS/CSS 无独立 npm 构建。保留目录，同源 `/api/v1`，不新增跨域或平台 token。
+PC当前唯一入口 `https://uat.suianwuye.com/pc/`，将完整 `apps/web-admin/` 内容映射静态托管根，HTML基址 `/pc/`，同源 `/api/v1`。先资源、后HTML，无旧地址兼容；旧web-admin目录记录仅是历史收据。
 
 Mini AppID `wx15e136b256d4dc5a`，合法域名校验开启；develop/trial 同一精确 UAT origin，release endpoint 为空。`subscriptionTemplateConfig` 的 develop/trial READY 与 REFUND_RESULT 已对齐已部署真实模板，早期已包含在 cc45be2 上传中，当前b3精确源码保持该模板合同；release 两类 ID 仍为空。后端与客户端配置对齐不等于真实授权或设备送达。
 
@@ -169,4 +169,4 @@ PC营业日修复、售罄禁用及恢复读回已PASS，证据只维护在[唯�
 
 恢复先核对兼容版本、实际数据和外部资金事实；无验证旧版不盲切流量，隔离恢复后再授权切换，不覆盖新业务、不重放资金。重复失败先回到用户目标评估已授权官方替代通道，保留安全边界，不重复安装、转换或 Push。
 
-**Prod 规范仍为 CVM/MySQL8/SSM，当前非 UAT 源码却为原生 PostgreSQL/PG迁移；shared PG 仅限 UAT 并绑定本环境。** 该规范/实现冲突必须先收敛，不能宣称 MySQL已就绪或仅改 `ORDER_ENV` 发布。生产 Role 加四份 SSM、禁 inline AppSecret 的契约保留；本轮不擅改生产架构，也没有 main 集成、push/PR 或 Prod 发布证明。
+生产已确认采用 CloudBase/CloudRun + Shared PG + 私有 COS，唯一执行入口是[生产Runbook](order-production-release.md)。旧CVM/MySQL/SSM为待清理历史规格，不作为发布路线；生产适配、最终候选、独验与真实生产验收尚未完成。
