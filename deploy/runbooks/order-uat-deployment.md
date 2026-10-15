@@ -100,7 +100,7 @@ root随后用正常PC恢复10/12售卖，PG只剩原10/10记录，PC显示可购
 
 统一 origin：`https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com`。
 
-- [PC 管理台](https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com/pc/web-admin/index.html)
+- [PC 管理台](https://uat.suianwuye.com/pc/)
 - [当前 b3 默认首页预览](/Users/vivix/.codex/visualizations/2026/10/10/01a12421-c305-7371-b534-45fdffd1b88a/uat-e2e-rehearsal/uat-preview-b3f1f6d-combined.jpg)；开发上传已接受，正式体验版选择仍待完成。此码只用于打开小程序。
 
 1. 复用已绑定 OWNER 与现有菜单；PC 已完成正常退出和受保护页刷新，最后正常重登待手机扫码批准。APPID_ERROR已恢复，不重新配置身份、绑定或导入数据。
@@ -126,7 +126,7 @@ root随后用正常PC恢复10/12售卖，PG只剩原10/10记录，PC显示可购
 
 | 前缀 | 目标 | 路径透传 |
 | --- | --- | --- |
-| `/pc` | `STATIC_STORE/staticstore` | false；入口 `/pc/web-admin/index.html`，保留相对资源树 |
+| `/pc` | `STATIC_STORE/staticstore` | false；入口 `/pc/`，完整 apps/web-admin 内容发布到静态根；先资源后HTML |
 | `/` | `CBR/order-api` | true；保留 `/api/v1/...` 和 `/health/...` |
 
 按最长前缀匹配。平台网关鉴权关闭，应用 Bearer、角色和支付签名继续校验。旧 `/` 静态、`/api` 与 `/health` CBR 示例不是当前路由，不能照旧覆盖。
