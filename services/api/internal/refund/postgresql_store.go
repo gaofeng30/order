@@ -388,9 +388,9 @@ func (store *postgresStore) finishCreate(ctx context.Context, claim createClaim,
 	// receipt are frozen from the same locked durable row even if a callback won.
 	if state == string(ProviderCreateClaimed) && leaseKind.Valid && leaseKind.String == "CREATE" && bytes.Equal(leaseOwner, claim.owner[:]) && version == claim.version && leaseExpiry.Valid && now.Before(leaseExpiry.Time) {
 		if providerErr != nil {
-			_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state='CREATE_UNKNOWN',materialization_state='PENDING_MANUAL',pending_reason_code='CREATE_RESULT_UNKNOWN',lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$1,record_version=record_version+1,updated_at=$2 WHERE id=$3`, now, now, claim.refundID)
+			_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state='CREATE_UNKNOWN',materialization_state='PENDING_MANUAL',pending_reason_code='CREATE_RESULT_UNKNOWN',lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$1,record_version=record_version+1,updated_at=$2 WHERE id=$3`, now.Add(refundFailureDelay), now, claim.refundID)
 		} else if mismatch := createResultMismatch(claim.request, observed); mismatch != "" {
-			_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state='CREATE_UNKNOWN',materialization_state='PENDING_MANUAL',pending_reason_code=$1,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$2,record_version=record_version+1,updated_at=$3 WHERE id=$4`, mismatch, now, now, claim.refundID)
+			_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state='CREATE_UNKNOWN',materialization_state='PENDING_MANUAL',pending_reason_code=$1,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$2,record_version=record_version+1,updated_at=$3 WHERE id=$4`, mismatch, nil, now, claim.refundID)
 		} else {
 			state := providerStateAfterCreate(observed.State)
 			if state != ProviderProcessing && state != ProviderSuccess && state != ProviderClosed {
@@ -399,7 +399,11 @@ func (store *postgresStore) finishCreate(ctx context.Context, claim createClaim,
 			if state == ProviderClosed {
 				_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state='CLOSED',provider_refund_id=$1,materialization_state='PENDING_MANUAL',pending_reason_code='PROVIDER_CLOSED',lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=NULL,record_version=record_version+1,updated_at=$2 WHERE id=$3`, []byte(observed.RefundID), now, claim.refundID)
 			} else {
-				_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state=$1,provider_refund_id=$2,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$3,record_version=record_version+1,updated_at=$4 WHERE id=$5`, state, []byte(observed.RefundID), now, now, claim.refundID)
+				var nextQuery any
+				if observed.State == ProviderSuccess {
+					nextQuery = now
+				}
+				_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state=$1,provider_refund_id=$2,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$3,record_version=record_version+1,updated_at=$4 WHERE id=$5`, state, []byte(observed.RefundID), nextQuery, now, claim.refundID)
 			}
 		}
 		if err != nil {
@@ -557,7 +561,7 @@ func (store *postgresStore) ingestOnce(ctx context.Context, verified VerifiedRef
 	inserted, _ := result.RowsAffected()
 	if inserted == 0 {
 		if claim != nil {
-			_, err := tx.ExecContext(ctx, `UPDATE refunds SET lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=CASE WHEN materialization_state='APPLIED' THEN NULL ELSE $1::timestamptz END,record_version=record_version+1,updated_at=$2 WHERE id=$3`, now.Add(refundQueryDelay), now, refundID)
+			_, err := tx.ExecContext(ctx, `UPDATE refunds SET lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=CASE WHEN materialization_state='APPLIED' THEN NULL ELSE $1::timestamptz END,record_version=record_version+1,updated_at=$2 WHERE id=$3`, nil, now, refundID)
 			if err != nil {
 				return false, err
 			}
@@ -604,7 +608,7 @@ func (store *postgresStore) ingestOnce(ctx context.Context, verified VerifiedRef
 		if verified.Refund.State == ProviderProcessing && mismatch == "" {
 			pendingReason = "PROVIDER_PROCESSING"
 		}
-		_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state=$1,provider_refund_id=$2,materialization_state=CASE WHEN materialization_state='APPLIED' THEN 'APPLIED' WHEN $3='PROVIDER_PROCESSING' THEN materialization_state ELSE 'PENDING_MANUAL' END,pending_reason_code=CASE WHEN materialization_state='APPLIED' THEN NULL WHEN $4='PROVIDER_PROCESSING' THEN pending_reason_code ELSE $5 END,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=CASE WHEN materialization_state='APPLIED' THEN NULL ELSE $6::timestamptz END,record_version=record_version+1,updated_at=$7 WHERE id=$8`, newProvider, []byte(verified.Refund.RefundID), pendingReason, pendingReason, pendingReason, now.Add(refundQueryDelay), now, refundID)
+		_, err = tx.ExecContext(ctx, `UPDATE refunds SET provider_state=$1,provider_refund_id=$2,materialization_state=CASE WHEN materialization_state='APPLIED' THEN 'APPLIED' WHEN $3='PROVIDER_PROCESSING' THEN materialization_state ELSE 'PENDING_MANUAL' END,pending_reason_code=CASE WHEN materialization_state='APPLIED' THEN NULL WHEN $4='PROVIDER_PROCESSING' THEN pending_reason_code ELSE $5 END,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=CASE WHEN materialization_state='APPLIED' THEN NULL ELSE $6::timestamptz END,record_version=record_version+1,updated_at=$7 WHERE id=$8`, newProvider, []byte(verified.Refund.RefundID), pendingReason, pendingReason, pendingReason, nil, now, refundID)
 		if err != nil {
 			return false, err
 		}
@@ -632,7 +636,7 @@ func refundObservationDedupe(v VerifiedRefund) [32]byte {
 }
 
 func (store *postgresStore) listDueIDs(ctx context.Context, dueBefore, leaseNow time.Time, limit uint16) ([]uint64, error) {
-	rows, err := store.db.QueryContext(ctx, `SELECT id FROM refunds WHERE provider_state='READY' OR ((provider_state='CREATE_CLAIMED' AND lease_expires_at<=$1) OR (provider_state IN ('CREATE_UNKNOWN','PROCESSING') AND (lease_expires_at IS NULL OR lease_expires_at<=$2) AND (next_query_at IS NULL OR next_query_at<=$3))) ORDER BY id LIMIT $4`, leaseNow, leaseNow, dueBefore, limit)
+	rows, err := store.db.QueryContext(ctx, `SELECT id FROM refunds WHERE provider_state='READY' OR ((provider_state='CREATE_CLAIMED' AND lease_expires_at<=$1) OR (provider_state IN ('CREATE_UNKNOWN','PROCESSING') AND (lease_expires_at IS NULL OR lease_expires_at<=$2) AND (lease_expires_at IS NOT NULL OR (next_query_at IS NOT NULL AND next_query_at<=$3)))) ORDER BY id LIMIT $4`, leaseNow, leaseNow, dueBefore, limit)
 	if err != nil {
 		return nil, ErrUnavailable
 	}
@@ -666,7 +670,7 @@ func (store *postgresStore) claimOneQuery(ctx context.Context, id uint64, owner 
 	if err != nil {
 		return queryClaim{}, false, ErrUnavailable
 	}
-	eligible := (state == "CREATE_CLAIMED" && leaseExpiry.Valid && !leaseExpiry.Time.After(now)) || ((state == "CREATE_UNKNOWN" || state == "PROCESSING") && (!leaseExpiry.Valid || !leaseExpiry.Time.After(now)) && (!nextQuery.Valid || !nextQuery.Time.After(dueBefore)))
+	eligible := (state == "CREATE_CLAIMED" && leaseExpiry.Valid && !leaseExpiry.Time.After(now)) || ((state == "CREATE_UNKNOWN" || state == "PROCESSING") && (!leaseExpiry.Valid || !leaseExpiry.Time.After(now)) && (leaseExpiry.Valid || (nextQuery.Valid && !nextQuery.Time.After(dueBefore))))
 	if !eligible {
 		return queryClaim{}, false, nil
 	}
@@ -711,7 +715,7 @@ func (store *postgresStore) finishQuery(ctx context.Context, claim queryClaim, o
 	if !leaseKind.Valid || leaseKind.String != "QUERY" || !bytes.Equal(leaseOwner, claim.owner[:]) || version != claim.version || !leaseExpiry.Valid || !now.Before(leaseExpiry.Time) {
 		return false, false, nil
 	}
-	_, err = tx.ExecContext(ctx, `UPDATE refunds SET lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$1,record_version=record_version+1,updated_at=$2 WHERE id=$3`, now.Add(refundQueryDelay), now, claim.refundID)
+	_, err = tx.ExecContext(ctx, `UPDATE refunds SET lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_query_at=$1,record_version=record_version+1,updated_at=$2 WHERE id=$3`, now.Add(refundFailureDelay), now, claim.refundID)
 	if err != nil || tx.Commit() != nil {
 		return false, false, ErrUnavailable
 	}
