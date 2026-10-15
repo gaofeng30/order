@@ -168,6 +168,23 @@ func (s *sharedPGStore) claimDue(ctx context.Context, cutoff, leaseNow time.Time
 	if e != nil {
 		return nil, e
 	}
+	return decodeClaimedDelivery(r, owner)
+}
+
+func (s *sharedPGStore) claimOne(ctx context.Context, id uint64, cutoff, leaseNow time.Time, owner [16]byte) ([]claimedDelivery, error) {
+	r, e := s.retry(ctx, "order_subscription_claim_one_v1", map[string]any{"p_outbox": strconv.FormatUint(id, 10), "p_cutoff": subscriptionTimeWire(cutoff), "p_lease_now": subscriptionTimeWire(leaseNow), "p_owner_hex": hex.EncodeToString(owner[:])})
+	if e != nil {
+		return nil, e
+	}
+	deliveries, e := decodeClaimedDelivery(r, owner)
+	if e == nil && len(deliveries) > 0 && deliveries[0].OutboxID != id {
+		return nil, ErrUnavailable
+	}
+	return deliveries, e
+}
+
+func decodeClaimedDelivery(r subscriptionReply, owner [16]byte) ([]claimedDelivery, error) {
+	var e error
 	if r.Outcome == "EMPTY" {
 		return nil, nil
 	}
