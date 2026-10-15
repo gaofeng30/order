@@ -149,8 +149,7 @@ func (service *Service) ingestPaymentOnce(ctx context.Context, verified Verified
 	var nextReconcile any
 	if nextMaterialState == MaterializationReady {
 		nextReconcile = receivedAt
-	} else if nextMaterialState == MaterializationAwaitingPayment && nextProviderState != ProviderClosed {
-		nextReconcile = receivedAt.Add(service.config.ReconcileInterval)
+
 	}
 	var lastQueried any
 	if record.lastQueriedAt.Valid {
@@ -262,9 +261,11 @@ func (service *Service) queryOne(ctx context.Context, prepaymentID uint64, now t
 	}
 	if err != nil {
 		if !finishedAt.Before(claim.record.effectiveDeadline) {
-			_ = service.closeExpiredClaim(ctx, claim, finishedAt)
+			if service.closeExpiredClaim(ctx, claim, finishedAt) == nil {
+				return false, ErrUnavailable
+			}
 		}
-		_ = service.releaseQuery(ctx, claim, finishedAt.Add(service.config.ReconcileInterval), finishedAt)
+		_ = service.releaseQuery(ctx, claim, finishedAt.Add(failedReconcileInterval), finishedAt)
 		return false, ErrUnavailable
 	}
 	if providerTransaction.TradeState == "NOTPAY" && !finishedAt.Before(claim.record.effectiveDeadline) {
@@ -279,7 +280,7 @@ func (service *Service) queryOne(ctx context.Context, prepaymentID uint64, now t
 	err = service.ingestPayment(ctx, VerifiedPayment{Source: paymentobservation.SourceActiveQuery, Transaction: providerTransaction}, claim.record.id, &claim)
 	if err != nil {
 		finishedAt = service.now().UTC().Truncate(time.Microsecond)
-		_ = service.releaseQuery(ctx, claim, finishedAt.Add(service.config.ReconcileInterval), finishedAt)
+		_ = service.releaseQuery(ctx, claim, finishedAt.Add(failedReconcileInterval), finishedAt)
 		return false, err
 	}
 	return true, nil
