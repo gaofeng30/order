@@ -1554,7 +1554,7 @@ BEGIN
  WHERE id=p_prepayment AND provider_state='CREATE_CLAIMED' AND lease_kind='CREATE' AND lease_owner=decode(p_owner_hex,'hex') AND record_version=p_version AND lease_expires_at>p_now;
  ELSE
  IF jsonb_typeof(p_result) IS DISTINCT FROM 'object' OR (SELECT count(*) FROM jsonb_object_keys(p_result))<>2 OR jsonb_typeof(p_result->'prepay_id_hex') IS DISTINCT FROM 'string' OR jsonb_typeof(p_result->'request_payment_json') IS DISTINCT FROM 'string' THEN RETURN jsonb_build_object('outcome','UNAVAILABLE');END IF;
- UPDATE public.prepayments SET provider_state='PAYMENT_REQUESTED',provider_prepay_id=decode(p_result->>'prepay_id_hex','hex'),wx_request_payment_json=(p_result->>'request_payment_json')::jsonb,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,record_version=record_version+1,next_reconcile_at=p_next,updated_at=p_now
+ UPDATE public.prepayments SET provider_state='PAYMENT_REQUESTED',provider_prepay_id=decode(p_result->>'prepay_id_hex','hex'),wx_request_payment_json=(p_result->>'request_payment_json')::jsonb,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,record_version=record_version+1,next_reconcile_at=NULL,updated_at=p_now
  WHERE id=p_prepayment AND provider_state='CREATE_CLAIMED' AND lease_kind='CREATE' AND lease_owner=decode(p_owner_hex,'hex') AND record_version=p_version AND lease_expires_at>p_now;
  END IF;GET DIAGNOSTICS affected=ROW_COUNT;RETURN jsonb_build_object('outcome','FINISHED','rows',affected::text);
 
