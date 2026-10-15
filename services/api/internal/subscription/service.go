@@ -12,7 +12,7 @@ import (
 
 const (
 	leaseDuration = 30 * time.Second
-	retryDelay    = time.Minute
+	retryDelay    = 30 * time.Minute
 )
 
 type Service struct {
