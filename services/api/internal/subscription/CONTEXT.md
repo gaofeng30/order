@@ -14,7 +14,7 @@
 - One accepted consent is consumed by at most one outbox row; `(order,kind)` has one immutable intent.
 - Claim commits a short lease/version CAS before provider send. Provider send is always outside a DB transaction.
 - `RunDue(now, limit)` keeps `now` as the pending-intent due cutoff and handles at most `limit` intents. It claims one intent immediately before each serial send, starting that intent's lease from the current clock rather than the batch tick; expired in-flight leases are checked against the current clock.
-- Sent timestamps use the completion clock. Temporary retries are scheduled one minute after the later of completion and the supplied cutoff, so a future cutoff cannot retry the same failure within one run.
+- Sent timestamps use the completion clock. Temporary retries are scheduled thirty minutes after the later of completion and the supplied cutoff, so a future cutoff cannot retry the same failure within one run.
 - Temporary failure returns to `PENDING`; success and permanent failure are terminal. An expired lease may be sent again, so local uniqueness is not WeChat exactly-once.
 - Persisted message JSON uses a typed non-PII payload and never contains openid, phone, provider secret, or raw provider error text.
 
