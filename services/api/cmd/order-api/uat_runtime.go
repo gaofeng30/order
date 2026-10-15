@@ -109,6 +109,9 @@ func composeCloudRun(ctx context.Context, cfg config.CloudRunRuntimeConfig, logg
 		return cloudRunRuntime{}, errors.New("uat_cos_provider_invalid")
 	}
 	objects := objectstore.NewSharedPGVersionedService(cosAdapter, client)
+	if cfg.HTTP.Environment == config.Production {
+		objects = objectstore.NewSharedPGImmutableService(cosAdapter, client)
+	}
 	identityRepository := identity.NewSharedPGRepository(client)
 	sessions := identity.NewService(loginProvider, identityRepository)
 	authenticator := miniRequestAuthenticator{sessions: sessions}
