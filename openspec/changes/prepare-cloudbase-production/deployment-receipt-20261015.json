@@ -1,5 +1,5 @@
 {
-  "candidate": "149423eac8b179cf453e224534c64f84fe458086",
+  "candidate": "e1f2ea1fe3335047a2bd3e0cc6766a63e10d61b0",
   "environment": "order-prod-d0g4xnw49c5ada5ce",
   "relationsRequestId": "dfc1a789-9352-4248-bc23-bd76b4224f6e",
   "functionsRequestId": "543f8ed3-aa95-4d8d-943b-c20949d55aaa",
@@ -18,15 +18,45 @@
   "anonymousCallable": 0,
   "exactSourceCatalogCheck": "PASS",
   "apiDeployment": {
-    "version": "001",
+    "sourceSha": "e1f2ea1fe3335047a2bd3e0cc6766a63e10d61b0",
+    "binarySha256": "7e8db867a840aae5f0b212251a6a9b5572864683a2072ec44a9abdded8a88d88",
+    "envId": "order-prod-d0g4xnw49c5ada5ce",
+    "version": "order-api-003",
+    "taskId": 2368274,
+    "buildId": 2608729982,
+    "runId": "multi_tenant_1xHKQdK9wNOaGR",
+    "image": "ccr.ccs.tencentyun.com/tcb-100052186355-paxl/ca-rayuuyng_order-api:order-api-003-20261015201924",
+    "registryDigest": "sha256:4360f7949ef0352d74111b06b8a9d695dde70c30231c1dedfe77e2ec4634867f",
     "status": "normal",
     "flowRatio": 100,
-    "buildId": 2608725142,
-    "runId": "multi_tenant_1xHJWNLLXCKypY",
-    "live": "PASS",
-    "ready": "PASS"
+    "sqlUpdateRequestId": "08cb4eb4-159b-45fc-8753-0cc099cec388",
+    "sqlReadbackRequestId": "189a4956-c60c-4711-a259-9ae6b58cba34",
+    "twoFunctionBodiesExactMatch": true,
+    "twoFunctionsSecurityInvoker": true,
+    "twoFunctionsAnonExecute": false,
+    "migrations": 44,
+    "dirtyMigrations": 0,
+    "ready": {
+      "http": 200,
+      "status": "ok"
+    },
+    "nativePostDeployment": {
+      "origin": "https://order.suianwuye.com",
+      "session": "ready",
+      "page": "pages/home/home",
+      "store": "绥安食品",
+      "settings": "ready",
+      "orders": "ready"
+    },
+    "releaseObservation": "Source deploy task used FULL release and automatically changed flow to 100 despite requested canaryPercent=0/stablePercent=100; do not rely on those parameters as source deployment hold gate.",
+    "limits": [
+      "COS platform samples passed; application upload/confirm, three-image import and actual rendering pending",
+      "Merchant/PC real-device acceptance pending",
+      "Real funds and notification delivery pending",
+      "Mini upload is not public release"
+    ]
   },
-  "businessRegression": "PARTIAL: simulator Prod login/customer reads/merchant denial PASS; full business regression incomplete",
+  "businessRegression": "PARTIAL: native develop cold start without override verified Prod login/home/settings/orders and visitor merchant 403; full business and real-device acceptance pending",
   "note": "Raw HTTP response preserved; initial diagnostic JSON reserialization rounded int64 sequence limit, corrected raw receipt and exact-source check passed. No schema correction/reinstall.",
   "relayDeployment": {
     "function": "order-compensation-wake",
@@ -68,7 +98,7 @@
     "autoRenew": false
   },
   "wechatPlatformQualification": "BLOCKED_BROWSER_SITE_SAFETY",
-  "releaseTemplateConfig": "LOCAL_FIXED_NOT_PUBLISHED",
+  "releaseTemplateConfig": "LOCAL_ADAPTATION_UPLOADED_1.0.0-prod.20261015.1_NOT_PUBLIC_RELEASE",
   "bootstrap": {
     "status": "created",
     "authorization": "User confirmed same approved UAT owner identity for Prod",
@@ -82,37 +112,64 @@
     "orders": 0
   },
   "nativeLoginProbe": {
-    "layer": "simulator controlled release endpoint; native env develop; urlCheck true",
-    "result": "PASS_LOGIN_AND_READ_ONLY_CUSTOMER_PATH",
-    "domainRefresh": "close/reopen current project; recompile alone retained old allowlist",
-    "session": "ready; actual wx.login; token not recorded",
-    "identity": "VISITOR; primary phone unbound; merchant unbound",
-    "customerOrders": "200 empty",
-    "merchantOrders": "403 FORBIDDEN",
-    "home": "settingsState and ordersState ready",
-    "evidence": "prod-domain-login-verification.json; prod-domain-login-home.jpg",
-    "notProven": [
-      "release package",
-      "real device",
-      "upload/download image domain and business flow",
-      "OWNER binding",
-      "payment/refund/notification E2E"
+    "date": "2026-10-15",
+    "sourceBase": "9c839056ccc2be4e2ef818f6ecfce3dec3ecabd8",
+    "sourceDirty": true,
+    "window": "s3",
+    "appid": "wx15e136b256d4dc5a",
+    "envVersion": "develop",
+    "runtimeOverride": false,
+    "origin": "https://order.suianwuye.com",
+    "nativeSession": "ready",
+    "route": "pages/home/home",
+    "storeName": "绥安食品",
+    "settingsState": "ready",
+    "ordersState": "ready",
+    "merchantOrdersAsVisitor": {
+      "http": 403,
+      "code": "FORBIDDEN"
+    },
+    "autoPreview": {
+      "success": true,
+      "bytes": 452699
+    },
+    "upload": {
+      "version": "1.0.0-prod.20261015.1",
+      "status": "success",
+      "taskId": "confirmation_upload_0db60bb2-1e83-431e-a58f-3691d486cd18",
+      "bytes": 452699
+    },
+    "limits": [
+      "Simulator native platform verification only",
+      "Real device acceptance pending",
+      "Wechat review and public release pending",
+      "Payment refund and notification delivery not verified"
     ]
   },
   "cosConfiguration": {
     "acl": "private owner only",
     "versioning": "NOT_ENABLED",
     "lifecycle": "NOT_CONFIGURED",
-    "costApproval": "PENDING",
-    "corsFormalOrigin": "https://order.suianwuye.com already allowed by existing generated rules"
+    "costApproval": "APPROVED_BOUNDED_CI_ACCEPTANCE",
+    "corsFormalOrigin": "https://order.suianwuye.com already allowed by existing generated rules",
+    "ci": "ON_READBACK_VERIFIED",
+    "acceptanceLimits": {
+      "sampleBytesMax": 10000000,
+      "downloadBytesMax": 100000000,
+      "requestsMax": 200,
+      "incrementalBudgetCNYMax": 1,
+      "longTermCostCap": false
+    },
+    "ciReceipt": "diagnostics/production-mini-endpoint/prod-ci-enable-receipt.jsonl",
+    "imagePlatformAcceptance": "COS_PLATFORM_PASS_APPLICATION_PENDING"
   },
   "backupReadback": {
     "source": "authorized main account Prod console /db/postgres/backups",
     "message": "当前共享集群暂不提供相关能力，可以升级至独享集群启用能力",
     "platformBackup": "UNAVAILABLE_ON_CURRENT_SHARED_CLUSTER",
     "upgradeExecuted": false,
-    "recoveryAcceptance": "NOT_VERIFIED",
-    "logicalExport": "not a substitute for platform backup per current official documentation"
+    "recoveryAcceptance": "PASS_CURRENT_INITIALIZED_DATA_APPLICATION_LOGICAL_RESTORE_ONLY",
+    "logicalExport": "Official source snapshot restored as anonymized copy into isolated local PG16; not platform PITR or financial history recovery"
   },
   "quotaConsoleReadback": {
     "plan": "standard",
@@ -131,6 +188,272 @@
     "status": "DENIED_FOR_TCB_ROLE",
     "action": "finance:DescribeBudget",
     "requestId": "8ee957b8ab4e4f37a5b801727c3d63ce",
-    "mainAccountConsole": "checking"
+    "mainAccountConsole": "NOT_VERIFIED"
+  },
+  "historicalInitialDeployment": {
+    "candidate": "149423eac8b179cf453e224534c64f84fe458086",
+    "apiDeployment": {
+      "version": "001",
+      "status": "normal",
+      "flowRatio": 100,
+      "buildId": 2608725142,
+      "runId": "multi_tenant_1xHJWNLLXCKypY",
+      "live": "PASS",
+      "ready": "PASS"
+    },
+    "nativeLoginProbe": {
+      "layer": "simulator controlled release endpoint; native env develop; urlCheck true",
+      "result": "PASS_LOGIN_AND_READ_ONLY_CUSTOMER_PATH",
+      "domainRefresh": "close/reopen current project; recompile alone retained old allowlist",
+      "session": "ready; actual wx.login; token not recorded",
+      "identity": "VISITOR; primary phone unbound; merchant unbound",
+      "customerOrders": "200 empty",
+      "merchantOrders": "403 FORBIDDEN",
+      "home": "settingsState and ordersState ready",
+      "evidence": "prod-domain-login-verification.json; prod-domain-login-home.jpg",
+      "notProven": [
+        "release package",
+        "real device",
+        "upload/download image domain and business flow",
+        "OWNER binding",
+        "payment/refund/notification E2E"
+      ]
+    },
+    "cosConfiguration": {
+      "acl": "private owner only",
+      "versioning": "NOT_ENABLED",
+      "lifecycle": "NOT_CONFIGURED",
+      "costApproval": "PENDING",
+      "corsFormalOrigin": "https://order.suianwuye.com already allowed by existing generated rules"
+    },
+    "releaseTemplateConfig": "LOCAL_FIXED_NOT_PUBLISHED"
+  },
+  "miniDeployment": {
+    "date": "2026-10-15",
+    "sourceBase": "9c839056ccc2be4e2ef818f6ecfce3dec3ecabd8",
+    "sourceDirty": true,
+    "window": "s3",
+    "appid": "wx15e136b256d4dc5a",
+    "envVersion": "develop",
+    "runtimeOverride": false,
+    "origin": "https://order.suianwuye.com",
+    "nativeSession": "ready",
+    "route": "pages/home/home",
+    "storeName": "绥安食品",
+    "settingsState": "ready",
+    "ordersState": "ready",
+    "merchantOrdersAsVisitor": {
+      "http": 403,
+      "code": "FORBIDDEN"
+    },
+    "autoPreview": {
+      "success": true,
+      "bytes": 452699
+    },
+    "upload": {
+      "version": "1.0.0-prod.20261015.1",
+      "status": "success",
+      "taskId": "confirmation_upload_0db60bb2-1e83-431e-a58f-3691d486cd18",
+      "bytes": 452699
+    },
+    "limits": [
+      "Simulator native platform verification only",
+      "Real device acceptance pending",
+      "Wechat review and public release pending",
+      "Payment refund and notification delivery not verified"
+    ]
+  },
+  "upgradeHistory": [
+    {
+      "version": "002",
+      "taskId": 2368188,
+      "buildId": 2608726434,
+      "result": "BUILD_SUCCEEDED_REGISTRY_PUSH_FAILED_BLOB_UNKNOWN",
+      "flowRatio": 0,
+      "sqlAction": "TWO_FUNCTIONS_RESTORED_TO_OLD_DEFINITIONS"
+    },
+    {
+      "version": "003",
+      "sourceSha": "e1f2ea1fe3335047a2bd3e0cc6766a63e10d61b0",
+      "result": "NORMAL_100_PERCENT",
+      "sqlAction": "TWO_FUNCTION_INCREMENT_APPLIED_AND_READBACK_EXACT",
+      "migrations": 44,
+      "dirty": 0
+    }
+  ],
+  "goNoGo": "NO-GO",
+  "remainingAcceptance": [
+    "OWNER binding",
+    "Full customer/merchant/PC business regression",
+    "Real device native acceptance",
+    "Wechat qualification review and public release",
+    "Payment/refund real-funds acceptance under separate authorization",
+    "Notification delivery and abnormal recovery",
+    "Application image upload/confirm, three-image business import and PC/real-device rendering",
+    "Real business-data and financial-history recovery acceptance when applicable; current initialized-data logical restore only",
+    "Resolve documented authentication/wake coupling and billing restart gap; validate production restart/multi-instance recovery"
+  ],
+  "cosPlatformSamples": {
+    "status": "COS_PLATFORM_PASS_APPLICATION_PENDING",
+    "samples": [
+      {
+        "sample": 1,
+        "originalBytes": 1892032,
+        "webpBytes": 167594,
+        "reductionPercent": 91.14,
+        "originalMS": 520,
+        "firstWebpMS": 622,
+        "repeatWebpMS": 219,
+        "sameDerivativeHash": true,
+        "source": "/tmp/order-production-mini-endpoint-20261015/diagnostics/production-mini-endpoint/cos-platform-samples/synthetic-1.png"
+      },
+      {
+        "sample": 2,
+        "originalBytes": 215436,
+        "webpBytes": 198228,
+        "reductionPercent": 7.99,
+        "originalMS": 129,
+        "firstWebpMS": 422,
+        "repeatWebpMS": 259,
+        "sameDerivativeHash": true,
+        "source": "/tmp/order-production-mini-endpoint-20261015/diagnostics/production-mini-endpoint/cos-platform-samples/synthetic-2.jpg"
+      },
+      {
+        "sample": 3,
+        "originalBytes": 410963,
+        "webpBytes": 83410,
+        "reductionPercent": 79.7,
+        "originalMS": 131,
+        "firstWebpMS": 276,
+        "repeatWebpMS": 196,
+        "sameDerivativeHash": true,
+        "source": "/tmp/order-production-mini-endpoint-20261015/diagnostics/production-mini-endpoint/cos-platform-samples/synthetic-3.png"
+      }
+    ],
+    "sourceBytes": 2518431,
+    "derivedBytes": 449232,
+    "budget": {
+      "Requests": 37,
+      "Uploaded": 5036862,
+      "Downloaded": 3594486
+    },
+    "uploadBytesBasis": "conservative: includes all bytes of both accepted and rejected duplicate PUT attempts",
+    "nativeDownload": {
+      "status": 200,
+      "bytes": 167594,
+      "milliseconds": 504,
+      "scope": "WeChat developer-tool native download, not real device",
+      "receipt": "/tmp/order-production-release-e1f2ea1/native-image-download-receipt.json"
+    },
+    "assertions": {
+      "allOriginalHashesMatch": true,
+      "allDuplicatePuts409": true,
+      "allAnonymousGets403": true,
+      "allDeleted204ThenGet404": true,
+      "signedURLsRemoved": true,
+      "versioningChanged": false
+    },
+    "notProven": [
+      "Application upload/confirm",
+      "three-image business import",
+      "PC and real-device image rendering",
+      "realized bill after settlement",
+      "native service latency percentile"
+    ],
+    "actualSettledCost": "NOT_VERIFIED",
+    "performanceConclusion": "First derivative processing slower for all three samples; no global speedup or latency percentile proven"
+  },
+  "logicalRestoreAcceptance": {
+    "manifest": {
+      "sourceSHA": "e1f2ea1fe3335047a2bd3e0cc6766a63e10d61b0",
+      "snapshotSHA256": "c2cd5d7cc4c507836449ba2894362e80d91017aac6333e2d838dab88eb7f6a75",
+      "databaseVersion": "local PG16; source PG17.11",
+      "anonymized": true,
+      "counts": {
+        "categories": 0,
+        "discount_settings": 1,
+        "meal_periods": 2,
+        "miniprogram_users": 2,
+        "order_compensation.wakes": 0,
+        "pickup_sequences": 0,
+        "schema_migrations": 44,
+        "staff_whitelist": 0,
+        "storefront_settings": 1,
+        "merchant_accounts": 1,
+        "products": 0,
+        "quotes": 0,
+        "action_audits": 0,
+        "import_batches": 0,
+        "prepayments": 0,
+        "product_sold_out_dates": 0,
+        "quote_items": 0,
+        "service_dates": 0,
+        "payment_observations": 0,
+        "orders": 0,
+        "notification_consents": 0,
+        "order_items": 0,
+        "refunds": 0,
+        "notification_outbox": 0,
+        "refund_observations": 0
+      },
+      "rowEqualityAfterAnonymization": true,
+      "sequenceFloorsRestored": true,
+      "catalogEquality": {
+        "functions": true,
+        "policies": true,
+        "table_grants": true,
+        "rls": true,
+        "columns": true,
+        "constraints": true,
+        "sequence_grants": true
+      },
+      "excluded": [
+        "miniprogram_sessions",
+        "merchant_pc_sessions",
+        "order_compensation.authentication",
+        "platform auth credentials",
+        "live cron and SCF execution"
+      ],
+      "platformRecoveryProven": false,
+      "financialRecoveryProven": false,
+      "status": "PASS_APPLICATION_LOGICAL_RESTORE"
+    },
+    "manifestPath": "/tmp/order-prod-core-restore-e1f2ea1-r2/manifest.json",
+    "restrictedOriginalBackupDirectory": "~/.config/order/production/backups/20261015-e1f2ea1",
+    "coreTables": 25,
+    "sequences": 16,
+    "functions": 125,
+    "notSeparatelyCompared": [
+      "non-constraint indexes",
+      "triggers"
+    ],
+    "productionDatabaseOverwritten": false,
+    "newPaidPlatformBackupEnabled": false
+  },
+  "architectureAblation": {
+    "status": "LOCAL_EXPERIMENTS_COMPLETE_REMEDIATION_NOT_IMPLEMENTED",
+    "report": "architecture-ablation-20261015.md",
+    "sourceSha": "e1f2ea1fe3335047a2bd3e0cc6766a63e10d61b0",
+    "productionChanged": false,
+    "fullAdversarialReview": "NOT_COMPLETE"
+  },
+  "ownerAuthorizationReadback": {
+    "enabledUnboundOwners": 2,
+    "writeRequestId": "677d80ec-2884-49fc-b614-17f513f08f6e",
+    "readbackRequestId": "7a698d20-a15b-4177-a30c-c9750f43ece8",
+    "phoneNumbersOmitted": true,
+    "pcScanAcceptance": "NOT_RUN",
+    "bootstrapAndBackupCounts": "Historical snapshots before second owner creation"
+  },
+  "resourceAudit": {
+    "cronJobs": 0,
+    "pendingWakes": 0,
+    "databaseRequestId": "ee05e641-8bb5-42d7-83d3-6b089992140e",
+    "functionTimerTriggers": 0,
+    "triggerRequestId": "c85d400f-a339-48da-94a7-1dcbe50f4f35",
+    "minInstances": 1,
+    "maxInstances": 1,
+    "timerScale": [],
+    "limits": "Point-in-time empty queue; normal pending work still creates per-record minute cron; no cost saving measured"
   }
 }
