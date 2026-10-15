@@ -86,6 +86,37 @@ func TestTimeDerivedOrdersWithoutProductionWorker(t *testing.T) {
  SELECT id,prepayment_id,sha256(order_no),'CALLBACK',order_no,transaction_id,'PAID','MATCH',payable_cents,'CNY',paid_at,paid_at,'AUTO','APPLIED',materialized_at FROM orders;
  SET session_replication_role=origin;
  `)
+
+	t.Run("successful-prepayment-does-not-enter-compensation", func(t *testing.T) {
+		sql(`BEGIN;
+ UPDATE prepayments SET provider_state='CREATE_CLAIMED',materialization_state='AWAITING_PAYMENT',materialized_at=NULL,lease_kind='CREATE',lease_owner=decode(repeat('ab',16),'hex'),lease_expires_at=now()+interval '1 minute',record_version=10,next_reconcile_at=now() WHERE id=1;
+ SET LOCAL ROLE authenticated;
+ SELECT public.order_payment_finish_create_v1(1,repeat('ab',16),10,now(),now()+interval '15 seconds','{"prepay_id_hex":"706179","request_payment_json":"{}"}'::jsonb);
+ DO $check$ BEGIN
+ IF EXISTS(SELECT 1 FROM public.prepayments WHERE id=1 AND next_reconcile_at IS NOT NULL) THEN RAISE EXCEPTION 'normal payment has compensation scheduled'; END IF;
+ IF public.order_payment_due_v1(now()+interval '1 hour',100)->'ids' @> '["1"]'::jsonb THEN RAISE EXCEPTION 'normal payment selected as exception'; END IF;
+ END $check$;
+ ROLLBACK;`)
+	})
+
+	t.Run("confirmed-notpay-stops-compensation", func(t *testing.T) {
+		sql(`BEGIN;
+ DO $test$
+ DECLARE req text; tx jsonb; result jsonb;
+ BEGIN
+ req := '{"appid":"test-app","mchid":"test-merchant","description":"test","out_trade_no":"test-order-1","time_expire":"2026-10-15T12:00:00+08:00","notify_url":"https://example.invalid/api/v1/payments/wechat/notify","amount_cents":100,"currency":"CNY","payer_openid":"test-user","quote_id":"1","quote_digest":"' || repeat('00',32) || '"}';
+ UPDATE prepayments SET provider_state='NOT_PAID',materialization_state='AWAITING_PAYMENT',materialized_at=NULL,lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,next_reconcile_at=now(),provider_create_request_json=req::jsonb,provider_create_request_digest=sha256(convert_to(req,'UTF8')) WHERE id=1;
+ PERFORM setval(pg_get_serial_sequence('public.payment_observations','id'),100);
+ tx:=jsonb_build_object('appid_hex',encode(convert_to('test-app','UTF8'),'hex'),'mchid_hex',encode(convert_to('test-merchant','UTF8'),'hex'),'out_trade_no_hex',encode(convert_to('test-order-1','UTF8'),'hex'),'transaction_id_hex','','trade_type_hex','','trade_state_hex','4e4f54504159','trade_state_desc_hex','','bank_type_hex','','attach_hex','','payer_openid_hex','','currency_hex','','payer_currency_hex','','total','0','payer_total','0','success_zero',true,'success_epoch_seconds','-62135596800','success_nanosecond',0,'success_rfc3339nano','0001-01-01T00:00:00Z');
+ SET LOCAL ROLE authenticated;
+ result:=public.order_payment_observe_v1(1,'ACTIVE_QUERY','',tx,NULL,now(),15000000000);
+ IF result->>'outcome'<>'OBSERVED' THEN RAISE EXCEPTION 'observation rejected: %',result; END IF;
+ IF EXISTS(SELECT 1 FROM public.prepayments WHERE id=1 AND next_reconcile_at IS NOT NULL) THEN RAISE EXCEPTION 'confirmed NOTPAY has compensation scheduled'; END IF;
+ IF public.order_payment_due_v1(now()+interval '1 hour',100)->'ids' @> '["1"]'::jsonb THEN RAISE EXCEPTION 'confirmed NOTPAY selected as exception'; END IF;
+ END $test$;
+ ROLLBACK;`)
+	})
+
 	t.Run("boundary-and-filters", func(t *testing.T) {
 		sql(`DO $test$
  DECLARE rows jsonb; counts jsonb; n timestamptz:=statement_timestamp();
@@ -196,6 +227,96 @@ func TestTimeDerivedOrdersWithoutProductionWorker(t *testing.T) {
 			t.Fatalf("expected one actual transition, got %d replays", replays)
 		}
 		sql(`DO $test$ BEGIN IF NOT EXISTS(SELECT 1 FROM orders WHERE id=2 AND state='READY_FOR_PICKUP' AND record_version=2) THEN RAISE EXCEPTION 'duplicate version increment'; END IF; END $test$;`)
+	})
+
+	t.Run("refund-due-excludes-normal-processing", func(t *testing.T) {
+		sql(`BEGIN;
+ DO $test$
+ DECLARE n timestamptz:=date_trunc('second',statement_timestamp()); wire jsonb; result jsonb;
+ BEGIN
+ INSERT INTO refunds(id,prepayment_id,order_id,out_refund_no,idempotency_key_hash,amount_cents,currency,reason_code,requested_by_user_id,provider_request_json,provider_request_digest,provider_state,provider_refund_id,create_attempted_at,materialization_state,record_version,created_at,updated_at)
+ VALUES(1,3,3,convert_to('refund-processing-test','UTF8'),decode(repeat('11',32),'hex'),100,'CNY','USER_CANCEL',1,'{}',decode(repeat('22',32),'hex'),'PROCESSING',convert_to('provider-refund','UTF8'),n,'AWAITING_PROVIDER',1,n,n);
+ wire:=jsonb_build_object('epoch_seconds',extract(epoch FROM n)::bigint::text,'nanosecond',0,'zero',false,'canonical',to_char(n,'YYYY-MM-DD"T"HH24:MI:SS"Z"'));
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_due_v1(wire,wire,100);
+ IF result->'ids' IS DISTINCT FROM '[]'::jsonb THEN RAISE EXCEPTION 'normal processing selected: %',result; END IF;
+ RESET ROLE;
+ -- A crashed query worker must still be recoverable even when no next query was set.
+ UPDATE refunds SET provider_state='CREATE_UNKNOWN',provider_refund_id=NULL,lease_kind='QUERY',lease_owner=decode(repeat('ab',16),'hex'),lease_expires_at=n-interval '1 second' WHERE id=1;
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_due_v1(wire,wire,100);
+ IF result->'ids' IS DISTINCT FROM '["1"]'::jsonb THEN RAISE EXCEPTION 'expired query not recovered: %',result; END IF;
+ END $test$;
+ ROLLBACK;`)
+	})
+
+	t.Run("refund-create-error-waits-thirty-minutes", func(t *testing.T) {
+		sql(`BEGIN;
+ DO $test$
+ DECLARE n timestamptz:=date_trunc('second',statement_timestamp()); wire jsonb; result jsonb; req jsonb; obs jsonb;
+ BEGIN
+ INSERT INTO refunds(id,prepayment_id,order_id,out_refund_no,idempotency_key_hash,amount_cents,currency,reason_code,requested_by_user_id,provider_request_json,provider_request_digest,provider_state,create_attempted_at,materialization_state,lease_kind,lease_owner,lease_expires_at,record_version,created_at,updated_at)
+ VALUES(1,3,3,convert_to('refund-create-test','UTF8'),decode(repeat('11',32),'hex'),100,'CNY','USER_CANCEL',1,'{}',decode(repeat('22',32),'hex'),'CREATE_CLAIMED',n,'AWAITING_PROVIDER','CREATE',decode(repeat('ab',16),'hex'),n+interval '30 seconds',1,n,n);
+ INSERT INTO action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,operation_key_hash,request_id_hash,result,reason_code,before_state_json,after_state_json,response_json,occurred_at) VALUES('COMMAND_RECEIPT','USER',decode(repeat('33',32),'hex'),1,'refund.request','REFUND',1,decode(repeat('44',32),'hex'),decode(repeat('55',32),'hex'),'SUCCEEDED','REFUND_REQUESTED','{}','{}','{}',n);
+ wire:=jsonb_build_object('epoch_seconds',extract(epoch FROM n)::bigint::text,'nanosecond',0,'zero',false,'canonical',to_char(n,'YYYY-MM-DD"T"HH24:MI:SS"Z"'),'receipt_time',jsonb_build_object('stored_kind','FINITE','stored_microseconds',(extract(epoch FROM n)*1000000-946684800000000)::bigint::text,'codec_status','VALID','json_hex',encode(convert_to(to_json(to_char(n,'YYYY-MM-DD"T"HH24:MI:SS"Z"'))::text,'UTF8'),'hex')));
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_finish_create_v1(1,repeat('ab',16),1,NULL,true,NULL,wire);
+ -- The same expired writer completion must not extend the durable retry or version.
+ PERFORM order_refund_finish_create_v1(1,repeat('ab',16),1,NULL,true,NULL,wire);
+ RESET ROLE;
+ IF result->>'outcome'='UNAVAILABLE' THEN RAISE EXCEPTION 'create completion rejected: %',result; END IF;
+ IF NOT EXISTS(SELECT 1 FROM refunds WHERE id=1 AND provider_state='CREATE_UNKNOWN' AND next_query_at=n+interval '30 minutes' AND record_version=2 AND lease_kind IS NULL) THEN RAISE EXCEPTION 'create failure does not wait 30 minutes: %',result; END IF;
+ UPDATE refunds SET provider_state='CREATE_CLAIMED',materialization_state='AWAITING_PROVIDER',pending_reason_code=NULL,next_query_at=NULL,lease_kind='CREATE',lease_owner=decode(repeat('ab',16),'hex'),lease_expires_at=n+interval '30 seconds',record_version=3 WHERE id=1;
+ req:=jsonb_build_object('out_trade_no_hex','61','transaction_id_hex','','out_refund_no_hex','62','reason_hex','63','notify_url_hex','64','amount_cents','100','total_cents','100','currency','CNY');
+ obs:=jsonb_build_object('merchant_id_hex','65','out_trade_no_hex','61','transaction_id_hex','','out_refund_no_hex','62','refund_id_hex','66','state','PROCESSING','amount_cents','100','total_cents','100','currency','CNY','success_time',jsonb_build_object('epoch_seconds','-62135596800','nanosecond',0,'zero',true,'canonical','0001-01-01T00:00:00Z'));
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_finish_create_v1(1,repeat('ab',16),3,req,false,obs,wire);
+ RESET ROLE;
+ IF result->>'outcome'<>'FINISHED' THEN RAISE EXCEPTION 'normal create completion rejected: %',result; END IF;
+ IF NOT EXISTS(SELECT 1 FROM refunds WHERE id=1 AND provider_state='PROCESSING' AND next_query_at IS NULL AND record_version=4 AND lease_kind IS NULL) THEN RAISE EXCEPTION 'normal refund create entered compensation'; END IF;
+ obs:=obs||jsonb_build_object('merchant_id_hex',encode(convert_to('test-merchant','UTF8'),'hex'),'out_trade_no_hex',encode(convert_to('test-order-3','UTF8'),'hex'),'transaction_id_hex',encode(convert_to('transaction-3','UTF8'),'hex'),'out_refund_no_hex',encode(convert_to('refund-create-test','UTF8'),'hex'));
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_observe_v1('{"refund_id":"1","prepayment_id":"3","order_id":"3"}'::jsonb,'ACTIVE_QUERY','',obs,repeat('77',32),NULL,wire-'receipt_time',false);
+ RESET ROLE;
+ IF result->>'outcome'<>'OBSERVED' THEN RAISE EXCEPTION 'processing observation rejected: %',result; END IF;
+ IF EXISTS(SELECT 1 FROM refunds WHERE id=1 AND next_query_at IS NOT NULL) THEN RAISE EXCEPTION 'processing observation scheduled compensation'; END IF;
+ UPDATE refunds SET lease_kind='QUERY',lease_owner=decode(repeat('ab',16),'hex'),lease_expires_at=n+interval '30 seconds',record_version=6 WHERE id=1;
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_observe_v1('{"refund_id":"1","prepayment_id":"3","order_id":"3"}'::jsonb,'ACTIVE_QUERY','',obs,repeat('77',32),'{"refund_id":"1","owner_hex":"abababababababababababababababab","version":"6"}'::jsonb,wire-'receipt_time',false);
+ RESET ROLE;
+ IF result->>'outcome'<>'OBSERVED' THEN RAISE EXCEPTION 'duplicate processing rejected: %',result; END IF;
+ IF EXISTS(SELECT 1 FROM refunds WHERE id=1 AND (next_query_at IS NOT NULL OR lease_kind IS NOT NULL)) THEN RAISE EXCEPTION 'duplicate processing left compensation'; END IF;
+ UPDATE refunds SET provider_state='CREATE_CLAIMED',provider_refund_id=NULL,lease_kind='CREATE',lease_owner=decode(repeat('ab',16),'hex'),lease_expires_at=n+interval '30 seconds',record_version=8 WHERE id=1;
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_finish_create_v1(1,repeat('ab',16),8,req,false,obs||'{"amount_cents":"101"}'::jsonb,wire);
+ RESET ROLE;
+ IF result->>'outcome'<>'FINISHED' THEN RAISE EXCEPTION 'mismatch completion rejected: %',result; END IF;
+ IF NOT EXISTS(SELECT 1 FROM refunds WHERE id=1 AND materialization_state='PENDING_MANUAL' AND pending_reason_code IS NOT NULL AND next_query_at IS NULL) THEN RAISE EXCEPTION 'manual mismatch requeued automatically'; END IF;
+
+
+ END $test$;
+ ROLLBACK;`)
+	})
+
+	t.Run("refund-failed-query-retry-persisted", func(t *testing.T) {
+		sql(`DO $test$
+ DECLARE n timestamptz:=date_trunc('second',statement_timestamp()); wire jsonb; result jsonb;
+ BEGIN
+ INSERT INTO refunds(id,prepayment_id,order_id,out_refund_no,idempotency_key_hash,amount_cents,currency,reason_code,requested_by_user_id,provider_request_json,provider_request_digest,provider_state,create_attempted_at,materialization_state,lease_kind,lease_owner,lease_expires_at,record_version,created_at,updated_at)
+ VALUES(1,3,3,convert_to('refund-retry-test','UTF8'),decode(repeat('11',32),'hex'),100,'CNY','USER_CANCEL',1,'{}',decode(repeat('22',32),'hex'),'CREATE_UNKNOWN',n,'AWAITING_PROVIDER','QUERY',decode(repeat('ab',16),'hex'),n+interval '30 seconds',1,n,n);
+ wire:=jsonb_build_object('epoch_seconds',extract(epoch FROM n)::bigint::text,'nanosecond',0,'zero',false,'canonical',to_char(n,'YYYY-MM-DD"T"HH24:MI:SS"Z"'));
+ SET LOCAL ROLE authenticated;
+ result:=order_refund_release_query_v1(1,repeat('ab',16),1,wire);
+ IF result->>'outcome'<>'RELEASED' THEN RAISE EXCEPTION 'failed-query release: %',result; END IF;
+ -- Duplicate completion from a stale instance must not extend retry or increment version.
+ PERFORM order_refund_release_query_v1(1,repeat('ab',16),1,wire);
+ RESET ROLE;
+ IF NOT EXISTS(SELECT 1 FROM refunds WHERE id=1 AND next_query_at=n+interval '30 minutes' AND record_version=2 AND lease_kind IS NULL) THEN RAISE EXCEPTION 'retry is not persisted at failure + 30 minutes'; END IF;
+ END $test$;`)
+		run("pg_ctl", "-D", dir+"/data", "-l", dir+"/log", "-m", "fast", "-w", "restart")
+		sql(`DO $test$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM refunds WHERE id=1 AND next_query_at=updated_at+interval '30 minutes' AND record_version=2 AND lease_kind IS NULL) THEN RAISE EXCEPTION 'retry lost after database restart'; END IF;
+ END $test$;`)
 	})
 
 }
