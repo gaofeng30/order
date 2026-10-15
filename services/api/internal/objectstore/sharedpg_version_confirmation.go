@@ -44,6 +44,9 @@ func imageRequestDigest(spec UploadSpecification, key string) (string, error) {
 }
 
 func validImageVersionPin(pin imageVersionPin) bool {
+	if pin.VersionID == "" {
+		return ValidImageObjectKey(pin.ObjectKey) && pin.ObjectKey == pin.PublishedKey
+	}
 	if !ValidImageObjectKey(pin.ObjectKey) || !validPublishedImageObjectKey(pin.PublishedKey) || !validNativeVersionID(pin.VersionID) {
 		return false
 	}
