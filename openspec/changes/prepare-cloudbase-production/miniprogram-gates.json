@@ -1,19 +1,22 @@
 {
   "schema_version": 1,
   "change": "prepare-cloudbase-production",
-  "base_sha": "531638a8961796a7938072463e31ff15dba466ac",
+  "base_sha": "9c839056ccc2be4e2ef818f6ecfce3dec3ecabd8",
   "tdd": {
     "red": {
-      "task_id": "release-red",
-      "command": "node --test tools/tests/mini-production-endpoint.test.cjs (2 failures: release blank and UAT accepted)"
+      "task_id": "production-package-endpoint-red",
+      "command": "node --test tools/tests/mini-production-endpoint.test.cjs",
+      "result": "3 FAIL, 1 PASS: develop selects UAT; UAT accepted by production package; release subscription templates blank."
     },
     "green": {
-      "task_id": "release-green",
-      "command": "node --test apps/wechat-miniprogram/tests/*.test.cjs apps/web-admin/tests/*.test.cjs tools/tests/*.test.cjs"
+      "task_id": "production-package-endpoint-green",
+      "command": "node --test tools/tests/mini-production-endpoint.test.cjs apps/wechat-miniprogram/tests/*.test.cjs",
+      "result": "10 PASS, 0 FAIL; local only."
     },
     "refactor": {
-      "task_id": "release-refactor",
-      "command": "No unrelated refactor; exact production origin bound; rerun focused suite and git diff --check."
+      "task_id": "production-package-endpoint-refactor",
+      "command": "git diff --check",
+      "result": "PASS. One compiled origin definition replaces duplicated guard constants; removed unused loopback helper. No unrelated refactor."
     }
   },
   "user_regression": {
@@ -27,6 +30,21 @@
       "scanCode"
     ],
     "scenarios": [
+      {
+        "id": "production-package-native-preview-trial",
+        "kind": "primary",
+        "steps": [
+          "Cold-start this exact production source without runtime overrides; keep native domain validation enabled.",
+          "On native develop preview and uploaded trial, verify wx.login and API session use the formal Prod origin.",
+          "Verify menu/orders and denied merchant access for VISITOR; inspect sanitized actual request hosts."
+        ],
+        "expected": [
+          "Native envVersion remains actual develop/trial; endpoint selects https://order.suianwuye.com.",
+          "No UAT requests; no runtime endpoint mutation or disable-domain-check workaround.",
+          "Local test success and upload acceptance are not marked real-device business completion."
+        ],
+        "status": "PARTIAL_NATIVE_PASS_REAL_DEVICE_PENDING"
+      },
       {
         "id": "release-customer-payment",
         "kind": "primary",
@@ -52,17 +70,42 @@
         ]
       },
       {
-        "id": "trial-isolation-images-notifications",
+        "id": "package-isolation-images-notifications",
         "kind": "regression",
         "steps": [
-          "Verify develop/trial retain UAT endpoint configuration without connecting to a stopped environment.",
+          "Verify the production package selects Prod at all distribution stages; compare the unchanged uat branch package configuration independently.",
           "On approved production device validate existing/new/three-image import rendering, subscription prompts and actual formal notification delivery."
         ],
         "expected": [
-          "Configuration rejects production origin in develop/trial and UAT origin in release.",
+          "Production package rejects UAT and foreign origins at every stage; UAT branch remains independent with its existing configuration.",
           "Actual image sizes/timings and formal delivery receipts are recorded separately from local tests."
         ]
       }
+    ],
+    "status": "PARTIAL_NATIVE_PASS_FULL_UI3_PENDING",
+    "native_receipt": "deployment-receipt-20261015.json#/nativeLoginProbe",
+    "native_verified": {
+      "source_base": "9c839056ccc2be4e2ef818f6ecfce3dec3ecabd8",
+      "source_dirty": true,
+      "window": "s3",
+      "env_version": "develop",
+      "runtime_override": false,
+      "origin": "https://order.suianwuye.com",
+      "login_session": "ready",
+      "home_store": "绥安食品",
+      "settings": "ready",
+      "orders": "ready",
+      "visitor_merchant_orders": "403 FORBIDDEN",
+      "auto_preview": "success, 452699 bytes",
+      "upload": "1.0.0-prod.20261015.1 success, 452699 bytes",
+      "scope": "Native developer-tool platform calls; not real-device full UI3 or public release"
+    },
+    "pending": [
+      "Real-device preview/trial acceptance",
+      "OWNER binding and PC scan login",
+      "Payment/refund and notification delivery",
+      "WeChat review and public release"
     ]
-  }
+  },
+  "publication_status": "WORK_IN_PROGRESS_NOT_INDEPENDENT_VERIFIED"
 }

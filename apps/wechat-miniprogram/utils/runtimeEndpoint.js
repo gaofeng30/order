@@ -1,6 +1,5 @@
-const PRODUCTION_ORIGIN = 'https://order.suianwuye.com';
+const deploymentOrigins = require('./runtimeEndpointConfig.js');
 const ENV_VERSIONS = ['develop', 'trial', 'release'];
-const TRIAL_ORIGIN = 'https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com';
 
 function errorState(envVersion, errorCode) {
   return { state: 'error', envVersion, origin: '', errorCode };
@@ -51,20 +50,11 @@ function isDeployableHTTPSOrigin(normalized) {
   return labels.length > 1 && !isNumericNotation && !isLocalhost;
 }
 
-function isDevelopLoopbackOrigin(normalized) {
-  return normalized
-    && normalized.protocol === 'http'
-    && normalized.hostname === '127.0.0.1';
-}
-
 function isRuntimeOrigin(envVersion, origin) {
   if (!ENV_VERSIONS.includes(envVersion)) return false;
   const normalized = normalizeOrigin(origin);
   if (!normalized || normalized.origin !== origin) return false;
-  if (envVersion === 'release') return origin === PRODUCTION_ORIGIN && isDeployableHTTPSOrigin(normalized);
-  if (envVersion === 'develop') return origin === TRIAL_ORIGIN && isDeployableHTTPSOrigin(normalized);
-  return isDeployableHTTPSOrigin(normalized)
-    && (envVersion !== 'trial' || origin === TRIAL_ORIGIN);
+  return origin === deploymentOrigins[envVersion] && isDeployableHTTPSOrigin(normalized);
 }
 
 function isRuntimeEndpointReady(endpoint, apiBaseUrl) {

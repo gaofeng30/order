@@ -1,5 +1,4 @@
-module.exports = {
-  develop: 'https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com',
-  trial: 'https://order-uat-d1gtzpzj50615c300-1473835269.ap-shanghai.app.tcloudbase.com',
-  release: 'https://order.suianwuye.com',
-};
+// This production package stays on the production backend in preview, trial,
+// and release. UAT is built independently from the uat branch.
+const origin = 'https://order.suianwuye.com';
+module.exports = { develop: origin, trial: origin, release: origin };
