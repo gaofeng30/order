@@ -36,20 +36,20 @@ import (
 	"github.com/gaofeng30/order/services/api/sharedpg"
 )
 
-type uatRuntime struct {
+type cloudRunRuntime struct {
 	handler http.Handler
 	workers []func(context.Context)
 }
 
-func runUAT(logger *slog.Logger) int {
-	cfg, err := config.LoadUATRuntime()
+func runCloudRun(logger *slog.Logger) int {
+	cfg, err := config.LoadCloudRunRuntime()
 	if err != nil {
 		logger.Error("uat runtime configuration error", "reason", config.Reason(err))
 		return 1
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	runtime, err := composeUAT(ctx, cfg, logger)
+	runtime, err := composeCloudRun(ctx, cfg, logger)
 	if err != nil {
 		logger.Error("uat runtime composition error", "reason", err.Error())
 		return 1
@@ -61,49 +61,52 @@ func runUAT(logger *slog.Logger) int {
 	return 0
 }
 
-func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.Logger) (uatRuntime, error) {
+func composeCloudRun(ctx context.Context, cfg config.CloudRunRuntimeConfig, logger *slog.Logger) (cloudRunRuntime, error) {
 	client, err := cloudbasepg.New(cfg.EnvID, cfg.SharedPG)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_shared_pg_configuration_invalid")
+		return cloudRunRuntime{}, errors.New("uat_shared_pg_configuration_invalid")
 	}
-	loginProvider, phoneProvider, phoneClient, err := composeWeChatProviders(config.UAT, cfg.HTTP.MiniProgram)
+	loginProvider, phoneProvider, phoneClient, err := composeWeChatProviders(cfg.HTTP.Environment, cfg.HTTP.MiniProgram)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_wechat_configuration_invalid")
+		return cloudRunRuntime{}, errors.New("uat_wechat_configuration_invalid")
 	}
-	material, err := config.LoadCloudWeChatPayMaterial(ctx, config.UAT, cfg.COS.Region())
+	material, err := config.LoadCloudWeChatPayMaterial(ctx, cfg.HTTP.Environment, cfg.COS.Region())
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_payment_configuration_invalid")
+		return cloudRunRuntime{}, errors.New("uat_payment_configuration_invalid")
 	}
 	payments, err := composeProductionWeChatPayRuntime(cfg.HTTP.MiniProgram.AppID, material)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_payment_provider_invalid")
+		return cloudRunRuntime{}, errors.New("uat_payment_provider_invalid")
 	}
-	payments.config.Environment = string(config.UAT)
+	payments.config.Environment = string(cfg.HTTP.Environment)
 	subscriptionConfig, err := loadWeChatSubscriptionProviderConfig(os.LookupEnv)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_subscription_configuration_invalid")
+		return cloudRunRuntime{}, errors.New("uat_subscription_configuration_invalid")
 	}
-	tokenCipher, err := composeRedemptionTokenCipher(config.UAT, cfg.COS.Region())
-	if err != nil {
-		return uatRuntime{}, errors.New("uat_redemption_configuration_invalid")
+	if validateCloudRunBinding(cfg, payments.config.PaymentNotifyURL, subscriptionConfig.miniProgramState) != nil {
+		return cloudRunRuntime{}, errors.New("cloudrun_callback_or_notification_environment_invalid")
 	}
-	cosProvider, err := config.NewUATCOSCredentialProvider(cfg.COS, cfg.COSSourceSecretID, cfg.COSSourceSecretKey)
+	tokenCipher, err := composeRedemptionTokenCipher(cfg.HTTP.Environment, cfg.COS.Region())
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_cos_configuration_invalid")
+		return cloudRunRuntime{}, errors.New("uat_redemption_configuration_invalid")
+	}
+	cosProvider, err := config.NewCloudRunCOSCredentialProvider(cfg.COS, cfg.COSSourceSecretID, cfg.COSSourceSecretKey)
+	if err != nil {
+		return cloudRunRuntime{}, errors.New("uat_cos_configuration_invalid")
 	}
 	credentialContext, cancel := context.WithTimeout(ctx, cosCredentialLoadTimeout)
 	credential, err := loadCOSCredential(credentialContext, cosProvider)
 	cancel()
 	if err != nil || credential == nil {
-		return uatRuntime{}, errors.New("uat_cos_credentials_unavailable")
+		return cloudRunRuntime{}, errors.New("uat_cos_credentials_unavailable")
 	}
 	secretID, secretKey, token := credential.GetCredential()
 	if secretID == "" || secretKey == "" || token == "" {
-		return uatRuntime{}, errors.New("uat_cos_credentials_unavailable")
+		return cloudRunRuntime{}, errors.New("uat_cos_credentials_unavailable")
 	}
 	cosAdapter, err := objectstore.NewCOSAdapter(objectstore.COSConfig{Bucket: cfg.COS.Bucket(), Region: cfg.COS.Region()}, credential)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_cos_provider_invalid")
+		return cloudRunRuntime{}, errors.New("uat_cos_provider_invalid")
 	}
 	objects := objectstore.NewSharedPGVersionedService(cosAdapter, client)
 	identityRepository := identity.NewSharedPGRepository(client)
@@ -131,15 +134,15 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 	soldOut := merchantsoldout.NewSharedPGCommander(client, time.Now)
 	refundProvider, err := refund.NewWeChatProvider(payments.client, payments.config.MerchantID)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_refund_provider_invalid")
+		return cloudRunRuntime{}, errors.New("uat_refund_provider_invalid")
 	}
 	refundParser, err := refund.NewWeChatNotificationParser(payments.client)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_refund_parser_invalid")
+		return cloudRunRuntime{}, errors.New("uat_refund_parser_invalid")
 	}
 	refundNotifyURL, err := productionRefundNotifyURL(payments.config.PaymentNotifyURL)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_refund_notify_url_invalid")
+		return cloudRunRuntime{}, errors.New("uat_refund_notify_url_invalid")
 	}
 	refundConfig := refund.Config{
 		Environment:      payments.config.Environment,
@@ -151,7 +154,7 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 	refunds := refund.NewSharedPG(client, refundProvider, refundConfig, notifications)
 	billProvider, err := billing.NewWeChatBillProvider(payments.client)
 	if err != nil {
-		return uatRuntime{}, errors.New("uat_billing_provider_invalid")
+		return cloudRunRuntime{}, errors.New("uat_billing_provider_invalid")
 	}
 	billingConfig := billing.Config{
 		Environment:      payments.config.Environment,
@@ -186,6 +189,9 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 		newAdminRoutes(sessions, merchantAdmin, merchantidentity.NewAdminHandler(merchantAdmin), adminRoutes,
 			[]adminGroupRegistrar{objectstore.NewHandler(objects)}, imports),
 	}
+	if cfg.HTTP.Environment == config.Production {
+		registrars = append(registrars, newCompensationRoutes(client, paymentApplication, refunds, notifications))
+	}
 	ready := func(ctx context.Context) httpapi.ReadinessResult {
 		checkContext, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
@@ -194,10 +200,30 @@ func composeUAT(ctx context.Context, cfg config.UATRuntimeConfig, logger *slog.L
 		}
 		return httpapi.ReadinessResult{Ready: true}
 	}
-	return uatRuntime{handler: httpapi.NewRouter(logger, ready, registrars...), workers: []func(context.Context){
-		func(ctx context.Context) { runRefundWorker(ctx, refunds, logger) },
-		func(ctx context.Context) { runSubscriptionWorker(ctx, notifications, logger) },
-		func(ctx context.Context) { runPaymentWorker(ctx, paymentApplication, logger) },
+	workers := []func(context.Context){
 		func(ctx context.Context) { runBillingWorker(ctx, bills, logger) },
-	}}, nil
+	}
+	if cfg.HTTP.Environment == config.Production {
+		workers = append(workers, client.MaintainAuthentication)
+	}
+	if cfg.HTTP.Environment == config.UAT {
+		workers = append(workers,
+			func(ctx context.Context) { runRefundWorker(ctx, refunds, logger) },
+			func(ctx context.Context) { runSubscriptionWorker(ctx, notifications, logger) },
+			func(ctx context.Context) { runPaymentWorker(ctx, paymentApplication, logger) })
+	}
+	return cloudRunRuntime{handler: httpapi.NewRouter(logger, ready, registrars...), workers: workers}, nil
+}
+
+func validateCloudRunBinding(cfg config.CloudRunRuntimeConfig, paymentURL, notificationState string) error {
+	expectedState := "trial"
+	if cfg.HTTP.Environment == config.Production {
+		expectedState = "formal"
+	} else if cfg.HTTP.Environment != config.UAT {
+		return errors.New("cloudrun_environment_invalid")
+	}
+	if cfg.PublicOrigin == "" || paymentURL != cfg.PublicOrigin+"/api/v1/payments/wechat/notify" || notificationState != expectedState {
+		return errors.New("cloudrun_binding_invalid")
+	}
+	return nil
 }
