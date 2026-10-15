@@ -1,4 +1,4 @@
--- Fixed UAT native-COS pins live in the original image command receipts.
+-- Confirmed immutable objects and existing UAT native-version pins share durable command receipts.
 -- No business table, historical migration or runtime management permission is added.
 CREATE OR REPLACE FUNCTION public.order_image_versions_v1(p_object_keys text[])
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
@@ -41,10 +41,10 @@ BEGIN
     RETURN jsonb_build_object('outcome','UNAVAILABLE');
    END IF;
    v_published:=r.response_json->>'published_key';v_version:=r.response_json->>'version_id';
-   IF v_published !~ '^images/published/[0-9a-f]{64}/[0-9a-f]{64}[.](png|jpg)$'
+   IF NOT (v_published=v_key AND v_version='') AND (v_published !~ '^images/published/[0-9a-f]{64}/[0-9a-f]{64}[.](png|jpg)$'
     OR substring(v_published FROM '[^/]+$') IS DISTINCT FROM substring(v_key FROM '[^/]+$')
     OR v_version='' OR v_version='null' OR v_version ~ '[[:space:][:cntrl:]]'
-    OR v_version ~ U&'[\007f-\009f\00a0\1680\2000-\200a\2028\2029\202f\205f\3000]' THEN
+    OR v_version ~ U&'[\007f-\009f\00a0\1680\2000-\200a\2028\2029\202f\205f\3000]') THEN
     RETURN jsonb_build_object('outcome','UNAVAILABLE');
    END IF;
    v_candidate:=jsonb_build_object('object_key',v_key,'published_key',v_published,'version_id',v_version);
@@ -116,10 +116,11 @@ BEGIN
   OR p_key_hash IS NULL OR p_key_hash !~ '^[0-9a-f]{64}$'
   OR (p_request_hash IS NOT NULL AND p_request_hash !~ '^[0-9a-f]{64}$')
   OR p_request_digest IS NULL OR p_request_digest !~ '^[0-9a-f]{64}$'
-  OR p_published_key IS NULL OR p_published_key !~ '^images/published/[0-9a-f]{64}/[0-9a-f]{64}[.](png|jpg)$'
+  OR p_published_key IS NULL OR p_version_id IS NULL
+  OR (NOT (p_published_key=p_object_key AND p_version_id='') AND (p_published_key !~ '^images/published/[0-9a-f]{64}/[0-9a-f]{64}[.](png|jpg)$'
   OR substring(p_published_key FROM '[^/]+$') IS DISTINCT FROM substring(p_object_key FROM '[^/]+$')
   OR p_version_id IS NULL OR p_version_id='' OR p_version_id='null' OR p_version_id ~ '[[:space:][:cntrl:]]'
-  OR p_version_id ~ U&'[\007f-\009f\00a0\1680\2000-\200a\2028\2029\202f\205f\3000]'
+  OR p_version_id ~ U&'[\007f-\009f\00a0\1680\2000-\200a\2028\2029\202f\205f\3000]'))
   OR p_at IS NULL OR NOT isfinite(p_at) THEN
   RETURN jsonb_build_object('outcome','UNAVAILABLE');
  END IF;
