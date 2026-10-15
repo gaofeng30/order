@@ -10,6 +10,7 @@ type sharedSubscriptionExecutor interface {
 }
 
 type sharedSubscriptionStore interface {
+	claimOne(context.Context, uint64, time.Time, time.Time, [16]byte) ([]claimedDelivery, error)
 	recordConsent(context.Context, WriteMeta, ConsentInput, time.Time) (Subscription, error)
 	claimDue(context.Context, time.Time, time.Time, uint16, [16]byte, time.Duration) ([]claimedDelivery, error)
 	markSent(context.Context, claimedDelivery, SendResult, time.Time) error
@@ -48,6 +49,17 @@ func (service *SharedService) RecordConsent(ctx context.Context, meta WriteMeta,
 }
 
 func (service *SharedService) RunDue(ctx context.Context, now time.Time, limit uint16) (RunResult, error) {
+	return service.run(ctx, now, limit, 0)
+}
+
+func (service *SharedService) RunOne(ctx context.Context, now time.Time, id uint64) (RunResult, error) {
+	if id == 0 {
+		return RunResult{}, ErrInvalidInput
+	}
+	return service.run(ctx, now, 1, id)
+}
+
+func (service *SharedService) run(ctx context.Context, now time.Time, limit uint16, id uint64) (RunResult, error) {
 	if service == nil || service.store == nil || service.provider == nil || now.IsZero() || limit == 0 || limit > 100 {
 		return RunResult{}, ErrInvalidInput
 	}
@@ -62,7 +74,13 @@ func (service *SharedService) RunDue(ctx context.Context, now time.Time, limit u
 		}
 		// Waiting notifications must not spend their lease behind earlier sends.
 		// The tick remains the due cutoff; each lease starts at the current time.
-		claimed, err := service.store.claimDue(ctx, now.UTC(), service.now().UTC(), 1, owner, leaseDuration)
+		var claimed []claimedDelivery
+		var err error
+		if id == 0 {
+			claimed, err = service.store.claimDue(ctx, now.UTC(), service.now().UTC(), 1, owner, leaseDuration)
+		} else {
+			claimed, err = service.store.claimOne(ctx, id, now.UTC(), service.now().UTC(), owner)
+		}
 		if err != nil {
 			return result, err
 		}
