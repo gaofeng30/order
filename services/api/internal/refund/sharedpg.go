@@ -47,6 +47,9 @@ func (service *SharedService) IngestRefund(ctx context.Context, verified Verifie
 func (service *SharedService) RunDue(ctx context.Context, now time.Time, limit uint16) (RunResult, error) {
 	return service.inner().RunDue(ctx, now, limit)
 }
+func (service *SharedService) RunOne(ctx context.Context, now time.Time, id uint64) (RunResult, error) {
+	return service.inner().RunOne(ctx, now, id)
+}
 func (service *SharedService) ListPending(ctx context.Context, ownerUserID uint64, filter PendingFilter) ([]Refund, error) {
 	return service.inner().ListPending(ctx, ownerUserID, filter)
 }
