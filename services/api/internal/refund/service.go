@@ -14,7 +14,7 @@ import (
 
 const (
 	refundLeaseDuration = 30 * time.Second
-	refundQueryDelay    = time.Minute
+	refundFailureDelay  = 30 * time.Minute
 )
 
 type refundStore interface {
@@ -144,6 +144,22 @@ func (service *Service) RunDue(ctx context.Context, now time.Time, limit uint16)
 	if err != nil {
 		return RunResult{}, err
 	}
+	return service.runDueIDs(ctx, now, owner, ids)
+}
+
+// RunOne preserves the provider claim/CAS flow without scanning other refunds.
+func (service *Service) RunOne(ctx context.Context, now time.Time, id uint64) (RunResult, error) {
+	if !service.valid() || now.IsZero() || id == 0 {
+		return RunResult{}, ErrInvalidInput
+	}
+	owner, err := service.owner()
+	if err != nil {
+		return RunResult{}, ErrUnavailable
+	}
+	return service.runDueIDs(ctx, now, owner, []uint64{id})
+}
+
+func (service *Service) runDueIDs(ctx context.Context, now time.Time, owner [16]byte, ids []uint64) (RunResult, error) {
 	var result RunResult
 	for _, id := range ids {
 		if err := ctx.Err(); err != nil {
