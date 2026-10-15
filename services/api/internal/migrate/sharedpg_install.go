@@ -69,9 +69,16 @@ func SharedPostgreSQLInstallSQL() (string, error) {
 }
 
 // All namespace-local object categories are checked before any DDL or data
-// write. There is no prefix/extension exemption for unverified platform objects.
+// write. The verified pgcrypto 1.3 platform dependency may already exist under
+// the installation identity. Only its catalog-owned functions are excluded;
+// similarly named objects, other extensions and other owners remain rejected.
 const sharedPostgreSQLEmptySchemaCheck = `  IF EXISTS (SELECT 1 FROM pg_catalog.pg_class WHERE relnamespace='public'::regnamespace)
-     OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc WHERE pronamespace='public'::regnamespace)
+     OR EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE pronamespace='public'::regnamespace AND NOT EXISTS (
+       SELECT 1 FROM pg_catalog.pg_depend d JOIN pg_catalog.pg_extension e ON e.oid=d.refobjid
+       WHERE d.classid='pg_catalog.pg_proc'::regclass AND d.objid=p.oid AND d.objsubid=0
+         AND d.refclassid='pg_catalog.pg_extension'::regclass AND d.deptype='e'
+         AND e.extname='pgcrypto' AND e.extversion='1.3' AND e.extnamespace='public'::regnamespace
+         AND e.extowner=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname=current_user)))
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_type WHERE typnamespace='public'::regnamespace)
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_operator WHERE oprnamespace='public'::regnamespace)
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_collation WHERE collnamespace='public'::regnamespace)
@@ -82,7 +89,8 @@ const sharedPostgreSQLEmptySchemaCheck = `  IF EXISTS (SELECT 1 FROM pg_catalog.
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_ts_dict WHERE dictnamespace='public'::regnamespace)
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_ts_parser WHERE prsnamespace='public'::regnamespace)
      OR EXISTS (SELECT 1 FROM pg_catalog.pg_ts_template WHERE tmplnamespace='public'::regnamespace)
-     OR EXISTS (SELECT 1 FROM pg_catalog.pg_extension WHERE extnamespace='public'::regnamespace) THEN
+     OR EXISTS (SELECT 1 FROM pg_catalog.pg_extension WHERE extnamespace='public'::regnamespace
+       AND NOT (extname='pgcrypto' AND extversion='1.3' AND extowner=(SELECT oid FROM pg_catalog.pg_roles WHERE rolname=current_user))) THEN
     RAISE EXCEPTION USING ERRCODE='P0001', MESSAGE='shared_install_public_not_empty';
   END IF;
 `
