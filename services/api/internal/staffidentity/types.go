@@ -2,16 +2,16 @@ package staffidentity
 
 // Input is a complete candidate whitelist view for one primary and optional extra claim.
 type Input struct {
-	PrimaryPhone     string
-	Extra            *ExtraClaim
-	WhitelistVersion uint64
-	CandidateEntries []Entry
+	PrimaryPhone       string
+	DefaultContactName string
+	Extra              *ExtraClaim
+	WhitelistVersion   uint64
+	CandidateEntries   []Entry
 }
 
-// ExtraClaim is the single optional phone/name claim supplied by the caller.
+// ExtraClaim is the single optional phone; the saved default name is shared.
 type ExtraClaim struct {
 	Phone string
-	Name  string
 }
 
 // Entry is one candidate whitelist record supplied by the caller.

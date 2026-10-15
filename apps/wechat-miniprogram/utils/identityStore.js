@@ -2,8 +2,10 @@ const api = require('./apiClient.js');
 
 function parse(body) {
   const identity = body && body.identity;
-  if (!identity || !identity.primary_phone || typeof identity.primary_phone.bound !== 'boolean'
+  if (!identity || typeof identity.default_contact_name !== 'string' || !identity.primary_phone || typeof identity.primary_phone.bound !== 'boolean'
+    || (identity.primary_phone.bound && typeof identity.primary_phone.phone !== 'string')
     || !identity.extra_phone || typeof identity.extra_phone.set !== 'boolean'
+    || (identity.extra_phone.set && typeof identity.extra_phone.phone !== 'string')
     || !identity.pricing_identity || typeof identity.pricing_identity.kind !== 'string'
     || !identity.merchant || typeof identity.merchant.bound !== 'boolean'
     || (identity.merchant.bound && !['OWNER', 'SUBACCOUNT'].includes(identity.merchant.role))) {

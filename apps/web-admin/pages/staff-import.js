@@ -10,7 +10,7 @@
       sample: '林建国 | 13800006620',
       templateRows: [['姓名', '手机号']],
       columns: [
-        { name: '姓名', required: true, note: '用于附加手机号的双要素校验，需与员工填写的一致' },
+        { name: '姓名', required: true, note: '需与用户保存的默认取餐姓名一致；主手机号或附加手机号任意一个匹配本行号码即可享员工折扣' },
         { name: '手机号', required: true, note: '唯一识别键，11 位手机号' },
       ],
       preview: f => Api.previewStaffImport(f),

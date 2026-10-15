@@ -138,7 +138,7 @@ func sharedPostgreSQLCatalogAuthority() (sharedPostgreSQLCatalog, error) {
 		return want, err
 	}
 	var contract postgreSQLSchemaContract
-	if json.Unmarshal(postgreSQLSchemaJSON, &contract) != nil || contract.Version != 44 || len(chain) != 44 || len(contract.Migrations) != 44 || len(contract.Tables) == 0 || len(contract.Sequences) == 0 {
+	if json.Unmarshal(postgreSQLSchemaJSON, &contract) != nil || contract.Version != 45 || len(chain) != 45 || len(contract.Migrations) != 45 || len(contract.Tables) == 0 || len(contract.Sequences) == 0 {
 		return want, migrateError{reason: ReasonDatabaseIncompatible}
 	}
 	for _, migration := range chain {

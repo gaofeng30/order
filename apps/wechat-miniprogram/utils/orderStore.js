@@ -1,4 +1,5 @@
 const api = require('./apiClient.js');
+const phoneStore = require('./phoneStore.js');
 
 const STATE_LABELS = {
   RESERVED: '已预约', PREPARING: '制作中', READY_FOR_PICKUP: '待取餐',
@@ -36,6 +37,7 @@ function parseDetail(value) {
   return Object.assign(order, {
     rows,
     contactName: value.contact && value.contact.name || '',
+    phone: phoneStore.displayPhone(value.contact && value.contact.phone),
     maskedPhone: value.contact && value.contact.masked_phone || '',
     orderNote: value.order_note || '',
     redemptionToken: value.redemption_token || '',

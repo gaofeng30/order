@@ -6,7 +6,7 @@
 }
 .id-body { flex: 1; min-width: 0; }
 .id-head { display: flex; align-items: center; gap: 16rpx; }
-.id-name { font-size: var(--fs-xl); font-weight: 700; }
+.id-name { min-width: 0; overflow-wrap: anywhere; font-size: var(--fs-xl); font-weight: 700; }
 .id-sub { font-size: var(--fs-sm); color: var(--ink-on-dark-2); margin-top: 10rpx; }
 
 .body { margin-top: 28rpx; }
@@ -41,7 +41,7 @@
 .extra-fields { display: flex; gap: 20rpx; }
 .extra-in { min-width: 0; height: 80rpx; }
 .extra-in--phone { flex: 5 1 0; }
-.extra-in--name { flex: 3 1 0; }
+.name-in { width: 100%; box-sizing: border-box; }
 .extra-ph { color: var(--ink-3); }
 .extra-save { margin-top: 20rpx; }
 

@@ -43,7 +43,8 @@
     "services/api/migrations/postgresql/000041_rename_action_audits.sql": "5552f3dd6bc8fd246d7301cf84a3a36fe90e779b241ff5cd02e9c88eea9a629e",
     "services/api/migrations/postgresql/000042_generalize_action_audits.sql": "126a89a10d7a7a5d67caf940fa2fd6c41e061b744938c9f8aa495eeb433bdeaa",
     "services/api/migrations/postgresql/000043_backfill_action_audits.sql": "493b2ae7e3cafa9be9c7a3ac0cc40d321a9f6a83cdd9cf86e5b6989d0f669431",
-    "services/api/migrations/postgresql/000044_constrain_action_audits.sql": "bf324923d6f7bf3272d58a1d93178476b50958cc1b4e549f95a2d39d76fa1e57"
+    "services/api/migrations/postgresql/000044_constrain_action_audits.sql": "bf324923d6f7bf3272d58a1d93178476b50958cc1b4e549f95a2d39d76fa1e57",
+    "services/api/migrations/postgresql/000045_separate_default_contact_name.sql": "f2b064c7cde2fb183d1fa72d1a33e0c9a2cdbb657734c353b3374b4bcdc5925d"
   },
   "sequences": {
     "categories_id_seq": {
@@ -1457,9 +1458,9 @@
         }
       },
       "constraints": {
-        "chk_miniprogram_users_extra_group": {
+        "chk_miniprogram_users_default_name_pair": {
           "deferrable": false,
-          "definition": "CHECK (extra_phone IS NULL AND extra_name IS NULL AND extra_name_key IS NULL AND extra_phone_set_at IS NULL OR extra_phone IS NOT NULL AND extra_name IS NOT NULL AND extra_name_key IS NOT NULL AND extra_phone_set_at IS NOT NULL)",
+          "definition": "CHECK (extra_name IS NULL AND extra_name_key IS NULL OR extra_name IS NOT NULL AND extra_name_key IS NOT NULL)",
           "kind": "c",
           "validated": true
         },
@@ -1472,6 +1473,12 @@
         "chk_miniprogram_users_extra_phone": {
           "deferrable": false,
           "definition": "CHECK (extra_phone IS NULL OR convert_from(extra_phone, 'UTF8'::name) ~ '^[+][1-9][0-9]{0,14}$'::text)",
+          "kind": "c",
+          "validated": true
+        },
+        "chk_miniprogram_users_extra_phone_pair": {
+          "deferrable": false,
+          "definition": "CHECK (extra_phone IS NULL AND extra_phone_set_at IS NULL OR extra_phone IS NOT NULL AND extra_phone_set_at IS NOT NULL)",
           "kind": "c",
           "validated": true
         },
@@ -4617,5 +4624,5 @@
       }
     }
   },
-  "version": 44
+  "version": 45
 }

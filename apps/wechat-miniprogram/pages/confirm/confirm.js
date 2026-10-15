@@ -24,7 +24,7 @@ Page({
   behaviors: [require('../../utils/navBehavior.js')],
   data: {
     pickup: null, items: [], count: 0, unavailableCount: 0, form: { contact: '', orderNote: '' }, noteFocus: false,
-    phoneState: 'loading', maskedPhone: '', extraPhoneMasked: '', storePoint: '', storeAddress: '',
+    phoneState: 'loading', phone: '', extraPhone: '', storePoint: '', storeAddress: '',
     paymentState: 'idle', payNote: '', quote: null, quoteError: '', selectionUnavailable: false, editingLocked: false, cartEmpty: true,
     payLabel: '预估合计', payBtn: '确认支付', payDisabled: true, czVisible: false, czItem: null, czInit: null, flavors: [],
     subtotal_text: '0.00', discount_text: '0.00', payable_text: '0.00',
@@ -137,14 +137,16 @@ Page({
     try {
       const identity = await identityStore.load();
       const extra = identity.extra_phone;
-      this.setData({ extraPhoneMasked: extra.set && typeof extra.masked_phone === 'string' ? extra.masked_phone : '' });
-    } catch (error) { /* 附加手机号只是展示项，读不到就不显示 */ }
+      const patch = { extraPhone: extra.set ? phoneStore.displayPhone(extra.phone) : '' };
+      if (!this._contactEdited && !this.data.editingLocked) patch['form.contact'] = identity.default_contact_name;
+      this.setData(patch);
+    } catch (error) { /* 读取失败保留手工填写能力，不推断姓名或号码。 */ }
   },
   async refreshPhone() {
-    this.setData({ phoneState: 'loading', maskedPhone: '' });
+    this.setData({ phoneState: 'loading', phone: '' });
     try {
       const status = await phoneStore.status();
-      this.setData({ phoneState: status.bound ? 'bound' : 'unbound', maskedPhone: status.maskedPhone });
+      this.setData({ phoneState: status.bound ? 'bound' : 'unbound', phone: status.phone });
       return status.bound;
     } catch (error) {
       this.setData({ phoneState: error && error.statusCode === 401 ? 'unauthenticated' : 'unavailable' });
@@ -157,11 +159,11 @@ Page({
     this.setData({ phoneState: 'binding' });
     try {
       const status = await phoneStore.bind(detail.code);
-      this.setData({ phoneState: 'bound', maskedPhone: status.maskedPhone });
+      this.setData({ phoneState: 'bound', phone: status.phone });
       this.selectComponent('#toast').show('手机号已绑定');
       return true;
     } catch (error) {
-      this.setData({ phoneState: 'unbound', maskedPhone: '' });
+      this.setData({ phoneState: 'unbound', phone: '' });
       this.selectComponent('#toast').show('绑定失败，请重试', { icon: 'warn' });
       return false;
     }
@@ -224,7 +226,11 @@ Page({
       payLabel: '应付合计',
     });
   },
-  onInput(e) { if (this.data.editingLocked) return; this.setData({ [`form.${e.currentTarget.dataset.k}`]: e.detail.value }); },
+  onInput(e) {
+    if (this.data.editingLocked) return;
+    if (e.currentTarget.dataset.k === 'contact') this._contactEdited = true;
+    this.setData({ [`form.${e.currentTarget.dataset.k}`]: e.detail.value });
+  },
   focusNote() { if (!this.data.editingLocked) this.setData({ noteFocus: true }); },
   onNoteBlur() { if (this.data.noteFocus) this.setData({ noteFocus: false }); },
   editItem(e) {

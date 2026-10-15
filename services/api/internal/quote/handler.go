@@ -77,6 +77,7 @@ type quoteResponse struct {
 }
 
 type contactResponse struct {
+	Phone       string `json:"phone"`
 	Name        string `json:"name"`
 	MaskedPhone string `json:"masked_phone"`
 }
@@ -357,7 +358,7 @@ func newQuoteResponse(value Quote) quoteResponse {
 	}
 	return quoteResponse{
 		ID:        strconv.FormatUint(value.ID, 10),
-		Contact:   contactResponse{Name: value.Contact.Name, MaskedPhone: maskedPhone},
+		Contact:   contactResponse{Name: value.Contact.Name, MaskedPhone: maskedPhone, Phone: value.Contact.Phone},
 		Identity:  identityResponse{Kind: value.Identity.Kind},
 		Discount:  discountResponse{RatePercent: value.Discount.RatePercent},
 		Store:     storeResponse{Name: value.Store.Name, Address: value.Store.Address},

@@ -19,7 +19,7 @@ type LoginStart struct {
 // Store owns all durable merchant identity transactions.
 type Store interface {
 	ReadIdentity(context.Context, uint64) (Identity, error)
-	SetExtraPhone(context.Context, WriteMeta, ExtraPhoneCommand) (ExtraPhoneResult, error)
+	SetContactProfile(context.Context, WriteMeta, ContactProfileCommand) (ContactProfileResult, error)
 	StartLogin(context.Context, uint64, LoginCodeHash, string, time.Time) (LoginStart, error)
 	CompleteLogin(context.Context, uint64, string, LoginCodeHash, string, time.Time) (Identity, error)
 	RecoverRejectedLogin(context.Context, uint64, LoginCodeHash, string, time.Time, time.Time) (Identity, error)
@@ -46,7 +46,7 @@ func newService(store Store, provider PhoneProvider, now func() time.Time) *Serv
 	return &Service{store: store, provider: provider, now: now}
 }
 
-// Identity returns only the current non-sensitive projection.
+// Identity returns the authenticated user's current profile and identities.
 func (service *Service) Identity(ctx context.Context, userID uint64) (Identity, error) {
 	if userID == 0 {
 		return Identity{}, ErrUnavailable
@@ -58,13 +58,13 @@ func (service *Service) Identity(ctx context.Context, userID uint64) (Identity, 
 	return projection, nil
 }
 
-// SetExtraPhone records the one allowed user-supplied staff claim. The store
+// SetContactProfile saves one independently editable contact field. The store
 // owns canonicalization, current-fact resolution, locking and durable replay.
-func (service *Service) SetExtraPhone(ctx context.Context, meta WriteMeta, command ExtraPhoneCommand) (ExtraPhoneResult, error) {
+func (service *Service) SetContactProfile(ctx context.Context, meta WriteMeta, command ContactProfileCommand) (ContactProfileResult, error) {
 	if service == nil || service.store == nil || meta.ActorUserID == 0 {
-		return ExtraPhoneResult{}, ErrUnavailable
+		return ContactProfileResult{}, ErrUnavailable
 	}
-	return service.store.SetExtraPhone(ctx, meta, command)
+	return service.store.SetContactProfile(ctx, meta, command)
 }
 
 // Login bypasses the provider for an existing enabled binding, otherwise consumes one code.

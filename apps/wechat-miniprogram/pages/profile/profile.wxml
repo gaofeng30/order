@@ -14,9 +14,9 @@
         <view class="id-body">
           <view class="id-head">
             <text class="serif id-name">{{nick}}</text>
-            <pill wx:if="{{identityState === 'ready'}}" s="{{phoneMask ? '已绑定' : '未绑定'}}" tone="{{phoneMask ? 'ok' : 'mute'}}" />
+            <pill wx:if="{{identityState === 'ready'}}" s="{{phone ? '已绑定' : '未绑定'}}" tone="{{phone ? 'ok' : 'mute'}}" />
           </view>
-          <view wx:if="{{phoneMask}}" class="id-sub">{{phoneMask}}</view>
+          <view wx:if="{{phone}}" class="id-sub">{{phone}}</view>
         </view>
       </view>
     </view>
@@ -34,7 +34,7 @@
         </view>
         <!-- 交互行：卡片是普通容器，微信按钮是它绝对定位的透明点击层。
              按钮因此完全脱离布局流，原生 margin/padding/伪边框影响不到行。 -->
-        <view wx:if="{{identityState === 'ready' && !phoneMask}}" class="prow prow--tappable">
+        <view wx:if="{{identityState === 'ready' && !phone}}" class="prow prow--tappable">
           <view class="prow-ico"><icon name="phone" size="19" color="#467a32" /></view>
           <view class="prow-main">
             <view class="prow-label">绑定主手机号</view>
@@ -44,25 +44,33 @@
           <button class="prow-tap" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber"
                   hover-class="prow-tap-on" hover-stay-time="80" aria-label="绑定主手机号"></button>
         </view>
+        <view class="prow prow--extra">
+          <view class="prow-head">
+            <view class="prow-ico"><icon name="user" size="19" color="#467a32" /></view>
+            <view class="prow-main"><view class="prow-label">默认取餐姓名</view><view class="prow-sub">下单自动填写，也用于员工折扣匹配</view></view>
+          </view>
+          <view class="extra-panel">
+            <input class="extra-in input-box name-in" maxlength="64" value="{{nameInput}}" bindinput="onNameInput"
+                   placeholder="填写姓名" placeholder-class="extra-ph" disabled="{{nameSaving || identityState !== 'ready'}}" cursor-spacing="100" />
+            <view class="btn btn--primary btn--block extra-save {{nameSavable && !nameSaving && identityState === 'ready' ? '' : 'is-disabled'}}"
+                  bindtap="saveName" hover-class="{{nameSavable && !nameSaving ? 'b-active' : 'none'}}" hover-stay-time="80">{{nameSaving ? '保存中…' : '保存姓名'}}</view>
+          </view>
+        </view>
         <!-- 附加手机号：默认收起 -->
         <view class="prow prow--extra {{extraOpen ? 'is-open' : ''}}">
           <view class="prow-head" bindtap="toggleExtra" hover-class="tap-dim" hover-stay-time="80">
-            <!-- 用 user 而非 phone：本质是「手机号 + 姓名」双要素身份匹配，
-                 与上一行的主手机号绑定不撞义。 -->
             <view class="prow-ico"><icon name="user" size="19" color="#467a32" /></view>
             <view class="prow-main"><view class="prow-label">附加手机号</view></view>
             <view class="extra-caret"><icon name="chevron" size="16" color="#8f9384" /></view>
           </view>
           <view wx:if="{{extraOpen}}" class="extra-panel">
-            <view class="extra-result">{{extraPhoneMask ? extraPhoneMask + ' · ' + extraName : '未设置'}}</view>
+            <view class="extra-result">{{extraPhone || '未设置'}}</view>
             <view class="extra-fields">
               <input class="extra-in extra-in--phone input-box" type="number" maxlength="11" data-k="phone" bindinput="onExtraInput"
-                     value="{{extraForm.phone}}" placeholder="{{extraPhoneMask || '手机号'}}" placeholder-class="extra-ph"
-                     disabled="{{extraSaving}}" cursor-spacing="100" />
-              <input class="extra-in extra-in--name input-box" maxlength="100" data-k="name" bindinput="onExtraInput"
-                     value="{{extraForm.name}}" placeholder="姓名" placeholder-class="extra-ph"
-                     disabled="{{extraSaving}}" cursor-spacing="100" confirm-type="done" />
+                     value="{{extraForm.phone}}" placeholder="{{extraPhone || '手机号'}}" placeholder-class="extra-ph"
+                     disabled="{{extraSaving || identityState !== 'ready'}}" cursor-spacing="100" />
             </view>
+            <view class="prow-sub">与上方已保存姓名一起匹配员工名单，主手机号或附加手机号任意一个命中即可。</view>
             <view class="btn btn--primary btn--block extra-save {{extraSavable && !extraSaving ? '' : 'is-disabled'}}" bindtap="saveExtraPhone"
                   hover-class="{{extraSavable && !extraSaving ? 'b-active' : 'none'}}" hover-stay-time="80">{{extraSaving ? '保存中…' : '保存'}}</view>
           </view>

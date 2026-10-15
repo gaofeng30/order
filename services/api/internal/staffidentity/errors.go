@@ -4,6 +4,7 @@ package staffidentity
 type ErrorKind string
 
 const (
+	ErrorInvalidDefaultName       ErrorKind = "INVALID_DEFAULT_NAME"
 	ErrorInvalidPrimaryPhone      ErrorKind = "INVALID_PRIMARY_PHONE"
 	ErrorInvalidExtraClaim        ErrorKind = "INVALID_EXTRA_CLAIM"
 	ErrorInvalidWhitelistSnapshot ErrorKind = "INVALID_WHITELIST_SNAPSHOT"

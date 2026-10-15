@@ -15,7 +15,7 @@ BEGIN
     'record_version',u.record_version::text,'account_id',a.id::text,'account_role',a.role,
     'auth_version',a.auth_version::text,'rate_percent',d.rate_percent::text,
     'whitelist_version',d.whitelist_version::text,'primary_enabled',primary_staff.enabled,
-    'extra_enabled',extra_staff.enabled,'whitelist_extra_name_key_hex',encode(extra_staff.name_key,'hex'))
+    'whitelist_primary_name_key_hex',encode(primary_staff.name_key,'hex'),'extra_enabled',extra_staff.enabled,'whitelist_extra_name_key_hex',encode(extra_staff.name_key,'hex'))
     FROM public.miniprogram_users u JOIN public.discount_settings d ON d.id=1
     LEFT JOIN public.merchant_accounts a ON a.bound_user_id=u.id AND a.enabled=TRUE AND a.deleted_at IS NULL
     LEFT JOIN public.staff_whitelist primary_staff ON primary_staff.phone=u.primary_phone

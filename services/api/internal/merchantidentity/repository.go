@@ -45,7 +45,7 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 	var phone, extraPhone, extraName sql.NullString
 	var phoneBoundAt sql.NullTime
 	var extraPhoneSetAt sql.NullTime
-	var extraNameKey, whitelistExtraNameKey []byte
+	var extraNameKey, whitelistExtraNameKey, whitelistPrimaryNameKey []byte
 	var recordVersion uint64
 	var accountID, authVersion sql.Null[uint64]
 	var role sql.NullString
@@ -56,7 +56,7 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 		SELECT u.primary_phone,u.primary_phone_bound_at,
 		       u.extra_phone,u.extra_name,u.extra_name_key,u.extra_phone_set_at,u.record_version,
 		       a.id,a.role,a.auth_version,d.rate_percent,d.whitelist_version,
-		       primary_staff.enabled,extra_staff.enabled,extra_staff.name_key
+		       primary_staff.enabled,extra_staff.enabled,extra_staff.name_key,primary_staff.name_key
 		FROM miniprogram_users AS u
 		JOIN discount_settings AS d ON d.id=1
 		LEFT JOIN merchant_accounts AS a ON a.bound_user_id=u.id AND a.enabled=TRUE AND a.deleted_at IS NULL
@@ -66,22 +66,22 @@ func (repository *Repository) ReadIdentity(ctx context.Context, userID uint64) (
 	`, userID).Scan(
 		&phone, &phoneBoundAt, &extraPhone, &extraName, &extraNameKey, &extraPhoneSetAt, &recordVersion,
 		&accountID, &role, &authVersion, &ratePercent, &whitelistVersion,
-		&primaryEnabled, &extraEnabled, &whitelistExtraNameKey,
+		&primaryEnabled, &extraEnabled, &whitelistExtraNameKey, &whitelistPrimaryNameKey,
 	)
 	if err != nil {
 		return Identity{}, ErrUnavailable
 	}
-	return projectIdentity(identityRecord{phone: phone, phoneBoundAt: phoneBoundAt, extraPhone: extraPhone, extraName: extraName, extraNameKey: extraNameKey, extraPhoneSetAt: extraPhoneSetAt, recordVersion: recordVersion, accountID: accountID, role: role, authVersion: authVersion, ratePercent: ratePercent, whitelistVersion: whitelistVersion, primaryEnabled: primaryEnabled, extraEnabled: extraEnabled, whitelistExtraNameKey: whitelistExtraNameKey})
+	return projectIdentity(identityRecord{phone: phone, phoneBoundAt: phoneBoundAt, extraPhone: extraPhone, extraName: extraName, extraNameKey: extraNameKey, extraPhoneSetAt: extraPhoneSetAt, recordVersion: recordVersion, accountID: accountID, role: role, authVersion: authVersion, ratePercent: ratePercent, whitelistVersion: whitelistVersion, primaryEnabled: primaryEnabled, extraEnabled: extraEnabled, whitelistExtraNameKey: whitelistExtraNameKey, whitelistPrimaryNameKey: whitelistPrimaryNameKey})
 }
 
 type identityRecord struct {
-	phone, extraPhone, extraName, role  sql.NullString
-	phoneBoundAt, extraPhoneSetAt       sql.NullTime
-	extraNameKey, whitelistExtraNameKey []byte
-	recordVersion, whitelistVersion     uint64
-	accountID, authVersion              sql.Null[uint64]
-	ratePercent                         uint8
-	primaryEnabled, extraEnabled        sql.NullBool
+	phone, extraPhone, extraName, role                           sql.NullString
+	phoneBoundAt, extraPhoneSetAt                                sql.NullTime
+	extraNameKey, whitelistExtraNameKey, whitelistPrimaryNameKey []byte
+	recordVersion, whitelistVersion                              uint64
+	accountID, authVersion                                       sql.Null[uint64]
+	ratePercent                                                  uint8
+	primaryEnabled, extraEnabled                                 sql.NullBool
 }
 
 func projectIdentity(r identityRecord) (Identity, error) {
@@ -103,33 +103,29 @@ func projectIdentity(r identityRecord) (Identity, error) {
 	if !validPhoneState(phone, phoneBoundAt) || recordVersion == 0 || ratePercent < 1 || ratePercent > 100 || whitelistVersion == 0 {
 		return Identity{}, ErrUnavailable
 	}
-	extraCount := 0
-	for _, present := range []bool{extraPhone.Valid, extraName.Valid, extraNameKey != nil, extraPhoneSetAt.Valid} {
-		if present {
-			extraCount++
-		}
-	}
-	if extraCount != 0 && extraCount != 4 || (!phone.Valid && extraCount != 0) {
+	if extraPhone.Valid != extraPhoneSetAt.Valid || extraName.Valid != (extraNameKey != nil) || (!phone.Valid && extraPhone.Valid) {
 		return Identity{}, ErrUnavailable
 	}
-	projection := Identity{
-		PrimaryPhoneBound: phone.Valid,
-		Pricing:           PricingProjection{Kind: PricingVisitor, RatePercent: 100},
-	}
+	projection := Identity{PrimaryPhoneBound: phone.Valid, Pricing: PricingProjection{Kind: PricingVisitor, RatePercent: 100}}
 	if phone.Valid {
+		projection.PrimaryPhone = phone.String
 		projection.PrimaryPhoneMasked = maskIdentityPhone(phone.String)
 	}
-	if extraCount == 4 {
-		_, expectedKey, ok := canonicalExtraIdentity(extraPhone.String, extraName.String)
+	if extraPhone.Valid {
+		if !canonicalPhone(extraPhone.String) {
+			return Identity{}, ErrUnavailable
+		}
+		projection.ExtraPhone = &ExtraPhoneProjection{Phone: extraPhone.String}
+	}
+	if extraName.Valid {
+		_, expectedKey, ok := canonicalProfileName(extraName.String)
 		if !ok || !bytes.Equal(extraNameKey, expectedKey) {
 			return Identity{}, ErrUnavailable
 		}
-		projection.ExtraPhone = &ExtraPhoneProjection{MaskedPhone: maskIdentityPhone(extraPhone.String), Name: extraName.String}
+		projection.DefaultContactName = extraName.String
 	}
-	staff := primaryEnabled.Valid && primaryEnabled.Bool
-	if !staff && projection.ExtraPhone != nil && extraEnabled.Valid && extraEnabled.Bool && bytes.Equal(extraNameKey, whitelistExtraNameKey) {
-		staff = true
-	}
+	staff := extraName.Valid && ((primaryEnabled.Valid && primaryEnabled.Bool && bytes.Equal(extraNameKey, r.whitelistPrimaryNameKey)) ||
+		(extraPhone.Valid && extraEnabled.Valid && extraEnabled.Bool && bytes.Equal(extraNameKey, whitelistExtraNameKey)))
 	if staff {
 		projection.Pricing = PricingProjection{Kind: PricingStaff, RatePercent: ratePercent}
 	}

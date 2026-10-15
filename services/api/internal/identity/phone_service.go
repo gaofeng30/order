@@ -27,11 +27,13 @@ type PhoneUser struct {
 
 // PhoneBinding is the only successful phone-binding representation.
 type PhoneBinding struct {
+	Phone       string
 	MaskedPhone string
 }
 
 // PhoneStatus is the current user's minimal primary-phone representation.
 type PhoneStatus struct {
+	Phone             string
 	PrimaryPhoneBound bool
 	MaskedPhone       string
 }
@@ -121,7 +123,7 @@ func (service *PhoneService) Status(ctx context.Context, userID uint64) (PhoneSt
 	if err != nil {
 		return PhoneStatus{}, ErrUnavailable
 	}
-	return PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: binding.MaskedPhone}, nil
+	return PhoneStatus{PrimaryPhoneBound: true, MaskedPhone: binding.MaskedPhone, Phone: binding.Phone}, nil
 }
 
 func maskedBinding(phone string) (PhoneBinding, error) {
@@ -134,7 +136,7 @@ func maskedBinding(phone string) (PhoneBinding, error) {
 		visibleCount = digitCount - 1
 	}
 	hiddenCount := digitCount - visibleCount
-	return PhoneBinding{MaskedPhone: "+" + strings.Repeat("*", hiddenCount) + phone[len(phone)-visibleCount:]}, nil
+	return PhoneBinding{Phone: phone, MaskedPhone: "+" + strings.Repeat("*", hiddenCount) + phone[len(phone)-visibleCount:]}, nil
 }
 
 func phoneDigits(value string) bool {

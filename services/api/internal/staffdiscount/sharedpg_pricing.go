@@ -43,17 +43,19 @@ func (l *sharedPGPricingLoader) Load(ctx context.Context, user uint64) (pricingS
 	if l.client.CallRPC(ctx, "order_display_pricing_facts_v1", map[string]any{"p_user": strconv.FormatUint(user, 10)}, &f) != nil || f.Outcome != "SUCCEEDED" || f.Entries == nil {
 		return pricingSnapshot{}, ErrUnavailable
 	}
-	present := 0
-	for _, exists := range []bool{f.User.ExtraPhone != nil, f.User.ExtraName != nil, f.User.ExtraKey != nil} {
-		if exists {
-			present++
-		}
-	}
-	if present != 0 && present != 3 {
+	if (f.User.ExtraName != nil) != (f.User.ExtraKey != nil) {
 		return pricingSnapshot{}, ErrUnavailable
 	}
+	name := ""
+	if f.User.ExtraName != nil {
+		key, err := hex.DecodeString(*f.User.ExtraKey)
+		if err != nil || !bytes.Equal(key, canonicalPricingNameKey(*f.User.ExtraName)) {
+			return pricingSnapshot{}, ErrUnavailable
+		}
+		name = *f.User.ExtraName
+	}
 	if f.User.Primary == nil {
-		if present != 0 || f.Settings != nil || len(f.Entries) != 0 {
+		if f.User.ExtraPhone != nil || f.Settings != nil || len(f.Entries) != 0 {
 			return pricingSnapshot{}, ErrUnavailable
 		}
 		return pricingSnapshot{Unbound: true}, nil
@@ -65,13 +67,9 @@ func (l *sharedPGPricingLoader) Load(ctx context.Context, user uint64) (pricingS
 	if err != nil || version == 0 || strconv.FormatUint(version, 10) != f.Settings.Version || f.Settings.Rate < 1 || f.Settings.Rate > 100 {
 		return pricingSnapshot{}, ErrUnavailable
 	}
-	result := pricingSnapshot{PrimaryPhone: *f.User.Primary, RatePercent: f.Settings.Rate, WhitelistVersion: version}
-	if present == 3 {
-		key, err := hex.DecodeString(*f.User.ExtraKey)
-		if err != nil || !bytes.Equal(key, canonicalPricingNameKey(*f.User.ExtraName)) {
-			return pricingSnapshot{}, ErrUnavailable
-		}
-		result.Extra = &staffidentity.ExtraClaim{Phone: *f.User.ExtraPhone, Name: *f.User.ExtraName}
+	result := pricingSnapshot{DefaultContactName: name, PrimaryPhone: *f.User.Primary, RatePercent: f.Settings.Rate, WhitelistVersion: version}
+	if f.User.ExtraPhone != nil {
+		result.Extra = &staffidentity.ExtraClaim{Phone: *f.User.ExtraPhone}
 	}
 	for _, entry := range f.Entries {
 		key, err := hex.DecodeString(entry.Key)

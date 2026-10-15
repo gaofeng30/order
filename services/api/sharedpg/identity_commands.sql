@@ -22,72 +22,75 @@ BEGIN
 END
 $order_rpc$;
 
+-- Kept signature: exactly one of phone or name is set; name is independent.
 CREATE OR REPLACE FUNCTION public.order_identity_extra_phone_set_v1(p_user numeric,p_phone_hex text,p_name text,p_name_key_hex text,p_operation_hash text,p_request_hash text,p_request_digest text)
 RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER
 SET search_path=pg_catalog,public SET TimeZone='UTC' AS $order_rpc$
 DECLARE
-  u public.miniprogram_users%ROWTYPE; d public.discount_settings%ROWTYPE; candidate record;
-  command_phone bytea; command_name_key bytea; primary_seen boolean:=false; extra_seen boolean:=false;
-  primary_staff boolean:=false; extra_staff boolean:=false; pricing_kind text:='VISITOR';rate integer:=100;
-  scope bytea; affected bigint; constraint_name text; receipt public.action_audits%ROWTYPE;
-  current_extra bytea; current_name text;
+ u public.miniprogram_users%ROWTYPE; d public.discount_settings%ROWTYPE; candidate record;
+ command_phone bytea; command_name_key bytea; pricing_kind text:='VISITOR'; rate integer:=100;
+ scope bytea; affected bigint; constraint_name text; receipt public.action_audits%ROWTYPE;
+ action_name text; current_extra bytea; current_name text;
 BEGIN
-  IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
-    RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';
+ IF current_user<>'authenticated' OR auth.role() IS DISTINCT FROM 'authenticated' OR auth.uid() IS DISTINCT FROM '__ORDER_SERVICE_UID__' THEN
+  RAISE EXCEPTION USING ERRCODE='42501',MESSAGE='ORDER_RUNTIME_FORBIDDEN';
+ END IF;
+ IF num_nonnulls(p_phone_hex,p_name)<>1 OR (p_name IS NULL)<>(p_name_key_hex IS NULL) THEN
+  RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='ORDER_IDENTITY_INPUT';
+ END IF;
+ command_phone:=decode(p_phone_hex,'hex');command_name_key:=decode(p_name_key_hex,'hex');
+ IF (command_phone IS NOT NULL AND convert_from(command_phone,'UTF8') !~ '^[+][1-9][0-9]{0,14}$')
+   OR (p_name IS NOT NULL AND (octet_length(p_name) NOT BETWEEN 1 AND 64 OR octet_length(command_name_key) NOT BETWEEN 1 AND 400)) THEN
+  RAISE EXCEPTION USING ERRCODE='P1001',MESSAGE='ORDER_IDENTITY_INPUT';
+ END IF;
+ action_name:=CASE WHEN p_name IS NOT NULL THEN 'user.default_contact_name.set' ELSE 'user.extra_phone.set' END;
+ BEGIN
+ SELECT * INTO u FROM public.miniprogram_users WHERE id=p_user FOR UPDATE;
+ IF NOT FOUND OR u.record_version<=0 OR (u.primary_phone IS NULL)<>(u.primary_phone_bound_at IS NULL)
+   OR (u.extra_phone IS NULL)<>(u.extra_phone_set_at IS NULL) OR (u.extra_name IS NULL)<>(u.extra_name_key IS NULL)
+   OR (u.primary_phone IS NOT NULL AND convert_from(u.primary_phone,'UTF8') !~ '^[+][1-9][0-9]{0,14}$') THEN
+  RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
+ END IF;
+ IF command_phone IS NOT NULL AND u.primary_phone IS NULL THEN RETURN jsonb_build_object('outcome','PRIMARY_PHONE_REQUIRED');END IF;
+ IF p_name IS NOT NULL THEN u.extra_name:=p_name;u.extra_name_key:=command_name_key;
+ ELSE u.extra_phone:=command_phone;END IF;
+ SELECT * INTO d FROM public.discount_settings WHERE id=1 FOR UPDATE;
+ IF NOT FOUND OR d.rate_percent<1 OR d.rate_percent>100 OR d.whitelist_version<=0 THEN
+  RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
+ END IF;
+ FOR candidate IN SELECT name_key,enabled FROM public.staff_whitelist
+   WHERE phone=u.primary_phone OR phone=u.extra_phone ORDER BY id FOR UPDATE LOOP
+  IF octet_length(candidate.name_key) NOT BETWEEN 1 AND 400 THEN
+   RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
   END IF;
-  command_phone:=decode(p_phone_hex,'hex');command_name_key:=decode(p_name_key_hex,'hex');
-  BEGIN
-  SELECT * INTO u FROM public.miniprogram_users WHERE id=p_user FOR UPDATE;
-  IF NOT FOUND OR u.record_version<=0 OR (u.primary_phone IS NULL)<>(u.primary_phone_bound_at IS NULL)
-    OR (u.primary_phone IS NOT NULL AND convert_from(u.primary_phone,'UTF8') !~ '^[+][1-9][0-9]{0,14}$') THEN
-    RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
-  END IF;
-  IF u.primary_phone IS NULL THEN RETURN jsonb_build_object('outcome','PRIMARY_PHONE_REQUIRED');END IF;
-  SELECT * INTO d FROM public.discount_settings WHERE id=1 FOR UPDATE;
-  IF NOT FOUND OR d.rate_percent<1 OR d.rate_percent>100 OR d.whitelist_version<=0 THEN
-    RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
-  END IF;
-  FOR candidate IN SELECT phone,name_key,enabled FROM public.staff_whitelist
-    WHERE phone=u.primary_phone OR phone=command_phone ORDER BY id FOR UPDATE
-  LOOP
-    IF convert_from(candidate.phone,'UTF8') !~ '^[+][1-9][0-9]{0,14}$' OR octet_length(candidate.name_key) NOT BETWEEN 1 AND 400 THEN
-      RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';
-    END IF;
-    IF candidate.phone=u.primary_phone THEN
-      IF primary_seen THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
-      primary_seen:=true;primary_staff:=candidate.enabled;
-    END IF;
-    IF candidate.phone=command_phone THEN
-      IF extra_seen THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
-      extra_seen:=true;extra_staff:=candidate.enabled AND candidate.name_key=command_name_key;
-    END IF;
-  END LOOP;
-  IF primary_staff OR extra_staff THEN pricing_kind:='STAFF';rate:=d.rate_percent;END IF;
-  UPDATE public.miniprogram_users SET extra_phone=command_phone,extra_name=p_name,extra_name_key=command_name_key,
-    extra_phone_set_at=clock_timestamp(),record_version=record_version+1 WHERE id=p_user AND record_version=u.record_version;
-  GET DIAGNOSTICS affected=ROW_COUNT;
-  IF affected<>1 THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
-  scope:=sha256(convert_to('USER','UTF8')||decode('00','hex')||
-    decode(lpad(to_hex(div(p_user,4294967296)::bigint),8,'0')||lpad(to_hex(mod(p_user,4294967296)::bigint),8,'0'),'hex'));
-  INSERT INTO public.action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,
-    operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at)
-    VALUES('COMMAND_RECEIPT','USER',scope,p_user,'user.extra_phone.set','miniprogram_user',p_user,
-      decode(p_operation_hash,'hex'),decode(p_request_hash,'hex'),'SUCCEEDED','EXTRA_PHONE_SET',
-      jsonb_build_object('request_digest',p_request_digest),jsonb_build_object('pricing_identity',jsonb_build_object('kind',pricing_kind,'rate_percent',rate)),clock_timestamp());
-  RETURN jsonb_build_object('outcome','SUCCEEDED','kind',pricing_kind,'rate_percent',rate);
-  EXCEPTION WHEN unique_violation THEN
-    GET STACKED DIAGNOSTICS constraint_name=CONSTRAINT_NAME;
-    IF constraint_name<>'uq_action_audits_command_receipt' THEN RAISE;END IF;
-  END;
-  -- The controlled subtransaction rolls back the attempted update/receipt
-  -- before the original strict Go decoder examines committed evidence.
-  SELECT * INTO receipt FROM public.action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER'
-    AND actor_scope_hash=scope AND action='user.extra_phone.set' AND operation_key_hash=decode(p_operation_hash,'hex') LIMIT 1;
-  IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
-  SELECT extra_phone,extra_name INTO current_extra,current_name FROM public.miniprogram_users WHERE id=p_user;
-  IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
-  RETURN jsonb_build_object('outcome','REPLAY','evidence_text',receipt.before_state_json::text,'response_text',receipt.response_json::text,
-    'current_phone_hex',encode(current_extra,'hex'),'current_name',current_name);
+  IF u.primary_phone IS NOT NULL AND candidate.enabled AND candidate.name_key=u.extra_name_key THEN pricing_kind:='STAFF';rate:=d.rate_percent;END IF;
+ END LOOP;
+ IF p_name IS NOT NULL THEN
+  UPDATE public.miniprogram_users SET extra_name=p_name,extra_name_key=command_name_key,record_version=record_version+1 WHERE id=p_user AND record_version=u.record_version;
+ ELSE
+  UPDATE public.miniprogram_users SET extra_phone=command_phone,extra_phone_set_at=clock_timestamp(),record_version=record_version+1 WHERE id=p_user AND record_version=u.record_version;
+ END IF;
+ GET DIAGNOSTICS affected=ROW_COUNT;
+ IF affected<>1 THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
+ scope:=sha256(convert_to('USER','UTF8')||decode('00','hex')||
+  decode(lpad(to_hex(div(p_user,4294967296)::bigint),8,'0')||lpad(to_hex(mod(p_user,4294967296)::bigint),8,'0'),'hex'));
+ INSERT INTO public.action_audits(entry_kind,actor_kind,actor_scope_hash,actor_user_id,action,target_type,target_id,
+   operation_key_hash,request_id_hash,result,reason_code,before_state_json,response_json,occurred_at)
+ VALUES('COMMAND_RECEIPT','USER',scope,p_user,action_name,'miniprogram_user',p_user,
+   decode(p_operation_hash,'hex'),decode(p_request_hash,'hex'),'SUCCEEDED','CONTACT_PROFILE_SET',
+   jsonb_build_object('request_digest',p_request_digest),jsonb_build_object('pricing_identity',jsonb_build_object('kind',pricing_kind,'rate_percent',rate)),clock_timestamp());
+ RETURN jsonb_build_object('outcome','SUCCEEDED','kind',pricing_kind,'rate_percent',rate,'current_phone_hex',encode(u.extra_phone,'hex'),'current_name',u.extra_name);
+ EXCEPTION WHEN unique_violation THEN
+  GET STACKED DIAGNOSTICS constraint_name=CONSTRAINT_NAME;
+  IF constraint_name<>'uq_action_audits_command_receipt' THEN RAISE;END IF;
+ END;
+ SELECT * INTO receipt FROM public.action_audits WHERE entry_kind='COMMAND_RECEIPT' AND actor_kind='USER'
+  AND actor_scope_hash=scope AND action=action_name AND operation_key_hash=decode(p_operation_hash,'hex') LIMIT 1;
+ IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
+ SELECT extra_phone,extra_name INTO current_extra,current_name FROM public.miniprogram_users WHERE id=p_user;
+ IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_IDENTITY_UNAVAILABLE';END IF;
+ RETURN jsonb_build_object('outcome','REPLAY','evidence_text',receipt.before_state_json::text,'response_text',receipt.response_json::text,
+  'current_phone_hex',encode(current_extra,'hex'),'current_name',current_name);
 END
 $order_rpc$;
 

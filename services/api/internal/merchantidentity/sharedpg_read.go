@@ -40,21 +40,22 @@ func (reader *SharedPGIdentityReader) Identity(ctx context.Context, userID uint6
 }
 
 type sharedPGIdentityFacts struct {
-	PhoneHex                 *string    `json:"phone_hex"`
-	PhoneBoundAt             *time.Time `json:"phone_bound_at"`
-	ExtraPhoneHex            *string    `json:"extra_phone_hex"`
-	ExtraName                *string    `json:"extra_name"`
-	ExtraNameKeyHex          *string    `json:"extra_name_key_hex"`
-	ExtraPhoneSetAt          *time.Time `json:"extra_phone_set_at"`
-	RecordVersion            string     `json:"record_version"`
-	AccountID                *string    `json:"account_id"`
-	AccountRole              *string    `json:"account_role"`
-	AuthVersion              *string    `json:"auth_version"`
-	RatePercent              string     `json:"rate_percent"`
-	WhitelistVersion         string     `json:"whitelist_version"`
-	PrimaryEnabled           *bool      `json:"primary_enabled"`
-	ExtraEnabled             *bool      `json:"extra_enabled"`
-	WhitelistExtraNameKeyHex *string    `json:"whitelist_extra_name_key_hex"`
+	PhoneHex                   *string    `json:"phone_hex"`
+	PhoneBoundAt               *time.Time `json:"phone_bound_at"`
+	ExtraPhoneHex              *string    `json:"extra_phone_hex"`
+	ExtraName                  *string    `json:"extra_name"`
+	ExtraNameKeyHex            *string    `json:"extra_name_key_hex"`
+	ExtraPhoneSetAt            *time.Time `json:"extra_phone_set_at"`
+	RecordVersion              string     `json:"record_version"`
+	AccountID                  *string    `json:"account_id"`
+	AccountRole                *string    `json:"account_role"`
+	AuthVersion                *string    `json:"auth_version"`
+	RatePercent                string     `json:"rate_percent"`
+	WhitelistVersion           string     `json:"whitelist_version"`
+	PrimaryEnabled             *bool      `json:"primary_enabled"`
+	ExtraEnabled               *bool      `json:"extra_enabled"`
+	WhitelistPrimaryNameKeyHex *string    `json:"whitelist_primary_name_key_hex"`
+	WhitelistExtraNameKeyHex   *string    `json:"whitelist_extra_name_key_hex"`
 }
 
 func (f sharedPGIdentityFacts) record() (identityRecord, error) {
@@ -99,6 +100,10 @@ func (f sharedPGIdentityFacts) record() (identityRecord, error) {
 		return r, err
 	}
 	r.whitelistExtraNameKey, err = bytesOf(f.WhitelistExtraNameKeyHex)
+	if err != nil {
+		return r, err
+	}
+	r.whitelistPrimaryNameKey, err = bytesOf(f.WhitelistPrimaryNameKeyHex)
 	if err != nil {
 		return r, err
 	}

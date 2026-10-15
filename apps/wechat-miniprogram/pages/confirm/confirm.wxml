@@ -76,13 +76,13 @@
       <view class="sec-h list-h"><text class="t">联系信息</text></view>
       <view class="field">
         <text class="field-lbl">联系人</text>
-        <input class="field-in input-box {{editingLocked ? 'is-locked' : ''}}" disabled="{{editingLocked}}" maxlength="20"
+        <input class="field-in input-box {{editingLocked ? 'is-locked' : ''}}" disabled="{{editingLocked}}" maxlength="64"
                confirm-type="next" cursor-spacing="100" placeholder="请填写取餐人姓名" placeholder-class="ph"
                data-k="contact" value="{{form.contact}}" bindinput="onInput" bindconfirm="focusNote" />
       </view>
       <view class="field">
         <text class="field-lbl">手机号</text>
-        <text class="field-val">{{phoneState === 'loading' ? '加载中' : phoneState === 'binding' ? '绑定中' : phoneState === 'unavailable' || phoneState === 'unauthenticated' ? '暂时没读到' : maskedPhone || '未绑定'}}</text>
+        <text class="field-val">{{phoneState === 'loading' ? '加载中' : phoneState === 'binding' ? '绑定中' : phoneState === 'unavailable' || phoneState === 'unauthenticated' ? '暂时没读到' : phone || '未绑定'}}</text>
         <!-- 读取失败时给重试，不诱导已绑定的用户重复授权 -->
         <view wx:if="{{!editingLocked && (phoneState === 'unavailable' || phoneState === 'unauthenticated')}}"
               class="capsule" bindtap="refreshPhone" hover-class="b-active" hover-stay-time="80" aria-role="button">重试</view>
@@ -90,9 +90,9 @@
                 class="capsule" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber"
                 hover-class="b-active" hover-stay-time="80">微信授权</button>
       </view>
-      <view wx:if="{{extraPhoneMasked}}" class="field">
+      <view wx:if="{{extraPhone}}" class="field">
         <text class="field-lbl">附加手机号</text>
-        <text class="field-val">{{extraPhoneMasked}}</text>
+        <text class="field-val">{{extraPhone}}</text>
       </view>
       <view class="field last">
         <text class="field-lbl">整单备注</text>

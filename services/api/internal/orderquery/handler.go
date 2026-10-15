@@ -61,6 +61,7 @@ type listResponse struct {
 }
 
 type contactResponse struct {
+	Phone       string `json:"phone,omitempty"`
 	Name        string `json:"name"`
 	MaskedPhone string `json:"masked_phone"`
 }
@@ -414,7 +415,7 @@ func projectDetail(detail Detail) detailResponse {
 	}
 	return detailResponse{
 		summaryResponse: projectSummary(detail.Summary),
-		Contact:         contactResponse{Name: detail.Contact.Name, MaskedPhone: detail.Contact.MaskedPhone},
+		Contact:         contactResponse{Name: detail.Contact.Name, MaskedPhone: detail.Contact.MaskedPhone, Phone: detail.Contact.Phone},
 		Identity:        identityResponse{Kind: detail.Identity.Kind}, Discount: discountResponse{RatePercent: detail.Discount.RatePercent},
 		Items: items, TransactionID: detail.TransactionID, PaidAt: detail.PaidAt.UTC().Format(time.RFC3339Nano),
 		RedemptionToken: detail.RedemptionToken, TransitionTimes: projectTransitionTimes(detail.TransitionTimes),

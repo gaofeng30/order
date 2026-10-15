@@ -297,6 +297,7 @@ type userOrderResponse struct {
 	orderSummaryResponse
 	Contact struct {
 		Name        string `json:"name"`
+		Phone       string `json:"phone,omitempty"`
 		MaskedPhone string `json:"masked_phone"`
 	} `json:"contact"`
 	Identity struct {
@@ -354,6 +355,7 @@ func projectUserOrder(detail orderquery.Detail) userOrderResponse {
 		MaterializedAt: detail.MaterializedAt.UTC().Format(time.RFC3339Nano), AvailableActions: actions,
 	}}
 	response.Contact.Name, response.Contact.MaskedPhone = detail.Contact.Name, detail.Contact.MaskedPhone
+	response.Contact.Phone = detail.Contact.Phone
 	response.Identity.Kind = detail.Identity.Kind
 	response.Discount.RatePercent = detail.Discount.RatePercent
 	response.Items = make([]struct {

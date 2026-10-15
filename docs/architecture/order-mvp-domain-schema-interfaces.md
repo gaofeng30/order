@@ -22,7 +22,7 @@
 | 术语 | 唯一含义 | 禁止混同 |
 | --- | --- | --- |
 | 用户 | 通过微信小程序浏览和预约的人 | 客户、商户人员 |
-| 员工用户 | 主手机号，或附加手机号 + 归一姓名，命中启用白名单的用户 | 商户人员、会员 |
+| 员工用户 | 已保存默认取餐姓名 + 主/附加任一号码，命中同一启用白名单的用户 | 商户人员、会员 |
 | 商户人员 | 商户账号名单中的主账号或子账号 | 员工用户 |
 | 预支付记录 | 调起微信支付前后的临时交易；未确认支付时不是订单、不占取餐号 | 待支付订单 |
 | Payment Observation | 验签/解密或可信主动查询后，持久化的微信支付外部事实 | 订单、审计日志、原始回调 |
@@ -39,9 +39,9 @@
 1. 单门店、单取餐点，仅今天/明天预约，仅午餐/晚餐，固定 `Asia/Shanghai`。
 2. 商品只有上下架与按取餐日期售罄；无数量库存、预占、扣减、返还。
 3. 用户浏览不要求会话或手机号；首次提交前必须建立会话并绑定微信可信主手机号。
-4. 附加手机号只有一组，必须与归一姓名同时命中同一启用白名单；员工与商户名单完全隔离。
+4. 默认取餐姓名独立保存，附加手机号只有一组。主手机号或附加手机号必须与同一默认姓名命中同一条启用白名单；未保存姓名为访客。临时订单联系人不参与员工判定，员工与商户名单完全隔离。
 5. 价格为整数分；逐商品折后单价先 half-up 到分，再乘数量；折扣率只能 `1..100`，应付必须 `>=1`。
-6. Quote 保存服务端主手机号、联系人姓名、身份/白名单/折扣、商品/价格、商品封面 object key、门店/取餐事实及 digest；封面 object key 必须进入 snapshot digest。HTTP 只返回脱敏手机号，不返回完整手机号或内部 digest/version。
+6. Quote 保存服务端主手机号、联系人姓名、身份/白名单/折扣、商品/价格、商品封面 object key、门店/取餐事实及 digest；封面 object key 必须进入 snapshot digest。本人鉴权响应可返回自己的完整手机号；管理端订单继续脱敏，HTTP 不返回内部 digest/version。
 7. `quote.expires_at = min(created_at + 10m, pickup_at)`；数量只要求 `>0`，任何整数或金额溢出均 fail closed，不虚构 `<=99`。
 8. 一份 Quote 只允许一个 durable prepayment；Provider Create 最多调用一次，任何歧义结果只能 Query。
 9. Provider Create/Query/Refund/通知/对象存储调用永远在 DB transaction 外。
@@ -61,8 +61,8 @@
 | --- | --- | --- | --- |
 | 匿名浏览、会话 | 用户 openid；短期 session hash/expiry | 匿名展示态 | code 换取失败不伪造用户 |
 | 个人中心 cosmetic / 客服 | 不新增业务字段 | 头像/昵称只取用户主动触发后微信客户端当次返回的 cosmetic profile；未取得时用中性默认头像/“微信用户”，不持久化、不参与身份/定价/RBAC/audit | 客服固定微信原生 `open-type="contact"`，真实会话仅 L4；cosmetic/客服失败不影响任何业务身份或订单 |
-| 主手机号 | 微信可信主手机号及绑定时间 | masked phone | 客户端明文不可信；拒绝不写入 |
-| 附加手机号 | 单组手机号、原始姓名、归一姓名、设置时间 | 是否命中员工 | 手机 + 姓名必须同时命中 |
+| 主手机号 | 微信可信主手机号及绑定时间 | 本人鉴权 DTO 的 phone；管理端 masked phone | 客户端明文不能代替微信绑定证明 |
+| 默认取餐姓名 / 附加手机号 | 姓名及归一 key 独立一组；附加号码及设置时间独立一组 | 姓名 + 两号码任一匹配同一启用白名单 | 复用 extra_name/extra_name_key 存姓名，extra_phone/extra_phone_set_at 存号码；v45 解耦 |
 | 员工折扣 | 白名单、启用、版本；全局折扣率/版本 | 已绑定、累计消费/单量 | 名单真实内容为 UAT 资产，不进 Gate 文档 |
 | 商户小程序 | 商户账号、角色、启用、绑定 user、auth version | 可见导航 | 每次写操作校验 live account |
 | PC 扫码登录 | challenge hash、TTL、批准主体、一次消费、access token hash | QR 画面 | 仅启用主账号；一次消费 |
@@ -177,7 +177,7 @@ v9、v5、v15、v17 虽可在空白设计中折叠，但已经分别承担 token
 
 | 表 | 必须字段 | 关键约束与索引 | PII / 生命周期 |
 | --- | --- | --- | --- |
-| `miniprogram_users` | existing id/openid/login；primary phone/bound at；`extra_phone, extra_name, extra_name_key VARBINARY(400), extra_phone_set_at, record_version` | openid、primary phone 唯一；extra 四字段全空或全非空；两 phone E.164；version > 0；所有 user FK 为 RESTRICT | openid、phone、name 为 PII；不得进 DTO/日志，phone 仅 masked |
+| `miniprogram_users` | existing id/openid/login；primary phone/bound at；`extra_phone, extra_name, extra_name_key VARBINARY(400), extra_phone_set_at, record_version` | openid、primary phone 唯一；v45 后姓名/key 与附加号码/设置时间分别全空或全非空；两 phone E.164；version > 0；所有 user FK 为 RESTRICT | openid 不进 DTO；name/完整 phone 仅本人鉴权响应，管理端及日志维持脱敏 |
 | `miniprogram_sessions` | token_hash, user_id, issued_at, expires_at | PK token hash；FK user `ON UPDATE/DELETE RESTRICT`；`expires>issued` | bearer 只返回一次；DB 仅 hash；过期清理 |
 | `merchant_accounts` | existing phone/name/role/enabled/binding/version；`deleted_at, deleted_by_account_id` | phone 唯一；binding 成组；deleted 后 enabled=false 且 binding 清空；binding user、deleted_by account 均 RESTRICT FK；最后一个 enabled OWNER 由锁事务守护 | soft-delete 对业务不可恢复，保留历史 actor FK |
 | `staff_whitelist` | phone, name, `name_key VARBINARY(400)`, enabled, record_version, created/updated | phone 唯一；E.164；name/key 非空 | phone/name PII；导入覆盖 name 但保留 created/enabled |
@@ -391,9 +391,9 @@ Image: {object_key:string,url:string}       // url 是 Adapter 生成的读 URL�
 Product: {id,category_id,name,description,specification,meal_period,images[],listed,sold_out,
           original_unit_price_cents,staff_unit_price_cents?}
 PickupOption: {date,meal_period,time,cutoff_time,available,reason?}
-UserIdentity: {primary_phone:{bound,masked_phone?},extra_phone:{set,masked_phone?,name?},
+UserIdentity: {default_contact_name,primary_phone:{bound,phone?,masked_phone?},extra_phone:{set,phone?},
                pricing_identity:{kind,rate_percent},merchant:{bound,role?}}
-Quote: {id,contact:{name,masked_phone},identity:{kind},discount:{rate_percent},
+Quote: {id,contact:{name,phone,masked_phone},identity:{kind},discount:{rate_percent},
         store:{name,address},pickup:{date,time,meal_period,point},order_note,items[],
         original_subtotal_cents,discount_cents,payable_cents,created_at,expires_at}
 Prepayment: {id,state,expires_at,wx_request_payment?}
@@ -415,9 +415,10 @@ RefundView: {id,order_id?,state,amount_cents,requested_at,provider_refund_id?}
 | GET `/catalog`；GET `/catalog/products/:id?date=YYYY-MM-DD&time=HH:mm` | optional Bearer；detail 的 date/time 必填 | `{categories:[...]}` / `{product}`；匿名只原价；detail 缺 date/time 为 400，营业/餐段/售罄当前事实不可读为 503；`specification` 只读返回 |
 | GET `/menu/pickup-options` | — | `{dates:[{date,available,meal_periods:[...]}]}` |
 | GET `/menu?date=&time=` | optional Bearer | `{selection,store_status,categories}`；未知当前事实 503/不可下单 |
-| POST `/me/bind-phone` | `{code}` | `{primary_phone:{bound:true,masked_phone}}` |
-| GET `/me/primary-phone` | — | `{primary_phone:{bound,masked_phone?}}` |
-| POST `/me/extra-phone` | `{phone,name}` | `{extra_phone:{set:true,masked_phone,name},pricing_identity}` |
+| POST `/me/bind-phone` | `{code}` | `{primary_phone_bound:true,phone,masked_phone}`；本人完整 E.164 号码 |
+| GET `/me/primary-phone` | — | `{primary_phone_bound,phone?,masked_phone}`；仅当前会话本人 |
+| POST `/me/extra-phone` | `{phone}`；不再接受 name，先完成微信主手机号绑定 | `{default_contact_name,extra_phone:{set:true,phone},pricing_identity}`；仅更新号码 |
+| POST `/me/default-contact-name` | `{name}`；归一后非空且 ≤64 UTF-8 字节 | `{default_contact_name,extra_phone:{set,phone?},pricing_identity}`；仅更新姓名，可在主手机号绑定前保存 |
 | GET `/me/identity` | — | `{identity:UserIdentity}` |
 | POST `/me/merchant-login` | `{code}` | `{merchant:{bound:true,role}}` |
 | POST `/quotes` | `{contact_name,pickup_date,pickup_time,order_note,items:[{product_id,quantity,flavors,note}]}` | `201/200 {quote}`；客户端不传价格/身份 |
@@ -464,6 +465,14 @@ RefundView: {id,order_id?,state,amount_cents,requested_at,provider_refund_id?}
 | POST `/admin/pending-payments/:id` | `{action:"MATERIALIZE"|"REFUND",reason}`；owner-only；manual materialize 仍验证 trusted payment/snapshot，不复核已允许 override 的 live drift |
 | POST `/admin/orders/:id/refund` | `{reason}` → `{order,refund}` |
 | GET `/admin/audits` | target/action/time page；只返回脱敏证据 |
+
+默认姓名与手机号契约（2026-10-15）：
+
+- 两个资料保存入口沿用 Bearer 鉴权、幂等键与操作收据，分别记录 `user.default_contact_name.set` / `user.extra_phone.set`，只更新提交的字段。行锁内读取另一字段，不用前端旧值覆盖；同键不同请求或写入字段已被再次修改时返回幂等冲突。
+- 姓名展示值使用 NFKC 与首尾去空白；匹配 key 删除全部 Unicode 空白。已有 `extra_name` 原值保留为默认姓名，不回填白名单猜测姓名、不重写订单联系人或价格。旧超长姓名保留，用户修改或下单时仍需满足联系人长度约束。
+- 原生 PG 与 SharedPG 的资料投影、菜单价格、Quote、支付准备与支付前复核均采用同一规则：姓名 key 非空，并匹配同一条启用记录的 name_key 与任一号码。资料修改递增用户 record_version；旧未支付报价沿用既有失效校验，不回算已创建订单。
+- 本人身份、主手机号、Quote、订单详情及取消结果增加/使用完整 `phone`；仅用户本人鉴权可读取，商户/PC 订单不返回该完整字段。保留管理端使用的 `masked_phone`；用户页面显示大陆本地号码，其他号码保留国家码。
+- 必须先发布 PG v45 与更新的 SharedPG 函数，再发布 API 和两端页面。v45 仅拆分已有 nullable 字段的成对约束，无新增表/列或数据重写；schema/readiness 契约同步到 45。内部 RPC 沿用 `order_identity_extra_phone_set_v1` 签名，phone/name 恰好一个非空，name_key 随 name 同时给出；原 phone+name 同时提交不再有效。
 
 ### 8.6 Provider ingress
 

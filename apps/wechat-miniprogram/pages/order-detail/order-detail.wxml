@@ -45,7 +45,7 @@
         <view class="sec-h list-h"><text class="t">取餐信息</text></view>
         <view class="info-row"><text class="ir-label">取餐地点</text><text class="ir-val">{{o.pickupPoint}}</text></view>
         <view class="info-row"><text class="ir-label">取餐时间</text><text class="ir-val">{{pickupText}}</text></view>
-        <view class="info-row {{!flavorsStr && !o.orderNote ? 'last' : ''}}"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}} · {{o.maskedPhone}}</text></view>
+        <view class="info-row {{!flavorsStr && !o.orderNote ? 'last' : ''}}"><text class="ir-label">联系人</text><text class="ir-val">{{o.contactName}} · {{o.phone}}</text></view>
         <view wx:if="{{flavorsStr}}" class="info-row {{!o.orderNote ? 'last' : ''}}"><text class="ir-label">口味偏好</text><text class="ir-val">{{flavorsStr}}</text></view>
         <view wx:if="{{o.orderNote}}" class="info-row last"><text class="ir-label">备注</text><text class="ir-val">{{o.orderNote}}</text></view>
       </view>

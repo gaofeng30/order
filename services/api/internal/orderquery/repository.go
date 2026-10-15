@@ -231,6 +231,9 @@ func projectOrderDetail(ctx context.Context, record orderRecord, items []Item, m
 		Items: items, TransactionID: string(record.transactionID), PaidAt: record.paidAt,
 		TransitionTimes: transitionTimesFor(record, state), NotificationOptions: notificationOptions(state, merchant), OrderNote: record.orderNote,
 	}
+	if !merchant {
+		detail.Contact.Phone = string(record.contactPhone)
+	}
 	if !merchant && state == StateReadyForPickup {
 		detail.RedemptionToken, err = openRedemption(ctx, tokens, uint16(record.redemptionVersion.Int64), record.redemptionCiphertext, record.redemptionHash)
 		if err != nil {

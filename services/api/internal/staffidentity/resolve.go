@@ -2,10 +2,10 @@ package staffidentity
 
 import (
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
-	"golang.org/x/text/width"
 )
 
 // Resolve resolves a versioned identity snapshot from a complete candidate view.
@@ -16,11 +16,8 @@ func Resolve(input Input) (Snapshot, error) {
 	if input.Extra != nil && !isCanonicalPhone(input.Extra.Phone) {
 		return Snapshot{}, newError(ErrorInvalidExtraClaim)
 	}
-	if input.Extra != nil && !utf8.ValidString(input.Extra.Name) {
-		return Snapshot{}, newError(ErrorInvalidExtraClaim)
-	}
-	if input.Extra != nil && normalizeName(input.Extra.Name) == "" {
-		return Snapshot{}, newError(ErrorInvalidExtraClaim)
+	if !utf8.ValidString(input.DefaultContactName) {
+		return Snapshot{}, newError(ErrorInvalidDefaultName)
 	}
 	if input.WhitelistVersion == 0 {
 		return Snapshot{}, newError(ErrorInvalidWhitelistSnapshot)
@@ -45,17 +42,11 @@ func Resolve(input Input) (Snapshot, error) {
 		seenPhones[entry.Phone] = struct{}{}
 	}
 
+	name := normalizeName(input.DefaultContactName)
 	for _, entry := range input.CandidateEntries {
-		if entry.Phone == input.PrimaryPhone && entry.Enabled {
+		if name != "" && entry.Enabled && normalizeName(entry.Name) == name &&
+			(entry.Phone == input.PrimaryPhone || (input.Extra != nil && entry.Phone == input.Extra.Phone)) {
 			return Snapshot{Kind: KindStaff, WhitelistVersion: input.WhitelistVersion}, nil
-		}
-	}
-	if input.Extra != nil {
-		extraName := normalizeName(input.Extra.Name)
-		for _, entry := range input.CandidateEntries {
-			if entry.Phone == input.Extra.Phone && normalizeName(entry.Name) == extraName && entry.Enabled {
-				return Snapshot{Kind: KindStaff, WhitelistVersion: input.WhitelistVersion}, nil
-			}
 		}
 	}
 	return Snapshot{Kind: KindVisitor, WhitelistVersion: input.WhitelistVersion}, nil
@@ -74,7 +65,10 @@ func isCanonicalPhone(phone string) bool {
 }
 
 func normalizeName(name string) string {
-	folded := width.Fold.String(name)
-	composed := norm.NFC.String(folded)
-	return strings.ReplaceAll(composed, " ", "")
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, norm.NFKC.String(name))
 }

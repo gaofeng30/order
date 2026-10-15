@@ -1,5 +1,5 @@
 /* 员工折扣白名单（PRD §6.4）
-   只有两个可填字段：手机号（唯一识别键）与姓名（§4.1 附加手机号双要素的第二要素）。
+   只有两个可填字段：手机号（唯一识别键）与姓名（§4.1 两个号码共用的姓名匹配要素）。
    状态由行内开关切换；加入时间自动，已绑定 / 累计消费 / 累计单量只读。
    全局折扣率在本页顶部维护：一个整数百分比，对所有命中名单的用户、所有商品统一生效。 */
 (function () {
@@ -11,7 +11,7 @@
     el.innerHTML =
       `<div class="rate-card card card-pad" id="rate-host"></div>
        <div class="page-head">
-         <span class="ph-s grow">命中名单的手机号按下方折扣率结算；停用保留记录但暂停折扣，用于离职人员。</span>
+         <span class="ph-s grow">默认取餐姓名一致，且主手机号或附加手机号命中同一条启用记录，才享员工折扣。</span>
          <input class="inp staff-search" id="f-kw" placeholder="搜索手机号或姓名" value="${T.esc(kw)}">
          <button class="btn btn--primary" data-new>${I.svg('plus', 16)}添加员工</button>
        </div>
@@ -67,7 +67,7 @@
           { t: '姓名', w: '120px', render: r => T.esc(r.name) },
           { t: '手机号', w: '140px', cls: 'num', render: r => `<span class="tnum">${T.esc(r.phone)}</span>` },
           { t: '状态', w: '96px', render: r => T.pill(r.enabled ? '启用' : '停用', r.enabled ? 'ok' : 'mute') },
-          { t: '已绑定', w: '86px', render: r => r.bound ? T.pill('已绑定', 'ok') : `<span class="faint">未绑定</span>` },
+          { t: '号码关联', w: '86px', render: r => r.bound ? T.pill('已关联', 'ok') : `<span class="faint">未关联</span>` },
           { t: '加入时间', w: '110px', render: r => `<span class="faint tnum">${T.esc(r.joinAt)}</span>` },
           { t: '累计消费', w: '96px', cls: 'num', render: r => T.money(r.spend) },
           { t: '累计单量', w: '86px', cls: 'num', render: r => `<span class="faint tnum">${r.orders}</span>` },
@@ -92,7 +92,7 @@
           const r = list.find(x => x.id === id);
           window.Modal.confirm({
             title: '删除员工',
-            body: `确认把「${T.esc(r.name)} · ${T.esc(r.phone)}」移出白名单？该手机号将不再享受员工折扣。停用可保留记录，删除不可恢复。`,
+            body: `确认把「${T.esc(r.name)} · ${T.esc(r.phone)}」移出白名单？该条记录将不再用于员工折扣匹配。停用可保留记录，删除不可恢复。`,
             okText: '删除', danger: true,
           }).then(yes => {
             if (!yes) return;
@@ -114,8 +114,8 @@
       bodyHtml:
         `<div class="fld">
            <div class="fld-lb">姓名 <span class="req">*</span></div>
-           <input class="inp" id="f-name" value="${r ? T.esc(r.name) : ''}" placeholder="与身份证一致，用于附加手机号校验">
-           <div class="fld-hint">用户在个人中心手工填写附加手机号时，需手机号与姓名同时命中同一条记录才生效。</div>
+           <input class="inp" id="f-name" value="${r ? T.esc(r.name) : ''}" placeholder="与员工填写的默认取餐姓名一致">
+           <div class="fld-hint">用户已保存的默认取餐姓名须与此姓名一致；微信主手机号或附加手机号任意一个与本条号码匹配即可。</div>
          </div>
          <div class="fld">
            <div class="fld-lb">手机号 <span class="req">*</span></div>

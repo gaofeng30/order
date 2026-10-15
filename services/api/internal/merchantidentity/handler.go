@@ -27,11 +27,11 @@ type SessionAuthenticator interface {
 	Authenticate(context.Context, string) (uint64, error)
 }
 
-// Application exposes the two merchant identity operations used by HTTP.
+// Application exposes authenticated identity reads and profile/login commands.
 type Application interface {
 	Identity(context.Context, uint64) (Identity, error)
 	Login(context.Context, uint64, string, string) (Identity, error)
-	SetExtraPhone(context.Context, WriteMeta, ExtraPhoneCommand) (ExtraPhoneResult, error)
+	SetContactProfile(context.Context, WriteMeta, ContactProfileCommand) (ContactProfileResult, error)
 }
 
 // Handler serves only merchant identity endpoints.
@@ -45,10 +45,11 @@ func NewHandler(authenticator SessionAuthenticator, application Application) *Ha
 	return &Handler{authenticator: authenticator, application: application}
 }
 
-// RegisterRoutes adds only the two versioned merchant identity routes.
+// RegisterRoutes adds authenticated user profile and merchant login routes.
 func (handler *Handler) RegisterRoutes(engine *gin.Engine) {
 	engine.GET("/api/v1/me/identity", handler.getIdentity)
-	engine.POST("/api/v1/me/extra-phone", handler.setExtraPhone)
+	engine.POST("/api/v1/me/extra-phone", func(c *gin.Context) { handler.setContactProfile(c, profilePhone) })
+	engine.POST("/api/v1/me/default-contact-name", func(c *gin.Context) { handler.setContactProfile(c, profileName) })
 	engine.POST("/api/v1/me/merchant-login", handler.merchantLogin)
 }
 
@@ -57,21 +58,22 @@ type identityResponse struct {
 }
 
 type identityProjectionResponse struct {
-	PrimaryPhone    primaryPhoneResponse    `json:"primary_phone"`
-	ExtraPhone      extraPhoneResponse      `json:"extra_phone"`
-	PricingIdentity pricingIdentityResponse `json:"pricing_identity"`
-	Merchant        merchantResponse        `json:"merchant"`
+	DefaultContactName string                  `json:"default_contact_name"`
+	PrimaryPhone       primaryPhoneResponse    `json:"primary_phone"`
+	ExtraPhone         extraPhoneResponse      `json:"extra_phone"`
+	PricingIdentity    pricingIdentityResponse `json:"pricing_identity"`
+	Merchant           merchantResponse        `json:"merchant"`
 }
 
 type primaryPhoneResponse struct {
-	Bound       bool   `json:"bound"`
 	MaskedPhone string `json:"masked_phone,omitempty"`
+	Bound       bool   `json:"bound"`
+	Phone       string `json:"phone,omitempty"`
 }
 
 type extraPhoneResponse struct {
-	Set         bool   `json:"set"`
-	MaskedPhone string `json:"masked_phone,omitempty"`
-	Name        string `json:"name,omitempty"`
+	Set   bool   `json:"set"`
+	Phone string `json:"phone,omitempty"`
 }
 
 type pricingIdentityResponse struct {
@@ -88,14 +90,10 @@ type merchantLoginResponse struct {
 	Merchant merchantResponse `json:"merchant"`
 }
 
-type extraPhoneRequest struct {
-	Phone string `json:"phone"`
-	Name  string `json:"name"`
-}
-
-type extraPhoneResultResponse struct {
-	ExtraPhone      extraPhoneResponse      `json:"extra_phone"`
-	PricingIdentity pricingIdentityResponse `json:"pricing_identity"`
+type contactProfileResultResponse struct {
+	DefaultContactName string                  `json:"default_contact_name"`
+	ExtraPhone         extraPhoneResponse      `json:"extra_phone"`
+	PricingIdentity    pricingIdentityResponse `json:"pricing_identity"`
 }
 
 type errorEnvelope struct {
@@ -177,17 +175,32 @@ func (handler *Handler) merchantLogin(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, merchantLoginResponse{Merchant: merchantResponse{Bound: true, Role: projection.Merchant.Role}})
 }
 
-func (handler *Handler) setExtraPhone(ctx *gin.Context) {
+func (handler *Handler) setContactProfile(ctx *gin.Context, field string) {
 	ctx.Header("Cache-Control", "no-store")
 	mediaType, _, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
 	if err != nil || mediaType != "application/json" {
 		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
 		return
 	}
-	var request extraPhoneRequest
-	if err := httpdto.DecodeStrict(ctx.Request.Body, maxExtraBodyBytes, &request); err != nil {
-		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
-		return
+	var value string
+	if field == profileName {
+		var request struct {
+			Name string `json:"name"`
+		}
+		if httpdto.DecodeStrict(ctx.Request.Body, maxExtraBodyBytes, &request) != nil {
+			writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
+			return
+		}
+		value = request.Name
+	} else {
+		var request struct {
+			Phone string `json:"phone"`
+		}
+		if httpdto.DecodeStrict(ctx.Request.Body, maxExtraBodyBytes, &request) != nil {
+			writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
+			return
+		}
+		value = request.Phone
 	}
 	idempotencyKey, err := httpdto.IdempotencyKey(ctx.Request)
 	if err != nil {
@@ -198,9 +211,9 @@ func (handler *Handler) setExtraPhone(ctx *gin.Context) {
 	if !ok {
 		return
 	}
-	result, err := handler.application.SetExtraPhone(ctx.Request.Context(), WriteMeta{
+	result, err := handler.application.SetContactProfile(ctx.Request.Context(), WriteMeta{
 		ActorUserID: userID, IdempotencyKey: idempotencyKey, RequestID: ctx.GetString("request_id"),
-	}, ExtraPhoneCommand{Phone: request.Phone, Name: request.Name})
+	}, ContactProfileCommand{Field: field, Value: value})
 	switch {
 	case errors.Is(err, ErrInvalidInput):
 		writeError(ctx, http.StatusBadRequest, "INVALID_REQUEST", "invalid request")
@@ -215,14 +228,15 @@ func (handler *Handler) setExtraPhone(ctx *gin.Context) {
 		writeUnavailable(ctx)
 		return
 	}
-	if !validPricing(result.Pricing.Kind, result.Pricing.RatePercent) || result.ExtraPhone.MaskedPhone == "" || result.ExtraPhone.Name == "" {
+	if !validPricing(result.Pricing.Kind, result.Pricing.RatePercent) {
 		writeUnavailable(ctx)
 		return
 	}
-	ctx.JSON(http.StatusOK, extraPhoneResultResponse{
-		ExtraPhone:      extraPhoneResponse{Set: true, MaskedPhone: result.ExtraPhone.MaskedPhone, Name: result.ExtraPhone.Name},
-		PricingIdentity: pricingIdentityResponse{Kind: result.Pricing.Kind, RatePercent: result.Pricing.RatePercent},
-	})
+	phone := extraPhoneResponse{Set: result.ExtraPhone != nil}
+	if result.ExtraPhone != nil {
+		phone.Phone = result.ExtraPhone.Phone
+	}
+	ctx.JSON(http.StatusOK, contactProfileResultResponse{DefaultContactName: result.DefaultContactName, ExtraPhone: phone, PricingIdentity: pricingIdentityResponse{Kind: result.Pricing.Kind, RatePercent: result.Pricing.RatePercent}})
 }
 
 func decodeLoginRequest(body []byte) (string, bool) {
@@ -288,17 +302,17 @@ func publicIdentity(projection Identity) (identityResponse, bool) {
 		return identityResponse{}, false
 	}
 	response := identityResponse{Identity: identityProjectionResponse{
-		PrimaryPhone:    primaryPhoneResponse{Bound: projection.PrimaryPhoneBound, MaskedPhone: projection.PrimaryPhoneMasked},
-		ExtraPhone:      extraPhoneResponse{Set: projection.ExtraPhone != nil},
-		PricingIdentity: pricingIdentityResponse{Kind: projection.Pricing.Kind, RatePercent: projection.Pricing.RatePercent},
-		Merchant:        merchantResponse{Bound: projection.Merchant != nil},
+		DefaultContactName: projection.DefaultContactName,
+		PrimaryPhone:       primaryPhoneResponse{Bound: projection.PrimaryPhoneBound, Phone: projection.PrimaryPhone, MaskedPhone: projection.PrimaryPhoneMasked},
+		ExtraPhone:         extraPhoneResponse{Set: projection.ExtraPhone != nil},
+		PricingIdentity:    pricingIdentityResponse{Kind: projection.Pricing.Kind, RatePercent: projection.Pricing.RatePercent},
+		Merchant:           merchantResponse{Bound: projection.Merchant != nil},
 	}}
 	if projection.ExtraPhone != nil {
-		if projection.ExtraPhone.MaskedPhone == "" || projection.ExtraPhone.Name == "" {
+		if !canonicalPhone(projection.ExtraPhone.Phone) {
 			return identityResponse{}, false
 		}
-		response.Identity.ExtraPhone.MaskedPhone = projection.ExtraPhone.MaskedPhone
-		response.Identity.ExtraPhone.Name = projection.ExtraPhone.Name
+		response.Identity.ExtraPhone.Phone = projection.ExtraPhone.Phone
 	}
 	if projection.Merchant != nil {
 		if (projection.Merchant.Role != RoleOwner && projection.Merchant.Role != RoleSubaccount) || projection.Merchant.AuthVersion == 0 || !projection.PrimaryPhoneBound {

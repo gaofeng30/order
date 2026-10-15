@@ -58,8 +58,9 @@ type resolvedIdentitySnapshot struct {
 }
 
 type userIdentityRecord struct {
-	PrimaryPhone string
-	Extra        *staffidentity.ExtraClaim
+	DefaultContactName string
+	PrimaryPhone       string
+	Extra              *staffidentity.ExtraClaim
 }
 
 type productRecord struct {
@@ -552,25 +553,23 @@ FOR SHARE`, userID).Scan(
 	if !validPrimaryPhone(primaryPhone.String) {
 		return userIdentityRecord{}, ErrUnavailable
 	}
-	extraFields := []bool{extraPhone.Valid, extraName.Valid, extraNameKey != nil, extraPhoneSetAt.Valid}
-	extraCount := 0
-	for _, present := range extraFields {
-		if present {
-			extraCount++
-		}
+	if extraPhone.Valid != extraPhoneSetAt.Valid || extraName.Valid != (extraNameKey != nil) {
+		return userIdentityRecord{}, ErrUnavailable
 	}
 	result := userIdentityRecord{PrimaryPhone: primaryPhone.String}
-	if extraCount == 0 {
-		return result, nil
+	if extraPhone.Valid {
+		if !validPrimaryPhone(extraPhone.String) {
+			return userIdentityRecord{}, ErrUnavailable
+		}
+		result.Extra = &staffidentity.ExtraClaim{Phone: extraPhone.String}
 	}
-	if extraCount != len(extraFields) || !validPrimaryPhone(extraPhone.String) {
-		return userIdentityRecord{}, ErrUnavailable
+	if extraName.Valid {
+		key, ok := canonicalStaffNameKey(extraName.String)
+		if !ok || key != string(extraNameKey) {
+			return userIdentityRecord{}, ErrUnavailable
+		}
+		result.DefaultContactName = extraName.String
 	}
-	nameKey, validNameKey := canonicalStaffNameKey(extraName.String)
-	if !validNameKey || nameKey != string(extraNameKey) {
-		return userIdentityRecord{}, ErrUnavailable
-	}
-	result.Extra = &staffidentity.ExtraClaim{Phone: extraPhone.String, Name: extraName.String}
 	return result, nil
 }
 
@@ -607,7 +606,7 @@ func resolveIdentitySnapshot(ctx context.Context, transaction *sql.Tx, user user
 		return resolvedIdentitySnapshot{}, ErrUnavailable
 	}
 	resolved, err := staffidentity.Resolve(staffidentity.Input{
-		PrimaryPhone: user.PrimaryPhone, Extra: user.Extra, WhitelistVersion: whitelistVersion, CandidateEntries: entries,
+		PrimaryPhone: user.PrimaryPhone, Extra: user.Extra, DefaultContactName: user.DefaultContactName, WhitelistVersion: whitelistVersion, CandidateEntries: entries,
 	})
 	if err != nil {
 		return resolvedIdentitySnapshot{}, ErrUnavailable

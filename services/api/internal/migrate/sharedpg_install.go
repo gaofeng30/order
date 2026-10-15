@@ -23,7 +23,7 @@ func SharedPostgreSQLInstallSQL() (string, error) {
 		return "", err
 	}
 	var contract postgreSQLSchemaContract
-	if json.Unmarshal(postgreSQLSchemaJSON, &contract) != nil || contract.Version != 44 || len(chain) != 44 || len(contract.Migrations) != 44 || len(contract.Tables) == 0 || len(contract.Sequences) == 0 {
+	if json.Unmarshal(postgreSQLSchemaJSON, &contract) != nil || contract.Version != 45 || len(chain) != 45 || len(contract.Migrations) != 45 || len(contract.Tables) == 0 || len(contract.Sequences) == 0 {
 		return "", migrateError{reason: ReasonDatabaseIncompatible}
 	}
 	for _, migration := range chain {
@@ -142,7 +142,7 @@ func sharedPostgreSQLVerification(chain []Migration, contract postgreSQLSchemaCo
 	fmt.Fprintf(&result, `  IF EXISTS (SELECT 1 FROM public.schema_migrations WHERE dirty) THEN
     RAISE EXCEPTION USING ERRCODE='P0001', MESSAGE='schema_dirty';
   END IF;
-  IF (SELECT count(*) FROM public.schema_migrations) <> 44
+  IF (SELECT count(*) FROM public.schema_migrations) <> 45
      OR EXISTS (SELECT 1 FROM jsonb_to_recordset(%s::jsonb) AS e(version bigint,name text,checksum text)
        FULL JOIN public.schema_migrations a USING (version)
        WHERE a.version IS NULL OR e.version IS NULL OR a.name IS DISTINCT FROM e.name

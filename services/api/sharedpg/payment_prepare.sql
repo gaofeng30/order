@@ -166,11 +166,13 @@ IF sha256(snapshot_material)<>h.snapshot_digest THEN EXIT snapshot_check;END IF;
 IF NOT primary_missing THEN
       primary_phone:=convert_from(u.primary_phone,'UTF8');
       IF primary_phone !~ '^[+][1-9][0-9]{0,14}$' THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
-      IF num_nonnulls(u.extra_phone,u.extra_name,u.extra_name_key,u.extra_phone_set_at) NOT IN (0,4) THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
+      IF (u.extra_phone IS NULL)<>(u.extra_phone_set_at IS NULL) OR (u.extra_name IS NULL)<>(u.extra_name_key IS NULL) THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
       IF u.extra_phone IS NOT NULL THEN
         extra_phone:=convert_from(u.extra_phone,'UTF8');
         IF extra_phone !~ '^[+][1-9][0-9]{0,14}$' THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
-        IF u.extra_name IS NULL OR u.extra_name='' OR convert_to(btrim(u.extra_name,v_go_space),'UTF8')<>convert_to(u.extra_name,'UTF8') THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
+      END IF;
+      IF u.extra_name IS NOT NULL THEN
+        IF u.extra_name='' OR convert_to(btrim(u.extra_name,v_go_space),'UTF8')<>convert_to(u.extra_name,'UTF8') THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
         v_unicode_input:=u.extra_name;
 -- BEGIN GENERATED QUOTE extra_name_key nfkc
 -- Quote-only NFKC: input v_unicode_input; output v_unicode_output.
@@ -1374,11 +1376,11 @@ END LOOP;
         IF candidate_compare='' THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
         IF candidate.phone=u.primary_phone THEN
           IF primary_seen THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
-          primary_seen:=true;primary_staff:=candidate.enabled;
+          primary_seen:=true;primary_staff:=candidate.enabled AND candidate.name_key=u.extra_name_key;
         END IF;
         IF u.extra_phone IS NOT NULL AND candidate.phone=u.extra_phone THEN
           IF extra_seen THEN RETURN jsonb_build_object('outcome','QUOTE_UNAVAILABLE_RETRY');END IF;
-          extra_seen:=true;extra_staff:=candidate.enabled AND convert_to(candidate_compare,'UTF8')=convert_to(extra_compare,'UTF8');
+          extra_seen:=true;extra_staff:=candidate.enabled AND candidate.name_key=u.extra_name_key;
         END IF;
       END LOOP;
       IF primary_staff OR extra_staff THEN identity_kind:='STAFF';rate:=d.rate_percent;END IF;

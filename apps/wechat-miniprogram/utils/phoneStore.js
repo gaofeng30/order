@@ -3,11 +3,11 @@ const api = require('./apiClient.js');
 function parseStatus(body) {
   const value = body && (body.primary_phone || body);
   const bound = value && (value.bound === undefined ? value.primary_phone_bound : value.bound);
-  const masked = value && (value.masked_phone === null ? '' : value.masked_phone);
-  if (typeof bound !== 'boolean' || (masked !== undefined && typeof masked !== 'string')) {
+  const phone = value && value.phone;
+  if (typeof bound !== 'boolean' || (bound && (typeof phone !== 'string' || !/^\+[1-9]\d{1,14}$/.test(phone)))) {
     throw new api.APIError('PHONE_BINDING_UNAVAILABLE');
   }
-  return { bound, maskedPhone: masked || '' };
+  return { bound, phone: bound ? displayPhone(phone) : '' };
 }
 
 async function status() { return parseStatus(await api.get('/api/v1/me/primary-phone', true)); }
@@ -19,12 +19,13 @@ async function bind(code) {
   return result;
 }
 
-async function setExtra(phone, name, key) {
-  const body = await api.post('/api/v1/me/extra-phone', { phone, name }, key);
-  if (!body || !body.extra_phone || body.extra_phone.set !== true || typeof body.extra_phone.masked_phone !== 'string') {
+async function setExtra(phone, key) {
+  const body = await api.post('/api/v1/me/extra-phone', { phone }, key);
+  if (!body || !body.extra_phone || body.extra_phone.set !== true || typeof body.extra_phone.phone !== 'string') {
     throw new api.APIError('EXTRA_PHONE_UNAVAILABLE');
   }
-  return { extraPhone: body.extra_phone, pricingIdentity: body.pricing_identity || null };
+  return { extraPhone: body.extra_phone };
 }
 
-module.exports = { bind, parseStatus, setExtra, status };
+function displayPhone(phone) { return /^\+861\d{10}$/.test(phone || '') ? phone.slice(3) : phone || ''; }
+module.exports = { bind, parseStatus, setExtra, status, displayPhone };

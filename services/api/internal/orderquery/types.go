@@ -49,6 +49,8 @@ type Summary struct {
 }
 
 type Contact struct {
+	// Phone is populated only for the authenticated order owner.
+	Phone       string
 	Name        string
 	MaskedPhone string
 }

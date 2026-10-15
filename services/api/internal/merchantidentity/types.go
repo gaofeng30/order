@@ -40,10 +40,9 @@ type PricingProjection struct {
 }
 
 // ExtraPhoneProjection is the single optional user-supplied staff claim. The
-// phone is always masked before leaving the module.
+// full phone is exposed only by authenticated self-service endpoints.
 type ExtraPhoneProjection struct {
-	MaskedPhone string
-	Name        string
+	Phone string
 }
 
 type WriteMeta struct {
@@ -52,14 +51,18 @@ type WriteMeta struct {
 	RequestID      string
 }
 
-type ExtraPhoneCommand struct {
-	Phone string
-	Name  string
+const profileName = "DEFAULT_NAME"
+const profilePhone = "EXTRA_PHONE"
+
+type ContactProfileCommand struct {
+	Field string
+	Value string
 }
 
-type ExtraPhoneResult struct {
-	ExtraPhone ExtraPhoneProjection
-	Pricing    PricingProjection
+type ContactProfileResult struct {
+	DefaultContactName string
+	ExtraPhone         *ExtraPhoneProjection
+	Pricing            PricingProjection
 }
 
 // MerchantProjection is the only merchant state exposed by identity responses.
@@ -68,10 +71,12 @@ type MerchantProjection struct {
 	AuthVersion uint64
 }
 
-// Identity is the complete non-sensitive identity projection.
+// Identity is the authenticated user projection; full phones are self-only.
 type Identity struct {
 	PrimaryPhoneBound  bool
 	PrimaryPhoneMasked string
+	PrimaryPhone       string
+	DefaultContactName string
 	ExtraPhone         *ExtraPhoneProjection
 	Pricing            PricingProjection
 	Merchant           *MerchantProjection

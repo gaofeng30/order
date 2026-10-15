@@ -40,16 +40,19 @@ func (handler *PhoneHandler) RegisterRoutes(engine *gin.Engine) {
 }
 
 type phoneBindingResponse struct {
+	Phone             string `json:"phone"`
 	PrimaryPhoneBound bool   `json:"primary_phone_bound"`
 	MaskedPhone       string `json:"masked_phone"`
 }
 
 type phoneStatusResponse struct {
+	Phone             string  `json:"phone,omitempty"`
 	PrimaryPhoneBound bool    `json:"primary_phone_bound"`
 	MaskedPhone       *string `json:"masked_phone"`
 }
 
 func (handler *PhoneHandler) bind(ctx *gin.Context) {
+	ctx.Header("Cache-Control", "no-store")
 	mediaType, _, err := mime.ParseMediaType(ctx.GetHeader("Content-Type"))
 	if err != nil || mediaType != "application/json" {
 		writeInvalidRequest(ctx)
@@ -90,7 +93,7 @@ func (handler *PhoneHandler) bind(ctx *gin.Context) {
 	case err != nil || binding.MaskedPhone == "":
 		writePhoneUnavailable(ctx)
 	default:
-		ctx.JSON(http.StatusOK, phoneBindingResponse{PrimaryPhoneBound: true, MaskedPhone: binding.MaskedPhone})
+		ctx.JSON(http.StatusOK, phoneBindingResponse{PrimaryPhoneBound: true, MaskedPhone: binding.MaskedPhone, Phone: binding.Phone})
 	}
 }
 
@@ -120,7 +123,7 @@ func (handler *PhoneHandler) status(ctx *gin.Context) {
 		writePhoneStatusUnavailable(ctx)
 		return
 	}
-	response := phoneStatusResponse{PrimaryPhoneBound: status.PrimaryPhoneBound}
+	response := phoneStatusResponse{PrimaryPhoneBound: status.PrimaryPhoneBound, Phone: status.Phone}
 	if status.PrimaryPhoneBound {
 		response.MaskedPhone = &status.MaskedPhone
 	}

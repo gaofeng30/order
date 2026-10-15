@@ -138,66 +138,78 @@ func (store *SharedPGStore) RecoverRejectedLogin(ctx context.Context, userID uin
 	return sharedPGLoginResult(facts)
 }
 
-func (store *SharedPGStore) SetExtraPhone(ctx context.Context, meta WriteMeta, command ExtraPhoneCommand) (ExtraPhoneResult, error) {
-	phone, nameKey, ok := canonicalExtraIdentity(command.Phone, command.Name)
-	name := canonicalExtraDisplayName(command.Name)
+func (store *SharedPGStore) SetContactProfile(ctx context.Context, meta WriteMeta, command ContactProfileCommand) (ContactProfileResult, error) {
+	command, key, ok := canonicalProfileCommand(command)
 	if store == nil || store.client == nil || ctx == nil || !ok || !validIdentityWriteMeta(meta) {
-		return ExtraPhoneResult{}, ErrInvalidInput
+		return ContactProfileResult{}, ErrInvalidInput
 	}
-	command = ExtraPhoneCommand{Phone: phone, Name: name}
-	digest := digestExtraPhoneCommand(command)
+	digest := digestContactProfileCommand(command)
 	operation := sha256.Sum256([]byte(meta.IdempotencyKey))
 	request := sha256.Sum256([]byte(meta.RequestID))
-	params := map[string]any{"p_user": strconv.FormatUint(meta.ActorUserID, 10), "p_phone_hex": hex.EncodeToString([]byte(phone)), "p_name": name, "p_name_key_hex": hex.EncodeToString(nameKey), "p_operation_hash": hex.EncodeToString(operation[:]), "p_request_hash": hex.EncodeToString(request[:]), "p_request_digest": hex.EncodeToString(digest[:])}
+	params := map[string]any{"p_user": strconv.FormatUint(meta.ActorUserID, 10), "p_phone_hex": nil, "p_name": nil, "p_name_key_hex": nil, "p_operation_hash": hex.EncodeToString(operation[:]), "p_request_hash": hex.EncodeToString(request[:]), "p_request_digest": hex.EncodeToString(digest[:])}
+	if command.Field == profileName {
+		params["p_name"] = command.Value
+		params["p_name_key_hex"] = hex.EncodeToString(key)
+	} else {
+		params["p_phone_hex"] = hex.EncodeToString([]byte(command.Value))
+	}
 	for attempt := 0; attempt < 2; attempt++ {
-		var facts struct {
-			Outcome         string      `json:"outcome"`
-			Kind            PricingKind `json:"kind"`
-			RatePercent     uint8       `json:"rate_percent"`
-			EvidenceText    string      `json:"evidence_text"`
-			ResponseText    string      `json:"response_text"`
-			CurrentPhoneHex *string     `json:"current_phone_hex"`
-			CurrentName     *string     `json:"current_name"`
+		var f struct {
+			Outcome  string      `json:"outcome"`
+			Kind     PricingKind `json:"kind"`
+			Rate     uint8       `json:"rate_percent"`
+			Evidence string      `json:"evidence_text"`
+			Response string      `json:"response_text"`
+			Phone    *string     `json:"current_phone_hex"`
+			Name     *string     `json:"current_name"`
 		}
-		err := store.client.CallRPC(ctx, "order_identity_extra_phone_set_v1", params, &facts)
+		err := store.client.CallRPC(ctx, "order_identity_extra_phone_set_v1", params, &f)
 		if attempt == 0 && sharedPGRetryableTransaction(err) {
 			continue
 		}
 		if err != nil {
-			return ExtraPhoneResult{}, ErrUnavailable
+			return ContactProfileResult{}, ErrUnavailable
 		}
-		if facts.Outcome == "PRIMARY_PHONE_REQUIRED" {
-			return ExtraPhoneResult{}, ErrPrimaryPhoneRequired
+		if f.Outcome == "PRIMARY_PHONE_REQUIRED" {
+			return ContactProfileResult{}, ErrPrimaryPhoneRequired
 		}
-		if facts.Outcome == "REPLAY" {
-			stored, err := decodeExtraPhoneEvidence([]byte(facts.EvidenceText))
-			if err != nil || subtle.ConstantTimeCompare(stored[:], digest[:]) != 1 {
-				return ExtraPhoneResult{}, ErrIdempotencyConflict
+		if f.Outcome == "REPLAY" {
+			got, err := decodeExtraPhoneEvidence([]byte(f.Evidence))
+			if err != nil || subtle.ConstantTimeCompare(got[:], digest[:]) != 1 {
+				return ContactProfileResult{}, ErrIdempotencyConflict
 			}
 			var receipt extraPhoneReceipt
-			if !decodeExactJSON([]byte(facts.ResponseText), &receipt) || !validPricing(receipt.Pricing.Kind, receipt.Pricing.RatePercent) {
-				return ExtraPhoneResult{}, ErrUnavailable
+			if !decodeExactJSON([]byte(f.Response), &receipt) || !validPricing(receipt.Pricing.Kind, receipt.Pricing.RatePercent) {
+				return ContactProfileResult{}, ErrUnavailable
 			}
-			if facts.CurrentPhoneHex == nil || facts.CurrentName == nil {
-				return ExtraPhoneResult{}, ErrIdempotencyConflict
-			}
-			current, err := hex.DecodeString(*facts.CurrentPhoneHex)
-			if err != nil {
-				return ExtraPhoneResult{}, ErrUnavailable
-			}
-			if string(current) != command.Phone || *facts.CurrentName != command.Name {
-				return ExtraPhoneResult{}, ErrIdempotencyConflict
-			}
-			facts.Kind, facts.RatePercent = receipt.Pricing.Kind, receipt.Pricing.RatePercent
-		} else if facts.Outcome != "SUCCEEDED" {
-			return ExtraPhoneResult{}, ErrUnavailable
+			f.Kind, f.Rate = receipt.Pricing.Kind, receipt.Pricing.RatePercent
+		} else if f.Outcome != "SUCCEEDED" {
+			return ContactProfileResult{}, ErrUnavailable
 		}
-		if !validPricing(facts.Kind, facts.RatePercent) {
-			return ExtraPhoneResult{}, ErrUnavailable
+		if !validPricing(f.Kind, f.Rate) {
+			return ContactProfileResult{}, ErrUnavailable
 		}
-		return ExtraPhoneResult{ExtraPhone: ExtraPhoneProjection{MaskedPhone: maskIdentityPhone(phone), Name: name}, Pricing: PricingProjection{Kind: facts.Kind, RatePercent: facts.RatePercent}}, nil
+		result := ContactProfileResult{Pricing: PricingProjection{Kind: f.Kind, RatePercent: f.Rate}}
+		if f.Name != nil {
+			_, _, valid := canonicalProfileName(*f.Name)
+			if !valid {
+				return ContactProfileResult{}, ErrUnavailable
+			}
+			result.DefaultContactName = *f.Name
+		}
+		if f.Phone != nil {
+			raw, err := hex.DecodeString(*f.Phone)
+			if err != nil || !canonicalPhone(string(raw)) {
+				return ContactProfileResult{}, ErrUnavailable
+			}
+			result.ExtraPhone = &ExtraPhoneProjection{Phone: string(raw)}
+		}
+		if (command.Field == profileName && result.DefaultContactName != command.Value) || (command.Field == profilePhone && (result.ExtraPhone == nil || result.ExtraPhone.Phone != command.Value)) {
+			return ContactProfileResult{}, ErrIdempotencyConflict
+		}
+		return result, nil
 	}
-	return ExtraPhoneResult{}, ErrUnavailable
+	return ContactProfileResult{}, ErrUnavailable
 }
 
 var _ Store = (*SharedPGStore)(nil)

@@ -1,5 +1,5 @@
 // Package sharedpg owns the reviewed atomic command definitions separately
-// from the immutable v1-v44 relational migration chain.
+// from the immutable v1-v45 relational migration chain.
 package sharedpg
 
 import (

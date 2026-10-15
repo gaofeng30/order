@@ -14,12 +14,13 @@ import (
 )
 
 type pricingSnapshot struct {
-	Unbound          bool
-	PrimaryPhone     string
-	Extra            *staffidentity.ExtraClaim
-	RatePercent      int64
-	WhitelistVersion uint64
-	Entries          []staffidentity.Entry
+	Unbound            bool
+	PrimaryPhone       string
+	DefaultContactName string
+	Extra              *staffidentity.ExtraClaim
+	RatePercent        int64
+	WhitelistVersion   uint64
+	Entries            []staffidentity.Entry
 }
 
 type pricingSnapshotLoader interface {
@@ -65,7 +66,7 @@ func (application *PricingApplication) ResolvePrices(ctx context.Context, userID
 		return nil, ErrUnavailable
 	}
 	resolved, err := staffidentity.Resolve(staffidentity.Input{
-		PrimaryPhone: snapshot.PrimaryPhone, Extra: snapshot.Extra,
+		PrimaryPhone: snapshot.PrimaryPhone, Extra: snapshot.Extra, DefaultContactName: snapshot.DefaultContactName,
 		WhitelistVersion: snapshot.WhitelistVersion, CandidateEntries: snapshot.Entries,
 	})
 	if err != nil {
@@ -121,17 +122,17 @@ WHERE id = $1`, userID).Scan(&primaryPhone, &extraPhone, &extraName, &extraNameK
 	if err != nil {
 		return pricingSnapshot{}, ErrUnavailable
 	}
-	extraPresent := 0
-	for _, present := range []bool{extraPhone.Valid, extraName.Valid, extraNameKey != nil} {
-		if present {
-			extraPresent++
-		}
-	}
-	if extraPresent != 0 && extraPresent != 3 {
+	if extraName.Valid != (extraNameKey != nil) {
 		return pricingSnapshot{}, ErrUnavailable
 	}
+	if extraName.Valid {
+		if !bytes.Equal(extraNameKey, canonicalPricingNameKey(extraName.String)) {
+			return pricingSnapshot{}, ErrUnavailable
+		}
+		result.DefaultContactName = extraName.String
+	}
 	if !primaryPhone.Valid {
-		if extraPresent != 0 {
+		if extraPhone.Valid {
 			return pricingSnapshot{}, ErrUnavailable
 		}
 		if err := transaction.Commit(); err != nil {
@@ -141,11 +142,8 @@ WHERE id = $1`, userID).Scan(&primaryPhone, &extraPhone, &extraName, &extraNameK
 		return pricingSnapshot{Unbound: true}, nil
 	}
 	result.PrimaryPhone = primaryPhone.String
-	if extraPresent == 3 {
-		if !bytes.Equal(extraNameKey, canonicalPricingNameKey(extraName.String)) {
-			return pricingSnapshot{}, ErrUnavailable
-		}
-		result.Extra = &staffidentity.ExtraClaim{Phone: extraPhone.String, Name: extraName.String}
+	if extraPhone.Valid {
+		result.Extra = &staffidentity.ExtraClaim{Phone: extraPhone.String}
 	}
 	if err := transaction.QueryRowContext(ctx, `SELECT rate_percent, whitelist_version
 FROM discount_settings
