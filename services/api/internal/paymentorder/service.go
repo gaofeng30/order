@@ -19,6 +19,7 @@ import (
 const (
 	defaultLeaseDuration     = 30 * time.Second
 	defaultReconcileInterval = 15 * time.Second
+	failedReconcileInterval  = 30 * time.Minute
 	maxWorkerBatch           = 100
 )
 
