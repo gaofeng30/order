@@ -18,6 +18,7 @@ import (
 
 const maxResponseBytes = 8 << 20
 const uatEnvironment = "order-uat-d1gtzpzj50615c300"
+const productionEnvironment = "order-prod-d0g4xnw49c5ada5ce"
 const refreshAhead = 30 * time.Second
 const failedAuthenticationBackoff = time.Second
 const requestTimeout = 15 * time.Second
@@ -61,7 +62,7 @@ type authentication struct {
 }
 
 func New(envID string, credentials Credentials) (*Client, error) {
-	if envID != uatEnvironment {
+	if envID != uatEnvironment && envID != productionEnvironment {
 		return nil, ErrUnavailable
 	}
 	for _, value := range []string{credentials.Username, credentials.Password, credentials.PublishableKey, credentials.ServiceUID} {
@@ -143,6 +144,20 @@ func (c *Client) authenticate(flight *authentication) {
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 	token, err := c.signIn(ctx)
+	if err == nil {
+		key, _ := tokenClaims(c.credentials.PublishableKey)
+		if key.Audience == productionEnvironment {
+			var raw []byte
+			raw, err = c.post(ctx, "/v1/rdb/rest/rpc/order_compensation_authenticate_v1", token.value, []byte(`{}`), false)
+			var result struct {
+				Outcome string `json:"outcome"`
+			}
+			if err == nil && (decodeJSON(raw, &result) != nil || result.Outcome != "REGISTERED") {
+				err = ErrUnavailable
+			}
+		}
+	}
+
 	c.mu.Lock()
 	if err == nil {
 		c.cached = token
@@ -207,6 +222,10 @@ func allowedRPC(name string) bool {
 		"order_subscription_consent_read_v1",
 		"order_subscription_consent_record_v1",
 		"order_subscription_claim_v1",
+		"order_subscription_claim_one_v1",
+		"order_compensation_claim_v1",
+		"order_compensation_finish_v1",
+		"order_compensation_readiness_v1",
 		"order_subscription_sent_v1",
 		"order_subscription_temporary_failure_v1",
 		"order_subscription_permanent_failure_v1",
@@ -255,8 +274,9 @@ func (c *Client) signIn(ctx context.Context) (accessToken, error) {
 	if decodeJSON(raw, &response) != nil || response.TokenType != "Bearer" || response.Sub != c.credentials.ServiceUID || response.ExpiresIn <= 0 || response.ExpiresIn > 2147483647 || len(response.AccessToken) > 4096 || strings.ContainsAny(response.AccessToken, "\r\n") {
 		return accessToken{}, ErrUnavailable
 	}
+	keyClaims, keyErr := tokenClaims(c.credentials.PublishableKey)
 	claims, err := tokenClaims(response.AccessToken)
-	if err != nil || claims.Sub != c.credentials.ServiceUID || claims.Role != "authenticated" {
+	if keyErr != nil || err != nil || claims.Sub != c.credentials.ServiceUID || claims.Role != "authenticated" || claims.Audience == "" || claims.Audience != keyClaims.Audience || (claims.ProjectID != "" && claims.ProjectID != keyClaims.Audience) {
 		return accessToken{}, ErrUnavailable
 	}
 	expires := started.Add(time.Duration(response.ExpiresIn) * time.Second)
