@@ -37,7 +37,7 @@ type tencentSSMSecretSource struct {
 }
 
 func newCloudSecretSource(environment Environment, region string) SecretSource {
-	if environment == UAT {
+	if environment == UAT || environment == Production {
 		return cloudRunSecretSource{}
 	}
 	provider, _ := NewCloudCredentialProvider(environment, region)
