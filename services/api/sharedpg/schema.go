@@ -144,6 +144,17 @@ type sequence struct {
 // read-only RPC with the reviewed definitions and least-privilege boundary.
 // It does not certify that the remaining backend has been ported.
 func Check(ctx context.Context, client Executor, serviceUID, environment, paymentNotifyURL, refundNotifyURL string) error {
+	production := environment == "production"
+	if err := checkBusinessCatalog(ctx, client, serviceUID, environment, paymentNotifyURL, refundNotifyURL, production); err != nil {
+		return err
+	}
+	if production {
+		return CheckCompensation(ctx, client, serviceUID)
+	}
+	return nil
+}
+
+func checkBusinessCatalog(ctx context.Context, client Executor, serviceUID, environment, paymentNotifyURL, refundNotifyURL string, compensationInstalled bool) error {
 	definition, err := InstallSQL(serviceUID, environment, paymentNotifyURL, refundNotifyURL)
 	if ctx == nil || client == nil || err != nil {
 		return ErrDefinitionMismatch
@@ -169,7 +180,22 @@ func Check(ctx context.Context, client Executor, serviceUID, environment, paymen
 		return ErrDefinitionMismatch
 	}
 	var unreviewedDefiners []json.RawMessage
-	if json.Unmarshal(actual.UnreviewedDefiners, &unreviewedDefiners) != nil || unreviewedDefiners == nil || len(unreviewedDefiners) != 0 {
+	if json.Unmarshal(actual.UnreviewedDefiners, &unreviewedDefiners) != nil || unreviewedDefiners == nil {
+		return ErrDefinitionMismatch
+	}
+	if compensationInstalled {
+		// These fixed credential and capability RPCs are checked in full by the additional
+		// compensation catalog gate. No other definer may become callable.
+		var definers []struct{ Signature, Role string }
+		if json.Unmarshal(actual.UnreviewedDefiners, &definers) != nil || len(definers) != 3 {
+			return ErrDefinitionMismatch
+		}
+		for i, name := range []string{"order_compensation_authenticate_v1()", "order_compensation_claim_v1(text)", "order_compensation_finish_v1(text,boolean)"} {
+			if definers[i].Signature != name || definers[i].Role != "authenticated" {
+				return ErrDefinitionMismatch
+			}
+		}
+	} else if len(unreviewedDefiners) != 0 {
 		return ErrDefinitionMismatch
 	}
 	for i, r := range actual.Roles {
