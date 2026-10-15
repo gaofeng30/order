@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,15 +17,16 @@ import (
 )
 
 const uatCOSBucket = "6f72-order-uat-d1gtzpzj50615c300-1473835269"
+const productionCOSBucket = "6f72-order-prod-d0g4xnw49c5ada5ce-1473835269"
 const uatCOSRegion = "ap-shanghai"
 const uatCOSPolicy = `{"version":"2.0","statement":[{"effect":"allow","action":["name/cos:PutObject","name/cos:GetObject"],"resource":["qcs::cos:ap-shanghai:uid/1473835269:6f72-order-uat-d1gtzpzj50615c300-1473835269/images/*"]}]}`
 
-// NewUATCOSCredentialProvider is the explicit UAT source-identity route.
-func NewUATCOSCredentialProvider(material COSMaterial, secretID, secretKey string) (common.Provider, error) {
-	return newUATCOSCredentialProvider(material, secretID, secretKey, nil, time.Now)
+// NewCloudRunCOSCredentialProvider binds the source identity to one reviewed environment bucket.
+func NewCloudRunCOSCredentialProvider(material COSMaterial, secretID, secretKey string) (common.Provider, error) {
+	return newCloudRunCOSCredentialProvider(material, secretID, secretKey, nil, time.Now)
 }
-func newUATCOSCredentialProvider(material COSMaterial, secretID, secretKey string, transport http.RoundTripper, now func() time.Time) (common.Provider, error) {
-	if material.Bucket() != uatCOSBucket || material.Region() != uatCOSRegion || !validCredentialComponent(secretID) || !validCredentialComponent(secretKey) || now == nil {
+func newCloudRunCOSCredentialProvider(material COSMaterial, secretID, secretKey string, transport http.RoundTripper, now func() time.Time) (common.Provider, error) {
+	if (material.Bucket() != uatCOSBucket && material.Bucket() != productionCOSBucket) || material.Region() != uatCOSRegion || !validCredentialComponent(secretID) || !validCredentialComponent(secretKey) || now == nil {
 		return nil, errCloudCredentialUnavailable
 	}
 	p := profile.NewClientProfile()
@@ -40,12 +42,13 @@ func newUATCOSCredentialProvider(material COSMaterial, secretID, secretKey strin
 		return nil, errCloudCredentialUnavailable
 	}
 	client.WithHttpTransport(uatCOSSTSBoundedTransport{next: transport})
-	return &uatCOSProvider{credential: &uatCOSCredential{client: client, now: now}}, nil
+	return &uatCOSProvider{credential: &uatCOSCredential{client: client, now: now, bucket: material.Bucket()}}, nil
 }
 
 type uatCOSProvider struct{ credential *uatCOSCredential }
 type uatCOSCredential struct {
 	client   *sts.Client
+	bucket   string
 	now      func() time.Time
 	mu       sync.Mutex
 	cached   temporaryCredential
@@ -109,7 +112,7 @@ func (c *uatCOSCredential) load() (temporaryCredential, error) {
 
 func (c *uatCOSCredential) exchange(ctx context.Context) (temporaryCredential, error) {
 	request := sts.NewGetFederationTokenRequest()
-	name, policy, duration := "OrderUATCOSRuntime", url.QueryEscape(uatCOSPolicy), uint64(1800)
+	name, policy, duration := "OrderCloudRunCOSRuntime", url.QueryEscape(strings.ReplaceAll(uatCOSPolicy, uatCOSBucket, c.bucket)), uint64(1800)
 	request.Name = &name
 	request.Policy = &policy
 	request.DurationSeconds = &duration
