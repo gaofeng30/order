@@ -1,0 +1,136 @@
+{
+  "candidate": "149423eac8b179cf453e224534c64f84fe458086",
+  "environment": "order-prod-d0g4xnw49c5ada5ce",
+  "relationsRequestId": "dfc1a789-9352-4248-bc23-bd76b4224f6e",
+  "functionsRequestId": "543f8ed3-aa95-4d8d-943b-c20949d55aaa",
+  "compensationRequestId": "b629c5a2-0da8-4e38-9d74-4ec677d823ec",
+  "ledgerReadback": "b0883291-5d87-4d6e-84ef-304af6105994",
+  "functionReadback": "8f1fc724-27dd-445d-bfc1-0ba09f07d3e7",
+  "ordinaryCatalogRequestId": "42c897bb-dc01-4a4d-8810-2f3c0079e56d",
+  "ordinaryCompensationCatalogRequestId": "cf57393b-8897-4a71-92d9-e150a9d96ef1",
+  "credentialRegisterRequestId": "be20b0f5-7e09-407b-a5a0-9e6266131a15",
+  "migrations": 44,
+  "dirty": 0,
+  "tables": 26,
+  "sequences": 16,
+  "functions": 125,
+  "ordinaryCallable": 118,
+  "anonymousCallable": 0,
+  "exactSourceCatalogCheck": "PASS",
+  "apiDeployment": {
+    "version": "001",
+    "status": "normal",
+    "flowRatio": 100,
+    "buildId": 2608725142,
+    "runId": "multi_tenant_1xHJWNLLXCKypY",
+    "live": "PASS",
+    "ready": "PASS"
+  },
+  "businessRegression": "PARTIAL: simulator Prod login/customer reads/merchant denial PASS; full business regression incomplete",
+  "note": "Raw HTTP response preserved; initial diagnostic JSON reserialization rounded int64 sequence limit, corrected raw receipt and exact-source check passed. No schema correction/reinstall.",
+  "relayDeployment": {
+    "function": "order-compensation-wake",
+    "functionId": "lam-21r4qk9z",
+    "runtime": "Nodejs20.19",
+    "status": "Active",
+    "createRequestId": "156569e2-e348-4520-8be2-49cfb6e58022",
+    "readbackRequestId": "323baec4-9e78-4f34-9afb-ed7bf9a21a36",
+    "businessInvocation": "NOT_RUN"
+  },
+  "cosIdentity": {
+    "status": "CREATED_BY_AUTHORIZED_MAIN_ACCOUNT",
+    "name": "order-prod-cos-runtime",
+    "consoleLogin": false,
+    "scope": "Prod bucket images/* GetObject/PutObject",
+    "stsRequestId": "1945b415-e7a9-494e-8ab5-5f51c673758a"
+  },
+  "canonicalMaterials": "INJECTED_FROM_PRIVATE_0600_FILES",
+  "pcPackageFiles": 27,
+  "pr": "https://github.com/gaofeng30/order/pull/4",
+  "prStatus": "MERGED",
+  "pcStaticUpload": {
+    "files": 27,
+    "resourcesFirst": true,
+    "htmlLast": true,
+    "httpSha256Matches": 27,
+    "cacheControl": "no-store, no-cache, must-revalidate, max-age=0",
+    "formalDomainAcceptance": {
+      "hashMatches": 27,
+      "loginPage": "RENDERED",
+      "scanApproval": "NOT_RUN"
+    }
+  },
+  "formalTLS": {
+    "status": "ISSUED_BOUND_HTTPS_VERIFIED",
+    "certificateId": "baqx2Bd6",
+    "domain": "order.suianwuye.com",
+    "expiresAtConsole": "2027-01-13 17:59:59",
+    "autoRenew": false
+  },
+  "wechatPlatformQualification": "BLOCKED_BROWSER_SITE_SAFETY",
+  "releaseTemplateConfig": "LOCAL_FIXED_NOT_PUBLISHED",
+  "bootstrap": {
+    "status": "created",
+    "authorization": "User confirmed same approved UAT owner identity for Prod",
+    "sqlSha256": "fd1448f09236bc7dbc1ab116d102690851eef41efb321b2ee861eba365ecff9e",
+    "requestId": "1803a6d7-c237-4b90-8b20-a459053be5ac",
+    "readbackRequestId": "2564e690-1357-41b8-a7c4-cbbec2de3019",
+    "store": "绥安食品",
+    "businessStatus": "closed",
+    "enabledUnboundOwners": 1,
+    "products": 0,
+    "orders": 0
+  },
+  "nativeLoginProbe": {
+    "layer": "simulator controlled release endpoint; native env develop; urlCheck true",
+    "result": "PASS_LOGIN_AND_READ_ONLY_CUSTOMER_PATH",
+    "domainRefresh": "close/reopen current project; recompile alone retained old allowlist",
+    "session": "ready; actual wx.login; token not recorded",
+    "identity": "VISITOR; primary phone unbound; merchant unbound",
+    "customerOrders": "200 empty",
+    "merchantOrders": "403 FORBIDDEN",
+    "home": "settingsState and ordersState ready",
+    "evidence": "prod-domain-login-verification.json; prod-domain-login-home.jpg",
+    "notProven": [
+      "release package",
+      "real device",
+      "upload/download image domain and business flow",
+      "OWNER binding",
+      "payment/refund/notification E2E"
+    ]
+  },
+  "cosConfiguration": {
+    "acl": "private owner only",
+    "versioning": "NOT_ENABLED",
+    "lifecycle": "NOT_CONFIGURED",
+    "costApproval": "PENDING",
+    "corsFormalOrigin": "https://order.suianwuye.com already allowed by existing generated rules"
+  },
+  "backupReadback": {
+    "source": "authorized main account Prod console /db/postgres/backups",
+    "message": "当前共享集群暂不提供相关能力，可以升级至独享集群启用能力",
+    "platformBackup": "UNAVAILABLE_ON_CURRENT_SHARED_CLUSTER",
+    "upgradeExecuted": false,
+    "recoveryAcceptance": "NOT_VERIFIED",
+    "logicalExport": "not a substitute for platform backup per current official documentation"
+  },
+  "quotaConsoleReadback": {
+    "plan": "standard",
+    "expires": "2027-04-30",
+    "cycle": "2026-09-30/2026-10-31",
+    "consumedCreditsDisplayed": 56.64,
+    "quotaCredits": 330000,
+    "usageReportingDelayed": true,
+    "autoRenewAlreadyOn": true,
+    "overrunAlreadyOn": true,
+    "qpsLimit": 500,
+    "qpsOverrun": false,
+    "changedFeeSwitches": false
+  },
+  "budgetApiReadback": {
+    "status": "DENIED_FOR_TCB_ROLE",
+    "action": "finance:DescribeBudget",
+    "requestId": "8ee957b8ab4e4f37a5b801727c3d63ce",
+    "mainAccountConsole": "checking"
+  }
+}
