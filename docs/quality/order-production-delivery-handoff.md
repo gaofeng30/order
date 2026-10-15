@@ -1,5 +1,7 @@
 # Order 生产交付与当前上线缺口
 
+> 2026-10-15生产适配更新：唯一执行入口为[生产Runbook](../../deploy/runbooks/order-production-release.md)，本次进度为[任务账本](../../openspec/changes/prepare-cloudbase-production/tasks.md)。当前无最终候选/部署。远端UAT基线531638a8的源码为117个函数实体/113个可执行函数；下述10/12版本与113/109均为历史，不能充当新候选安装证明。生产只读确认业务表0、order函数0、CloudRun服务0、仅默认域名，正式域名未绑定。
+
 > 2026-10-12 Owner接管：当前结论见[全局UAT验收](order-uat-acceptance-20261012.md)，后续生产以[CloudBase生产Runbook](../../deploy/runbooks/order-production-release.md)为唯一执行入口。以下运行收据保留原范围；完整UAT与生产均未PASS。本轮必要局部验证已获授权，历史停测不再约束当前验证。
 
 > 更新日期：2026-10-12（北京时间）；当前结论以uat-delivery-status.json及最新N1/N2/N3、财务、员工、通知专项回执为准，首次001/bf/两笔财务均保留为历史。
@@ -92,9 +94,9 @@ PC 入口：上述 origin 的 `/pc/web-admin/index.html`。
 
 8月工程规范曾要求CVM/Nginx/systemd/MySQL8；后续人类明确要求尽量托管CloudBase，且本轮只读确认独立Prod标准版与SharedPG已存在。Owner据此选定CloudRun＋SharedPG＋私有COS的唯一后续方向；生产适配change必须先同步现行架构spec，本W0不覆盖仍有效的规范。该方向不重新采购旧技术资源，不降低资金/隔离/恢复合同。原文与实际资产见新Runbook链接。
 
-当前SharedPG组合仍只允许ORDER_ENV=uat，client、COS策略及多个provider固定UAT。非UAT路径已是原生PostgreSQL，旧MySQL env与CVM恢复手册不适用于当前发布。必须补生产资源绑定、材料来源、安装/初始化入口与独立验证，不能只改环境名或复制UAT凭据。
+本次独立worktree已补production CloudRun组合、EnvId/桶/身份隔离、受保护材料、正式同源回调和formal启动校验，相关本地测试通过，尚未提交/部署。可靠异常补偿、真实身份、正式客户端和最终候选独验仍未完成，旧MySQL env/CVM恢复手册不作为当前发布入口。
 
-本轮未改生产源码/配置，未生产部署。新Runbook的硬前置明确标出生产适配、完整UAT、容量、平台资格、SharedPG恢复及真实发布授权；当前不可直接执行发布。
+本轮仅本地源码/文档适配，未写生产配置或部署。新Runbook的硬前置明确标出生产适配、完整UAT、容量、平台资格、SharedPG恢复及真实发布授权；当前不可直接执行发布。
 
 ## 3. 距离正式上线的具体工作
 
