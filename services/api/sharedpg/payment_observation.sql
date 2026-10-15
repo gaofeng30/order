@@ -225,7 +225,7 @@ mode:=CASE WHEN validation='ACCEPTED' AND state='PAID' AND NOT success_zero AND 
  next_state:=CASE WHEN pr.provider_state='PAID' THEN 'PAID' WHEN state='PAID' THEN 'PAID' WHEN pr.provider_state='CLOSED' THEN 'CLOSED' WHEN state='CLOSED' THEN 'CLOSED' ELSE 'NOT_PAID' END;
  next_material:=pr.materialization_state;pending_reason:=pr.pending_reason_code;
  IF next_material<>'APPLIED' THEN IF mode='AUTO' THEN next_material:='READY';pending_reason:=NULL;ELSIF state='PAID' OR validation<>'ACCEPTED' THEN next_material:='PENDING_MANUAL';pending_reason:=reason;END IF;END IF;
- next_reconcile:=NULL;IF next_material='READY' THEN next_reconcile:=p_received_at;ELSIF next_material='AWAITING_PAYMENT' AND next_state<>'CLOSED' THEN next_reconcile:=(p_received_at+make_interval(days=>div(p_reconcile_ns,86400000000000)::integer,secs=>div(mod(p_reconcile_ns,86400000000000),1000000000)::double precision)+(div(mod(p_reconcile_ns,1000000000),1000)::text||' microseconds')::interval);END IF;
+ next_reconcile:=NULL;IF next_material='READY' THEN next_reconcile:=p_received_at;END IF;
  last_queried:=pr.last_queried_at;IF p_source='ACTIVE_QUERY' THEN last_queried:=p_received_at;END IF;
  preserve_lease:=false;
  IF p_source='ACTIVE_QUERY' THEN IF pr.lease_kind IS NOT NULL AND pr.lease_kind<>'QUERY' THEN RAISE EXCEPTION USING ERRCODE='P1000',MESSAGE='ORDER_PAYMENT_UNAVAILABLE';END IF;preserve_lease:=NOT coalesce(claim_matches,false) AND pr.lease_kind IS NOT NULL;END IF;
