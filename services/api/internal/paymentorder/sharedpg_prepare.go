@@ -394,7 +394,11 @@ func (a *SharedPGApplication) finishCreateUnknown(ctx context.Context, c claimed
 	return nil
 }
 func (a *SharedPGApplication) finishCreate(ctx context.Context, c claimedCreate, now time.Time, result any) (int, error) {
-	raw, e := a.sharedPaymentCall(ctx, "order_payment_finish_create_v1", map[string]any{"p_prepayment": decimalID(c.id), "p_owner_hex": hex.EncodeToString(c.owner[:]), "p_version": decimalID(c.version), "p_now": now.UTC().Truncate(time.Microsecond), "p_next": now.Add(a.config.ReconcileInterval).UTC().Truncate(time.Microsecond), "p_result": result})
+	var next any
+	if result == nil {
+		next = now.Add(failedReconcileInterval).UTC().Truncate(time.Microsecond)
+	}
+	raw, e := a.sharedPaymentCall(ctx, "order_payment_finish_create_v1", map[string]any{"p_prepayment": decimalID(c.id), "p_owner_hex": hex.EncodeToString(c.owner[:]), "p_version": decimalID(c.version), "p_now": now.UTC().Truncate(time.Microsecond), "p_next": next, "p_result": result})
 	if e != nil {
 		return 0, e
 	}
