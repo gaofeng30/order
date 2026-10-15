@@ -191,7 +191,7 @@ func (service *Service) finishCreateSuccess(ctx context.Context, claimed claimed
 		    lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,record_version=record_version+1,
 		    next_reconcile_at=$3,updated_at=$4
 		WHERE id=$5 AND provider_state='CREATE_CLAIMED' AND lease_kind='CREATE' AND lease_owner=$6 AND record_version=$7 AND lease_expires_at>$4
-	`, []byte(result.PrepayID), wxJSON, now.Add(service.config.ReconcileInterval), now, claimed.id, claimed.owner[:], claimed.version)
+	`, []byte(result.PrepayID), wxJSON, nil, now, claimed.id, claimed.owner[:], claimed.version)
 	if err != nil {
 		return ErrUnavailable
 	}
@@ -215,7 +215,7 @@ func (service *Service) finishCreateUnknown(ctx context.Context, claimed claimed
 		SET provider_state='CREATE_UNKNOWN',lease_kind=NULL,lease_owner=NULL,lease_expires_at=NULL,
 		    record_version=record_version+1,next_reconcile_at=$1,updated_at=$2
 		WHERE id=$3 AND provider_state='CREATE_CLAIMED' AND lease_kind='CREATE' AND lease_owner=$4 AND record_version=$5 AND lease_expires_at>$2
-	`, now.Add(service.config.ReconcileInterval), now, claimed.id, claimed.owner[:], claimed.version)
+	`, now.Add(failedReconcileInterval), now, claimed.id, claimed.owner[:], claimed.version)
 	if err != nil {
 		return ErrUnavailable
 	}
