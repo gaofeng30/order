@@ -290,21 +290,22 @@
     do {
       const body = await request('/admin/orders' + qs({ date, limit: 100, after_id: after }));
       assertSession(generation, bearer);
-      if (!body || !Array.isArray(body.orders)) throw new ApiError('订单数据不完整，请重新加载');
+      if (!body || !Array.isArray(body.orders) || !Object.prototype.hasOwnProperty.call(body, 'next_after_id')) throw new ApiError('订单数据不完整，请重新加载');
+      let previous = after;
       for (const raw of body.orders) {
         const order = orderOf(raw);
-        if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || order.pickupDate !== date) throw new ApiError('订单数据不完整，请重新加载');
+        if (!/^[1-9]\d*$/.test(order.id) || seen.has(order.id) || (previous && BigInt(order.id) <= BigInt(previous)) || order.pickupDate !== date) throw new ApiError('订单数据不完整，请重新加载');
         if (!['lunch', 'dinner'].includes(String(order.mealPeriod).toLowerCase()) || !Array.isArray(order.items)
           || !order.items.length || order.items.some(i => !i || !i.product_id || !(i.name || i.product_name)
             || !Number.isSafeInteger(i.quantity) || i.quantity < 1 || !Array.isArray(i.flavors))) {
           throw new ApiError('订单菜品数据不完整，请重新加载');
         }
-        seen.add(order.id);
+        seen.add(order.id); previous = order.id;
         if (['已预约', '制作中'].includes(order.status)) result.push(order);
       }
       const next = body.next_after_id;
-      if (next === null || next === undefined || next === '') break;
-      if (!/^[1-9]\d*$/.test(String(next)) || (after && BigInt(next) <= BigInt(after))) throw new ApiError('订单分页异常，请重新加载');
+      if (next === null || next === '') break;
+      if (!/^[1-9]\d*$/.test(String(next)) || !body.orders.length || String(next) !== previous) throw new ApiError('订单分页异常，请重新加载');
       after = String(next);
     } while (true);
     return result;
