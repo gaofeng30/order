@@ -9,7 +9,7 @@
 
 一期生产架构 MUST 使用独立 CloudBase 生产环境中的 CloudRun Go API、Shared PostgreSQL 官方 HTTPS RPC、同地域私有 COS、同源 HTTP 网关与静态托管。正式域名 MUST 使用有效 TLS；PC 唯一入口 MUST 为 `/pc/`，API 为 `/api/v1`。不得增加旧 PC 路径兼容。
 
-运行时 MUST 使用普通专用数据库身份和固定 RPC allowlist，不得使用管理 SQL、管理 API key 或通用云凭据执行业务。材料 MUST 由 CloudRun 受保护版本配置注入；COS MUST 通过绑定本环境桶及 images 前缀的受限 STS 身份访问。源码、镜像与日志不得携带秘密。日志与指标 MUST 接入当前托管资源支持的 CLS/监控通道。
+运行时 MUST 使用普通专用数据库身份和固定 RPC allowlist，不得使用管理 SQL、管理 API key 或通用云凭据执行业务。材料 MUST 由 CloudRun 受保护版本配置注入；COS MUST 通过绑定本环境桶及 images 前缀的受限 STS 身份访问。源码、镜像与日志不得携带秘密。运行日志 MUST 脱敏，关键业务操作 MUST 可查询审计；不得把特定收费监控产品作为默认前置。
 
 CVM/Nginx/systemd/MySQL/SSM 是被替代的历史路线，MUST NOT 作为并行发布入口。Redis、MQ、独立微服务、CLB、跨地域灾备和7×24人工值守不属于本次已确认范围。新增费用或权限不得由技术适配自动获得授权。
 
@@ -102,7 +102,7 @@ UAT与生产 MUST 使用独立 CloudBase EnvId、Shared PG、普通数据库用�
 
 运行配置和业务材料 MUST 由 CloudRun 受保护版本配置注入，必要材料缺失/格式错误/环境不匹配必须阻止启动。仅记录安全位置与版本引用，不输出值。数据库只使用专用普通身份；COS来源身份只允许取得限定本环境images前缀的临时权限。轮换必须发布新配置并读回验证，不得回退至已撤销材料。
 
-UAT 与生产 COS MUST 为私有桶并禁止匿名读取和列举。Admin MUST 先向 API 申请有效期不超过 15 分钟的预签名 PUT，再直传 COS 并调用确认接口；客户端图片读取 MUST 使用有效期不超过 15 分钟的预签名 GET。对象 key MUST 由服务端生成，上传 MUST 校验允许的 MIME、大小和摘要；桶 MUST 开启版本控制，非当前版本保留 30 天后删除。
+UAT 与生产 COS MUST 为私有桶并禁止匿名读取和列举。Admin MUST 先向 API 申请有效期不超过 15 分钟的预签名 PUT，再直传 COS 并调用确认接口；客户端图片读取 MUST 使用有效期不超过 15 分钟的预签名 GET。对象 key MUST 由服务端生成，上传 MUST 校验允许的 MIME、大小和摘要。生产图片 MUST 使用唯一 key、禁止覆盖及持久确认，MUST NOT 依赖 COS 版本号或开启历史版本保留；图片误删恢复不属于原始 PRD 要求。此变更需同步 API/SQL 并验证后发布，不能将本地规格当作线上状态；既有 UAT 历史版本不在本次变更范围。
 
 仓库、文档、镜像、命令行、日志和前端配置 MUST NOT 包含长期 SecretId/SecretKey、私钥、证书正文、APIv3 key 或其他可重放凭据。
 
@@ -118,53 +118,51 @@ UAT 与生产 COS MUST 为私有桶并禁止匿名读取和列举。Admin MUST �
 
 ### Requirement: Backup and recovery have fixed targets and honest evidence boundaries
 
-生产 Shared PG 的每日备份、14天保留、实例销毁后7天保留以及时间点恢复能力 MUST 按目标环境实际套餐/API核实并验证；这些是验收要求，不是已提供能力的声明。COS 非当前版本 MUST 保留 30 天。团队 MUST 每季度把 Shared PG 备份恢复或克隆到隔离目标，并校验 schema version、订单、支付、退款、核销和操作日志；CloudRun实例 MUST 不保存业务事实并能由镜像、版本配置及材料安全引用重建。
+核心数据 MUST 有可执行的备份与恢复演练方案；MUST 核实当前 Shared PG 已有导出/备份路径，在隔离目标验证 schema、函数、ACL/RLS、序列及订单、支付、退款、核销和审计。MUST 记录来源时间、数据一致性、实际恢复窗口与耗时，不继承旧 CDB 固定保留期、恢复频率或 RPO/RTO 数值。CloudRun 实例 MUST 不保存业务事实，并能从镜像、保护配置及材料引用重建。
 
-文档 MUST 把以下数值写为未实测的验收目标，而非当前已达成或云厂商 SLA：Go进程与数据库故障 RTO `≤5 分钟`，计算节点丢失 RTO `≤60 分钟`，逻辑误删/损坏 RPO `≤5 分钟`、RTO `≤2 小时`。区域级灾难 MUST 明确为本阶段不承诺 RPO/RTO。
+平台备份入口不可用 MUST NOT 被直接解释为所有导出恢复路线不可用；现有授权内的替代能力须按同一完整性要求实测。任何新增费用或覆盖生产的恢复操作 MUST 获得相应授权。图片历史版本与误删恢复 MUST NOT 成为发布前置。
 
 #### Scenario: Recovery targets are documented before a drill
-- **WHEN** 恢复演练尚未在目标云规格执行
-- **THEN** 文档只称上述 RPO/RTO 为目标且标记未实测
-- **AND** 不得写成已达到、保证值或整体系统 SLA
+- **WHEN** 恢复演练尚未完成
+- **THEN** 文档记录拟用路径及未验证项，不承诺固定恢复时限或云厂商 SLA
+- **AND** 不将设计方案记为已验证恢复能力
 
-#### Scenario: Quarterly recovery drill runs
-- **WHEN** 平台 owner 从生产备份创建隔离恢复实例
-- **THEN** 验证 schema 和五类关键业务记录并记录实际 RPO/RTO
-- **AND** 恢复实例不得接收生产流量且演练完成后按授权清理
+#### Scenario: An isolated recovery drill runs
+- **WHEN** 使用已有导出或备份工件恢复到隔离目标
+- **THEN** 校验结构与核心业务记录、外部资金事实，并记录实际数据窗口与耗时
+- **AND** 隔离目标不得接收生产流量，清理按授权执行
 
 ### Requirement: Logging, metrics, and alerts have fixed redaction and thresholds
 
-`order-api` MUST 向 stderr 输出 JSON，CloudRun日志采集 MUST 接入 CLS 并保留 30 天。请求日志 MUST 包含 `env`、`request_id`、`method`、模板化 `path`、`status`、`duration_ms`；业务日志可增加非敏感内部 `order_id`、`payment_id`、`event_id`，但关联 ID MUST NOT 作为指标 label。
+运行日志 MUST 保留足以定位问题的脱敏错误与关联信息；关键业务操作 MUST 可查询、可审计、可人工处理。日志、证据与告警 MUST NOT 包含请求原文、个人信息、凭据、完整核销 token、二维码或完整外部交易号。
 
-日志、证据和告警 MUST NOT 记录 query、body、Authorization、Cookie、手机号、姓名、openid、工号、用户备注、回调原文、私钥、证书、APIv3 key、完整核销 token、完整二维码或完整外部交易号。
-
-生产告警阈值 MUST 固定为：CAT 每分钟探测且连续 3 次失败；HTTP 5xx 五分钟比例 `>1%`；读取 p95 `>500ms` 或写入 p95 `>800ms` 持续 5 分钟；持久任务最老已到期未处理事件超期 `>60 秒`（按 next_attempt_at/next_query_at/next_reconcile_at 或租约到期时间计算，30分钟退避中未到期的任务不计入超期）；任一 `DEAD`、支付对账不一致或备份失败；CloudRun CPU `>70%` 持续 15 分钟、内存 `>80%`、磁盘 `>75%`；Shared PG CPU 或连接使用率 `>70%` 持续 15 分钟、存储 `>75%`；TLS 证书剩余 `<30 天`。告警可全天发送，但不构成 7×24 人工值守承诺。
+CLS、CAT、固定日志保留天数和完整阈值矩阵 MUST NOT 作为新增发布门。预算告警、用量和证书状态 MUST 按用户要求只读核实；已配置与未配置须区分，新增收费能力须另行确认。不承诺未经建立的自动告警或全天人工值守。
 
 #### Scenario: Sensitive request fails
 - **WHEN** 含个人信息或支付内容的请求失败并产生日志
-- **THEN** 日志只保留非敏感关联 ID、模板化 path、状态、耗时和枚举原因
-- **AND** 原始请求、身份、凭据和外部交易号不进入 CLS 或告警
+- **THEN** 只记录必要的非敏感关联、错误类别与执行结果
+- **AND** 原始请求、身份和凭据不进入日志或告警
 
-#### Scenario: Asynchronous event becomes stale
-- **WHEN** 持久任务已到期但尚未处理，超期超过 60 秒
-- **THEN** 云监控立即发送包含环境和非敏感事件 ID 的告警
-- **AND** 不等待 HTTP 错误率或 CPU 阈值同时触发
+#### Scenario: A background task needs manual action
+- **WHEN** 自动补偿停止且仍有未解决事项
+- **THEN** 持久状态保留查询、审计与人工处理依据
+- **AND** 不以删除日志产品依赖为理由丢弃业务记录
 
 ### Requirement: Capacity gate and upgrade order are evidence-driven
 
-生产规格候选 MUST 通过以下容量门：200 并发用户，300 笔订单在 5 分钟内完成，数据基线至少包含 1000 日订单和 300 商品，并同时覆盖重复提交、重复/乱序支付回调、worker 重启和订单超时并发。门禁目标 MUST 为 HTTP 5xx `<0.1%`、读取 p95 `≤500ms`、写入 p95 `≤800ms`，且无重复订单、重复支付状态、重复核销、丢失 inbox/outbox 或违反库存不变量；未在真实候选规格执行前 MUST 标记未实测。
+容量验证 MUST 依据原始 PRD 的已知规模：5–10 分钟集中 100–300 单、每日 500–1000 单。MUST 保留交易原子性、重复/并发操作幂等和核心交易不被统计任务阻塞的检查；MUST 记录实际资源、到达模型、耗时、错误及业务不变量。未执行的规模 MUST 标记未实测，不得以配额替代容量证明。
 
-升级顺序 MUST 固定为：先检查和修复慢 SQL、索引、连接池及非必要查询；再按批准的CloudRun/Shared PG资源调整重跑同一容量门。只有上述步骤后仍不能通过容量门，或计算节点 RTO 被正式要求 `<5 分钟`，才能创建独立扩容 change。只有索引与纵向扩容后数据库读负载仍被实测为主要瓶颈，才能创建 Redis 或只读实例 change；只有数据库健康且增加 worker 并发后，最老已到期任务的超期时间仍连续 15 分钟超过 60 秒且排除外部限流，才能创建 MQ change。
+3000 人、固定 200 并发、300 商品、固定延迟及错误率阈值 MUST NOT 作为未获产品确认的新发布门。新增资源前 MUST 先诊断已有资源是否满足已知规模，排除非必要查询或实现依赖；不得默认增配缓存、MQ、只读实例或付费扩容。
 
-#### Scenario: Initial SKU has not been load-tested
-- **WHEN** 云账号、候选 SKU 或隔离压测环境尚未提供
-- **THEN** 文档把容量数字写为验收门和未实测边界
-- **AND** 不得声称当前 2 核 4G 或任一外部规格已经足够
+#### Scenario: Initial resources have not been load-tested
+- **WHEN** 尚未取得当前规格的隔离验证证据
+- **THEN** 记录未实测范围并执行已知规模的必要验证
+- **AND** 不声称当前规格已满足全部容量要求
 
 #### Scenario: Team proposes horizontal expansion
-- **WHEN** 团队准备加入范围外计算/缓存/只读实例或MQ
-- **THEN** proposal 必须引用本 requirement 对应的真实失败证据和已完成的前置优化
-- **AND** 没有证据时该架构 change 不得批准
+- **WHEN** 团队准备新增资源
+- **THEN** 必须给出已有资源不满足已确认规模的实测证据
+- **AND** 新增费用或权限须获得相应授权
 
 ### Requirement: Architecture documents have one vocabulary and bounded external placeholders
 

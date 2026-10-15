@@ -12,14 +12,24 @@ import (
 
 // SharedPGVersionedService is the UAT COS/shared-PG image composition.
 type SharedPGVersionedService struct {
-	adapter *COSAdapter
-	client  sharedPGExecutor
-	now     func() time.Time
-	entropy io.Reader
+	adapter   *COSAdapter
+	client    sharedPGExecutor
+	now       func() time.Time
+	entropy   io.Reader
+	immutable bool
 }
 
 func NewSharedPGVersionedService(adapter *COSAdapter, client sharedPGExecutor) *SharedPGVersionedService {
 	return &SharedPGVersionedService{adapter: adapter, client: client, now: time.Now, entropy: rand.Reader}
+}
+
+// NewSharedPGImmutableService is the production composition for a bucket that
+// has never enabled versioning. Signed uploads prohibit replacing an object.
+// Existing native-version receipts remain readable; new receipts use the original key.
+func NewSharedPGImmutableService(adapter *COSAdapter, client sharedPGExecutor) *SharedPGVersionedService {
+	s := NewSharedPGVersionedService(adapter, client)
+	s.immutable = true
+	return s
 }
 
 func (s *SharedPGVersionedService) available(ctx context.Context) bool {
@@ -71,16 +81,19 @@ func (s *SharedPGVersionedService) ConfirmImageUpload(ctx context.Context, meta 
 	if err != nil {
 		return StoredImage{}, err
 	}
-	var nonce [32]byte
-	if _, err := io.ReadFull(s.entropy, nonce[:]); err != nil {
-		return StoredImage{}, ErrUnavailable
+	pin := imageVersionPin{ObjectKey: key, PublishedKey: key}
+	if !s.immutable {
+		var nonce [32]byte
+		if _, err := io.ReadFull(s.entropy, nonce[:]); err != nil {
+			return StoredImage{}, ErrUnavailable
+		}
+		publishedKey := "images/published/" + hex.EncodeToString(nonce[:]) + "/" + key[strings.LastIndexByte(key, '/')+1:]
+		version, err := s.adapter.publishVersioned(ctx, publishedKey, img.Image)
+		if err != nil {
+			return StoredImage{}, ErrUnavailable
+		}
+		pin = imageVersionPin{ObjectKey: key, PublishedKey: publishedKey, VersionID: version}
 	}
-	publishedKey := "images/published/" + hex.EncodeToString(nonce[:]) + "/" + key[strings.LastIndexByte(key, '/')+1:]
-	version, err := s.adapter.publishVersioned(ctx, publishedKey, img.Image)
-	if err != nil {
-		return StoredImage{}, ErrUnavailable
-	}
-	pin := imageVersionPin{ObjectKey: key, PublishedKey: publishedKey, VersionID: version}
 	committed, err := s.commitPin(ctx, meta, key, digest, pin, s.now().UTC())
 	if err != nil {
 		if errors.Is(err, ErrIdempotencyConflict) {
@@ -100,7 +113,13 @@ func (s *SharedPGVersionedService) ConfirmImageUpload(ctx context.Context, meta 
 }
 
 func (s *SharedPGVersionedService) readUpload(ctx context.Context, key string, spec UploadSpecification) (versionedImage, error) {
-	img, err := s.adapter.readVersioned(ctx, key, "", MaxImageBytes+1)
+	var img versionedImage
+	var err error
+	if s.immutable {
+		img.Image, err = s.adapter.Read(ctx, key, MaxImageBytes+1)
+	} else {
+		img, err = s.adapter.readVersioned(ctx, key, "", MaxImageBytes+1)
+	}
 	if err != nil {
 		return versionedImage{}, err
 	}
@@ -114,7 +133,13 @@ func (s *SharedPGVersionedService) readPin(ctx context.Context, pin imageVersion
 	if !validImageVersionPin(pin) {
 		return versionedImage{}, ErrUnavailable
 	}
-	img, err := s.adapter.readVersioned(ctx, pin.PublishedKey, pin.VersionID, MaxImageBytes)
+	var img versionedImage
+	var err error
+	if pin.VersionID == "" {
+		img.Image, err = s.adapter.Read(ctx, pin.ObjectKey, MaxImageBytes)
+	} else {
+		img, err = s.adapter.readVersioned(ctx, pin.PublishedKey, pin.VersionID, MaxImageBytes)
+	}
 	if err != nil {
 		return versionedImage{}, ErrUnavailable
 	}
